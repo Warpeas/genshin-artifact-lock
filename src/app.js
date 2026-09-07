@@ -270,6 +270,161 @@ function globalWeights() {
 }
 
 /* ============================================================
+ * 游戏内「套装锁定方案」生成
+ *
+ * 规则依据（HoYoWiki 官方 wiki + 社区攻略实测）：
+ *   - 每种圣遗物套装至多预设 2 个自定义方案，多个方案在锁定时共同生效
+ *   - 每个方案可为 时之沙 / 空之杯 / 理之冠 分别设定主要属性与追加属性
+ *   - 追加属性支持「★必须」与「包含任意 N 条」
+ *   - 仅有 3 条追加属性的圣遗物，所需数量相应减 1
+ *   - 需求差异大的角色不宜合并到同一方案，否则会「存伪」（锁进无用件）
+ *
+ * 因此核心思路：把套装下的角色按需求相似度做层次聚类，
+ * 合并成 ≤ 槽位数 组，只有需求相近的角色才共享一个方案。
+ * ============================================================ */
+const SUB_CORE_TH = 0.4;   // 副词条权重达到该值视为「核心需求」
+const PLAN_SIM_TH = 0.62;  // 两组相似度高于此值才允许并入同一方案
+const MAIN_MAX    = 3;     // 单部位主属性上限（条件过宽会「存伪」）
+
+/* 角色的核心副词条集合 */
+function coreSubs(ch) {
+  return SUB_STATS.filter(s => (ch.subs[s.id] || 0) >= SUB_CORE_TH).map(s => s.id);
+}
+
+function jaccard(a, b) {
+  const A = new Set(a), B = new Set(b);
+  if (!A.size && !B.size) return 1;
+  let inter = 0;
+  A.forEach(x => { if (B.has(x)) inter++; });
+  const uni = new Set([...A, ...B]).size;
+  return uni ? inter / uni : 0;
+}
+
+function cosSim(a, b) {
+  let dot = 0, na = 0, nb = 0;
+  SUB_STATS.forEach(s => {
+    const x = a[s.id] || 0, y = b[s.id] || 0;
+    dot += x * y; na += x * x; nb += y * y;
+  });
+  const d = Math.sqrt(na) * Math.sqrt(nb);
+  return d ? dot / d : 0;
+}
+
+/* 角色需求相似度：主属性重合度为主，副词条倾向为辅 */
+function roleSimilarity(a, b) {
+  let ms = 0;
+  ['sands', 'goblet', 'circlet'].forEach(slot => { ms += jaccard(a.mains[slot], b.mains[slot]); });
+  return 0.65 * (ms / 3) + 0.35 * cosSim(a.subs, b.subs);
+}
+
+function groupSim(g1, g2) {
+  let sum = 0, n = 0;
+  g1.forEach(a => g2.forEach(b => { sum += roleSimilarity(a, b); n++; }));
+  return n ? sum / n : 0;
+}
+
+/* 层次聚类：反复合并最相似的两组，直到组数 ≤ maxGroups 或剩余组都不够相似 */
+function clusterRoles(roles, maxGroups) {
+  const groups = roles.map(r => [r]);
+  while (groups.length > maxGroups) {
+    let best = null;
+    for (let i = 0; i < groups.length; i++) {
+      for (let j = i + 1; j < groups.length; j++) {
+        const s = groupSim(groups[i], groups[j]);
+        if (!best || s > best.s) best = { s, i, j };
+      }
+    }
+    if (!best || best.s < PLAN_SIM_TH) break;
+    groups[best.i] = groups[best.i].concat(groups[best.j]);
+    groups.splice(best.j, 1);
+  }
+  return groups;
+}
+
+/* 合并一组角色的主属性需求：按「需求人数 × 优先级」排序，取前 MAIN_MAX 个 */
+function mergeMain(group, slot) {
+  const score = new Map();
+  group.forEach(r => {
+    (r.mains[slot] || []).forEach((st, i) => {
+      score.set(st, (score.get(st) || 0) + 1 / (i + 1));
+    });
+  });
+  return [...score.entries()].sort((a, b) => b[1] - a[1]).slice(0, MAIN_MAX).map(x => x[0]);
+}
+
+/* 合并一组角色的追加属性条件
+ *   ★必须：组内「所有」角色都需要的核心词条，最多保留 2 个（按组内平均权重降序）
+ *   候选池：组内任一角色需要的词条
+ *   包含任意 N 条：N = 组内平均核心词条数（★计入总数），上限 4
+ */
+function mergeSub(group) {
+  const cores = group.map(r => r.core);
+  const cnt = new Map();
+  cores.forEach(list => list.forEach(id => cnt.set(id, (cnt.get(id) || 0) + 1)));
+  const n = group.length;
+
+  const avgW = id => group.reduce((s, r) => s + (r.subs[id] || 0), 0) / n;
+  const required = [...cnt.entries()]
+    .filter(([, c]) => c === n)          // 全员共有
+    .map(([id]) => id)
+    .sort((a, b) => avgW(b) - avgW(a))   // 权重高的优先
+    .slice(0, 2);                        // 最多 2 个，避免条件过严
+
+  const pool = [...cnt.keys()];
+  const avgCore = cores.reduce((s, l) => s + l.length, 0) / n;
+  const minHit = Math.max(1, Math.min(4, Math.round(avgCore), pool.length));
+  return { required, pool, minHit };
+}
+
+/* 生成某套装的游戏内锁定方案（≤ maxPlans 个） */
+function buildGamePlans(charList, maxPlans) {
+  const seen = new Set();
+  const roles = charList
+    .filter(c => { if (seen.has(c.name)) return false; seen.add(c.name); return true; })
+    .map(c => ({
+      name: c.name,
+      mains: {
+        sands:   (c.main.sands   || []).map(m => m.stat),
+        goblet:  (c.main.goblet  || []).map(m => m.stat),
+        circlet: (c.main.circlet || []).map(m => m.stat),
+      },
+      subs: c.subs || {},
+      core: coreSubs(c),
+    }));
+  if (!roles.length) return [];
+
+  return clusterRoles(roles, maxPlans).map(g => {
+    const sub = mergeSub(g);
+    const slots = {};
+    SLOTS.forEach(sd => {
+      // 花 / 羽 主词条固定，游戏内只能设追加属性
+      slots[sd.id] = {
+        main: (sd.id === 'flower' || sd.id === 'plume') ? null : mergeMain(g, sd.id),
+        sub,
+      };
+    });
+    return { chars: g.map(r => r.name), slots };
+  });
+}
+
+/* 单个方案转成游戏内操作步骤文本 */
+function planToGameText(setName, plan, idx) {
+  const L = [`  方案${idx + 1}（供 ${plan.chars.join('、')} 使用）`];
+  SLOTS.forEach(sd => {
+    const s = plan.slots[sd.id];
+    const mainTxt = s.main && s.main.length
+      ? s.main.map(id => mainStatName(sd.id, id)).join('、')
+      : '（固定）';
+    const stars = s.sub.required.map(id => '★' + subStatName(id)).join(' ');
+    const rest = s.sub.pool.filter(id => !s.sub.required.includes(id))
+      .map(id => subStatName(id)).join('、');
+    const subTxt = [stars, rest].filter(Boolean).join(' / ');
+    L.push(`  ${sd.name}：主属性 ${mainTxt}；追加 ${subTxt}，包含任意 ${s.sub.minHit} 条`);
+  });
+  return L.join('\n');
+}
+
+/* ============================================================
  * 页面 ①：角色配置
  * ============================================================ */
 /* 当前筛选后的角色列表（批量操作与渲染共用） */
@@ -750,12 +905,13 @@ function renderPlan() {
     <div class="stat-box"><div class="sv">${fodderSets}</div><div class="sl">可整套清理的套装</div></div>`;
 
   const setWeights = computeSetWeights(includeAlt);
+  const maxPlans = +($('#planSlots') ? $('#planSlots').value : 2) || 2;
 
   const html = blocks
     .filter(([name]) => setFilter === 'all' || name === setFilter)
     .filter(([name, b]) => !hideUnused || b.users.size > 0)
     .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
-    .map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights))
+    .map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights, maxPlans))
     .join('');
 
   renderOverview(includeAlt ? computePlan(false) : plan, plan);
@@ -840,10 +996,15 @@ function renderOverview(planMain, planAll) {
   $('#planOverview').innerHTML = fpCard + slotCards.join('');
 }
 
-function renderSetBlock(name, b, slotFilter, setWeights) {
+function renderSetBlock(name, b, slotFilter, setWeights, maxPlans = 2) {
   const bonus = allSetBonus()[name] || '';
   const users = Array.from(b.users.entries());
   const unused = users.length === 0;
+
+  // 游戏内锁定方案：把该套装下的角色需求聚类合并成 ≤ maxPlans 组
+  const charsForPlan = state.characters.filter(c => c.enabled && b.users.has(c.name));
+  const plans = unused ? [] : buildGamePlans(charsForPlan, maxPlans);
+  const gpHtml = plans.length ? renderGamePlans(name, plans, maxPlans) : '';
 
   // 该套装的核心副词条（用于花/羽行提示）
   const w = setWeights ? setWeights.get(name) : null;
@@ -900,6 +1061,54 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
       </span>
     </div>
     <div class="set-body">${slotsHtml}</div>
+    ${gpHtml}
+  </div>`;
+}
+
+/* 渲染「游戏内锁定方案」区块 */
+function renderGamePlans(setName, plans, maxPlans) {
+  const cards = plans.map((p, i) => {
+    const rows = SLOTS.map(sd => {
+      const s = p.slots[sd.id];
+      const mainTxt = s.main && s.main.length
+        ? s.main.map(id => `<span class="gp-main">${esc(mainStatName(sd.id, id))}</span>`).join('')
+        : '<span class="gp-fixed">主词条固定</span>';
+      const stars = s.sub.required
+        .map(id => `<span class="gp-star">★${esc(subStatName(id))}</span>`).join('');
+      const rest = s.sub.pool.filter(id => !s.sub.required.includes(id))
+        .map(id => `<span class="gp-sub">${esc(subStatName(id))}</span>`).join('');
+      return `
+        <tr>
+          <td class="gp-slot">${sd.name}</td>
+          <td>${mainTxt}</td>
+          <td>${stars}${rest}</td>
+          <td class="gp-hit">任意 <b>${s.sub.minHit}</b> 条</td>
+        </tr>`;
+    }).join('');
+
+    return `
+    <div class="gp-card">
+      <div class="gp-ctitle">
+        <span class="gp-idx">方案${i + 1}</span>
+        <span class="gp-for">供 ${p.chars.map(n => esc(n)).join('、')} 使用</span>
+        <button class="btn sm gp-copy" data-gp-copy="${esc(setName)}|${i}">复制</button>
+      </div>
+      <table class="gp-tbl">
+        <thead><tr><th>部位</th><th>主要属性</th><th>追加属性</th><th>包含（★计入）</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="gp-wrap">
+    <div class="gp-head">
+      <span class="gp-title">🎮 游戏内锁定方案</span>
+      <span class="gp-meta">${plans.length} / ${maxPlans} 个预设 · 多个方案共同生效</span>
+    </div>
+    <div class="gp-cards">${cards}</div>
+    <p class="gp-tip">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上表逐部位设置；
+      仅有 3 条追加属性的圣遗物，所需数量会自动减 1。</p>
   </div>`;
 }
 function slotRow(sd, inner) {
@@ -907,6 +1116,35 @@ function slotRow(sd, inner) {
     <div class="slot-name">${sd.name}</div>
     <div class="slot-cells">${inner}</div>
   </div>`;
+}
+
+/* 导出：游戏内锁定方案（可照搬进游戏） */
+function gamePlansToText() {
+  const includeAlt = $('#planAltBuild').checked;
+  const maxPlans = +($('#planSlots') ? $('#planSlots').value : 2) || 2;
+  const plan = computePlan(includeAlt);
+  const L = ['原神 · 圣遗物套装锁定方案（游戏内照此设置）', ''];
+  let total = 0, setCount = 0;
+
+  Array.from(plan.entries())
+    .filter(([, b]) => b.users.size > 0)
+    .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
+    .forEach(([name, b]) => {
+      const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
+      const plans = buildGamePlans(chars, maxPlans);
+      if (!plans.length) return;
+      setCount++;
+      L.push('━━━━━━━━━━━━━━━━━━━━━━━━');
+      L.push(`【${name}】${plans.length} 个预设`);
+      plans.forEach((p, i) => L.push(planToGameText(name, p, i)));
+      L.push('');
+      total += plans.length;
+    });
+
+  L.push(`合计：${setCount} 个套装、${total} 个锁定方案`);
+  L.push('提示：每种套装在游戏内至多 2 个自定义方案，多个方案共同生效；');
+  L.push('      仅有 3 条追加属性的圣遗物，所需数量会自动减 1。');
+  return L.join('\n');
 }
 
 /* 导出：纯文本清单 */
@@ -1192,6 +1430,28 @@ function bind() {
   $('#planSlotFilter').onchange = renderPlan;
   $('#planHideUnused').onchange = renderPlan;
   $('#planAltBuild').onchange = () => { renderPlan(); if ($('#tab-subs').classList.contains('active')) renderSubs(); };
+  $('#planSlots').onchange = renderPlan;
+  $('#btnCopyGame').onclick = async () => {
+    const txt = gamePlansToText();
+    try { await navigator.clipboard.writeText(txt); toast('游戏内方案已复制'); }
+    catch (e) { fallbackCopy(txt); }
+  };
+  // 单个方案卡的复制按钮（元素动态生成，用事件委托）
+  $('#planBody').addEventListener('click', e => {
+    const btn = e.target.closest('.gp-copy');
+    if (!btn) return;
+    const [ setName, idxStr ] = btn.dataset.gpCopy.split('|');
+    const b = computePlan($('#planAltBuild').checked).get(setName);
+    if (!b) return;
+    const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
+    const plans = buildGamePlans(chars, +($('#planSlots') ? $('#planSlots').value : 2) || 2);
+    const p = plans[+idxStr];
+    if (!p) return;
+    const txt = `【${setName}】\n` + planToGameText(setName, p, +idxStr);
+    navigator.clipboard.writeText(txt)
+      .then(() => toast(`已复制「${setName} 方案${+idxStr + 1}」`))
+      .catch(() => fallbackCopy(txt));
+  });
   $('#btnCopyPlan').onclick = async () => {
     const txt = planToText();
     try { await navigator.clipboard.writeText(txt); toast('清单已复制到剪贴板'); }

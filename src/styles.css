@@ -328,6 +328,30 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .print-only{display:none;}
 .print-meta{font-size:11px;color:#666;margin:0 0 12px;}
 
+/* ---------- 游戏内锁定方案 ---------- */
+.gp-wrap{margin:0 14px 14px;padding:12px 14px;border-top:1px dashed #2c3746;background:#131a24;border-radius:0 0 10px 10px;}
+.gp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.gp-title{font-size:13px;font-weight:700;color:var(--gold,#e8c88a);}
+.gp-meta{font-size:11px;color:#7d8798;}
+.gp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px;}
+.gp-card{background:#1a2330;border:1px solid #2a3546;border-radius:8px;padding:10px 12px;}
+.gp-ctitle{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.gp-idx{font-size:12.5px;font-weight:700;color:#cfe3ff;background:#24374f;padding:2px 9px;border-radius:4px;}
+.gp-for{font-size:11.5px;color:#8a94a6;flex:1;min-width:120px;}
+.gp-copy{font-size:11px;padding:2px 8px;}
+.gp-tbl{width:100%;border-collapse:collapse;font-size:11.5px;}
+.gp-tbl th{text-align:left;font-weight:600;color:#7d8798;padding:4px 6px;border-bottom:1px solid #2a3546;font-size:11px;}
+.gp-tbl td{padding:5px 6px;border-bottom:1px solid #222b38;vertical-align:top;line-height:1.6;}
+.gp-tbl tr:last-child td{border-bottom:none;}
+.gp-slot{color:#9fb0c6;white-space:nowrap;font-weight:600;}
+.gp-main{display:inline-block;background:#233447;color:#bcd8f5;border:1px solid #33506e;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
+.gp-star{display:inline-block;background:#3d2f18;color:#f0c674;border:1px solid #6b5326;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;font-weight:600;}
+.gp-sub{display:inline-block;background:#232a33;color:#93a1b3;border:1px solid #333d4a;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
+.gp-fixed{color:#6f7b8c;font-size:11px;font-style:italic;}
+.gp-hit{white-space:nowrap;color:#9fb0c6;}
+.gp-hit b{color:var(--gold,#e8c88a);font-size:13px;}
+.gp-tip{margin:9px 0 0;font-size:11px;color:#6f7b8c;line-height:1.65;}
+
 /* ---------- print ---------- */
 @media print{
   .topbar,.tabs,.toolbar,.summary-strip,.btn,.drawer,.modal,.modal-mask,.toast,.set-users{display:none !important;}

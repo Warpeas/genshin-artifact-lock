@@ -84,9 +84,16 @@
           <option value="circlet">理之冠</option>
         </select>
       </label>
+      <label class="fld" title="游戏内每种套装至多 2 个自定义方案（官方 Wiki）">方案槽位
+        <select id="planSlots">
+          <option value="2" selected>2 个（官方上限）</option>
+          <option value="3">3 个</option>
+        </select>
+      </label>
       <label class="chk"><input type="checkbox" id="planHideUnused" checked> 隐藏无人需要的套装</label>
       <label class="chk"><input type="checkbox" id="planAltBuild" checked> 计入备选配装</label>
       <span class="spacer"></span>
+      <button id="btnCopyGame" class="btn">复制游戏内方案</button>
       <button id="btnCopyPlan" class="btn">复制清单</button>
       <button id="btnCsvPlan" class="btn">导出 CSV</button>
       <button id="btnPrint" class="btn">打印 / 存 PDF</button>
