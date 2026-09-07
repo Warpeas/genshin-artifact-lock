@@ -80,6 +80,7 @@ genshin-artifact-lock/
 ├── README.md           本说明
 ├── .nojekyll           GitHub Pages 用（跳过 Jekyll 构建），勿删
 ├── build.js            构建脚本：把 src/ 打包成单文件版 index.html
+├── push.py             推送脚本：把变更提交到 GitHub（走 API，不依赖 git 协议）
 │
 ├── src/                源码。改数据、改逻辑都在这里，改完跑 node build.js
 │   ├── data.js         ★ 基础共用数据：套装库、角色库、主/副词条、国度/定位
@@ -204,10 +205,36 @@ genshin-artifact-lock/
 
 ---
 
-## 附：部署到 GitHub Pages
+## 附：部署与更新
+
+### 首次部署（GitHub Pages）
 
 1. 新建仓库，把 `index.html`（+ 可选的 `README.md`、`.nojekyll`）上传
-2. 仓库 **Settings → Pages → Build and deployment**，Source 选 `Deploy from a branch`，分支 `main`、目录 `/ (root)`
-3. 等 1–2 分钟构建完成，访问 `https://你的用户名.github.io/仓库名/`
+2. 仓库 **Settings → Pages → Build and deployment**，Source 选 `Deploy from a branch`，分支选你的默认分支（**`main` 或 `master`，以仓库实际为准**）、目录 `/ (root)`
+3. 等 1–2 分钟构建完成，访问 `https://用户名.github.io/仓库名/`
 
 只上传 `index.html` 一个文件即可正常运行，页面内不含任何外部依赖。
+
+### 后续更新：用 `push.py`
+
+项目根目录的 `push.py` 会把本地变更一次性提交到 GitHub（合并为单个 commit）：
+
+```bash
+python3 push.py                  # 提交信息默认「更新内容」
+python3 push.py "修正某角色配装"   # 自定义提交信息
+```
+
+- 自动比对本地与远程文件，**只提交真正变更的部分**；无变更则直接退出
+- 依赖 `gh` CLI 且已登录（`gh auth status` 有输出即可）
+- 走 GitHub API 提交，**不依赖 git 协议** —— 适合 git 端点被网络策略拦截的环境
+
+典型流程：
+
+```bash
+# 1. 改数据
+vim src/data.js
+# 2. 重新构建单文件版
+node build.js
+# 3. 推送到 GitHub（Pages 约 1 分钟后自动更新）
+python3 push.py "修正雷电将军配装"
+```
