@@ -4,6 +4,8 @@
 
 纯前端单文件应用，**不联网、不安装**，双击 `index.html` 即用。CSS/JS 全部内联，单个文件随便拷贝、发给别人都能打开。
 
+> **在线地址**：https://warpeas.github.io/genshin-artifact-lock/
+
 ![角色配置](preview/01-角色配置.png)
 
 ---
