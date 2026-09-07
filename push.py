@@ -20,6 +20,7 @@ import base64
 import hashlib
 import json
 import os
+import socket
 import subprocess
 import sys
 import tempfile
@@ -83,9 +84,25 @@ def remote_tree():
     }
 
 
+def check_dns():
+    """部分网络环境会把 GitHub 域名解析到保留地址段（DNS 污染），提前给出修复提示。"""
+    try:
+        ip = socket.gethostbyname("api.github.com")
+    except Exception:
+        return
+    if ip.startswith("198.18.") or ip.startswith("0."):
+        print(f"⚠ 检测到 DNS 污染：api.github.com 解析到 {ip}（保留地址，无法连接）")
+        print("  修复方法：把 DNSPod 查到的真实 IP 写进 /etc/hosts")
+        print("    curl -s 'http://119.29.29.29/d?dn=api.github.com'")
+        print("    curl -s 'http://119.29.29.29/d?dn=github.com'")
+        print("    echo '<真实IP> api.github.com' | sudo tee -a /etc/hosts")
+        sys.exit(1)
+
+
 def main():
     message = sys.argv[1] if len(sys.argv) > 1 else "更新内容"
     os.chdir(ROOT)
+    check_dns()
 
     # 1. 找出与远程不一致的文件
     remote = remote_tree()
