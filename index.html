@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>原神圣遗物锁定方案生成器</title>
+<style>
+:root{
+  --bg:#0f1218;
+  --bg2:#161b24;
+  --panel:#1a2029;
+  --panel2:#212a36;
+  --line:#2c3644;
+  --txt:#e6ecf3;
+  --txt2:#9aa8b8;
+  --txt3:#6b7889;
+  --gold:#e8c87a;
+  --gold2:#f5dfa6;
+  --blue:#5fa8e8;
+  --green:#5fd39a;
+  --orange:#ff9f5a;
+  --red:#ff6b6b;
+  --purple:#b98cff;
+  --r:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--txt);
+  font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
+  font-size:14px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0;font-weight:600;}
+button{font-family:inherit;}
+
+/* ---------- topbar ---------- */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px 22px;background:linear-gradient(180deg,#1b2230,#151a23);
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;
+}
+.brand{display:flex;align-items:center;gap:12px;}
+.logo{
+  width:38px;height:38px;flex:none;border-radius:9px;
+  display:grid;place-items:center;font-size:19px;font-weight:700;color:#2a2113;
+  background:linear-gradient(145deg,var(--gold2),var(--gold));
+  box-shadow:0 2px 10px rgba(232,200,122,.25);
+}
+.topbar h1{font-size:17px;letter-spacing:.5px;}
+.sub{margin:0;font-size:12px;color:var(--txt3);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.save-hint{font-size:12px;color:var(--txt3);}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:4px;padding:0 22px;background:var(--bg2);border-bottom:1px solid var(--line);position:sticky;top:67px;z-index:49;}
+.tab{
+  padding:11px 18px;background:none;border:none;color:var(--txt2);cursor:pointer;
+  font-size:14px;border-bottom:2px solid transparent;transition:.15s;
+}
+.tab:hover{color:var(--txt);}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
+.tabpane{display:none;}
+.tabpane.active{display:block;}
+
+/* ---------- generic ---------- */
+.btn{
+  padding:7px 14px;border-radius:8px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--txt);cursor:pointer;font-size:13px;transition:.15s;
+}
+.btn:hover{border-color:#3d4a5c;background:#273240;}
+.btn.primary{background:linear-gradient(145deg,var(--gold2),var(--gold));color:#2a2113;border-color:transparent;font-weight:600;}
+.btn.primary:hover{filter:brightness(1.08);}
+.btn.ghost{background:transparent;}
+.btn.danger{color:#ffb4b4;border-color:#5a2f33;}
+.btn.danger:hover{background:#3a2024;}
+.btn.sm{padding:4px 10px;font-size:12px;}
+.icon-btn{background:none;border:none;color:var(--txt2);font-size:24px;cursor:pointer;line-height:1;padding:0 4px;}
+.icon-btn:hover{color:var(--txt);}
+.spacer{flex:1;}
+.muted{color:var(--txt2);}
+.small{font-size:12.5px;}
+.hidden{display:none !important;}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px;}
+.card h3{font-size:15px;margin-bottom:6px;color:var(--gold2);}
+
+/* ---------- toolbar ---------- */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:nowrap;}
+.toolbar.wrap{flex-wrap:wrap;}
+.toolbar input[type=search]{
+  padding:7px 12px;border-radius:8px;border:1px solid var(--line);
+  background:var(--panel);color:var(--txt);width:220px;font-size:13px;
+}
+.toolbar input[type=search]:focus{outline:none;border-color:var(--gold);}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+.seg-btn{padding:6px 12px;background:var(--panel);border:none;border-right:1px solid var(--line);color:var(--txt2);cursor:pointer;font-size:13px;}
+.seg-btn:last-child{border-right:none;}
+.seg-btn:hover{background:var(--panel2);color:var(--txt);}
+.seg-btn.active{background:var(--gold);color:#2a2113;font-weight:600;}
+.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--txt2);cursor:pointer;user-select:none;}
+.chk input{accent-color:var(--gold);cursor:pointer;}
+.count-badge{font-size:13px;color:var(--txt2);}
+.count-badge b{color:var(--gold);font-size:16px;}
+
+/* ---------- batch bar ---------- */
+.batch-bar{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:10px 12px;margin-bottom:14px;
+}
+.bar-label{font-size:12px;color:var(--txt3);flex:none;}
+.bar-div{width:1px;height:20px;background:var(--line);flex:none;margin:0 2px;}
+.bar-hint{font-size:11.5px;color:var(--txt3);margin-left:auto;}
+.batch-hint{margin:-6px 2px 14px;font-size:11.5px;color:var(--txt3);}
+.batch-hint b{color:var(--txt2);}
+.btn-grp{display:flex;gap:4px;flex-wrap:wrap;}
+.btn.sm.on{
+  background:linear-gradient(145deg,var(--gold2),var(--gold));color:#2a2113;
+  border-color:transparent;font-weight:600;
+}
+.btn.sm.partial{border-color:var(--gold);color:var(--gold2);}
+.tag-btn{border-color:var(--tc);color:var(--tc);}
+.tag-btn:hover{background:var(--panel2);}
+.tag-btn.on{background:var(--tc);color:#10151c;border-color:var(--tc);font-weight:600;}
+.chk-row{display:flex;gap:16px;flex-wrap:wrap;}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--txt3);}
+.fld select,.fld input{
+  padding:6px 10px;border-radius:7px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--txt);font-size:13px;font-family:inherit;min-width:130px;
+}
+.fld select:focus,.fld input:focus{outline:none;border-color:var(--gold);}
+
+/* ---------- char grid ---------- */
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:12px;}
+.char-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 13px;cursor:pointer;transition:.15s;position:relative;
+}
+.char-card:hover{border-color:#3f4d61;transform:translateY(-1px);}
+.char-card.on{border-color:var(--gold);background:linear-gradient(180deg,#232c1f,#1a2029);}
+.char-card .cc-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.cc-name{font-size:15px;font-weight:600;}
+.cc-elem{
+  font-size:11px;padding:1px 7px;border-radius:20px;font-weight:600;flex:none;
+}
+.cc-star{margin-left:auto;color:var(--txt3);cursor:pointer;font-size:15px;}
+.cc-star.on{color:var(--gold);}
+.cc-meta{display:flex;align-items:center;gap:5px;margin:-2px 0 7px;font-size:11.5px;}
+.cc-region{font-weight:600;}
+.cc-dot{color:var(--txt3);}
+.cc-role{color:var(--txt2);}
+.cc-sets{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+.set-tag{font-size:11px;padding:2px 7px;border-radius:5px;background:var(--panel2);color:var(--txt2);border:1px solid var(--line);}
+.set-tag.main{background:#2f3a24;color:#cfe6a8;border-color:#4a5c34;}
+.cc-main{display:flex;flex-direction:column;gap:3px;}
+.cc-main-row{display:flex;gap:6px;font-size:11.5px;color:var(--txt3);}
+.cc-main-row span:first-child{color:var(--txt3);flex:none;width:26px;}
+.cc-main-row .ms{color:var(--txt2);}
+.ms.r1{color:var(--gold2);font-weight:600;}
+
+/* ---------- plan ---------- */
+.summary-strip{
+  display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;
+}
+.stat-box{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 18px;min-width:118px;
+}
+.stat-box .sv{font-size:22px;font-weight:700;color:var(--gold);line-height:1.2;}
+.stat-box .sl{font-size:12px;color:var(--txt3);}
+
+/* ---------- overview ---------- */
+.overview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+@media (max-width:1100px){.overview-grid{grid-template-columns:repeat(2,1fr);}}
+.ov-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;}
+.ov-card h4{margin:0 0 8px;font-size:13.5px;color:var(--gold2);display:flex;justify-content:space-between;align-items:baseline;}
+.ov-card h4 small{color:var(--txt3);font-size:11px;font-weight:400;}
+.ov-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed #232c37;font-size:12.5px;}
+.ov-row:last-child{border-bottom:none;}
+.ov-row .ovn{flex:1;color:var(--txt);}
+.ov-row .ovk{flex:none;font-weight:600;color:var(--green);font-size:13px;}
+.ov-row .ovt{flex:none;font-size:11px;color:var(--txt3);}
+.ov-row .ovbar{flex:none;width:52px;height:5px;border-radius:3px;background:#243040;overflow:hidden;}
+.ov-row .ovbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#8a7ad0);}
+.ov-empty{color:var(--txt3);font-size:12px;}
+
+.set-block{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:14px;overflow:hidden;}
+.set-block.unused{opacity:.55;}
+.set-head{
+  display:flex;align-items:center;gap:10px;padding:12px 16px;
+  background:linear-gradient(90deg,#202833,#1a2029);border-bottom:1px solid var(--line);cursor:pointer;
+}
+.set-head h3{font-size:15px;color:var(--gold2);}
+.set-head .set-bonus{font-size:11.5px;color:var(--txt3);}
+.set-head .set-users{margin-left:auto;font-size:12px;color:var(--txt2);display:flex;flex-wrap:wrap;gap:4px;max-width:62%;justify-content:flex-end;}
+.user-pill{font-size:11px;padding:1px 7px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--txt2);}
+.user-pill.alt{border-style:dashed;opacity:.8;}
+.set-body{padding:0;}
+.slot-row{display:flex;border-bottom:1px solid var(--line);}
+.slot-row:last-child{border-bottom:none;}
+.slot-row:hover{background:#1d242e;}
+.slot-name{
+  flex:none;width:92px;padding:12px 14px;font-size:13px;color:var(--txt2);
+  background:#171d26;display:flex;align-items:center;gap:6px;border-right:1px solid var(--line);
+}
+.slot-name .sn-sub{font-size:11px;color:var(--txt3);}
+.slot-cells{flex:1;padding:10px 14px;display:flex;flex-direction:column;gap:7px;}
+.stat-req{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.stat-badge{
+  font-size:13px;padding:3px 11px;border-radius:6px;font-weight:600;
+  background:var(--panel2);border:1px solid var(--line);
+}
+.stat-badge.t1{background:linear-gradient(145deg,#3a3a1d,#2c2c16);border-color:#6b6330;color:var(--gold2);}
+.stat-badge.t2{background:#243040;border-color:#3a4a5e;color:#a8c8e8;}
+.stat-badge.t3{background:var(--panel2);color:var(--txt2);border-style:dashed;}
+.keep-n{font-size:12px;color:var(--txt3);}
+.keep-n b{color:var(--green);font-size:13px;}
+.req-from{font-size:11.5px;color:var(--txt3);display:flex;gap:4px;flex-wrap:wrap;}
+.req-from .fn{padding:0 5px;border-radius:4px;background:#222b36;}
+.req-from .fn.alt{opacity:.7;}
+.slot-none{color:var(--txt3);font-size:12.5px;font-style:italic;}
+.tier-tag{font-size:11px;padding:1px 7px;border-radius:4px;font-weight:600;}
+.tier-tag.keep{background:#1e3a2a;color:#7fe0aa;}
+.tier-tag.trans{background:#3a3320;color:#e0c07f;}
+.tier-tag.fodder{background:#3a2024;color:#ff9d9d;}
+.rare-tag{font-size:11px;padding:1px 7px;border-radius:4px;background:#3a2438;color:#e9a6e0;border:1px solid #5c3a56;}
+.swap-tag{font-size:10.5px;padding:1px 6px;border-radius:4px;background:#243b3a;color:#7fd6cf;border:1px solid #35585a;margin-left:2px;}
+.sub-hint-row{font-size:11.5px;color:var(--txt3);}
+.sub-hint-row b{color:var(--txt2);font-weight:500;}
+.no-need{padding:14px;text-align:center;color:var(--txt3);font-size:13px;background:#191f27;}
+
+/* ---------- subs ---------- */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media (max-width:1000px){.two-col{grid-template-columns:1fr;}}
+.sub-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:10px 0;}
+.sub-input{display:flex;align-items:center;gap:6px;font-size:12.5px;}
+.sub-input label{flex:none;width:74px;color:var(--txt2);}
+.sub-input input{
+  width:100%;padding:4px 8px;border-radius:6px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--txt);font-size:12.5px;
+}
+.sub-input input:focus{outline:none;border-color:var(--gold);}
+.score-result{margin-top:12px;padding:14px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);min-height:64px;}
+.score-result .big{font-size:26px;font-weight:700;}
+.form-row{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap;align-items:flex-end;}
+.form-row input{padding:7px 11px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:13px;font-family:inherit;}
+.rule-block{border-left:3px solid var(--gold);padding:8px 0 8px 13px;margin:12px 0;}
+.rule-block h4{font-size:13.5px;color:var(--gold2);margin-bottom:3px;}
+.rule-block p{margin:0;font-size:12.5px;color:var(--txt2);}
+.rule-block.s{border-color:var(--green);}
+.rule-block.a{border-color:var(--blue);}
+.rule-block.b{border-color:var(--orange);}
+.rule-block.c{border-color:var(--red);}
+
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+table.tbl th,table.tbl td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line);}
+table.tbl th{color:var(--txt3);font-weight:500;font-size:12px;background:#171d26;position:sticky;top:0;}
+table.tbl tr:hover td{background:#1d242e;}
+.wbar{display:inline-block;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--gold),#8a7ad0);min-width:2px;}
+
+/* ---------- drawer / modal ---------- */
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90;backdrop-filter:blur(2px);}
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;width:min(560px,94vw);z-index:100;
+  background:var(--bg2);border-left:1px solid var(--line);
+  display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,.5);
+}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);}
+.drawer-head h2{font-size:16px;color:var(--gold2);}
+.drawer-body{flex:1;overflow-y:auto;padding:18px 20px;}
+.drawer-foot{display:flex;align-items:center;gap:10px;padding:14px 20px;border-top:1px solid var(--line);background:var(--panel);}
+.modal{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100;
+  width:min(620px,94vw);max-height:82vh;background:var(--bg2);
+  border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.modal-body{padding:16px 22px 22px;overflow-y:auto;font-size:13.5px;color:var(--txt2);}
+.modal-body h4{color:var(--gold2);margin:16px 0 6px;font-size:14px;}
+.modal-body ol,.modal-body ul{margin:6px 0;padding-left:22px;}
+.modal-body li{margin:4px 0;}
+.modal-body b{color:var(--txt);}
+
+/* ---------- drawer form ---------- */
+.fgroup{margin-bottom:20px;}
+.fgroup>label,.fgroup>.glabel{display:block;font-size:13px;color:var(--gold2);font-weight:600;margin-bottom:8px;}
+.hint{font-size:11.5px;color:var(--txt3);font-weight:400;margin-left:6px;}
+.build-item{
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;
+}
+.build-item .bi-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.build-item select{flex:1;padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:12.5px;font-family:inherit;max-width:46%;}
+.build-item .rm{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:16px;}
+.build-item .rm:hover{color:var(--red);}
+.prio-tag{font-size:11px;padding:2px 8px;border-radius:20px;flex:none;}
+.prio-tag.main{background:#3a3a1d;color:var(--gold2);}
+.prio-tag.alt{background:var(--panel2);color:var(--txt2);}
+.ms-list{display:flex;flex-direction:column;gap:5px;}
+.ms-item{
+  display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+  border-radius:7px;padding:6px 10px;font-size:13px;
+}
+.ms-item select{flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:12.5px;font-family:inherit;}
+.ms-item .ord{color:var(--txt3);font-size:12px;width:34px;flex:none;}
+.ms-item .up,.ms-item .down{background:none;border:none;color:var(--txt3);cursor:pointer;padding:0 3px;font-size:13px;}
+.ms-item .up:hover,.ms-item .down:hover{color:var(--gold);}
+.w-row{display:flex;align-items:center;gap:9px;margin-bottom:5px;}
+.w-row .wn{flex:none;width:82px;font-size:12.5px;color:var(--txt2);}
+.w-row input[type=range]{flex:1;accent-color:var(--gold);}
+.w-row .wv{flex:none;width:34px;text-align:right;font-size:12px;color:var(--gold2);}
+input[type=text],input.txt{
+  padding:7px 11px;border-radius:7px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--txt);font-size:13px;font-family:inherit;width:100%;
+}
+input[type=text]:focus{outline:none;border-color:var(--gold);}
+
+.chip-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.chip{font-size:12px;padding:3px 10px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--txt2);display:flex;gap:6px;align-items:center;}
+.chip .x{cursor:pointer;color:var(--txt3);}
+.chip .x:hover{color:var(--red);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+.notes{margin:6px 0;padding-left:20px;}
+.notes li{margin:5px 0;}
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  background:#2b3442;color:var(--txt);padding:11px 22px;border-radius:8px;
+  border:1px solid var(--line);z-index:200;font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+
+.print-only{display:none;}
+.print-meta{font-size:11px;color:#666;margin:0 0 12px;}
+
+/* ---------- print ---------- */
+@media print{
+  .topbar,.tabs,.toolbar,.summary-strip,.btn,.drawer,.modal,.modal-mask,.toast,.set-users{display:none !important;}
+  .tabpane{display:none !important;}
+  #tab-plan.tabpane{display:block !important;}
+  .print-only{display:block;}
+  body{background:#fff;color:#111;font-size:11.5px;}
+  .set-block{border-color:#bbb;page-break-inside:avoid;}
+  .set-head{background:#f0f0f0 !important;}
+  .stat-badge{border-color:#999;}
+  .stat-badge.t1{background:#fff6dd !important;color:#7a5c00 !important;}
+  .slot-name{background:#f6f6f6 !important;color:#333 !important;}
+  .slot-name,.stat-badge,.req-from,.set-head h3{color:#111 !important;}
+  main{padding:0;}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">遗</span>
+    <div>
+      <h1>原神圣遗物锁定方案生成器</h1>
+      <p class="sub">输入角色配装需求 → 汇总输出每套圣遗物的锁定清单</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="saveHint" class="save-hint">数据保存在本机浏览器</span>
+    <button id="btnHelp" class="btn ghost">使用说明</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="chars">① 角色配置</button>
+  <button class="tab" data-tab="plan">② 锁定方案</button>
+  <button class="tab" data-tab="subs">③ 副词条规则</button>
+  <button class="tab" data-tab="data">④ 数据管理</button>
+</nav>
+
+<main>
+  <!-- ============ 角色配置 ============ -->
+  <section id="tab-chars" class="tabpane active">
+    <div class="toolbar">
+      <input id="charSearch" type="search" placeholder="搜索角色 / 套装 / 国度 / 定位…">
+      <div class="seg" id="elemFilter">
+        <button class="seg-btn active" data-elem="all">全部</button>
+        <button class="seg-btn" data-elem="pyro">火</button>
+        <button class="seg-btn" data-elem="hydro">水</button>
+        <button class="seg-btn" data-elem="cryo">冰</button>
+        <button class="seg-btn" data-elem="electro">雷</button>
+        <button class="seg-btn" data-elem="anemo">风</button>
+        <button class="seg-btn" data-elem="geo">岩</button>
+        <button class="seg-btn" data-elem="dendro">草</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="onlyEnabled"> 只看已启用</label>
+      <span class="spacer"></span>
+      <span class="count-badge">已启用 <b id="enabledCount">0</b> 个角色</span>
+      <button id="btnAddChar" class="btn primary">+ 新增角色</button>
+    </div>
+
+    <div class="toolbar batch-bar">
+      <span class="bar-label">批量</span>
+      <button class="btn sm" data-batch="all">全选</button>
+      <button class="btn sm" data-batch="none">全不选</button>
+      <button class="btn sm" data-batch="invert">反选</button>
+      <span class="bar-div"></span>
+      <span class="bar-label">按属性</span>
+      <span class="btn-grp" id="elemBatch"></span>
+      <span class="bar-div"></span>
+      <span class="bar-label">按国度</span>
+      <span class="btn-grp" id="regionBatch"></span>
+      <span class="bar-div"></span>
+      <span class="bar-label">按定位</span>
+      <span class="btn-grp" id="roleBatch"></span>
+    </div>
+    <p class="batch-hint">属性 / 国度 / 定位：点一次全选该类、再点一次取消，可叠加组合，对<b>全部角色</b>生效；「全选 / 反选」只对当前筛选结果生效</p>
+
+    <div id="charGrid" class="char-grid"></div>
+  </section>
+
+  <!-- ============ 锁定方案 ============ -->
+  <section id="tab-plan" class="tabpane">
+    <div class="toolbar wrap">
+      <label class="fld">套装筛选
+        <select id="planSetFilter"><option value="all">全部套装</option></select>
+      </label>
+      <label class="fld">部位筛选
+        <select id="planSlotFilter">
+          <option value="all">全部部位</option>
+          <option value="sands">时之沙</option>
+          <option value="goblet">空之杯</option>
+          <option value="circlet">理之冠</option>
+        </select>
+      </label>
+      <label class="chk"><input type="checkbox" id="planHideUnused" checked> 隐藏无人需要的套装</label>
+      <label class="chk"><input type="checkbox" id="planAltBuild" checked> 计入备选配装</label>
+      <span class="spacer"></span>
+      <button id="btnCopyPlan" class="btn">复制清单</button>
+      <button id="btnCsvPlan" class="btn">导出 CSV</button>
+      <button id="btnPrint" class="btn">打印 / 存 PDF</button>
+    </div>
+
+    <div id="planSummary" class="summary-strip"></div>
+    <div id="planOverview" class="overview-grid"></div>
+    <h2 class="print-only">原神圣遗物锁定清单</h2>
+    <p class="print-only print-meta" id="printMeta"></p>
+    <div id="planBody"></div>
+  </section>
+
+  <!-- ============ 副词条规则 ============ -->
+  <section id="tab-subs" class="tabpane">
+    <div class="two-col">
+      <div class="card">
+        <h3>通用分档规则</h3>
+        <p class="muted small">根据你启用的角色，自动汇总出的主词条白名单 + 副词条判定逻辑。游戏内可照此执行锁定。</p>
+        <div id="subRules"></div>
+      </div>
+
+      <div class="card">
+        <h3>胚子评分器</h3>
+        <p class="muted small">输入一件圣遗物的信息，快速判断值不值得留。</p>
+        <div class="form-row">
+          <label class="fld">套装
+            <select id="scoreSet"><option value="">（不限）</option></select>
+          </label>
+          <label class="fld">部位
+            <select id="scoreSlot"></select>
+          </label>
+        </div>
+        <div class="form-row">
+          <label class="fld">主词条
+            <select id="scoreMain"></select>
+          </label>
+        </div>
+        <div id="scoreSubs" class="sub-inputs"></div>
+        <div id="scoreResult" class="score-result"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>各套装推荐副词条</h3>
+      <p class="muted small">取该套装下所有需求角色的副词条权重平均值，用于判断「这个胚子值得喂到 20 级吗」。</p>
+      <div id="setSubTable"></div>
+    </div>
+  </section>
+
+  <!-- ============ 数据管理 ============ -->
+  <section id="tab-data" class="tabpane">
+    <div class="card">
+      <h3>备份与恢复</h3>
+      <p class="muted small">配置保存在浏览器 localStorage，换设备或清缓存前请先导出。</p>
+      <div class="btn-row">
+        <button id="btnExportJson" class="btn primary">导出配置 JSON</button>
+        <button id="btnImportJson" class="btn">导入配置 JSON</button>
+        <input type="file" id="fileImport" accept=".json" hidden>
+        <button id="btnClearEnabled" class="btn">清空启用状态</button>
+        <button id="btnReset" class="btn danger">恢复内置默认库</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>新增自定义套装</h3>
+      <p class="muted small">版本更新后若新增套装，可自行添加（刷新前一直有效）。</p>
+      <div class="form-row">
+        <input id="newSetName" placeholder="套装名称，例：某某之梦">
+        <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%">
+        <button id="btnAddSet" class="btn">添加</button>
+      </div>
+      <div id="customSetList" class="chip-wrap"></div>
+    </div>
+
+    <div class="card">
+      <h3>关于数据</h3>
+      <ul class="muted small notes">
+        <li>内置 <b id="statCharCount">0</b> 个角色的配装，整理自社区常见推荐，随版本变动请自行校正。</li>
+        <li>「主推 / 备选」权重：主推 = 1.0，备选 = 0.5；主词条优先级 1/2/3 权重 = 1.0 / 0.5 / 0.25。</li>
+        <li>建议保留件数 = 以该主词条为最优解的角色数（同一角色多套配装不重复计数），区间 1–4。</li>
+        <li>2+2 配装对单套的件数需求更低，汇总时按 0.6 系数折算。</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<!-- ========== 角色编辑抽屉 ========== -->
+<div id="modalMask" class="modal-mask hidden"></div>
+<aside id="charDrawer" class="drawer hidden">
+  <div class="drawer-head">
+    <h2 id="drawerTitle">编辑角色</h2>
+    <button id="btnCloseDrawer" class="icon-btn">×</button>
+  </div>
+  <div id="drawerBody" class="drawer-body"></div>
+  <div class="drawer-foot">
+    <button id="btnDeleteChar" class="btn danger hidden">删除角色</button>
+    <span class="spacer"></span>
+    <button id="btnCancelEdit" class="btn ghost">取消</button>
+    <button id="btnSaveChar" class="btn primary">保存</button>
+  </div>
+</aside>
+
+<!-- ========== 使用说明 ========== -->
+<div id="helpMask" class="modal-mask hidden"></div>
+<div id="helpBox" class="modal hidden">
+  <div class="drawer-head">
+    <h2>使用说明</h2>
+    <button id="btnCloseHelp" class="icon-btn">×</button>
+  </div>
+  <div class="modal-body">
+    <h4>三步走</h4>
+    <ol>
+      <li><b>① 角色配置</b>：勾选你实际要养的角色。点卡片可改套装、主词条优先级和副词条权重。主词条越靠前优先级越高。</li>
+      <li><b>② 锁定方案</b>：系统按「套装 × 部位 × 主词条」汇总，输出每个套装每个部位该留什么、留几件、给谁用。</li>
+      <li><b>③ 副词条规则</b>：给出分档判定 + 胚子评分器，解决「主词条对了但副词条能不能留」。</li>
+    </ol>
+    <h4>怎么看结果</h4>
+    <ul>
+      <li><b>必留</b>：有角色把它当最优解，至少留 1 件，优质胚子可留 2 件。</li>
+      <li><b>过渡</b>：只有次优/备选配装需要，优先留已有的，别专门刷。</li>
+      <li><b>可喂</b>：当前没有任何已启用角色需要，直接当狗粮。</li>
+    </ul>
+    <h4>注意</h4>
+    <ul>
+      <li>花和羽毛主词条固定，只按套装需求决定留几件，看副词条质量。</li>
+      <li>空之杯的元素伤杯掉率极低，同套装的「对元素杯」建议全部保留。</li>
+      <li>数据存在本机浏览器，换设备用「数据管理 → 导出 JSON」迁移。</li>
+    </ul>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+/* ============================================================
+ * 原神圣遗物锁定方案生成器 —— 内置数据
+ * 说明：内置配装整理自社区常见推荐思路，仅作为初始化参考。
+ *      版本更迭后请在「角色配置」页自行增删改，所有改动保存在本地浏览器。
+ * ============================================================ */
+
+/* ---------- 元素 ---------- */
+const ELEMENTS = {
+  pyro:    { name: '火', color: '#ff7a59' },
+  hydro:   { name: '水', color: '#4fc3f7' },
+  cryo:    { name: '冰', color: '#8ad8ff' },
+  electro: { name: '雷', color: '#b98cff' },
+  anemo:   { name: '风', color: '#5fe0c0' },
+  geo:     { name: '岩', color: '#ffd166' },
+  dendro:  { name: '草', color: '#a5d66a' },
+};
+
+/* ---------- 国度 ---------- */
+const REGIONS = [
+  { id: 'mondstadt', name: '蒙德',      color: '#7fb3d5' },
+  { id: 'liyue',     name: '璃月',      color: '#d9a441' },
+  { id: 'inazuma',   name: '稻妻',      color: '#b98cff' },
+  { id: 'sumeru',    name: '须弥',      color: '#a5d66a' },
+  { id: 'fontaine',  name: '枫丹',      color: '#5fc9d8' },
+  { id: 'natlan',    name: '纳塔',      color: '#ff8a5c' },
+  { id: 'snezhnaya', name: '至冬 / 其他', color: '#9fb3c8' },
+];
+const REGION_NAME  = Object.fromEntries(REGIONS.map(r => [r.id, r.name]));
+const REGION_COLOR = Object.fromEntries(REGIONS.map(r => [r.id, r.color]));
+
+/* ---------- 队伍定位（一个角色可有多个） ---------- */
+const ROLES = [
+  { id: 'maindps', name: '主C' },
+  { id: 'subdps',  name: '副C' },
+  { id: 'support', name: '辅助' },
+];
+const ROLE_NAME = Object.fromEntries(ROLES.map(r => [r.id, r.name]));
+
+/* ---------- 部位 ---------- */
+const SLOTS = [
+  { id: 'flower',  name: '生之花', short: '花' },
+  { id: 'plume',   name: '死之羽', short: '羽' },
+  { id: 'sands',   name: '时之沙', short: '沙' },
+  { id: 'goblet',  name: '空之杯', short: '杯' },
+  { id: 'circlet', name: '理之冠', short: '冠' },
+];
+
+/* ---------- 主词条库 ---------- */
+const MAIN_STATS = {
+  flower:  [{ id: 'hp',  name: '生命值', fixed: true }],
+  plume:   [{ id: 'atk', name: '攻击力', fixed: true }],
+  sands:   [
+    { id: 'atkP', name: '攻击力%' },
+    { id: 'hpP',  name: '生命值%' },
+    { id: 'defP', name: '防御力%' },
+    { id: 'em',   name: '元素精通' },
+    { id: 'er',   name: '元素充能效率' },
+  ],
+  goblet:  [
+    { id: 'pyro',    name: '火元素伤害加成' },
+    { id: 'hydro',   name: '水元素伤害加成' },
+    { id: 'cryo',    name: '冰元素伤害加成' },
+    { id: 'electro', name: '雷元素伤害加成' },
+    { id: 'anemo',   name: '风元素伤害加成' },
+    { id: 'geo',     name: '岩元素伤害加成' },
+    { id: 'dendro',  name: '草元素伤害加成' },
+    { id: 'phys',    name: '物理伤害加成' },
+    { id: 'atkP',    name: '攻击力%' },
+    { id: 'hpP',     name: '生命值%' },
+    { id: 'defP',    name: '防御力%' },
+    { id: 'em',      name: '元素精通' },
+  ],
+  circlet: [
+    { id: 'cr',   name: '暴击率' },
+    { id: 'cd',   name: '暴击伤害' },
+    { id: 'heal', name: '治疗加成' },
+    { id: 'atkP', name: '攻击力%' },
+    { id: 'hpP',  name: '生命值%' },
+    { id: 'defP', name: '防御力%' },
+    { id: 'em',   name: '元素精通' },
+  ],
+};
+
+/* ---------- 副词条库 ---------- */
+const SUB_STATS = [
+  { id: 'cr',   name: '暴击率',     max: 3.9  },
+  { id: 'cd',   name: '暴击伤害',   max: 7.8  },
+  { id: 'atkP', name: '攻击力%',    max: 5.8  },
+  { id: 'hpP',  name: '生命值%',    max: 5.8  },
+  { id: 'defP', name: '防御力%',    max: 7.3  },
+  { id: 'em',   name: '元素精通',   max: 23   },
+  { id: 'er',   name: '元素充能效率', max: 6.5 },
+  { id: 'atk',  name: '攻击力',     max: 19   },
+  { id: 'hp',   name: '生命值',     max: 299  },
+  { id: 'def',  name: '防御力',     max: 23   },
+];
+
+/* ---------- 圣遗物套装 ---------- */
+// bonus: 2件套效果简述（用于 2+2 搭配参考）
+const SETS = [
+  { name: '翠绿之影',             bonus: '风元素伤害+15%' },
+  { name: '炽烈的炎之魔女',       bonus: '火元素伤害+15%' },
+  { name: '如雷的盛怒',           bonus: '雷元素伤害+15%' },
+  { name: '平息鸣雷的尊者',       bonus: '受到的雷元素伤害-40%' },
+  { name: '渡过烈火的贤人',       bonus: '受到的火元素伤害-40%' },
+  { name: '冰风迷途的勇士',       bonus: '冰元素伤害+15%' },
+  { name: '被怜爱的少女',         bonus: '治疗加成+15%' },
+  { name: '昔日宗室之仪',         bonus: '元素爆发伤害+20%' },
+  { name: '流浪大地的乐团',       bonus: '元素精通+80' },
+  { name: '沉沦之心',             bonus: '水元素伤害+15%' },
+  { name: '苍白之火',             bonus: '物理伤害+25%' },
+  { name: '染血的骑士道',         bonus: '物理伤害+25%' },
+  { name: '千岩牢固',             bonus: '生命值+20%' },
+  { name: '逆飞的流星',           bonus: '护盾强效+35%' },
+  { name: '悠古的磐岩',           bonus: '岩元素伤害+15%' },
+  { name: '绝缘之旗印',           bonus: '元素充能效率+20%' },
+  { name: '追忆之注连',           bonus: '攻击力+18%' },
+  { name: '华馆梦醒形骸记',       bonus: '防御力+30%' },
+  { name: '海染砗磲',             bonus: '治疗加成+15%' },
+  { name: '辰砂往生录',           bonus: '攻击力+18%' },
+  { name: '来歆余响',             bonus: '攻击力+18%' },
+  { name: '深林的记忆',           bonus: '草元素伤害+15%' },
+  { name: '饰金之梦',             bonus: '元素精通+80' },
+  { name: '乐园遗落之花',         bonus: '元素精通+80' },
+  { name: '沙上楼阁史话',         bonus: '风元素伤害+15%' },
+  { name: '水仙十字之圣遗物',     bonus: '普通攻击/重击伤害+15%' },
+  { name: '花海甘露之光',         bonus: '生命值+20%' },
+  { name: '昔时之歌',             bonus: '治疗加成+15%' },
+  { name: '回声之林夜话',         bonus: '攻击力+18%' },
+  { name: '谐律异想断章',         bonus: '攻击力+18%' },
+  { name: '未泯的梦',             bonus: '元素精通+80' },
+  { name: '黄金剧团',             bonus: '元素战技伤害+20%' },
+  { name: '黑曜秘典',             bonus: '夜魂加持下伤害+15%' },
+  { name: '烬城勇者绘卷',         bonus: '元素战技/爆发伤害+15%' },
+  { name: '长夜之誓',             bonus: '下落攻击伤害+25%' },
+  { name: '深廊终曲',             bonus: '冰元素伤害+15%' },
+  { name: '戍卫之誓',             bonus: '攻击力+18%' },
+];
+const SET_NAMES = SETS.map(s => s.name);
+const SET_BONUS = Object.fromEntries(SETS.map(s => [s.name, s.bonus]));
+
+/* ---------- 副词条权重预设 ---------- */
+const SUB_PRESETS = {
+  crit:    { cr: 1, cd: 1, atkP: 0.7, er: 0.25, em: 0.25, atk: 0.15, hpP: 0, hp: 0, defP: 0, def: 0 },
+  critHp:  { cr: 1, cd: 1, hpP: 0.7, er: 0.3,  em: 0.2,  hp: 0.15, atkP: 0.15, atk: 0, defP: 0, def: 0 },
+  critDef: { cr: 1, cd: 1, defP: 0.7, er: 0.2, def: 0.15, atkP: 0.1, atk: 0, hpP: 0, hp: 0, em: 0 },
+  em:      { em: 1, er: 0.5, cr: 0.4, cd: 0.4, atkP: 0.1, hpP: 0, hp: 0, defP: 0, def: 0, atk: 0 },
+  hp:      { hpP: 1, er: 0.6, cr: 0.3, cd: 0.3, hp: 0.2, em: 0.1, atkP: 0, atk: 0, defP: 0, def: 0 },
+  def:     { defP: 1, cr: 0.5, cd: 0.5, er: 0.3, def: 0.2, atkP: 0, atk: 0, hpP: 0, hp: 0, em: 0 },
+  er:      { er: 1, cr: 0.4, cd: 0.4, hpP: 0.3, atkP: 0.2, em: 0.1, hp: 0.1, atk: 0, defP: 0, def: 0 },
+  atk:     { atkP: 1, cr: 0.5, cd: 0.5, er: 0.3, atk: 0.2, em: 0.1, hpP: 0, hp: 0, defP: 0, def: 0 },
+  heal:    { hpP: 1, er: 0.7, hp: 0.3, atkP: 0.1, cr: 0.05, cd: 0.05, atk: 0, defP: 0, def: 0, em: 0 },
+};
+
+/* ============================================================
+ * 角色元信息：国度 + 定位
+ * 格式 '角色名': [ 国度, [定位...] ]
+ * 定位第一个为主定位，用于卡片显示；批量筛选时任一命中即选中
+ * ============================================================ */
+const CH_META = {
+  /* 蒙德 */
+  '琴': ['mondstadt', ['support']],
+  '迪卢克': ['mondstadt', ['maindps']],
+  '可莉': ['mondstadt', ['maindps']],
+  '温迪': ['mondstadt', ['support']],
+  '班尼特': ['mondstadt', ['support', 'subdps']],
+  '迪奥娜': ['mondstadt', ['support']],
+  '雷泽': ['mondstadt', ['maindps']],
+  '芭芭拉': ['mondstadt', ['support']],
+  '罗莎莉亚': ['mondstadt', ['subdps']],
+  '砂糖': ['mondstadt', ['support']],
+  '菲谢尔': ['mondstadt', ['subdps']],
+  '诺艾尔': ['mondstadt', ['maindps']],
+  '莫娜': ['mondstadt', ['support', 'subdps']],
+  '阿贝多': ['mondstadt', ['subdps']],
+  '优菈': ['mondstadt', ['maindps']],
+  '烟绯': ['mondstadt', ['maindps']],
+  '塔利雅': ['mondstadt', ['support']],
+  '米卡': ['mondstadt', ['support']],
+
+  /* 璃月 */
+  '刻晴': ['liyue', ['maindps']],
+  '凝光': ['liyue', ['maindps']],
+  '香菱': ['liyue', ['subdps']],
+  '行秋': ['liyue', ['subdps']],
+  '夜兰': ['liyue', ['subdps']],
+  '钟离': ['liyue', ['support']],
+  '甘雨': ['liyue', ['maindps', 'subdps']],
+  '胡桃': ['liyue', ['maindps']],
+  '七七': ['liyue', ['support']],
+  '申鹤': ['liyue', ['support']],
+  '云堇': ['liyue', ['support']],
+  '瑶瑶': ['liyue', ['support']],
+  '白术': ['liyue', ['support']],
+  '闲云': ['liyue', ['support', 'subdps']],
+  '魈': ['liyue', ['maindps']],
+  '嘉明': ['liyue', ['maindps']],
+  '重云': ['liyue', ['subdps']],
+  '辛焱': ['liyue', ['support']],
+
+  /* 稻妻 */
+  '雷电将军': ['inazuma', ['maindps']],
+  '八重神子': ['inazuma', ['subdps']],
+  '神里绫华': ['inazuma', ['maindps']],
+  '宵宫': ['inazuma', ['maindps']],
+  '珊瑚宫心海': ['inazuma', ['support', 'maindps']],
+  '荒泷一斗': ['inazuma', ['maindps']],
+  '五郎': ['inazuma', ['support']],
+  '九条裟罗': ['inazuma', ['support']],
+  '枫原万叶': ['inazuma', ['support']],
+  '托马': ['inazuma', ['support']],
+  '早柚': ['inazuma', ['support']],
+  '久岐忍': ['inazuma', ['support', 'subdps']],
+  '流浪者': ['inazuma', ['maindps']],
+  '梦见月瑞希': ['inazuma', ['support']],
+  '绮良良': ['inazuma', ['support']],
+  '鹿野院平藏': ['inazuma', ['maindps']],
+
+  /* 须弥 */
+  '提纳里': ['sumeru', ['maindps']],
+  '柯莱': ['sumeru', ['subdps']],
+  '多莉': ['sumeru', ['support']],
+  '纳西妲': ['sumeru', ['subdps', 'support']],
+  '赛诺': ['sumeru', ['maindps']],
+  '艾尔海森': ['sumeru', ['maindps']],
+  '迪希雅': ['sumeru', ['subdps', 'support']],
+  '卡维': ['sumeru', ['maindps', 'support']],
+  '妮露': ['sumeru', ['support']],
+  '坎蒂丝': ['sumeru', ['support']],
+
+  /* 枫丹 */
+  '林尼': ['fontaine', ['maindps']],
+  '琳妮特': ['fontaine', ['subdps', 'support']],
+  '那维莱特': ['fontaine', ['maindps']],
+  '莱欧斯利': ['fontaine', ['maindps']],
+  '芙宁娜': ['fontaine', ['subdps', 'support']],
+  '娜维娅': ['fontaine', ['maindps']],
+  '克洛琳德': ['fontaine', ['maindps']],
+  '夏沃蕾': ['fontaine', ['support']],
+  '爱可菲': ['fontaine', ['support']],
+  '艾梅莉埃': ['fontaine', ['subdps']],
+  '菲米尼': ['fontaine', ['maindps']],
+  '希格雯': ['fontaine', ['support']],
+  '夏洛蒂': ['fontaine', ['support']],
+
+  /* 纳塔 */
+  '玛拉妮': ['natlan', ['maindps']],
+  '基尼奇': ['natlan', ['maindps']],
+  '卡齐娜': ['natlan', ['subdps']],
+  '希诺宁': ['natlan', ['support']],
+  '恰斯卡': ['natlan', ['maindps']],
+  '欧洛伦': ['natlan', ['subdps', 'support']],
+  '玛薇卡': ['natlan', ['maindps', 'support']],
+  '瓦雷莎': ['natlan', ['maindps']],
+  '伊安珊': ['natlan', ['support']],
+  '伊法': ['natlan', ['support']],
+
+  /* 至冬 / 其他 */
+  '达达利亚': ['snezhnaya', ['maindps']],
+  '阿蕾奇诺': ['snezhnaya', ['maindps']],
+  '丝柯克': ['snezhnaya', ['maindps']],
+};
+
+/* ============================================================
+ * 内置角色库
+ * 紧凑格式：[ 名称, 元素, 副词条预设, builds, 沙, 杯, 冠 ]
+ *   builds: 数组，第 1 项为主推（4件套或2+2），其余为备选
+ *           单项含 1 个套装名 = 4件套；含 2 个 = 2+2
+ *   主词条数组按优先级从高到低排列（第1项=最优）
+ * ============================================================ */
+const RAW_CHARS = [
+  /* ---------- 火 ---------- */
+  ['胡桃', 'pyro', 'critHp', [['炽烈的炎之魔女'], ['追忆之注连']], ['em', 'hpP'], ['pyro', 'hpP'], ['cr', 'cd']],
+  ['迪卢克', 'pyro', 'crit', [['炽烈的炎之魔女'], ['未泯的梦']], ['atkP'], ['pyro'], ['cr', 'cd']],
+  ['可莉', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd']],
+  ['宵宫', 'pyro', 'crit', [['追忆之注连'], ['来歆余响'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd']],
+  ['林尼', 'pyro', 'crit', [['辰砂往生录'], ['来歆余响']], ['atkP'], ['pyro'], ['cr', 'cd']],
+  ['香菱', 'pyro', 'crit', [['绝缘之旗印'], ['炽烈的炎之魔女']], ['er', 'atkP', 'em'], ['pyro'], ['cr', 'cd']],
+  ['班尼特', 'pyro', 'heal', [['昔日宗室之仪'], ['被怜爱的少女']], ['er', 'hpP'], ['hpP'], ['hpP', 'heal']],
+  ['玛薇卡', 'pyro', 'crit', [['黑曜秘典'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd']],
+  ['阿蕾奇诺', 'pyro', 'crit', [['谐律异想断章'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd']],
+  ['托马', 'pyro', 'hp', [['千岩牢固'], ['绝缘之旗印']], ['hpP', 'er'], ['hpP'], ['hpP']],
+  ['烟绯', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd']],
+  ['迪希雅', 'pyro', 'hp', [['千岩牢固'], ['烬城勇者绘卷']], ['hpP'], ['pyro', 'hpP'], ['cr', 'cd', 'hpP']],
+  ['嘉明', 'pyro', 'crit', [['未泯的梦'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd']],
+  ['辛焱', 'pyro', 'def', [['千岩牢固'], ['逆飞的流星']], ['defP'], ['phys', 'defP'], ['cr', 'defP']],
+
+  /* ---------- 水 ---------- */
+  ['行秋', 'hydro', 'crit', [['绝缘之旗印'], ['沉沦之心']], ['atkP', 'er'], ['hydro'], ['cr', 'cd']],
+  ['夜兰', 'hydro', 'critHp', [['绝缘之旗印'], ['沉沦之心'], ['千岩牢固']], ['hpP'], ['hydro'], ['cr', 'cd']],
+  ['达达利亚', 'hydro', 'crit', [['沉沦之心'], ['水仙十字之圣遗物']], ['atkP'], ['hydro'], ['cr', 'cd']],
+  ['珊瑚宫心海', 'hydro', 'hp', [['海染砗磲'], ['千岩牢固']], ['hpP', 'er'], ['hydro', 'hpP'], ['heal', 'hpP']],
+  ['莫娜', 'hydro', 'er', [['绝缘之旗印'], ['昔日宗室之仪']], ['er', 'atkP'], ['hydro'], ['cr', 'cd']],
+  ['妮露', 'hydro', 'hp', [['乐园遗落之花'], ['千岩牢固', '乐园遗落之花']], ['hpP'], ['hpP'], ['hpP']],
+  ['芙宁娜', 'hydro', 'critHp', [['黄金剧团'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd']],
+  ['那维莱特', 'hydro', 'critHp', [['水仙十字之圣遗物'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd']],
+  ['芭芭拉', 'hydro', 'heal', [['被怜爱的少女'], ['海染砗磲']], ['hpP'], ['hpP'], ['heal']],
+  ['玛拉妮', 'hydro', 'critHp', [['黑曜秘典'], ['沉沦之心']], ['hpP'], ['hydro'], ['cr', 'cd']],
+  ['梦见月瑞希', 'hydro', 'heal', [['昔时之歌'], ['海染砗磲']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP']],
+  ['塔利雅', 'hydro', 'atk', [['昔日宗室之仪'], ['绝缘之旗印']], ['atkP', 'er'], ['hydro', 'atkP'], ['cr', 'cd']],
+  ['希格雯', 'hydro', 'heal', [['昔时之歌'], ['海染砗磲']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP']],
+  ['坎蒂丝', 'hydro', 'hp', [['千岩牢固'], ['绝缘之旗印']], ['hpP', 'er'], ['hpP'], ['hpP']],
+
+  /* ---------- 冰 ---------- */
+  ['甘雨', 'cryo', 'crit', [['冰风迷途的勇士'], ['流浪大地的乐团']], ['atkP'], ['cryo'], ['cd', 'cr']],
+  ['神里绫华', 'cryo', 'crit', [['冰风迷途的勇士'], ['沉沦之心']], ['atkP'], ['cryo'], ['cr', 'cd']],
+  ['优菈', 'cryo', 'crit', [['苍白之火'], ['苍白之火', '染血的骑士道']], ['atkP'], ['phys'], ['cr', 'cd']],
+  ['申鹤', 'cryo', 'atk', [['千岩牢固'], ['冰风迷途的勇士', '追忆之注连']], ['atkP'], ['atkP'], ['atkP']],
+  ['莱欧斯利', 'cryo', 'crit', [['水仙十字之圣遗物'], ['冰风迷途的勇士']], ['atkP'], ['cryo'], ['cr', 'cd']],
+  ['迪奥娜', 'cryo', 'hp', [['千岩牢固'], ['被怜爱的少女']], ['hpP', 'er'], ['hpP'], ['hpP', 'heal']],
+  ['罗莎莉亚', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo'], ['cr', 'cd']],
+  ['七七', 'cryo', 'heal', [['被怜爱的少女'], ['千岩牢固']], ['atkP', 'er'], ['atkP'], ['heal']],
+  ['爱可菲', 'cryo', 'atk', [['黄金剧团'], ['冰风迷途的勇士']], ['atkP'], ['cryo', 'atkP'], ['cr', 'cd']],
+  ['丝柯克', 'cryo', 'crit', [['深廊终曲'], ['冰风迷途的勇士']], ['atkP'], ['cryo'], ['cr', 'cd']],
+  ['夏沃蕾', 'pyro', 'hp', [['昔日宗室之仪'], ['昔时之歌'], ['烬城勇者绘卷']], ['hpP', 'er'], ['hpP'], ['hpP', 'heal']],
+  ['重云', 'cryo', 'crit', [['冰风迷途的勇士'], ['昔日宗室之仪']], ['atkP'], ['cryo'], ['cr', 'cd']],
+  ['菲米尼', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo', 'phys'], ['cr', 'cd']],
+  ['夏洛蒂', 'cryo', 'heal', [['千岩牢固'], ['被怜爱的少女']], ['atkP', 'er'], ['atkP'], ['heal', 'atkP']],
+  ['米卡', 'cryo', 'heal', [['千岩牢固'], ['被怜爱的少女']], ['atkP', 'er'], ['atkP'], ['heal', 'atkP']],
+
+  /* ---------- 雷 ---------- */
+  ['雷电将军', 'electro', 'crit', [['绝缘之旗印']], ['er', 'atkP'], ['electro', 'atkP'], ['cr', 'cd']],
+  ['八重神子', 'electro', 'crit', [['饰金之梦'], ['如雷的盛怒']], ['atkP'], ['electro'], ['cr', 'cd']],
+  ['菲谢尔', 'electro', 'crit', [['如雷的盛怒'], ['饰金之梦'], ['绝缘之旗印']], ['atkP'], ['electro'], ['cr', 'cd']],
+  ['刻晴', 'electro', 'crit', [['如雷的盛怒'], ['饰金之梦']], ['atkP'], ['electro'], ['cd', 'cr']],
+  ['赛诺', 'electro', 'em', [['饰金之梦'], ['如雷的盛怒']], ['em', 'atkP'], ['electro'], ['cr', 'cd']],
+  ['久岐忍', 'electro', 'em', [['饰金之梦'], ['乐园遗落之花']], ['em'], ['em'], ['em']],
+  ['九条裟罗', 'electro', 'atk', [['昔日宗室之仪'], ['绝缘之旗印']], ['er', 'atkP'], ['electro', 'atkP'], ['cr', 'cd']],
+  ['雷泽', 'electro', 'crit', [['苍白之火'], ['平息鸣雷的尊者']], ['atkP'], ['phys'], ['cr', 'cd']],
+  ['克洛琳德', 'electro', 'crit', [['谐律异想断章'], ['如雷的盛怒']], ['atkP'], ['electro'], ['cr', 'cd']],
+  ['瓦雷莎', 'electro', 'crit', [['黑曜秘典'], ['长夜之誓']], ['atkP'], ['electro'], ['cr', 'cd']],
+  ['伊安珊', 'electro', 'atk', [['烬城勇者绘卷'], ['昔日宗室之仪']], ['atkP', 'er'], ['electro', 'atkP'], ['cr', 'cd']],
+  ['欧洛伦', 'electro', 'atk', [['烬城勇者绘卷'], ['绝缘之旗印']], ['atkP', 'er'], ['electro'], ['cr', 'cd']],
+  ['多莉', 'electro', 'hp', [['千岩牢固'], ['被怜爱的少女']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP']],
+
+  /* ---------- 风 ---------- */
+  ['枫原万叶', 'anemo', 'em', [['翠绿之影']], ['em'], ['em'], ['em']],
+  ['温迪', 'anemo', 'em', [['翠绿之影']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr']],
+  ['砂糖', 'anemo', 'em', [['翠绿之影']], ['em'], ['em'], ['em']],
+  ['琴', 'anemo', 'atk', [['翠绿之影'], ['被怜爱的少女']], ['atkP', 'er'], ['anemo', 'atkP'], ['atkP', 'heal']],
+  ['魈', 'anemo', 'crit', [['辰砂往生录'], ['翠绿之影', '追忆之注连']], ['atkP'], ['anemo'], ['cr', 'cd']],
+  ['鹿野院平藏', 'anemo', 'em', [['翠绿之影']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr']],
+  ['早柚', 'anemo', 'em', [['翠绿之影']], ['em', 'er'], ['em'], ['em', 'heal']],
+  ['流浪者', 'anemo', 'crit', [['沙上楼阁史话'], ['翠绿之影']], ['atkP'], ['anemo'], ['cr', 'cd']],
+  ['闲云', 'anemo', 'atk', [['昔时之歌'], ['翠绿之影']], ['atkP', 'er'], ['atkP'], ['atkP']],
+  ['恰斯卡', 'anemo', 'crit', [['黑曜秘典'], ['翠绿之影']], ['atkP'], ['anemo'], ['cr', 'cd']],
+  ['琳妮特', 'anemo', 'crit', [['翠绿之影'], ['沙上楼阁史话']], ['atkP'], ['anemo'], ['cr', 'cd']],
+  ['伊法', 'anemo', 'em', [['翠绿之影'], ['烬城勇者绘卷']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr']],
+
+  /* ---------- 岩 ---------- */
+  ['钟离', 'geo', 'hp', [['千岩牢固'], ['悠古的磐岩']], ['hpP'], ['geo', 'hpP'], ['hpP', 'cr']],
+  ['阿贝多', 'geo', 'def', [['华馆梦醒形骸记'], ['悠古的磐岩']], ['defP'], ['geo', 'defP'], ['cr', 'cd', 'defP']],
+  ['荒泷一斗', 'geo', 'def', [['华馆梦醒形骸记']], ['defP'], ['geo'], ['cr', 'cd']],
+  ['诺艾尔', 'geo', 'def', [['华馆梦醒形骸记'], ['逆飞的流星']], ['defP'], ['geo'], ['cr', 'cd']],
+  ['五郎', 'geo', 'def', [['华馆梦醒形骸记'], ['千岩牢固']], ['defP', 'er'], ['defP'], ['defP', 'cr']],
+  ['凝光', 'geo', 'crit', [['悠古的磐岩'], ['追忆之注连']], ['atkP'], ['geo'], ['cr', 'cd']],
+  ['娜维娅', 'geo', 'crit', [['回声之林夜话'], ['逆飞的流星']], ['atkP'], ['geo'], ['cr', 'cd']],
+  ['希诺宁', 'geo', 'def', [['烬城勇者绘卷'], ['华馆梦醒形骸记']], ['defP'], ['defP'], ['defP', 'heal']],
+  ['卡齐娜', 'geo', 'def', [['烬城勇者绘卷'], ['华馆梦醒形骸记']], ['defP'], ['geo', 'defP'], ['cr', 'cd']],
+  ['云堇', 'geo', 'def', [['华馆梦醒形骸记'], ['千岩牢固']], ['defP', 'er'], ['defP'], ['defP']],
+
+  /* ---------- 草 ---------- */
+  ['纳西妲', 'dendro', 'em', [['深林的记忆'], ['饰金之梦']], ['em'], ['dendro', 'em'], ['em', 'cr']],
+  ['艾尔海森', 'dendro', 'em', [['饰金之梦'], ['深林的记忆']], ['em', 'atkP'], ['dendro'], ['cr', 'cd']],
+  ['提纳里', 'dendro', 'em', [['深林的记忆'], ['流浪大地的乐团']], ['em', 'atkP'], ['dendro'], ['cr', 'cd']],
+  ['基尼奇', 'dendro', 'crit', [['黑曜秘典'], ['未泯的梦']], ['atkP'], ['dendro'], ['cr', 'cd']],
+  ['艾梅莉埃', 'dendro', 'atk', [['未泯的梦'], ['深林的记忆']], ['atkP'], ['dendro'], ['cr', 'cd']],
+  ['白术', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP', 'er'], ['hpP'], ['hpP']],
+  ['瑶瑶', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP']],
+  ['柯莱', 'dendro', 'er', [['深林的记忆'], ['绝缘之旗印']], ['er'], ['dendro'], ['cr', 'cd']],
+  ['卡维', 'dendro', 'em', [['饰金之梦'], ['深林的记忆']], ['em', 'er'], ['em'], ['em']],
+  ['绮良良', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP'], ['hpP'], ['hpP']],
+];
+
+/* ---------- 展开为完整结构 ---------- */
+function buildDefaultCharacters() {
+  return RAW_CHARS.map(([name, element, subPreset, builds, sands, goblet, circlet], i) => {
+    const meta = CH_META[name] || ['snezhnaya', ['maindps']];
+    return {
+    id: 'c' + i + '_' + name,
+    name,
+    element,
+    region: meta[0],
+    roles: meta[1].slice(),
+    enabled: false,
+    note: '',
+    custom: false,
+    builds: builds.map((sets, idx) => ({
+      sets,
+      priority: idx === 0 ? 'main' : 'alt',
+    })),
+    subs: Object.assign({}, SUB_PRESETS[subPreset] || SUB_PRESETS.crit),
+    main: {
+      sands:   sands.map(stat => ({ stat, rank: 1 })),
+      goblet:  goblet.map(stat => ({ stat, rank: 1 })),
+      circlet: circlet.map(stat => ({ stat, rank: 1 })),
+    },
+  };}).map(c => {
+    // 主词条按数组顺序赋予 rank（1 = 最优）
+    ['sands', 'goblet', 'circlet'].forEach(slot => {
+      c.main[slot].forEach((m, i) => { m.rank = i + 1; });
+    });
+    return c;
+  });
+}
+
+/* ---------- 工具：取主词条名称 ---------- */
+function mainStatName(slot, id) {
+  const list = MAIN_STATS[slot] || [];
+  const hit = list.find(s => s.id === id);
+  return hit ? hit.name : id;
+}
+function subStatName(id) {
+  const hit = SUB_STATS.find(s => s.id === id);
+  return hit ? hit.name : id;
+}
+</script>
+<script>
+/* ============================================================
+ * 原神圣遗物锁定方案生成器 —— 逻辑层
+ * ============================================================ */
+'use strict';
+
+const STORE_KEY = 'genshin_artifact_lock_v1';
+
+/* 权重常量 */
+const W_PRIORITY   = { main: 1.0, alt: 0.55 };   // 主推 / 备选配装
+const W_SET_COUNT  = { 1: 1.0, 2: 0.8 };         // 4件套 / 2+2
+const W_RANK       = { 1: 1.0, 2: 0.5, 3: 0.25 };// 主词条优先级
+const TIER_KEEP    = 0.8;                        // ≥ 视为必留
+const TIER_TRANS   = 0.4;                        // ≥ 视为过渡
+const KEEP_MAX     = 4;
+
+/* 可互换主词条组：同一角色在这些词条里只需 1 件（掉到哪个用哪个） */
+const SWAP_GROUPS = {
+  circlet: [{ a: 'cr', b: 'cd' }],
+};
+
+let state = null;
+let ui = { elem: 'all', search: '', onlyEnabled: false, planSet: 'all', planSlot: 'all' };
+let editing = null;      // 正在编辑的角色副本
+let editingIsNew = false;
+
+/* ============================================================
+ * 存储
+ * ============================================================ */
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const o = JSON.parse(raw);
+      if (o && Array.isArray(o.characters) && o.characters.length) return normalize(o);
+    }
+  } catch (e) { console.warn('读取本地数据失败', e); }
+  return { characters: buildDefaultCharacters(), customSets: [] };
+}
+
+function normalize(o) {
+  o.customSets = Array.isArray(o.customSets) ? o.customSets : [];
+  o.characters = o.characters.map(c => ({
+    id: c.id || ('c_' + Math.random().toString(36).slice(2)),
+    name: c.name || '未命名',
+    element: ELEMENTS[c.element] ? c.element : 'pyro',
+    region: REGION_NAME[c.region] ? c.region : 'snezhnaya',
+    roles: (Array.isArray(c.roles) && c.roles.length)
+      ? c.roles.filter(r => ROLE_NAME[r]) : ['maindps'],
+    enabled: !!c.enabled,
+    note: c.note || '',
+    custom: !!c.custom,
+    builds: Array.isArray(c.builds) && c.builds.length
+      ? c.builds.map(b => ({ sets: b.sets || [], priority: b.priority === 'alt' ? 'alt' : 'main' }))
+      : [{ sets: [], priority: 'main' }],
+    subs: Object.assign({}, SUB_PRESETS.crit, c.subs || {}),
+    main: {
+      sands:   (c.main && c.main.sands)   || [],
+      goblet:  (c.main && c.main.goblet)  || [],
+      circlet: (c.main && c.main.circlet) || [],
+    },
+  }));
+  return o;
+}
+
+let saveTimer = null;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      flash('已保存到本机');
+    } catch (e) { toast('保存失败：' + e.message); }
+  }, 300);
+}
+
+/* ============================================================
+ * 通用
+ * ============================================================ */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+
+let toastTimer = null;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 2200);
+}
+function flash(msg) {
+  const el = $('#saveHint');
+  if (!el) return;
+  el.textContent = msg;
+  setTimeout(() => { if (el.textContent === msg) el.textContent = '数据保存在本机浏览器'; }, 1800);
+}
+
+function allSets() {
+  return SET_NAMES.concat(state.customSets.map(s => s.name));
+}
+function allSetBonus() {
+  const extra = Object.fromEntries(state.customSets.map(s => [s.name, s.bonus]));
+  return Object.assign({}, SET_BONUS, extra);
+}
+
+/* ============================================================
+ * 汇总引擎
+ * 返回 Map: set -> { users:Map<name,{alt}>, slots: { slot -> rows[] } }
+ * ============================================================ */
+function computePlan(includeAlt = true) {
+  const sets = allSets();
+  const out = new Map();
+  sets.forEach(n => out.set(n, {
+    users: new Map(),
+    slots: { flower: new Map(), plume: new Map(), sands: new Map(), goblet: new Map(), circlet: new Map() },
+  }));
+
+  state.characters.filter(c => c.enabled).forEach(c => {
+    c.builds.forEach(b => {
+      if (!b.sets || !b.sets.length) return;
+      if (!includeAlt && b.priority === 'alt') return;
+
+      const w = W_PRIORITY[b.priority] * W_SET_COUNT[b.sets.length] || 0;
+      const isAlt = b.priority === 'alt';
+
+      b.sets.forEach(setName => {
+        if (!out.has(setName)) return;
+        const bucket = out.get(setName);
+
+        // 记录使用者（主推覆盖备选）
+        const prev = bucket.users.get(c.name);
+        if (!prev || (prev.alt && !isAlt)) bucket.users.set(c.name, { alt: isAlt });
+
+        // 花 / 羽：主词条固定
+        ['flower', 'plume'].forEach(slot => {
+          const key = '_fixed';
+          const m = bucket.slots[slot];
+          const rec = m.get(key) || { stat: key, score: 0, chars: new Map() };
+          rec.score += w;
+          rec.chars.set(c.name, { rank: 0, alt: isAlt });
+          m.set(key, rec);
+        });
+
+        // 沙 / 杯 / 冠
+        ['sands', 'goblet', 'circlet'].forEach(slot => {
+          (c.main[slot] || []).forEach(mi => {
+            const m = bucket.slots[slot];
+            const rec = m.get(mi.stat) || { stat: mi.stat, score: 0, chars: new Map() };
+            rec.score += w * (W_RANK[mi.rank] || 0.25);
+            const old = rec.chars.get(c.name);
+            if (!old || mi.rank < old.rank) rec.chars.set(c.name, { rank: mi.rank, alt: isAlt });
+            m.set(mi.stat, rec);
+          });
+        });
+      });
+    });
+  });
+
+  // 整理成排序后的行
+  out.forEach(bucket => {
+    SLOTS.forEach(slotDef => {
+      const slot = slotDef.id;
+      const m = bucket.slots[slot];
+      let rows = Array.from(m.values());
+
+      rows.forEach(r => {
+        r.charsArr = Array.from(r.chars.entries())
+          .map(([name, info]) => ({ name, rank: info.rank, alt: info.alt }))
+          .sort((a, b) => (a.rank - b.rank) || (a.alt ? 1 : 0) - (b.alt ? 1 : 0));
+        r.tier = r.score >= TIER_KEEP ? 'keep' : (r.score >= TIER_TRANS ? 'trans' : 'low');
+
+        if (slot === 'flower' || slot === 'plume') {
+          r.keep = Math.min(Math.max(r.charsArr.length, 0), KEEP_MAX);
+        } else {
+          const firsts = r.charsArr.filter(x => x.rank === 1);
+          const base = firsts.length ? firsts.length : Math.ceil(r.score);
+          r.keep = Math.min(Math.max(base, 1), KEEP_MAX);
+        }
+      });
+
+      rows = rows.filter(r => r.score >= TIER_TRANS);
+      rows = mergeSwapGroup(slot, rows);
+      rows.sort((a, b) => (b.score - a.score));
+      bucket.slots[slot] = rows;
+    });
+  });
+
+  return out;
+}
+
+/* 合并可互换主词条（如暴击率 / 暴击伤害冠） */
+function mergeSwapGroup(slot, rows) {
+  const groups = SWAP_GROUPS[slot] || [];
+  if (!groups.length) return rows;
+
+  groups.forEach(g => {
+    const ra = rows.find(r => r.stat === g.a);
+    const rb = rows.find(r => r.stat === g.b);
+    if (!ra || !rb) return;
+
+    // 合并角色列表（同名角色取更高优先级、主推优先）
+    const map = new Map();
+    [...rb.charsArr, ...ra.charsArr].forEach(x => {
+      const old = map.get(x.name);
+      if (!old || x.rank < old.rank || (x.rank === old.rank && !x.alt && old.alt)) map.set(x.name, x);
+    });
+    const charsArr = Array.from(map.values())
+      .sort((x, y) => (x.rank - y.rank) || ((x.alt ? 1 : 0) - (y.alt ? 1 : 0)));
+
+    const nameSet = new Set(charsArr.map(x => x.name));
+    const firstSet = new Set(charsArr.filter(x => x.rank === 1).map(x => x.name));
+
+    const merged = {
+      stat: g.a,
+      swap: g.b,
+      score: Math.max(ra.score, rb.score),
+      tier: (ra.score >= TIER_KEEP || rb.score >= TIER_KEEP) ? 'keep'
+          : (Math.max(ra.score, rb.score) >= TIER_TRANS ? 'trans' : 'low'),
+      keep: Math.min(Math.max(firstSet.size || nameSet.size, 1), KEEP_MAX),
+      charsArr,
+    };
+    rows = rows.filter(r => r.stat !== g.a && r.stat !== g.b);
+    rows.push(merged);
+  });
+  return rows;
+}
+
+/* 主词条显示名（含可互换标注） */
+function statLabel(slot, r) {
+  if (r.swap) return mainStatName(slot, r.stat) + ' / ' + mainStatName(slot, r.swap);
+  if (r.stat === '_fixed') return slot === 'flower' ? '生命值（固定）' : '攻击力（固定）';
+  return mainStatName(slot, r.stat);
+}
+function isSwap(r) { return !!r.swap; }
+
+/* 各套装的副词条权重（需求角色平均） */
+function computeSetWeights(includeAlt = true) {
+  const acc = new Map(); // set -> { sum:{}, n:0 }
+  state.characters.filter(c => c.enabled).forEach(c => {
+    c.builds.forEach(b => {
+      if (!includeAlt && b.priority === 'alt') return;
+      if (!b.sets || !b.sets.length) return;
+      b.sets.forEach(sn => {
+        let o = acc.get(sn);
+        if (!o) { o = { sum: {}, n: 0 }; acc.set(sn, o); }
+        o.n++;
+        SUB_STATS.forEach(s => { o.sum[s.id] = (o.sum[s.id] || 0) + (c.subs[s.id] || 0); });
+      });
+    });
+  });
+  const out = new Map();
+  acc.forEach((o, sn) => {
+    const w = {};
+    SUB_STATS.forEach(s => { w[s.id] = o.sum[s.id] / o.n; });
+    out.set(sn, w);
+  });
+  return out;
+}
+
+/* 全部启用角色的平均副词条权重（兜底） */
+function globalWeights() {
+  const list = state.characters.filter(c => c.enabled);
+  const w = {};
+  SUB_STATS.forEach(s => { w[s.id] = 0; });
+  if (!list.length) return Object.assign({}, SUB_PRESETS.crit);
+  list.forEach(c => SUB_STATS.forEach(s => { w[s.id] += (c.subs[s.id] || 0); }));
+  SUB_STATS.forEach(s => { w[s.id] = w[s.id] / list.length; });
+  return w;
+}
+
+/* ============================================================
+ * 页面 ①：角色配置
+ * ============================================================ */
+/* 当前筛选后的角色列表（批量操作与渲染共用） */
+function filteredChars() {
+  const kw = ui.search.trim().toLowerCase();
+  return state.characters.filter(c => {
+    if (ui.elem !== 'all' && c.element !== ui.elem) return false;
+    if (ui.onlyEnabled && !c.enabled) return false;
+    if (kw) {
+      const hay = [
+        c.name,
+        c.builds.map(b => b.sets.join(' ')).join(' '),
+        REGION_NAME[c.region] || '',
+        c.roles.map(r => ROLE_NAME[r] || '').join(''),
+      ].join(' ').toLowerCase();
+      if (!hay.includes(kw)) return false;
+    }
+    return true;
+  });
+}
+
+function renderChars() {
+  const grid = $('#charGrid');
+  const list = filteredChars();
+
+  grid.innerHTML = list.map(c => {
+    const el = ELEMENTS[c.element];
+    const rg = c.region;
+    const roleTxt = (c.roles || []).map(r => ROLE_NAME[r] || r).join('·');
+    const sets = (c.builds[0] ? c.builds[0].sets : []);
+    const mainRow = (slot) => {
+      const arr = c.main[slot] || [];
+      if (!arr.length) return '';
+      return `<div class="cc-main-row"><span>${SLOTS.find(s => s.id === slot).short}</span><span class="ms">${
+        arr.map(m => `<span class="ms r${m.rank}">${esc(mainStatName(slot, m.stat))}</span>`).join(' / ')
+      }</span></div>`;
+    };
+    return `
+    <div class="char-card ${c.enabled ? 'on' : ''}" data-id="${c.id}">
+      <div class="cc-top">
+        <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
+        <span class="cc-name">${esc(c.name)}</span>
+        <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
+      </div>
+      <div class="cc-meta">
+        <span class="cc-region" style="color:${REGION_COLOR[rg] || '#9fb3c8'}">${esc(REGION_NAME[rg] || '其他')}</span>
+        <span class="cc-dot">·</span>
+        <span class="cc-role">${esc(roleTxt || '未分类')}</span>
+      </div>
+      <div class="cc-sets">
+        ${sets.length
+          ? sets.map(s => `<span class="set-tag ${c.builds[0].priority === 'main' ? 'main' : ''}">${esc(s)}${sets.length > 1 ? ' ·2+2' : ''}</span>`).join('')
+          : '<span class="set-tag">未配置套装</span>'}
+        ${c.builds.length > 1 ? `<span class="set-tag">+${c.builds.length - 1}备选</span>` : ''}
+      </div>
+      <div class="cc-main">
+        ${mainRow('sands')}${mainRow('goblet')}${mainRow('circlet')}
+      </div>
+    </div>`;
+  }).join('') || '<p class="muted">没有匹配的角色。</p>';
+
+  $('#enabledCount').textContent = state.characters.filter(c => c.enabled).length;
+  $('#statCharCount').textContent = state.characters.length;
+  updateBatchState();
+
+  grid.querySelectorAll('.char-card').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.dataset.toggle) {
+        const c = state.characters.find(x => x.id === e.target.dataset.toggle);
+        c.enabled = !c.enabled;
+        save(); renderChars(); renderPlan(); renderSubs();
+        return;
+      }
+      openDrawer(card.dataset.id);
+    });
+  });
+}
+
+/* ============================================================
+ * 批量选择
+ * ============================================================ */
+/* 批量分组定义：属性 / 国度 / 定位，统一渲染、切换、刷新 */
+const GROUPS = {
+  element: {
+    sel: '#elemBatch', attr: 'element',
+    items: Object.entries(ELEMENTS).map(([id, e]) => ({ id, name: e.name, color: e.color })),
+    match: (c, k) => c.element === k,
+  },
+  region: {
+    sel: '#regionBatch', attr: 'region',
+    items: REGIONS.map(r => ({ id: r.id, name: r.name, color: r.color })),
+    match: (c, k) => c.region === k,
+  },
+  role: {
+    sel: '#roleBatch', attr: 'role',
+    items: ROLES.map(r => ({ id: r.id, name: r.name })),
+    match: (c, k) => (c.roles || []).includes(k),
+  },
+};
+
+function renderBatchBar() {
+  Object.entries(GROUPS).forEach(([kind, g]) => {
+    const box = $(g.sel);
+    if (!box) return;
+    box.innerHTML = g.items.map(it =>
+      `<button class="btn sm ${it.color ? 'tag-btn' : ''}" data-${g.attr}="${it.id}"` +
+      `${it.color ? ` style="--tc:${it.color}"` : ''}>${esc(it.name)}</button>`).join('');
+    box.querySelectorAll(`[data-${g.attr}]`).forEach(b => {
+      b.onclick = () => toggleGroup(kind, b.dataset[g.attr]);
+    });
+  });
+  $$('[data-batch]').forEach(b => { b.onclick = () => applyBatch(b.dataset.batch); });
+}
+
+/* 按属性 / 国度 / 定位 整体切换：未全选 → 全选；已全选 → 取消 */
+function toggleGroup(kind, key) {
+  const g = GROUPS[kind];
+  const list = state.characters.filter(c => g.match(c, key));
+  if (!list.length) return toast('没有该分类的角色');
+  const allOn = list.every(c => c.enabled);
+  list.forEach(c => { c.enabled = !allOn; });
+  const it = g.items.find(x => x.id === key);
+  const label = (it ? it.name : key) + (kind === 'element' ? '属性' : '');
+  afterBatch(label + (allOn ? `：已取消 ${list.length} 个` : `：已勾选 ${list.length} 个`));
+}
+
+/* 全选 / 全不选 / 反选 —— 作用于当前筛选结果 */
+function applyBatch(mode) {
+  const list = filteredChars();
+  if (!list.length) return toast('当前筛选结果为空');
+  if (mode === 'all')    list.forEach(c => { c.enabled = true; });
+  if (mode === 'none')   list.forEach(c => { c.enabled = false; });
+  if (mode === 'invert') list.forEach(c => { c.enabled = !c.enabled; });
+  const scope = (ui.search.trim() || ui.elem !== 'all' || ui.onlyEnabled) ? '当前筛选结果' : '全部角色';
+  afterBatch(scope + '：' + ({ all: '已全选', none: '已全不选', invert: '已反选' }[mode]));
+}
+
+function afterBatch(msg) {
+  save(); renderChars(); renderPlan(); renderSubs();
+  toast(msg);
+}
+
+/* 刷新批量按钮的高亮与计数 */
+function updateBatchState() {
+  Object.entries(GROUPS).forEach(([kind, g]) => {
+    g.items.forEach(k => {
+      const btn = document.querySelector(`${g.sel} [data-${g.attr}="${k.id}"]`);
+      if (!btn) return;
+      const list = state.characters.filter(c => g.match(c, k.id));
+      const on = list.filter(c => c.enabled).length;
+      btn.classList.toggle('on', list.length > 0 && on === list.length);
+      btn.classList.toggle('partial', on > 0 && on < list.length);
+      btn.title = `${k.name}：已启用 ${on} / ${list.length}`;
+    });
+  });
+}
+
+/* ============================================================
+ * 编辑抽屉
+ * ============================================================ */
+function openDrawer(id) {
+  const src = state.characters.find(c => c.id === id);
+  if (!src) return;
+  editing = JSON.parse(JSON.stringify(src));
+  editingIsNew = false;
+  $('#drawerTitle').textContent = '编辑 ' + src.name;
+  $('#btnDeleteChar').classList.remove('hidden');
+  drawDrawer();
+  showDrawer(true);
+}
+
+function openNewChar() {
+  editing = {
+    id: 'c_new_' + Date.now(),
+    name: '', element: 'pyro', region: 'liyue', roles: ['maindps'],
+    enabled: true, note: '', custom: true,
+    builds: [{ sets: [], priority: 'main' }],
+    subs: Object.assign({}, SUB_PRESETS.crit),
+    main: { sands: [], goblet: [], circlet: [] },
+  };
+  editingIsNew = true;
+  $('#drawerTitle').textContent = '新增角色';
+  $('#btnDeleteChar').classList.add('hidden');
+  drawDrawer();
+  showDrawer(true);
+}
+
+function showDrawer(show) {
+  $('#charDrawer').classList.toggle('hidden', !show);
+  $('#modalMask').classList.toggle('hidden', !show);
+}
+
+function setOptions(sel) {
+  return allSets().map(n => `<option value="${esc(n)}"${n === sel ? ' selected' : ''}>${esc(n)}</option>`).join('');
+}
+
+function drawDrawer() {
+  const c = editing;
+  const body = $('#drawerBody');
+
+  body.innerHTML = `
+  <div class="fgroup">
+    <label>角色名称</label>
+    <input type="text" id="edName" value="${esc(c.name)}" placeholder="例：胡桃">
+  </div>
+
+  <div class="fgroup">
+    <label>元素属性</label>
+    <div class="seg" id="edElem">
+      ${Object.entries(ELEMENTS).map(([k, v]) =>
+        `<button type="button" class="seg-btn ${c.element === k ? 'active' : ''}" data-elem="${k}">${v.name}</button>`).join('')}
+    </div>
+  </div>
+
+  <div class="fgroup">
+    <label>所属国度</label>
+    <div class="seg" id="edRegion">
+      ${REGIONS.map(r => `<button type="button" class="seg-btn ${c.region === r.id ? 'active' : ''}" data-region="${r.id}">${r.name}</button>`).join('')}
+    </div>
+  </div>
+
+  <div class="fgroup">
+    <span class="glabel">队伍定位 <span class="hint">可多选，影响批量筛选</span></span>
+    <div class="chk-row" id="edRoles">
+      ${ROLES.map(r => `<label class="chk"><input type="checkbox" data-role="${r.id}" ${(c.roles || []).includes(r.id) ? 'checked' : ''}> ${r.name}</label>`).join('')}
+    </div>
+  </div>
+
+  <div class="fgroup">
+    <span class="glabel">圣遗物配装 <span class="hint">第 1 组为主推，其余为备选；单套=4件套，双套=2+2</span></span>
+    <div id="edBuilds"></div>
+    <button type="button" class="btn sm" id="edAddBuild">+ 添加一组配装</button>
+  </div>
+
+  ${['sands', 'goblet', 'circlet'].map(slot => `
+    <div class="fgroup">
+      <span class="glabel">${SLOTS.find(s => s.id === slot).name}主词条 <span class="hint">越靠前优先级越高</span></span>
+      <div class="ms-list" id="edMain_${slot}"></div>
+      <button type="button" class="btn sm" id="edAdd_${slot}">+ 添加主词条</button>
+    </div>`).join('')}
+
+  <div class="fgroup">
+    <span class="glabel">副词条权重 <span class="hint">0 = 完全无用，1 = 核心词条</span></span>
+    <div id="edSubs"></div>
+    <button type="button" class="btn sm" id="edPreset">套用预设…</button>
+  </div>
+
+  <div class="fgroup">
+    <label>备注</label>
+    <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
+  </div>`;
+
+  // 元素切换
+  body.querySelectorAll('#edElem .seg-btn').forEach(b => {
+    b.onclick = () => {
+      editing.element = b.dataset.elem;
+      body.querySelectorAll('#edElem .seg-btn').forEach(x => x.classList.toggle('active', x === b));
+    };
+  });
+
+  // 国度
+  body.querySelectorAll('#edRegion .seg-btn').forEach(b => {
+    b.onclick = () => {
+      editing.region = b.dataset.region;
+      body.querySelectorAll('#edRegion .seg-btn').forEach(x => x.classList.toggle('active', x === b));
+    };
+  });
+  // 定位（多选）
+  body.querySelectorAll('#edRoles input[data-role]').forEach(cb => {
+    cb.onchange = () => {
+      const set = new Set(editing.roles || []);
+      if (cb.checked) set.add(cb.dataset.role); else set.delete(cb.dataset.role);
+      editing.roles = ROLES.map(r => r.id).filter(id => set.has(id));
+      if (!editing.roles.length) { editing.roles = ['maindps']; cb.checked = true; toast('至少保留一个定位'); }
+    };
+  });
+
+  // 名称
+  body.querySelector('#edName').oninput = e => { editing.name = e.target.value; };
+  body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; };
+
+  // 配装
+  body.querySelector('#edAddBuild').onclick = () => {
+    editing.builds.push({ sets: [], priority: 'alt' });
+    drawBuilds();
+  };
+  // 主词条
+  ['sands', 'goblet', 'circlet'].forEach(slot => {
+    body.querySelector('#edAdd_' + slot).onclick = () => {
+      const used = new Set(editing.main[slot].map(m => m.stat));
+      const next = MAIN_STATS[slot].find(s => !used.has(s.id));
+      if (!next) return toast('该部位主词条已全部添加');
+      editing.main[slot].push({ stat: next.id, rank: editing.main[slot].length + 1 });
+      drawMains();
+    };
+  });
+  // 副词条
+  body.querySelector('#edPreset').onclick = () => {
+    const keys = Object.keys(SUB_PRESETS);
+    const names = { crit: '双暴输出', critHp: '双暴+生命', critDef: '双暴+防御', em: '精通流', hp: '生命流', def: '防御流', er: '充能辅助', atk: '攻击流', heal: '治疗辅助' };
+    const pick = prompt('输入预设：' + keys.map(k => `${k}(${names[k]})`).join('  '));
+    if (pick && SUB_PRESETS[pick]) { editing.subs = Object.assign({}, SUB_PRESETS[pick]); drawSubs(); }
+  };
+
+  drawBuilds();
+  drawMains();
+  drawSubs();
+}
+
+function drawBuilds() {
+  const box = $('#edBuilds');
+  if (!box) return;
+  box.innerHTML = editing.builds.map((b, i) => `
+    <div class="build-item" data-bi="${i}">
+      <div class="bi-head">
+        <span class="prio-tag ${b.priority}">${b.priority === 'main' ? '主推' : '备选'}</span>
+        <select data-set="0">${setOptions(b.sets[0])}<option value=""${!b.sets[0] ? ' selected' : ''}>（选择套装）</option></select>
+        <span class="muted small">${b.sets.length > 1 ? '+' : '　'}</span>
+        <select data-set="1">${setOptions(b.sets[1])}<option value=""${!b.sets[1] ? ' selected' : ''}>${b.sets.length > 1 ? '（第二套）' : '（2+2 可选）'}</option></select>
+        <button type="button" class="rm" data-rmb="${i}" title="删除">×</button>
+      </div>
+      <div class="bi-head" style="margin:0">
+        <label class="chk"><input type="checkbox" data-main="${i}" ${b.priority === 'main' ? 'checked' : ''}> 设为主推</label>
+        <span class="muted small">${b.sets.filter(Boolean).length === 2 ? '2+2 组合' : (b.sets.filter(Boolean).length === 1 ? '4 件套' : '未选择套装')}</span>
+      </div>
+    </div>`).join('');
+
+  box.querySelectorAll('select[data-set]').forEach(sel => {
+    sel.onchange = () => {
+      const i = +sel.closest('.build-item').dataset.bi;
+      const k = +sel.dataset.set;
+      editing.builds[i].sets[k] = sel.value || null;
+      editing.builds[i].sets = editing.builds[i].sets.filter(Boolean);
+      drawBuilds();
+    };
+  });
+  box.querySelectorAll('[data-main]').forEach(cb => {
+    cb.onchange = () => {
+      const i = +cb.dataset.main;
+      if (cb.checked) editing.builds.forEach((b, j) => { b.priority = (j === i) ? 'main' : 'alt'; });
+      else editing.builds.forEach((b, j) => { b.priority = j === 0 ? 'main' : 'alt'; });
+      drawBuilds();
+    };
+  });
+  box.querySelectorAll('[data-rmb]').forEach(btn => {
+    btn.onclick = () => {
+      const i = +btn.dataset.rmb;
+      if (editing.builds.length <= 1) return toast('至少保留一组配装');
+      editing.builds.splice(i, 1);
+      editing.builds[0].priority = 'main';
+      drawBuilds();
+    };
+  });
+}
+
+function drawMains() {
+  ['sands', 'goblet', 'circlet'].forEach(slot => {
+    const box = $('#edMain_' + slot);
+    if (!box) return;
+    const arr = editing.main[slot];
+    box.innerHTML = arr.map((m, i) => `
+      <div class="ms-item" data-mi="${i}" data-slot="${slot}">
+        <span class="ord">${i === 0 ? '最优' : '第' + (i + 1)}</span>
+        <select>${MAIN_STATS[slot].map(s =>
+          `<option value="${s.id}"${s.id === m.stat ? ' selected' : ''}>${s.name}</option>`).join('')}</select>
+        <button type="button" class="up" data-up="${i}">↑</button>
+        <button type="button" class="down" data-down="${i}">↓</button>
+        <button type="button" class="rm" data-rmm="${i}">×</button>
+      </div>`).join('') || '<p class="muted small">未设置</p>';
+
+    box.querySelectorAll('select').forEach(sel => {
+      sel.onchange = () => {
+        const i = +sel.closest('.ms-item').dataset.mi;
+        editing.main[slot][i].stat = sel.value;
+      };
+    });
+    box.querySelectorAll('[data-up]').forEach(b => b.onclick = () => {
+      const i = +b.dataset.up;
+      if (i === 0) return;
+      [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+      renank(slot); drawMains();
+    });
+    box.querySelectorAll('[data-down]').forEach(b => b.onclick = () => {
+      const i = +b.dataset.down;
+      if (i === arr.length - 1) return;
+      [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
+      renank(slot); drawMains();
+    });
+    box.querySelectorAll('[data-rmm]').forEach(b => b.onclick = () => {
+      editing.main[slot].splice(+b.dataset.rmm, 1);
+      renank(slot); drawMains();
+    });
+  });
+}
+function renank(slot) { editing.main[slot].forEach((m, i) => { m.rank = i + 1; }); }
+
+function drawSubs() {
+  const box = $('#edSubs');
+  if (!box) return;
+  box.innerHTML = SUB_STATS.map(s => `
+    <div class="w-row">
+      <span class="wn">${s.name}</span>
+      <input type="range" min="0" max="1" step="0.05" value="${editing.subs[s.id] || 0}" data-sub="${s.id}">
+      <span class="wv" id="wv_${s.id}">${(editing.subs[s.id] || 0).toFixed(2)}</span>
+    </div>`).join('');
+  box.querySelectorAll('[data-sub]').forEach(r => {
+    r.oninput = () => {
+      editing.subs[r.dataset.sub] = +r.value;
+      $('#wv_' + r.dataset.sub).textContent = (+r.value).toFixed(2);
+    };
+  });
+}
+
+function saveChar() {
+  const c = editing;
+  if (!c.name.trim()) return toast('请填写角色名称');
+  c.name = c.name.trim();
+  c.builds = c.builds.filter(b => b.sets && b.sets.length);
+  if (!c.builds.length) c.builds = [{ sets: [], priority: 'main' }];
+
+  if (editingIsNew) {
+    state.characters.push(c);
+  } else {
+    const i = state.characters.findIndex(x => x.id === c.id);
+    if (i >= 0) state.characters[i] = c;
+  }
+  save(); showDrawer(false);
+  renderChars(); renderPlan(); renderSubs();
+  toast('已保存 ' + c.name);
+}
+
+/* ============================================================
+ * 页面 ②：锁定方案
+ * ============================================================ */
+function tierLabel(t) {
+  return t === 'keep' ? '必留' : (t === 'trans' ? '过渡' : '低优先');
+}
+function tierClass(t) {
+  return t === 'keep' ? 'keep' : (t === 'trans' ? 'trans' : 'fodder');
+}
+
+function renderPlan() {
+  const includeAlt = $('#planAltBuild').checked;
+  const hideUnused = $('#planHideUnused').checked;
+  const plan = computePlan(includeAlt);
+  const setFilter = $('#planSetFilter').value;
+  const slotFilter = $('#planSlotFilter').value;
+
+  // 下拉
+  const sel = $('#planSetFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">全部套装</option>' +
+    allSets().map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  sel.value = cur || 'all';
+
+  const enabled = state.characters.filter(c => c.enabled).length;
+
+  if (!enabled) {
+    $('#planBody').innerHTML = '<div class="card"><p class="muted">请先在「① 角色配置」页勾选你要养的角色，这里会自动生成锁定方案。</p></div>';
+    $('#planSummary').innerHTML = '';
+    $('#planOverview').innerHTML = '';
+    return;
+  }
+
+  let blocks = Array.from(plan.entries());
+  // 统计
+  let usedSets = 0, keepRows = 0, fodderSets = 0;
+  blocks.forEach(([name, b]) => {
+    const has = b.users.size > 0;
+    if (has) usedSets++; else fodderSets++;
+    SLOTS.forEach(sd => (b.slots[sd.id] || []).forEach(r => { if (r.tier === 'keep') keepRows++; }));
+  });
+
+  $('#planSummary').innerHTML = `
+    <div class="stat-box"><div class="sv">${enabled}</div><div class="sl">启用角色</div></div>
+    <div class="stat-box"><div class="sv">${usedSets}</div><div class="sl">涉及套装</div></div>
+    <div class="stat-box"><div class="sv">${keepRows}</div><div class="sl">必留词条条目</div></div>
+    <div class="stat-box"><div class="sv">${fodderSets}</div><div class="sl">可整套清理的套装</div></div>`;
+
+  const setWeights = computeSetWeights(includeAlt);
+
+  const html = blocks
+    .filter(([name]) => setFilter === 'all' || name === setFilter)
+    .filter(([name, b]) => !hideUnused || b.users.size > 0)
+    .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
+    .map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights))
+    .join('');
+
+  renderOverview(includeAlt ? computePlan(false) : plan, plan);
+
+  $('#printMeta').textContent =
+    '启用角色：' + state.characters.filter(c => c.enabled).map(c => c.name).join('、') +
+    '　|　生成时间：' + new Date().toLocaleString('zh-CN');
+
+  $('#planBody').innerHTML = html || '<div class="card"><p class="muted">没有符合条件的套装。</p></div>';
+}
+
+const ELEM_DMG_STATS = ['pyro', 'hydro', 'cryo', 'electro', 'anemo', 'geo', 'dendro', 'phys'];
+
+/* 跨套装的部位总量盘点：回答「我到底要凑多少件」
+ * planMain = 只算主推配装的刚性需求（主数字）
+ * planAll  = 含备选配装（附加数字） */
+function aggSlot(plan, slotId) {
+  const agg = new Map();
+  plan.forEach(b => {
+    (b.slots[slotId] || []).forEach(r => {
+      const key = r.swap ? r.stat + '/' + r.swap : r.stat;
+      const o = agg.get(key) || { keep: 0, trans: 0, label: statLabel(slotId, r), swap: !!r.swap };
+      if (r.tier === 'keep') o.keep += r.keep; else o.trans += r.keep;
+      agg.set(key, o);
+    });
+  });
+  return agg;
+}
+
+function renderOverview(planMain, planAll) {
+  const fp = (p) => {
+    let s = 0;
+    p.forEach(b => {
+      (b.slots.flower || []).forEach(r => { s += r.keep; });
+      (b.slots.plume || []).forEach(r => { s += r.keep; });
+    });
+    return s;
+  };
+  const fpMain = fp(planMain), fpAll = fp(planAll);
+
+  const slotCards = [
+    { id: 'sands',   title: '时之沙' },
+    { id: 'goblet',  title: '空之杯' },
+    { id: 'circlet', title: '理之冠' },
+  ].map(({ id, title }) => {
+    const aMain = aggSlot(planMain, id);
+    const aAll = aggSlot(planAll, id);
+
+    const rows = Array.from(aMain.entries())
+      .map(([key, v]) => {
+        const all = aAll.get(key);
+        return [key, v, all ? (all.keep - v.keep) : 0];
+      })
+      .sort((x, y) => (y[1].keep - x[1].keep) || (y[1].trans - x[1].trans));
+
+    const max = Math.max(1, ...rows.map(r => r[1].keep));
+    const total = rows.reduce((s, r) => s + r[1].keep, 0);
+    const extra = rows.reduce((s, r) => s + r[2], 0);
+
+    return `<div class="ov-card">
+      <h4>${title}<small>必留 ${total} 件${extra ? `　·　备选再需 ${extra}` : ''}</small></h4>
+      ${rows.length ? rows.map(([key, v, ex]) => `
+        <div class="ov-row">
+          <span class="ovn">${esc(v.label)}${v.swap ? '<span class="swap-tag">二选一</span>' : ''}</span>
+          <span class="ovbar"><i style="width:${(v.keep / max * 100).toFixed(0)}%"></i></span>
+          <span class="ovk">${v.keep || ''}</span>
+          <span class="ovt">${v.trans ? '+' + v.trans + '过渡' : ''}${ex ? ' +' + ex + '备选' : ''}</span>
+        </div>`).join('')
+        : '<p class="ov-empty">暂无需求</p>'}
+    </div>`;
+  });
+
+  const fpCard = `<div class="ov-card">
+    <h4>花 / 羽<small>必留 ${fpMain} 件${fpAll > fpMain ? `　·　备选再需 ${fpAll - fpMain}` : ''}</small></h4>
+    <p class="ov-empty" style="line-height:1.75">
+      主词条固定，只按套装区分。<br>
+      共需 <b style="color:var(--green);font-size:16px">${fpMain}</b> 件（每套花、羽各计 1 件）。<br>
+      副词条不达标可随时替换，<br>不必强留低质量件。
+    </p>
+  </div>`;
+
+  $('#planOverview').innerHTML = fpCard + slotCards.join('');
+}
+
+function renderSetBlock(name, b, slotFilter, setWeights) {
+  const bonus = allSetBonus()[name] || '';
+  const users = Array.from(b.users.entries());
+  const unused = users.length === 0;
+
+  // 该套装的核心副词条（用于花/羽行提示）
+  const w = setWeights ? setWeights.get(name) : null;
+  const topSubs = w
+    ? SUB_STATS.map(s => ({ name: s.name, v: w[s.id] || 0 }))
+        .sort((a, b) => b.v - a.v).filter(x => x.v >= 0.2).slice(0, 3)
+        .map(x => x.name + x.v.toFixed(1)).join(' > ')
+    : '';
+
+  const slotsHtml = SLOTS
+    .filter(sd => slotFilter === 'all' || sd.id === slotFilter)
+    .map(sd => {
+      const rows = b.slots[sd.id] || [];
+      if (sd.id === 'flower' || sd.id === 'plume') {
+        if (!rows.length) return slotRow(sd, '<span class="slot-none">无角色需要</span>');
+        const r = rows[0];
+        const inner = `
+          <div class="stat-req">
+            <span class="stat-badge t1">${esc(statLabel(sd.id, r))}</span>
+            <span class="keep-n">建议保留 <b>${r.keep}</b> 件</span>
+            <span class="tier-tag ${tierClass(r.tier)}">${tierLabel(r.tier)}</span>
+          </div>
+          ${topSubs ? `<div class="sub-hint-row">副词条优先：<b>${esc(topSubs)}</b></div>` : ''}
+          <div class="req-from">${r.charsArr.map(x => `<span class="fn ${x.alt ? 'alt' : ''}">${esc(x.name)}${x.alt ? '·备选' : ''}</span>`).join('')}</div>`;
+        return slotRow(sd, inner);
+      }
+
+      if (!rows.length) return slotRow(sd, '<span class="slot-none">无角色需要 · 可全喂</span>');
+
+      const inner = rows.map(r => {
+        const rare = sd.id === 'goblet' && ELEM_DMG_STATS.includes(r.stat);
+        return `
+        <div class="stat-req">
+          <span class="stat-badge ${r.tier === 'keep' ? 't1' : (r.tier === 'trans' ? 't2' : 't3')}">${esc(statLabel(sd.id, r))}</span>
+          <span class="tier-tag ${tierClass(r.tier)}">${tierLabel(r.tier)}</span>
+          ${isSwap(r) ? '<span class="swap-tag">二选一</span>' : ''}
+          ${rare ? '<span class="rare-tag">稀有·建议多留</span>' : ''}
+          <span class="keep-n">建议保留 <b>${r.keep}</b> 件</span>
+        </div>
+        <div class="req-from">${r.charsArr.map(x => `<span class="fn ${x.alt ? 'alt' : ''}">${esc(x.name)}${x.rank > 1 ? '·次选' : ''}${x.alt ? '·备选' : ''}</span>`).join('')}</div>`;
+      }).join('');
+      return slotRow(sd, inner);
+    }).join('');
+
+  return `
+  <div class="set-block ${unused ? 'unused' : ''}">
+    <div class="set-head">
+      <h3>${esc(name)}</h3>
+      <span class="set-bonus">${esc(bonus)}</span>
+      <span class="set-users">
+        ${unused
+          ? '<span class="tier-tag fodder">无角色需要 · 可整套清理</span>'
+          : users.map(([n, i]) => `<span class="user-pill ${i.alt ? 'alt' : ''}">${esc(n)}${i.alt ? '·备选' : ''}</span>`).join('')}
+      </span>
+    </div>
+    <div class="set-body">${slotsHtml}</div>
+  </div>`;
+}
+function slotRow(sd, inner) {
+  return `<div class="slot-row">
+    <div class="slot-name">${sd.name}</div>
+    <div class="slot-cells">${inner}</div>
+  </div>`;
+}
+
+/* 导出：纯文本清单 */
+function planToText() {
+  const includeAlt = $('#planAltBuild').checked;
+  const plan = computePlan(includeAlt);
+  const lines = [];
+  lines.push('原神圣遗物锁定清单');
+  lines.push('生成时间：' + new Date().toLocaleString('zh-CN'));
+  lines.push('启用角色：' + state.characters.filter(c => c.enabled).map(c => c.name).join('、'));
+  lines.push('');
+
+  Array.from(plan.entries())
+    .filter(([, b]) => b.users.size > 0)
+    .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
+    .forEach(([name, b]) => {
+      lines.push('【' + name + '】' + (allSetBonus()[name] ? '（' + allSetBonus()[name] + '）' : ''));
+      SLOTS.forEach(sd => {
+        const rows = b.slots[sd.id] || [];
+        if (!rows.length) { lines.push('  ' + sd.name + '：无需求，可全喂'); return; }
+        if (sd.id === 'flower' || sd.id === 'plume') {
+          lines.push(`  ${sd.name}：主词条固定，建议保留 ${rows[0].keep} 件（${rows[0].charsArr.map(x => x.name).join('、')}）`);
+          return;
+        }
+        const parts = rows.map(r =>
+          `${statLabel(sd.id, r)}${isSwap(r) ? '(二选一)' : ''}[${tierLabel(r.tier)}·留${r.keep}件：${r.charsArr.map(x => x.name + (x.rank > 1 ? '(次选)' : '') + (x.alt ? '(备选)' : '')).join('/')}]`
+        );
+        lines.push(`  ${sd.name}：${parts.join('  |  ')}`);
+      });
+      lines.push('');
+    });
+  return lines.join('\n');
+}
+
+/* 导出：CSV */
+function planToCsv() {
+  const includeAlt = $('#planAltBuild').checked;
+  const plan = computePlan(includeAlt);
+  const rows = [['套装', '部位', '主词条', '分级', '建议保留件数', '需求角色']];
+  Array.from(plan.entries())
+    .filter(([, b]) => b.users.size > 0)
+    .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
+    .forEach(([name, b]) => {
+      SLOTS.forEach(sd => {
+        (b.slots[sd.id] || []).forEach(r => {
+          const statName = statLabel(sd.id, r) + (isSwap(r) ? '(二选一)' : '');
+          const who = r.charsArr.map(x => x.name + (x.rank > 1 ? '(次选)' : '') + (x.alt ? '(备选)' : '')).join(' / ');
+          rows.push([name, sd.name, statName, tierLabel(r.tier), r.keep, who]);
+        });
+      });
+    });
+  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+  return '\ufeff' + csv;
+}
+
+function download(filename, content, mime) {
+  const blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ============================================================
+ * 页面 ③：副词条规则
+ * ============================================================ */
+function renderSubs() {
+  const n = state.characters.filter(c => c.enabled).length;
+  const rules = $('#subRules');
+
+  rules.innerHTML = `
+    <div class="rule-block s">
+      <h4>S 级 · 必锁</h4>
+      <p>主词条命中「必留」列表，且副词条<b>同时含暴击率与暴击伤害</b>（或你方角色所需的核心双词条）。<br>操作：直接锁定，喂到 20 级。</p>
+    </div>
+    <div class="rule-block a">
+      <h4>A 级 · 升级观察</h4>
+      <p>主词条命中需求，副词条含<b>单个暴击词条 + 1 条有效词条</b>。<br>操作：升到 4 级看第 4 词条，出双暴继续喂，否则停手留作过渡。</p>
+    </div>
+    <div class="rule-block b">
+      <h4>B 级 · 过渡件</h4>
+      <p>主词条命中需求但副词条平庸。<br>操作：先用着，毕业胚子到位后当狗粮喂掉。</p>
+    </div>
+    <div class="rule-block c">
+      <h4>C 级 · 狗粮</h4>
+      <p>主词条不在任何已启用角色的需求列表中。<br>操作：直接喂。<span class="hint">例外：同套装的对应元素伤害杯极难出货，建议无脑保留。</span></p>
+    </div>
+    <p class="muted small" style="margin-top:14px">${n ? '当前已启用 ' + n + ' 个角色，下方评分器会按这些角色的副词条权重打分。' : '尚未启用角色，评分器暂用「双暴输出」默认权重。'}</p>`;
+
+  // 评分器：初始化
+  const sS = $('#scoreSet'), sL = $('#scoreSlot');
+  if (sS.options.length <= 1) {
+    sS.innerHTML = '<option value="">（不限套装）</option>' + allSets().map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  }
+  if (!sL.options.length) {
+    sL.innerHTML = SLOTS.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    sL.value = 'sands';
+    sL.onchange = fillMainOptions;
+    sS.onchange = runScore;
+    fillMainOptions();
+  }
+  $('#scoreSubs').innerHTML = SUB_STATS.map(s => `
+    <div class="sub-input">
+      <label>${s.name}</label>
+      <input type="number" step="0.1" min="0" data-sub="${s.id}" placeholder="0">
+    </div>`).join('') + `
+    <div class="sub-input">
+      <label>当前等级</label>
+      <input type="number" id="scoreLv" value="0" min="0" max="20" step="4">
+    </div>`;
+  $('#scoreSubs').querySelectorAll('input').forEach(i => { i.oninput = runScore; });
+  runScore();
+
+  renderSetSubTable();
+}
+
+function fillMainOptions() {
+  const slot = $('#scoreSlot').value;
+  const sel = $('#scoreMain');
+  sel.innerHTML = MAIN_STATS[slot].map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  sel.onchange = runScore;
+  runScore();
+}
+
+function runScore() {
+  const box = $('#scoreResult');
+  if (!box) return;
+  const slot = $('#scoreSlot').value;
+  const mainId = $('#scoreMain').value;
+  const setName = $('#scoreSet').value;
+  const lv = +($('#scoreLv') ? $('#scoreLv').value : 0) || 0;
+
+  const vals = {};
+  $('#scoreSubs').querySelectorAll('input[data-sub]').forEach(i => { vals[i.dataset.sub] = +i.value || 0; });
+
+  const includeAlt = $('#planAltBuild') ? $('#planAltBuild').checked : true;
+  const plan = computePlan(includeAlt);
+
+  // 主词条需求判定
+  let tier = null, keep = 0, who = [];
+  if (setName && plan.has(setName)) {
+    const rows = plan.get(setName).slots[slot] || [];
+    const hit = rows.find(r => r.stat === mainId || r.swap === mainId || r.stat === '_fixed');
+    if (hit) { tier = hit.tier; keep = hit.keep; who = hit.charsArr.map(x => x.name); }
+  } else if (setName) {
+    tier = null;
+  }
+
+  // 权重
+  let w;
+  if (setName) {
+    const sw = computeSetWeights(includeAlt);
+    w = sw.get(setName) || globalWeights();
+  } else {
+    w = globalWeights();
+  }
+
+  // 有效 roll 计算
+  let eff = 0;
+  const detail = [];
+  SUB_STATS.forEach(s => {
+    const v = vals[s.id] || 0;
+    if (!v) return;
+    const rolls = v / s.max;
+    const ww = w[s.id] || 0;
+    eff += rolls * ww;
+    detail.push({ name: s.name, rolls, w: ww, part: rolls * ww });
+  });
+  detail.sort((a, b) => b.part - a.part);
+
+  const maxRolls = 4 + Math.floor(lv / 4); // 初始词条 + 每 4 级 1 次强化
+  const pct = maxRolls > 0 ? eff / maxRolls : 0;
+
+  let grade, gcolor, advice;
+  if (lv >= 16) {
+    if (pct >= 0.62)      { grade = 'S 毕业级'; gcolor = 'var(--green)'; advice = '锁死，这件可以穿到关服。'; }
+    else if (pct >= 0.48) { grade = 'A 优质';   gcolor = 'var(--blue)';   advice = '锁定，属于能用的主力件。'; }
+    else if (pct >= 0.34) { grade = 'B 及格';   gcolor = 'var(--orange)'; advice = '先用着，遇到更好的就替换。'; }
+    else                  { grade = 'C 一般';   gcolor = 'var(--red)';    advice = '过渡件，后期当狗粮。'; }
+  } else if (lv >= 8) {
+    if (pct >= 0.55)      { grade = 'A 值得拉满'; gcolor = 'var(--blue)';   advice = '继续喂到 20 级。'; }
+    else if (pct >= 0.38) { grade = 'B 观察';     gcolor = 'var(--orange)'; advice = '再升 4 级看走势，走歪就停。'; }
+    else                  { grade = 'C 建议止损'; gcolor = 'var(--red)';    advice = '停手，留作过渡或当狗粮。'; }
+  } else {
+    if (pct >= 0.62)      { grade = 'A 好胚子'; gcolor = 'var(--blue)';   advice = '值得拉到 20 级赌一把。'; }
+    else if (pct >= 0.45) { grade = 'B 可试养'; gcolor = 'var(--orange)'; advice = '先升到 8 级，出有效词条再继续。'; }
+    else                  { grade = 'C 狗粮';   gcolor = 'var(--red)';    advice = '直接喂，别浪费资源。'; }
+  }
+
+  const tierTxt = setName
+    ? (tier ? `<span class="tier-tag ${tierClass(tier)}">主词条：${tierLabel(tier)}</span> 建议保留 ${keep} 件${who.length ? '（' + esc(who.join('、')) + '）' : ''}`
+            : '<span class="tier-tag fodder">主词条：无角色需要</span> 当前配装用不上')
+    : '<span class="muted small">未选择套装，只做副词条评分</span>';
+
+  const top = detail.slice(0, 4).map(d =>
+    `<span class="set-tag" style="margin-right:4px">${esc(d.name)} ${d.rolls.toFixed(1)}roll ×${d.w.toFixed(2)}</span>`).join('');
+
+  box.innerHTML = `
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+      <span class="big" style="color:${gcolor}">${grade}</span>
+      <span class="muted small">有效权重 ${eff.toFixed(2)} / 约 ${maxRolls} 次词条 = ${(pct * 100).toFixed(0)}%</span>
+    </div>
+    <div style="margin:8px 0">${tierTxt}</div>
+    <div style="margin-bottom:6px">${top || '<span class="muted small">尚未填写副词条</span>'}</div>
+    <div class="muted small">建议：${advice}${tier === null && setName ? '　（若主词条无人需要，副词条再好也只能当狗粮）' : ''}</div>`;
+}
+
+function renderSetSubTable() {
+  const sw = computeSetWeights($('#planAltBuild') ? $('#planAltBuild').checked : true);
+  const rows = Array.from(sw.entries())
+    .sort((a, b) => a[0].localeCompare(b[0], 'zh'))
+    .map(([setName, w]) => {
+      const top = SUB_STATS.map(s => ({ name: s.name, v: w[s.id] || 0 }))
+        .sort((a, b) => b.v - a.v).slice(0, 5);
+      const max = Math.max(0.001, top[0].v);
+      return `<tr>
+        <td style="white-space:nowrap">${esc(setName)}</td>
+        <td>${top.map(t => `<span class="set-tag" style="margin-right:4px">${esc(t.name)} ${t.v.toFixed(2)}</span>`).join('')}</td>
+        <td style="width:130px">${top.map(t => `<div style="display:flex;align-items:center;gap:5px;margin:2px 0"><span class="wbar" style="width:${Math.max(2, (t.v / max) * 90)}px"></span></div>`).join('')}</td>
+      </tr>`;
+    }).join('');
+
+  $('#setSubTable').innerHTML = rows
+    ? `<table class="tbl"><thead><tr><th>套装</th><th>核心副词条（权重 Top5）</th><th>相对强度</th></tr></thead><tbody>${rows}</tbody></table>`
+    : '<p class="muted small">启用角色后这里会显示每个套装的核心副词条。</p>';
+}
+
+/* ============================================================
+ * 页面 ④：数据管理
+ * ============================================================ */
+function renderCustomSets() {
+  $('#customSetList').innerHTML = state.customSets.map((s, i) =>
+    `<span class="chip">${esc(s.name)}<span class="muted small">${esc(s.bonus || '')}</span><span class="x" data-ds="${i}">×</span></span>`
+  ).join('') || '<p class="muted small">暂无自定义套装。</p>';
+  $('#customSetList').querySelectorAll('[data-ds]').forEach(x => {
+    x.onclick = () => { state.customSets.splice(+x.dataset.ds, 1); save(); renderCustomSets(); renderPlan(); };
+  });
+}
+
+/* ============================================================
+ * 事件绑定
+ * ============================================================ */
+function bind() {
+  // Tab
+  $$('.tab').forEach(t => t.onclick = () => {
+    $$('.tab').forEach(x => x.classList.toggle('active', x === t));
+    $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + t.dataset.tab));
+    if (t.dataset.tab === 'plan') renderPlan();
+    if (t.dataset.tab === 'subs') renderSubs();
+  });
+
+  // 角色页筛选
+  $('#charSearch').oninput = e => { ui.search = e.target.value; renderChars(); };
+  $('#onlyEnabled').onchange = e => { ui.onlyEnabled = e.target.checked; renderChars(); };
+  $('#elemFilter').querySelectorAll('.seg-btn').forEach(b => {
+    b.onclick = () => {
+      $('#elemFilter').querySelectorAll('.seg-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      ui.elem = b.dataset.elem;
+      renderChars();
+    };
+  });
+  $('#btnAddChar').onclick = openNewChar;
+
+  // 抽屉
+  $('#btnCloseDrawer').onclick = () => showDrawer(false);
+  $('#btnCancelEdit').onclick = () => showDrawer(false);
+  $('#modalMask').onclick = () => showDrawer(false);
+  $('#btnSaveChar').onclick = saveChar;
+  $('#btnDeleteChar').onclick = () => {
+    if (!editing || editingIsNew) return;
+    if (!confirm('确定删除角色「' + editing.name + '」？')) return;
+    state.characters = state.characters.filter(c => c.id !== editing.id);
+    save(); showDrawer(false); renderChars(); renderPlan(); renderSubs();
+    toast('已删除');
+  };
+
+  // 方案页
+  $('#planSetFilter').onchange = renderPlan;
+  $('#planSlotFilter').onchange = renderPlan;
+  $('#planHideUnused').onchange = renderPlan;
+  $('#planAltBuild').onchange = () => { renderPlan(); if ($('#tab-subs').classList.contains('active')) renderSubs(); };
+  $('#btnCopyPlan').onclick = async () => {
+    const txt = planToText();
+    try { await navigator.clipboard.writeText(txt); toast('清单已复制到剪贴板'); }
+    catch (e) { fallbackCopy(txt); }
+  };
+  $('#btnCsvPlan').onclick = () => {
+    download('圣遗物锁定方案.csv', planToCsv(), 'text/csv;charset=utf-8');
+    toast('CSV 已导出（Excel 可直接打开）');
+  };
+  $('#btnPrint').onclick = () => window.print();
+
+  // 数据页
+  $('#btnExportJson').onclick = () => {
+    download('圣遗物配置备份.json', JSON.stringify(state, null, 2), 'application/json');
+    toast('已导出配置');
+  };
+  $('#btnImportJson').onclick = () => $('#fileImport').click();
+  $('#fileImport').onchange = e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const o = JSON.parse(r.result);
+        state = normalize(o);
+        save();
+        renderChars(); renderPlan(); renderSubs(); renderCustomSets();
+        toast('导入成功：' + state.characters.length + ' 个角色');
+      } catch (err) { toast('导入失败：文件格式不正确'); }
+    };
+    r.readAsText(f);
+    e.target.value = '';
+  };
+  $('#btnClearEnabled').onclick = () => {
+    if (!confirm('清空所有角色的启用状态？（配装数据保留）')) return;
+    state.characters.forEach(c => { c.enabled = false; });
+    save(); renderChars(); renderPlan(); renderSubs();
+    toast('已清空启用状态');
+  };
+  $('#btnReset').onclick = () => {
+    if (!confirm('恢复内置默认角色库？你的自定义修改会丢失。')) return;
+    state = { characters: buildDefaultCharacters(), customSets: [] };
+    save(); renderChars(); renderPlan(); renderSubs(); renderCustomSets();
+    toast('已恢复默认库');
+  };
+  $('#btnAddSet').onclick = () => {
+    const n = $('#newSetName').value.trim();
+    const b = $('#newSetBonus').value.trim();
+    if (!n) return toast('请输入套装名称');
+    if (allSets().includes(n)) return toast('该套装已存在');
+    state.customSets.push({ name: n, bonus: b });
+    $('#newSetName').value = ''; $('#newSetBonus').value = '';
+    save(); renderCustomSets(); renderPlan();
+    // 刷新评分器下拉
+    $('#scoreSet').innerHTML = '<option value="">（不限套装）</option>' + allSets().map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+    toast('已添加套装：' + n);
+  };
+
+  // 帮助
+  const openHelp = () => { $('#helpBox').classList.remove('hidden'); $('#helpMask').classList.remove('hidden'); };
+  const closeHelp = () => { $('#helpBox').classList.add('hidden'); $('#helpMask').classList.add('hidden'); };
+  $('#btnHelp').onclick = openHelp;
+  $('#btnCloseHelp').onclick = closeHelp;
+  $('#helpMask').onclick = closeHelp;
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { showDrawer(false); closeHelp(); }
+  });
+}
+
+function fallbackCopy(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); toast('清单已复制到剪贴板'); }
+  catch (e) { toast('复制失败，请手动选择文本'); }
+  document.body.removeChild(ta);
+}
+
+/* ============================================================
+ * 启动
+ * ============================================================ */
+(function init() {
+  state = load();
+  bind();
+  renderBatchBar();
+  renderChars();
+  renderPlan();
+  renderSubs();
+  renderCustomSets();
+})();
+</script>
+</body>
+</html>

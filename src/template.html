@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>原神圣遗物锁定方案生成器</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">遗</span>
+    <div>
+      <h1>原神圣遗物锁定方案生成器</h1>
+      <p class="sub">输入角色配装需求 → 汇总输出每套圣遗物的锁定清单</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="saveHint" class="save-hint">数据保存在本机浏览器</span>
+    <button id="btnHelp" class="btn ghost">使用说明</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="chars">① 角色配置</button>
+  <button class="tab" data-tab="plan">② 锁定方案</button>
+  <button class="tab" data-tab="subs">③ 副词条规则</button>
+  <button class="tab" data-tab="data">④ 数据管理</button>
+</nav>
+
+<main>
+  <!-- ============ 角色配置 ============ -->
+  <section id="tab-chars" class="tabpane active">
+    <div class="toolbar">
+      <input id="charSearch" type="search" placeholder="搜索角色 / 套装 / 国度 / 定位…">
+      <div class="seg" id="elemFilter">
+        <button class="seg-btn active" data-elem="all">全部</button>
+        <button class="seg-btn" data-elem="pyro">火</button>
+        <button class="seg-btn" data-elem="hydro">水</button>
+        <button class="seg-btn" data-elem="cryo">冰</button>
+        <button class="seg-btn" data-elem="electro">雷</button>
+        <button class="seg-btn" data-elem="anemo">风</button>
+        <button class="seg-btn" data-elem="geo">岩</button>
+        <button class="seg-btn" data-elem="dendro">草</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="onlyEnabled"> 只看已启用</label>
+      <span class="spacer"></span>
+      <span class="count-badge">已启用 <b id="enabledCount">0</b> 个角色</span>
+      <button id="btnAddChar" class="btn primary">+ 新增角色</button>
+    </div>
+
+    <div class="toolbar batch-bar">
+      <span class="bar-label">批量</span>
+      <button class="btn sm" data-batch="all">全选</button>
+      <button class="btn sm" data-batch="none">全不选</button>
+      <button class="btn sm" data-batch="invert">反选</button>
+      <span class="bar-div"></span>
+      <span class="bar-label">按属性</span>
+      <span class="btn-grp" id="elemBatch"></span>
+      <span class="bar-div"></span>
+      <span class="bar-label">按国度</span>
+      <span class="btn-grp" id="regionBatch"></span>
+      <span class="bar-div"></span>
+      <span class="bar-label">按定位</span>
+      <span class="btn-grp" id="roleBatch"></span>
+    </div>
+    <p class="batch-hint">属性 / 国度 / 定位：点一次全选该类、再点一次取消，可叠加组合，对<b>全部角色</b>生效；「全选 / 反选」只对当前筛选结果生效</p>
+
+    <div id="charGrid" class="char-grid"></div>
+  </section>
+
+  <!-- ============ 锁定方案 ============ -->
+  <section id="tab-plan" class="tabpane">
+    <div class="toolbar wrap">
+      <label class="fld">套装筛选
+        <select id="planSetFilter"><option value="all">全部套装</option></select>
+      </label>
+      <label class="fld">部位筛选
+        <select id="planSlotFilter">
+          <option value="all">全部部位</option>
+          <option value="sands">时之沙</option>
+          <option value="goblet">空之杯</option>
+          <option value="circlet">理之冠</option>
+        </select>
+      </label>
+      <label class="chk"><input type="checkbox" id="planHideUnused" checked> 隐藏无人需要的套装</label>
+      <label class="chk"><input type="checkbox" id="planAltBuild" checked> 计入备选配装</label>
+      <span class="spacer"></span>
+      <button id="btnCopyPlan" class="btn">复制清单</button>
+      <button id="btnCsvPlan" class="btn">导出 CSV</button>
+      <button id="btnPrint" class="btn">打印 / 存 PDF</button>
+    </div>
+
+    <div id="planSummary" class="summary-strip"></div>
+    <div id="planOverview" class="overview-grid"></div>
+    <h2 class="print-only">原神圣遗物锁定清单</h2>
+    <p class="print-only print-meta" id="printMeta"></p>
+    <div id="planBody"></div>
+  </section>
+
+  <!-- ============ 副词条规则 ============ -->
+  <section id="tab-subs" class="tabpane">
+    <div class="two-col">
+      <div class="card">
+        <h3>通用分档规则</h3>
+        <p class="muted small">根据你启用的角色，自动汇总出的主词条白名单 + 副词条判定逻辑。游戏内可照此执行锁定。</p>
+        <div id="subRules"></div>
+      </div>
+
+      <div class="card">
+        <h3>胚子评分器</h3>
+        <p class="muted small">输入一件圣遗物的信息，快速判断值不值得留。</p>
+        <div class="form-row">
+          <label class="fld">套装
+            <select id="scoreSet"><option value="">（不限）</option></select>
+          </label>
+          <label class="fld">部位
+            <select id="scoreSlot"></select>
+          </label>
+        </div>
+        <div class="form-row">
+          <label class="fld">主词条
+            <select id="scoreMain"></select>
+          </label>
+        </div>
+        <div id="scoreSubs" class="sub-inputs"></div>
+        <div id="scoreResult" class="score-result"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>各套装推荐副词条</h3>
+      <p class="muted small">取该套装下所有需求角色的副词条权重平均值，用于判断「这个胚子值得喂到 20 级吗」。</p>
+      <div id="setSubTable"></div>
+    </div>
+  </section>
+
+  <!-- ============ 数据管理 ============ -->
+  <section id="tab-data" class="tabpane">
+    <div class="card">
+      <h3>备份与恢复</h3>
+      <p class="muted small">配置保存在浏览器 localStorage，换设备或清缓存前请先导出。</p>
+      <div class="btn-row">
+        <button id="btnExportJson" class="btn primary">导出配置 JSON</button>
+        <button id="btnImportJson" class="btn">导入配置 JSON</button>
+        <input type="file" id="fileImport" accept=".json" hidden>
+        <button id="btnClearEnabled" class="btn">清空启用状态</button>
+        <button id="btnReset" class="btn danger">恢复内置默认库</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>新增自定义套装</h3>
+      <p class="muted small">版本更新后若新增套装，可自行添加（刷新前一直有效）。</p>
+      <div class="form-row">
+        <input id="newSetName" placeholder="套装名称，例：某某之梦">
+        <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%">
+        <button id="btnAddSet" class="btn">添加</button>
+      </div>
+      <div id="customSetList" class="chip-wrap"></div>
+    </div>
+
+    <div class="card">
+      <h3>关于数据</h3>
+      <ul class="muted small notes">
+        <li>内置 <b id="statCharCount">0</b> 个角色的配装，整理自社区常见推荐，随版本变动请自行校正。</li>
+        <li>「主推 / 备选」权重：主推 = 1.0，备选 = 0.5；主词条优先级 1/2/3 权重 = 1.0 / 0.5 / 0.25。</li>
+        <li>建议保留件数 = 以该主词条为最优解的角色数（同一角色多套配装不重复计数），区间 1–4。</li>
+        <li>2+2 配装对单套的件数需求更低，汇总时按 0.6 系数折算。</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<!-- ========== 角色编辑抽屉 ========== -->
+<div id="modalMask" class="modal-mask hidden"></div>
+<aside id="charDrawer" class="drawer hidden">
+  <div class="drawer-head">
+    <h2 id="drawerTitle">编辑角色</h2>
+    <button id="btnCloseDrawer" class="icon-btn">×</button>
+  </div>
+  <div id="drawerBody" class="drawer-body"></div>
+  <div class="drawer-foot">
+    <button id="btnDeleteChar" class="btn danger hidden">删除角色</button>
+    <span class="spacer"></span>
+    <button id="btnCancelEdit" class="btn ghost">取消</button>
+    <button id="btnSaveChar" class="btn primary">保存</button>
+  </div>
+</aside>
+
+<!-- ========== 使用说明 ========== -->
+<div id="helpMask" class="modal-mask hidden"></div>
+<div id="helpBox" class="modal hidden">
+  <div class="drawer-head">
+    <h2>使用说明</h2>
+    <button id="btnCloseHelp" class="icon-btn">×</button>
+  </div>
+  <div class="modal-body">
+    <h4>三步走</h4>
+    <ol>
+      <li><b>① 角色配置</b>：勾选你实际要养的角色。点卡片可改套装、主词条优先级和副词条权重。主词条越靠前优先级越高。</li>
+      <li><b>② 锁定方案</b>：系统按「套装 × 部位 × 主词条」汇总，输出每个套装每个部位该留什么、留几件、给谁用。</li>
+      <li><b>③ 副词条规则</b>：给出分档判定 + 胚子评分器，解决「主词条对了但副词条能不能留」。</li>
+    </ol>
+    <h4>怎么看结果</h4>
+    <ul>
+      <li><b>必留</b>：有角色把它当最优解，至少留 1 件，优质胚子可留 2 件。</li>
+      <li><b>过渡</b>：只有次优/备选配装需要，优先留已有的，别专门刷。</li>
+      <li><b>可喂</b>：当前没有任何已启用角色需要，直接当狗粮。</li>
+    </ul>
+    <h4>注意</h4>
+    <ul>
+      <li>花和羽毛主词条固定，只按套装需求决定留几件，看副词条质量。</li>
+      <li>空之杯的元素伤杯掉率极低，同套装的「对元素杯」建议全部保留。</li>
+      <li>数据存在本机浏览器，换设备用「数据管理 → 导出 JSON」迁移。</li>
+    </ul>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
