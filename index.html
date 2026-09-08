@@ -172,20 +172,16 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .stat-box .sv{font-size:22px;font-weight:700;color:var(--gold);line-height:1.2;}
 .stat-box .sl{font-size:12px;color:var(--txt3);}
 
-/* ---------- overview ---------- */
-.overview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
-@media (max-width:1100px){.overview-grid{grid-template-columns:repeat(2,1fr);}}
-.ov-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;}
-.ov-card h4{margin:0 0 8px;font-size:13.5px;color:var(--gold2);display:flex;justify-content:space-between;align-items:baseline;}
-.ov-card h4 small{color:var(--txt3);font-size:11px;font-weight:400;}
-.ov-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed #232c37;font-size:12.5px;}
-.ov-row:last-child{border-bottom:none;}
-.ov-row .ovn{flex:1;color:var(--txt);}
-.ov-row .ovk{flex:none;font-weight:600;color:var(--green);font-size:13px;}
-.ov-row .ovt{flex:none;font-size:11px;color:var(--txt3);}
-.ov-row .ovbar{flex:none;width:52px;height:5px;border-radius:3px;background:#243040;overflow:hidden;}
-.ov-row .ovbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#8a7ad0);}
-.ov-empty{color:var(--txt3);font-size:12px;}
+/* ---------- 详细件数（折叠） ---------- */
+.set-detail{border-top:1px solid var(--line);}
+.set-detail>summary{
+  padding:8px 16px;font-size:12px;color:var(--txt3);cursor:pointer;
+  background:#161c25;list-style:none;user-select:none;
+}
+.set-detail>summary::-webkit-details-marker{display:none;}
+.set-detail>summary::before{content:'▸ ';color:var(--gold);}
+.set-detail[open]>summary::before{content:'▾ ';}
+.set-detail>summary:hover{color:var(--txt2);}
 
 .set-block{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:14px;overflow:hidden;}
 .set-block.unused{opacity:.55;}
@@ -336,7 +332,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .print-meta{font-size:11px;color:#666;margin:0 0 12px;}
 
 /* ---------- 游戏内锁定方案 ---------- */
-.gp-wrap{margin:0 14px 14px;padding:12px 14px;border-top:1px dashed #2c3746;background:#131a24;border-radius:0 0 10px 10px;}
+.gp-wrap{margin:0;padding:12px 16px 14px;background:#131a24;}
 .gp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
 .gp-title{font-size:13px;font-weight:700;color:var(--gold,#e8c88a);}
 .gp-meta{font-size:11px;color:#7d8798;}
@@ -454,23 +450,24 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
           <option value="circlet">理之冠</option>
         </select>
       </label>
-      <label class="fld" title="游戏内每种套装至多 2 个自定义方案（官方 Wiki）">方案槽位
+      <label class="fld" title="游戏内每种套装至多 3 个自定义方案（官方上限），多个方案在锁定时共同生效">方案槽位
         <select id="planSlots">
-          <option value="2" selected>2 个（官方上限）</option>
-          <option value="3">3 个</option>
+          <option value="1">1 个</option>
+          <option value="2">2 个</option>
+          <option value="3" selected>3 个（官方上限）</option>
         </select>
       </label>
       <label class="chk"><input type="checkbox" id="planHideUnused" checked> 隐藏无人需要的套装</label>
       <label class="chk"><input type="checkbox" id="planAltBuild" checked> 计入备选配装</label>
+      <label class="chk"><input type="checkbox" id="planDetail"> 显示详细件数</label>
       <span class="spacer"></span>
-      <button id="btnCopyGame" class="btn">复制游戏内方案</button>
+      <button id="btnCopyGame" class="btn primary">复制游戏内方案</button>
       <button id="btnCopyPlan" class="btn">复制清单</button>
       <button id="btnCsvPlan" class="btn">导出 CSV</button>
       <button id="btnPrint" class="btn">打印 / 存 PDF</button>
     </div>
 
     <div id="planSummary" class="summary-strip"></div>
-    <div id="planOverview" class="overview-grid"></div>
     <h2 class="print-only">原神圣遗物锁定清单</h2>
     <p class="print-only print-meta" id="printMeta"></p>
     <div id="planBody"></div>
@@ -577,19 +574,22 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     <h4>三步走</h4>
     <ol>
       <li><b>① 角色配置</b>：勾选你实际要养的角色。点卡片可改套装、主词条优先级和副词条权重。主词条越靠前优先级越高。</li>
-      <li><b>② 锁定方案</b>：系统按「套装 × 部位 × 主词条」汇总，输出每个套装每个部位该留什么、留几件、给谁用。</li>
+      <li><b>② 锁定方案</b>：每个套装直接给出「游戏内锁定方案」——把该套装下所有角色的需求聚类合并成 ≤3 个预设，
+        每个预设逐个部位列出主要属性、★必须副词条、候选副词条与「包含任意 N 条」。照着填进游戏即可。</li>
       <li><b>③ 副词条规则</b>：给出分档判定 + 胚子评分器，解决「主词条对了但副词条能不能留」。</li>
     </ol>
-    <h4>怎么看结果</h4>
+    <h4>怎么看方案</h4>
     <ul>
-      <li><b>必留</b>：有角色把它当最优解，至少留 1 件，优质胚子可留 2 件。</li>
-      <li><b>过渡</b>：只有次优/备选配装需要，优先留已有的，别专门刷。</li>
-      <li><b>可喂</b>：当前没有任何已启用角色需要，直接当狗粮。</li>
+      <li><b>方案 N</b>：由需求相近的角色聚类合并而来，标题写明「供谁使用」。同一套装的多个方案在锁定界面<b>共同生效</b>（彼此是「或」的关系）。</li>
+      <li><b>★必须</b>：金色词条，这件圣遗物<b>必须</b>有它，否则不锁定。</li>
+      <li><b>包含任意 N 条</b>：候选池里命中任意 N 条即锁定，★必须的词条也计入这 N 条。</li>
+      <li>勾选工具栏「<b>显示详细件数</b>」可展开每套的建议保留件数与需求来源；不勾选时页面只显示可直接照搬的锁定方案。</li>
     </ul>
     <h4>注意</h4>
     <ul>
-      <li>花和羽毛主词条固定，只按套装需求决定留几件，看副词条质量。</li>
-      <li>空之杯的元素伤杯掉率极低，同套装的「对元素杯」建议全部保留。</li>
+      <li>花和羽毛主词条固定，游戏内只能设追加属性，因此这两个部位对副词条要求最严。</li>
+      <li>空之杯的元素伤杯掉率极低，算法已自动放宽该部位要求，避免漏锁。</li>
+      <li>副词条不可能与同部位主词条相同，方案里已自动剔除这类无效勾选。</li>
       <li>数据存在本机浏览器，换设备用「数据管理 → 导出 JSON」迁移。</li>
     </ul>
   </div>
@@ -1290,19 +1290,33 @@ function globalWeights() {
 /* ============================================================
  * 游戏内「套装锁定方案」生成
  *
- * 规则依据（HoYoWiki 官方 wiki + 社区攻略实测）：
- *   - 每种圣遗物套装至多预设 2 个自定义方案，多个方案在锁定时共同生效
- *   - 每个方案可为 时之沙 / 空之杯 / 理之冠 分别设定主要属性与追加属性
+ * 规则依据（社区攻略实测 + 游戏内界面）：
+ *   - 每种圣遗物套装至多预设 3 个自定义方案，多个方案在锁定时共同生效
+ *   - 每个部位（含花 / 羽）都可分别设定主要属性与追加属性
  *   - 追加属性支持「★必须」与「包含任意 N 条」
  *   - 仅有 3 条追加属性的圣遗物，所需数量相应减 1
  *   - 需求差异大的角色不宜合并到同一方案，否则会「存伪」（锁进无用件）
  *
- * 因此核心思路：把套装下的角色按需求相似度做层次聚类，
- * 合并成 ≤ 槽位数 组，只有需求相近的角色才共享一个方案。
+ * 固定算法（每个套装 × 每个部位独立聚合，结果可复现）：
+ *   ① 角色聚类：按需求相似度层次聚类，合并成 ≤ 槽位数 组
+ *   ② 主属性：花/羽固定；沙/杯/冠按「票数 × 优先级」降序，
+ *      取到累计覆盖 ≥ MAIN_COVER 为止，上限 MAIN_MAX
+ *   ③ ★必须：组内全体角色共有的核心副词条，按平均权重降序，上限 2
+ *   ④ 候选池：组内任一角色需要的副词条（剔除与唯一主词条冲突项）
+ *   ⑤ 至少命中 N：round(组内平均核心词条数 × 部位严格度系数)，
+ *      下限 = ★必须数量（否则★之外的候选形同虚设），上限 = min(4, 候选池-1)
  * ============================================================ */
 const SUB_CORE_TH = 0.4;   // 副词条权重达到该值视为「核心需求」
-const PLAN_SIM_TH = 0.62;  // 两组相似度高于此值才允许并入同一方案
+const MERGE_SIM_TH = 0.95; // 需求「几乎一致」的两组自愿共用一个槽位（节省预设名额）
 const MAIN_MAX    = 3;     // 单部位主属性上限（条件过宽会「存伪」）
+const MAIN_COVER  = 0.7;   // 主属性取到累计覆盖该比例为止
+
+/* 部位严格度系数：影响各部位「至少命中 N 条」的取值
+ *   花 / 羽：主词条固定，副词条是唯一变量 → 要求最严（×1.2）
+ *   沙 / 冠：主词条与副词条互补          → 标准（×1.0）
+ *   杯    ：元素伤害杯本就稀有            → 放宽（×0.8）
+ */
+const SLOT_STRICT = { flower: 1.0, plume: 1.0, sands: 1.0, circlet: 0.95, goblet: 0.8 };
 
 /* 角色的核心副词条集合 */
 function coreSubs(ch) {
@@ -1341,10 +1355,15 @@ function groupSim(g1, g2) {
   return n ? sum / n : 0;
 }
 
-/* 层次聚类：反复合并最相似的两组，直到组数 ≤ maxGroups 或剩余组都不够相似 */
+/* 层次聚类：反复合并最相似的两组，直到组数 ≤ maxGroups
+ *   注意：游戏内槽位是硬上限，组数超限时【强制】合并最相似的两组；
+ *   之后进入「自愿合并」阶段：相似度 ≥ MERGE_SIM_TH 的组主动共用一个槽位；
+ *   低于该阈值则不再合并，避免把需求无关的角色硬塞进同一方案造成「存伪」。
+ */
 function clusterRoles(roles, maxGroups) {
   const groups = roles.map(r => [r]);
-  while (groups.length > maxGroups) {
+
+  const bestPair = () => {
     let best = null;
     for (let i = 0; i < groups.length; i++) {
       for (let j = i + 1; j < groups.length; j++) {
@@ -1352,14 +1371,29 @@ function clusterRoles(roles, maxGroups) {
         if (!best || s > best.s) best = { s, i, j };
       }
     }
-    if (!best || best.s < PLAN_SIM_TH) break;
+    return best;
+  };
+
+  while (groups.length > maxGroups) {
+    const best = bestPair();
+    if (!best) break;                       // 只剩一组，无法再合并
+    groups[best.i] = groups[best.i].concat(groups[best.j]);
+    groups.splice(best.j, 1);
+  }
+
+  // 自愿合并：需求几乎一致的两组可以共用一个槽位，把宝贵的预设名额让给差异更大的角色
+  while (groups.length > 1) {
+    const best = bestPair();
+    if (!best || best.s < MERGE_SIM_TH) break;
     groups[best.i] = groups[best.i].concat(groups[best.j]);
     groups.splice(best.j, 1);
   }
   return groups;
 }
 
-/* 合并一组角色的主属性需求：按「需求人数 × 优先级」排序，取前 MAIN_MAX 个 */
+/* ② 合并一组角色在某部位的主属性需求
+ *   按「票数 × 优先级」降序，取到累计覆盖 ≥ MAIN_COVER 为止，上限 MAIN_MAX
+ */
 function mergeMain(group, slot) {
   const score = new Map();
   group.forEach(r => {
@@ -1367,30 +1401,56 @@ function mergeMain(group, slot) {
       score.set(st, (score.get(st) || 0) + 1 / (i + 1));
     });
   });
-  return [...score.entries()].sort((a, b) => b[1] - a[1]).slice(0, MAIN_MAX).map(x => x[0]);
+  const arr = [...score.entries()].sort((a, b) => b[1] - a[1]);
+  const total = arr.reduce((s, x) => s + x[1], 0) || 1;
+  const out = [];
+  let acc = 0;
+  for (const [st, w] of arr) {
+    out.push(st);
+    acc += w;
+    if (out.length >= MAIN_MAX || acc / total >= MAIN_COVER) break;
+  }
+  return out;
 }
 
-/* 合并一组角色的追加属性条件
- *   ★必须：组内「所有」角色都需要的核心词条，最多保留 2 个（按组内平均权重降序）
- *   候选池：组内任一角色需要的词条
- *   包含任意 N 条：N = 组内平均核心词条数（★计入总数），上限 4
+/* 花/羽的主词条（固定值），该词条不可能作为同部位的副词条出现 */
+const FIXED_MAIN = { flower: 'hp', plume: 'atk' };
+
+/* ③④⑤ 合并一组角色在【某个部位】的追加属性条件 —— 每个部位独立计算
+ *   ① 冲突剔除：副词条不可能与同部位主词条相同，任何已选主词条都必须从候选池剔除，
+ *      否则把它设成★会导致该件【永远不满足】而无法锁定
+ *   ② ★必须：组内「所有」角色都需要的核心词条（剔除冲突项后），按平均权重降序，最多 2 个
+ *   ③ 候选池：组内任一角色需要的词条（剔除冲突项后）
+ *   ④ 包含任意 N 条：以【未剔除的】组内平均核心词条数为基准 × 部位严格度系数，
+ *      下限 = ★必须数量，上限 = min(4, 候选池-1, 3)
  */
-function mergeSub(group) {
-  const cores = group.map(r => r.core);
+function mergeSubSlot(group, slot, mainIds) {
+  const n = group.length;
+  const banned = new Set(mainIds || []);
+  if (FIXED_MAIN[slot]) banned.add(FIXED_MAIN[slot]);   // 花/羽主词条固定，恒冲突
+
+  /* 原始核心词条（用于统计需求广度） */
+  const rawCores = group.map(r => r.core);
+  const avgW = id => group.reduce((s, r) => s + (r.subs[id] || 0), 0) / n;
+
+  /* 剔除冲突项后的核心词条 */
+  const cores = rawCores.map(list => list.filter(id => !banned.has(id)));
   const cnt = new Map();
   cores.forEach(list => list.forEach(id => cnt.set(id, (cnt.get(id) || 0) + 1)));
-  const n = group.length;
 
-  const avgW = id => group.reduce((s, r) => s + (r.subs[id] || 0), 0) / n;
   const required = [...cnt.entries()]
     .filter(([, c]) => c === n)          // 全员共有
     .map(([id]) => id)
     .sort((a, b) => avgW(b) - avgW(a))   // 权重高的优先
     .slice(0, 2);                        // 最多 2 个，避免条件过严
 
-  const pool = [...cnt.keys()];
-  const avgCore = cores.reduce((s, l) => s + l.length, 0) / n;
-  const minHit = Math.max(1, Math.min(4, Math.round(avgCore), pool.length));
+  const pool = [...cnt.keys()].sort((a, b) => avgW(b) - avgW(a));
+  if (!pool.length) return { required: [], pool: [], minHit: 0 };  // 只挑主词条，副词条不限
+
+  const rawCore = rawCores.reduce((s, l) => s + l.length, 0) / n;
+  const strict = SLOT_STRICT[slot] || 1;
+  const cap = Math.min(4, Math.max(required.length, Math.min(pool.length - 1, 3), 1));
+  const minHit = Math.min(cap, Math.max(Math.round(rawCore * strict), required.length, 1));
   return { required, pool, minHit };
 }
 
@@ -1412,14 +1472,12 @@ function buildGamePlans(charList, maxPlans) {
   if (!roles.length) return [];
 
   return clusterRoles(roles, maxPlans).map(g => {
-    const sub = mergeSub(g);
     const slots = {};
     SLOTS.forEach(sd => {
       // 花 / 羽 主词条固定，游戏内只能设追加属性
-      slots[sd.id] = {
-        main: (sd.id === 'flower' || sd.id === 'plume') ? null : mergeMain(g, sd.id),
-        sub,
-      };
+      const main = (sd.id === 'flower' || sd.id === 'plume') ? null : mergeMain(g, sd.id);
+      // 每个部位独立聚合副词条规则
+      slots[sd.id] = { main, sub: mergeSubSlot(g, sd.id, main || []) };
     });
     return { chars: g.map(r => r.name), slots };
   });
@@ -1437,7 +1495,9 @@ function planToGameText(setName, plan, idx) {
     const rest = s.sub.pool.filter(id => !s.sub.required.includes(id))
       .map(id => subStatName(id)).join('、');
     const subTxt = [stars, rest].filter(Boolean).join(' / ');
-    L.push(`  ${sd.name}：主属性 ${mainTxt}；追加 ${subTxt}，包含任意 ${s.sub.minHit} 条`);
+    L.push(s.sub.minHit
+      ? `  ${sd.name}：主属性 ${mainTxt}；追加 ${subTxt || '不限'}，包含任意 ${s.sub.minHit} 条`
+      : `  ${sd.name}：主属性 ${mainTxt}；追加属性不限`);
   });
   return L.join('\n');
 }
@@ -1903,27 +1963,19 @@ function renderPlan() {
   if (!enabled) {
     $('#planBody').innerHTML = '<div class="card"><p class="muted">请先在「① 角色配置」页勾选你要养的角色，这里会自动生成锁定方案。</p></div>';
     $('#planSummary').innerHTML = '';
-    $('#planOverview').innerHTML = '';
     return;
   }
 
   let blocks = Array.from(plan.entries());
   // 统计
-  let usedSets = 0, keepRows = 0, fodderSets = 0;
+  let usedSets = 0, fodderSets = 0, planCount = 0;
   blocks.forEach(([name, b]) => {
     const has = b.users.size > 0;
     if (has) usedSets++; else fodderSets++;
-    SLOTS.forEach(sd => (b.slots[sd.id] || []).forEach(r => { if (r.tier === 'keep') keepRows++; }));
   });
 
-  $('#planSummary').innerHTML = `
-    <div class="stat-box"><div class="sv">${enabled}</div><div class="sl">启用角色</div></div>
-    <div class="stat-box"><div class="sv">${usedSets}</div><div class="sl">涉及套装</div></div>
-    <div class="stat-box"><div class="sv">${keepRows}</div><div class="sl">必留词条条目</div></div>
-    <div class="stat-box"><div class="sv">${fodderSets}</div><div class="sl">可整套清理的套装</div></div>`;
-
   const setWeights = computeSetWeights(includeAlt);
-  const maxPlans = +($('#planSlots') ? $('#planSlots').value : 2) || 2;
+  const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
 
   const html = blocks
     .filter(([name]) => setFilter === 'all' || name === setFilter)
@@ -1932,7 +1984,17 @@ function renderPlan() {
     .map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights, maxPlans))
     .join('');
 
-  renderOverview(includeAlt ? computePlan(false) : plan, plan);
+  blocks.forEach(([name, b]) => {
+    if (!b.users.size) return;
+    const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
+    planCount += buildGamePlans(chars, maxPlans).length;
+  });
+
+  $('#planSummary').innerHTML = `
+    <div class="stat-box"><div class="sv">${enabled}</div><div class="sl">启用角色</div></div>
+    <div class="stat-box"><div class="sv">${usedSets}</div><div class="sl">涉及套装</div></div>
+    <div class="stat-box"><div class="sv">${planCount}</div><div class="sl">锁定方案总数</div></div>
+    <div class="stat-box"><div class="sv">${fodderSets}</div><div class="sl">可整套清理的套装</div></div>`;
 
   $('#printMeta').textContent =
     '启用角色：' + state.characters.filter(c => c.enabled).map(c => c.name).join('、') +
@@ -1943,78 +2005,7 @@ function renderPlan() {
 
 const ELEM_DMG_STATS = ['pyro', 'hydro', 'cryo', 'electro', 'anemo', 'geo', 'dendro', 'phys'];
 
-/* 跨套装的部位总量盘点：回答「我到底要凑多少件」
- * planMain = 只算主推配装的刚性需求（主数字）
- * planAll  = 含备选配装（附加数字） */
-function aggSlot(plan, slotId) {
-  const agg = new Map();
-  plan.forEach(b => {
-    (b.slots[slotId] || []).forEach(r => {
-      const key = r.swap ? r.stat + '/' + r.swap : r.stat;
-      const o = agg.get(key) || { keep: 0, trans: 0, label: statLabel(slotId, r), swap: !!r.swap };
-      if (r.tier === 'keep') o.keep += r.keep; else o.trans += r.keep;
-      agg.set(key, o);
-    });
-  });
-  return agg;
-}
-
-function renderOverview(planMain, planAll) {
-  const fp = (p) => {
-    let s = 0;
-    p.forEach(b => {
-      (b.slots.flower || []).forEach(r => { s += r.keep; });
-      (b.slots.plume || []).forEach(r => { s += r.keep; });
-    });
-    return s;
-  };
-  const fpMain = fp(planMain), fpAll = fp(planAll);
-
-  const slotCards = [
-    { id: 'sands',   title: '时之沙' },
-    { id: 'goblet',  title: '空之杯' },
-    { id: 'circlet', title: '理之冠' },
-  ].map(({ id, title }) => {
-    const aMain = aggSlot(planMain, id);
-    const aAll = aggSlot(planAll, id);
-
-    const rows = Array.from(aMain.entries())
-      .map(([key, v]) => {
-        const all = aAll.get(key);
-        return [key, v, all ? (all.keep - v.keep) : 0];
-      })
-      .sort((x, y) => (y[1].keep - x[1].keep) || (y[1].trans - x[1].trans));
-
-    const max = Math.max(1, ...rows.map(r => r[1].keep));
-    const total = rows.reduce((s, r) => s + r[1].keep, 0);
-    const extra = rows.reduce((s, r) => s + r[2], 0);
-
-    return `<div class="ov-card">
-      <h4>${title}<small>必留 ${total} 件${extra ? `　·　备选再需 ${extra}` : ''}</small></h4>
-      ${rows.length ? rows.map(([key, v, ex]) => `
-        <div class="ov-row">
-          <span class="ovn">${esc(v.label)}${v.swap ? '<span class="swap-tag">二选一</span>' : ''}</span>
-          <span class="ovbar"><i style="width:${(v.keep / max * 100).toFixed(0)}%"></i></span>
-          <span class="ovk">${v.keep || ''}</span>
-          <span class="ovt">${v.trans ? '+' + v.trans + '过渡' : ''}${ex ? ' +' + ex + '备选' : ''}</span>
-        </div>`).join('')
-        : '<p class="ov-empty">暂无需求</p>'}
-    </div>`;
-  });
-
-  const fpCard = `<div class="ov-card">
-    <h4>花 / 羽<small>必留 ${fpMain} 件${fpAll > fpMain ? `　·　备选再需 ${fpAll - fpMain}` : ''}</small></h4>
-    <p class="ov-empty" style="line-height:1.75">
-      主词条固定，只按套装区分。<br>
-      共需 <b style="color:var(--green);font-size:16px">${fpMain}</b> 件（每套花、羽各计 1 件）。<br>
-      副词条不达标可随时替换，<br>不必强留低质量件。
-    </p>
-  </div>`;
-
-  $('#planOverview').innerHTML = fpCard + slotCards.join('');
-}
-
-function renderSetBlock(name, b, slotFilter, setWeights, maxPlans = 2) {
+function renderSetBlock(name, b, slotFilter, setWeights, maxPlans = 3) {
   const bonus = allSetBonus()[name] || '';
   const users = Array.from(b.users.entries());
   const unused = users.length === 0;
@@ -2022,7 +2013,7 @@ function renderSetBlock(name, b, slotFilter, setWeights, maxPlans = 2) {
   // 游戏内锁定方案：把该套装下的角色需求聚类合并成 ≤ maxPlans 组
   const charsForPlan = state.characters.filter(c => c.enabled && b.users.has(c.name));
   const plans = unused ? [] : buildGamePlans(charsForPlan, maxPlans);
-  const gpHtml = plans.length ? renderGamePlans(name, plans, maxPlans) : '';
+  const gpHtml = plans.length ? renderGamePlans(name, plans, maxPlans, slotFilter) : '';
 
   // 该套装的核心副词条（用于花/羽行提示）
   const w = setWeights ? setWeights.get(name) : null;
@@ -2067,6 +2058,11 @@ function renderSetBlock(name, b, slotFilter, setWeights, maxPlans = 2) {
       return slotRow(sd, inner);
     }).join('');
 
+  // 详细件数清单：默认折叠（勾选工具栏「显示详细件数」才展开）
+  const detailHtml = showDetail()
+    ? `<details class="set-detail" open><summary>详细件数清单</summary><div class="set-body">${slotsHtml}</div></details>`
+    : '';
+
   return `
   <div class="set-block ${unused ? 'unused' : ''}">
     <div class="set-head">
@@ -2078,15 +2074,23 @@ function renderSetBlock(name, b, slotFilter, setWeights, maxPlans = 2) {
           : users.map(([n, i]) => `<span class="user-pill ${i.alt ? 'alt' : ''}">${esc(n)}${i.alt ? '·备选' : ''}</span>`).join('')}
       </span>
     </div>
-    <div class="set-body">${slotsHtml}</div>
     ${gpHtml}
+    ${detailHtml}
   </div>`;
 }
 
+/* 是否展开详细件数清单 */
+function showDetail() {
+  const el = $('#planDetail');
+  return !!(el && el.checked);
+}
+
 /* 渲染「游戏内锁定方案」区块 */
-function renderGamePlans(setName, plans, maxPlans) {
+function renderGamePlans(setName, plans, maxPlans, slotFilter = 'all') {
   const cards = plans.map((p, i) => {
-    const rows = SLOTS.map(sd => {
+    const rows = SLOTS
+      .filter(sd => slotFilter === 'all' || sd.id === slotFilter)
+      .map(sd => {
       const s = p.slots[sd.id];
       const mainTxt = s.main && s.main.length
         ? s.main.map(id => `<span class="gp-main">${esc(mainStatName(sd.id, id))}</span>`).join('')
@@ -2095,12 +2099,16 @@ function renderGamePlans(setName, plans, maxPlans) {
         .map(id => `<span class="gp-star">★${esc(subStatName(id))}</span>`).join('');
       const rest = s.sub.pool.filter(id => !s.sub.required.includes(id))
         .map(id => `<span class="gp-sub">${esc(subStatName(id))}</span>`).join('');
+      const subTxt = (stars || rest) ? stars + rest : '<span class="gp-fixed">不限</span>';
+      const hitTxt = s.sub.minHit
+        ? `任意 <b>${s.sub.minHit}</b> 条`
+        : '<span class="gp-fixed">不限</span>';
       return `
         <tr>
           <td class="gp-slot">${sd.name}</td>
           <td>${mainTxt}</td>
-          <td>${stars}${rest}</td>
-          <td class="gp-hit">任意 <b>${s.sub.minHit}</b> 条</td>
+          <td>${subTxt}</td>
+          <td class="gp-hit">${hitTxt}</td>
         </tr>`;
     }).join('');
 
@@ -2139,7 +2147,7 @@ function slotRow(sd, inner) {
 /* 导出：游戏内锁定方案（可照搬进游戏） */
 function gamePlansToText() {
   const includeAlt = $('#planAltBuild').checked;
-  const maxPlans = +($('#planSlots') ? $('#planSlots').value : 2) || 2;
+  const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
   const plan = computePlan(includeAlt);
   const L = ['原神 · 圣遗物套装锁定方案（游戏内照此设置）', ''];
   let total = 0, setCount = 0;
@@ -2160,7 +2168,7 @@ function gamePlansToText() {
     });
 
   L.push(`合计：${setCount} 个套装、${total} 个锁定方案`);
-  L.push('提示：每种套装在游戏内至多 2 个自定义方案，多个方案共同生效；');
+  L.push('提示：每种套装在游戏内至多 3 个自定义方案，多个方案共同生效；');
   L.push('      仅有 3 条追加属性的圣遗物，所需数量会自动减 1。');
   return L.join('\n');
 }
@@ -2447,6 +2455,7 @@ function bind() {
   $('#planSetFilter').onchange = renderPlan;
   $('#planSlotFilter').onchange = renderPlan;
   $('#planHideUnused').onchange = renderPlan;
+  $('#planDetail').onchange = renderPlan;
   $('#planAltBuild').onchange = () => { renderPlan(); if ($('#tab-subs').classList.contains('active')) renderSubs(); };
   $('#planSlots').onchange = renderPlan;
   $('#btnCopyGame').onclick = async () => {
@@ -2462,7 +2471,7 @@ function bind() {
     const b = computePlan($('#planAltBuild').checked).get(setName);
     if (!b) return;
     const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
-    const plans = buildGamePlans(chars, +($('#planSlots') ? $('#planSlots').value : 2) || 2);
+    const plans = buildGamePlans(chars, +($('#planSlots') ? $('#planSlots').value : 3) || 3);
     const p = plans[+idxStr];
     if (!p) return;
     const txt = `【${setName}】\n` + planToGameText(setName, p, +idxStr);

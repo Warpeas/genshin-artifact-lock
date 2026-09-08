@@ -165,20 +165,16 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .stat-box .sv{font-size:22px;font-weight:700;color:var(--gold);line-height:1.2;}
 .stat-box .sl{font-size:12px;color:var(--txt3);}
 
-/* ---------- overview ---------- */
-.overview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
-@media (max-width:1100px){.overview-grid{grid-template-columns:repeat(2,1fr);}}
-.ov-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;}
-.ov-card h4{margin:0 0 8px;font-size:13.5px;color:var(--gold2);display:flex;justify-content:space-between;align-items:baseline;}
-.ov-card h4 small{color:var(--txt3);font-size:11px;font-weight:400;}
-.ov-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed #232c37;font-size:12.5px;}
-.ov-row:last-child{border-bottom:none;}
-.ov-row .ovn{flex:1;color:var(--txt);}
-.ov-row .ovk{flex:none;font-weight:600;color:var(--green);font-size:13px;}
-.ov-row .ovt{flex:none;font-size:11px;color:var(--txt3);}
-.ov-row .ovbar{flex:none;width:52px;height:5px;border-radius:3px;background:#243040;overflow:hidden;}
-.ov-row .ovbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#8a7ad0);}
-.ov-empty{color:var(--txt3);font-size:12px;}
+/* ---------- 详细件数（折叠） ---------- */
+.set-detail{border-top:1px solid var(--line);}
+.set-detail>summary{
+  padding:8px 16px;font-size:12px;color:var(--txt3);cursor:pointer;
+  background:#161c25;list-style:none;user-select:none;
+}
+.set-detail>summary::-webkit-details-marker{display:none;}
+.set-detail>summary::before{content:'▸ ';color:var(--gold);}
+.set-detail[open]>summary::before{content:'▾ ';}
+.set-detail>summary:hover{color:var(--txt2);}
 
 .set-block{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:14px;overflow:hidden;}
 .set-block.unused{opacity:.55;}
@@ -329,7 +325,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .print-meta{font-size:11px;color:#666;margin:0 0 12px;}
 
 /* ---------- 游戏内锁定方案 ---------- */
-.gp-wrap{margin:0 14px 14px;padding:12px 14px;border-top:1px dashed #2c3746;background:#131a24;border-radius:0 0 10px 10px;}
+.gp-wrap{margin:0;padding:12px 16px 14px;background:#131a24;}
 .gp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
 .gp-title{font-size:13px;font-weight:700;color:var(--gold,#e8c88a);}
 .gp-meta{font-size:11px;color:#7d8798;}

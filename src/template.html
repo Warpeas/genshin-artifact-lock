@@ -84,23 +84,24 @@
           <option value="circlet">理之冠</option>
         </select>
       </label>
-      <label class="fld" title="游戏内每种套装至多 2 个自定义方案（官方 Wiki）">方案槽位
+      <label class="fld" title="游戏内每种套装至多 3 个自定义方案（官方上限），多个方案在锁定时共同生效">方案槽位
         <select id="planSlots">
-          <option value="2" selected>2 个（官方上限）</option>
-          <option value="3">3 个</option>
+          <option value="1">1 个</option>
+          <option value="2">2 个</option>
+          <option value="3" selected>3 个（官方上限）</option>
         </select>
       </label>
       <label class="chk"><input type="checkbox" id="planHideUnused" checked> 隐藏无人需要的套装</label>
       <label class="chk"><input type="checkbox" id="planAltBuild" checked> 计入备选配装</label>
+      <label class="chk"><input type="checkbox" id="planDetail"> 显示详细件数</label>
       <span class="spacer"></span>
-      <button id="btnCopyGame" class="btn">复制游戏内方案</button>
+      <button id="btnCopyGame" class="btn primary">复制游戏内方案</button>
       <button id="btnCopyPlan" class="btn">复制清单</button>
       <button id="btnCsvPlan" class="btn">导出 CSV</button>
       <button id="btnPrint" class="btn">打印 / 存 PDF</button>
     </div>
 
     <div id="planSummary" class="summary-strip"></div>
-    <div id="planOverview" class="overview-grid"></div>
     <h2 class="print-only">原神圣遗物锁定清单</h2>
     <p class="print-only print-meta" id="printMeta"></p>
     <div id="planBody"></div>
@@ -207,19 +208,22 @@
     <h4>三步走</h4>
     <ol>
       <li><b>① 角色配置</b>：勾选你实际要养的角色。点卡片可改套装、主词条优先级和副词条权重。主词条越靠前优先级越高。</li>
-      <li><b>② 锁定方案</b>：系统按「套装 × 部位 × 主词条」汇总，输出每个套装每个部位该留什么、留几件、给谁用。</li>
+      <li><b>② 锁定方案</b>：每个套装直接给出「游戏内锁定方案」——把该套装下所有角色的需求聚类合并成 ≤3 个预设，
+        每个预设逐个部位列出主要属性、★必须副词条、候选副词条与「包含任意 N 条」。照着填进游戏即可。</li>
       <li><b>③ 副词条规则</b>：给出分档判定 + 胚子评分器，解决「主词条对了但副词条能不能留」。</li>
     </ol>
-    <h4>怎么看结果</h4>
+    <h4>怎么看方案</h4>
     <ul>
-      <li><b>必留</b>：有角色把它当最优解，至少留 1 件，优质胚子可留 2 件。</li>
-      <li><b>过渡</b>：只有次优/备选配装需要，优先留已有的，别专门刷。</li>
-      <li><b>可喂</b>：当前没有任何已启用角色需要，直接当狗粮。</li>
+      <li><b>方案 N</b>：由需求相近的角色聚类合并而来，标题写明「供谁使用」。同一套装的多个方案在锁定界面<b>共同生效</b>（彼此是「或」的关系）。</li>
+      <li><b>★必须</b>：金色词条，这件圣遗物<b>必须</b>有它，否则不锁定。</li>
+      <li><b>包含任意 N 条</b>：候选池里命中任意 N 条即锁定，★必须的词条也计入这 N 条。</li>
+      <li>勾选工具栏「<b>显示详细件数</b>」可展开每套的建议保留件数与需求来源；不勾选时页面只显示可直接照搬的锁定方案。</li>
     </ul>
     <h4>注意</h4>
     <ul>
-      <li>花和羽毛主词条固定，只按套装需求决定留几件，看副词条质量。</li>
-      <li>空之杯的元素伤杯掉率极低，同套装的「对元素杯」建议全部保留。</li>
+      <li>花和羽毛主词条固定，游戏内只能设追加属性，因此这两个部位对副词条要求最严。</li>
+      <li>空之杯的元素伤杯掉率极低，算法已自动放宽该部位要求，避免漏锁。</li>
+      <li>副词条不可能与同部位主词条相同，方案里已自动剔除这类无效勾选。</li>
       <li>数据存在本机浏览器，换设备用「数据管理 → 导出 JSON」迁移。</li>
     </ul>
   </div>
