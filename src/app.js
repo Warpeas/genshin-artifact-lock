@@ -19,7 +19,7 @@ const SWAP_GROUPS = {
 };
 
 let state = null;
-let ui = { elem: 'all', search: '', onlyEnabled: false, planSet: 'all', planSlot: 'all' };
+let ui = { elem: 'all', search: '', onlyEnabled: false, planSet: 'all', planSlot: 'all', buildIdx: 0 };
 let editing = null;      // 正在编辑的角色副本
 let editingIsNew = false;
 
@@ -34,11 +34,40 @@ function load() {
       if (o && Array.isArray(o.characters) && o.characters.length) return normalize(o);
     }
   } catch (e) { console.warn('读取本地数据失败', e); }
-  return { characters: buildDefaultCharacters(), customSets: [], planAssign: {} };
+  return { characters: buildDefaultCharacters(), sets: defaultSets(), planAssign: {} };
+}
+
+/* 默认套装列表（内置套装 + 空自定义列表） */
+function defaultSets() {
+  return SETS.map(s => ({ name: s.name, bonus: s.bonus, builtin: true, hidden: false }));
 }
 
 function normalize(o) {
-  o.customSets = Array.isArray(o.customSets) ? o.customSets : [];
+  // ---- 套装列表：旧存档只有 customSets，需要合并进统一列表 ----
+  const legacyCustom = Array.isArray(o.customSets) ? o.customSets : [];
+  if (!Array.isArray(o.sets) || !o.sets.length) {
+    o.sets = defaultSets();
+  }
+  o.sets = o.sets.filter(s => s && s.name).map(s => ({
+    name: s.name,
+    bonus: s.bonus || '',
+    builtin: !!s.builtin,
+    hidden: !!s.hidden,
+  }));
+  // 内置套装若被旧版本删过（列表中缺失），补回来并标记为隐藏
+  SETS.forEach(s => {
+    if (!o.sets.some(x => x.name === s.name)) {
+      o.sets.push({ name: s.name, bonus: s.bonus, builtin: true, hidden: false });
+    }
+  });
+  // 旧存档的自定义套装
+  legacyCustom.forEach(s => {
+    if (s && s.name && !o.sets.some(x => x.name === s.name)) {
+      o.sets.push({ name: s.name, bonus: s.bonus || '', builtin: false, hidden: false });
+    }
+  });
+  delete o.customSets;
+
   // 用户对「哪些角色合并到哪个方案槽」的手动指定：{ 套装名: { 组指纹: 槽位下标 } }
   o.planAssign = (o.planAssign && typeof o.planAssign === 'object') ? o.planAssign : {};
   o.characters = o.characters.map(c => ({
@@ -51,17 +80,63 @@ function normalize(o) {
     enabled: !!c.enabled,
     note: c.note || '',
     custom: !!c.custom,
-    builds: Array.isArray(c.builds) && c.builds.length
-      ? c.builds.map(b => ({ sets: b.sets || [], priority: b.priority === 'alt' ? 'alt' : 'main' }))
-      : [{ sets: [], priority: 'main' }],
-    subs: Object.assign({}, SUB_PRESETS.crit, c.subs || {}),
-    main: {
-      sands:   (c.main && c.main.sands)   || [],
-      goblet:  (c.main && c.main.goblet)  || [],
-      circlet: (c.main && c.main.circlet) || [],
-    },
+    builds: (Array.isArray(c.builds) && c.builds.length)
+      ? c.builds.map(b => normalizeBuild(b, c))
+      : [{ sets: [], priority: 'main' }].map(b => normalizeBuild(b, c)),
   }));
   return o;
+}
+
+/* 配装组归一化：把主/副词条需求从角色级迁移到配装组级
+ *   旧结构：角色一个 subs（数值权重对象）+ 一个 main
+ *   新结构：每组配装各自带 main + subs（有序数组 + 必选标记）
+ */
+function normalizeBuild(b, c) {
+  const out = {
+    sets: Array.isArray(b.sets) ? b.sets.filter(Boolean) : [],
+    priority: b.priority === 'alt' ? 'alt' : 'main',
+  };
+  // 主词条：优先用组内的，缺失则回落到角色级旧数据
+  const srcMain = b.main || c.main;
+  out.main = {
+    sands:   normalizeMains(srcMain && srcMain.sands, 'sands'),
+    goblet:  normalizeMains(srcMain && srcMain.goblet, 'goblet'),
+    circlet: normalizeMains(srcMain && srcMain.circlet, 'circlet'),
+  };
+  // 副词条：优先用组内的，缺失则把角色级旧权重转成「排序 + 必选」
+  out.subs = normalizeSubs(b.subs || c.subs);
+  return out;
+}
+
+function normalizeMains(list, slot) {
+  const valid = new Set((MAIN_STATS[slot] || []).map(s => s.id));
+  const arr = (Array.isArray(list) ? list : [])
+    .map(m => (typeof m === 'string' ? { stat: m } : m))
+    .filter(m => m && valid.has(m.stat));
+  arr.forEach((m, i) => { m.rank = i + 1; });
+  return arr;
+}
+
+/* 副词条归一化：
+ *   新：[{ id, req }] 有序数组
+ *   旧：{ cr: 1, cd: 0.7... } 数值权重对象 → 按值降序排序，≥0.9 视为必选
+ */
+function normalizeSubs(subs) {
+  const valid = new Set(SUB_STATS.map(s => s.id));
+  if (Array.isArray(subs)) {
+    const seen = new Set();
+    return subs
+      .map(s => (typeof s === 'string' ? { id: s } : s))
+      .filter(s => s && valid.has(s.id) && !seen.has(s.id) && seen.add(s.id))
+      .map(s => ({ id: s.id, req: !!s.req }));
+  }
+  if (subs && typeof subs === 'object') {
+    return Object.entries(subs)
+      .filter(([id, v]) => valid.has(id) && +v >= 0.1)
+      .sort((a, b) => b[1] - a[1])
+      .map(([id, v]) => ({ id, req: +v >= 0.9 }));
+  }
+  return toSubs(SUB_PRESETS.crit);
 }
 
 let saveTimer = null;
@@ -98,12 +173,63 @@ function flash(msg) {
   setTimeout(() => { if (el.textContent === msg) el.textContent = '数据保存在本机浏览器'; }, 1800);
 }
 
+/* 套装列表以 state.sets 为准（可在「⑤ 套装管理」里增删排序），未隐藏的按顺序返回 */
 function allSets() {
-  return SET_NAMES.concat(state.customSets.map(s => s.name));
+  return state.sets.filter(s => !s.hidden).map(s => s.name);
 }
 function allSetBonus() {
-  const extra = Object.fromEntries(state.customSets.map(s => [s.name, s.bonus]));
-  return Object.assign({}, SET_BONUS, extra);
+  const o = {};
+  state.sets.forEach(s => { o[s.name] = s.bonus || ''; });
+  return o;
+}
+/* 内置套装名集合（用于判断能否硬删除） */
+function isBuiltinSet(name) {
+  const s = state.sets.find(x => x.name === name);
+  return !!(s && s.builtin);
+}
+
+/* ============================================================
+ * 副词条「排序 + 必选」模型
+ *   一份副词条需求 = 有序数组 [{ id, req }]，越靠前越想要，req=true 表示 ★必须
+ *   名次权重用于「相似度 / 评分 / 排序」等需要数值的场合（界面上不暴露给用户的内部量）
+ * ============================================================ */
+const SUB_RANK_DECAY = 0.72;  // 名次权重衰减：第 1 名 1.0，之后 ×0.72
+const SUB_CORE_TOP   = 3;     // 前 N 名算「核心需求」（参与「包含任意 N 条」的基准）
+const SUB_POOL_TOP   = 5;     // 每人最多贡献 N 条候选副词条，避免候选池过宽
+const SUB_POOL_MAX   = 5;     // 合并后的候选池上限（再宽就等同于「不限」，失去筛选意义）
+
+function subRankWeight(i) { return Math.pow(SUB_RANK_DECAY, i); }
+
+/* 有序副词条 → { id: 权重 }，★必选额外加权，保证它一定算核心需求 */
+function subWeights(list) {
+  const w = {};
+  SUB_STATS.forEach(s => { w[s.id] = 0; });
+  (list || []).forEach((s, i) => {
+    if (!(s.id in w)) return;
+    w[s.id] = subRankWeight(i) * (s.req ? 1.25 : 1);
+  });
+  return w;
+}
+
+/* 核心需求 = 前 SUB_CORE_TOP 名 ∪ 所有 ★必选 */
+function coreSubs(list) {
+  const seen = new Set();
+  return (list || []).filter((s, i) => i < SUB_CORE_TOP || s.req)
+    .map(s => s.id).filter(id => !seen.has(id) && seen.add(id));
+}
+/* ★必选词条集合 */
+function reqSubs(list) {
+  return (list || []).filter(s => s.req).map(s => s.id);
+}
+/* 候选池：取前 SUB_POOL_TOP 名 */
+function poolSubs(list) {
+  return (list || []).slice(0, SUB_POOL_TOP).map(s => s.id);
+}
+
+/* 角色的主推配装组（卡片展示 / 兜底取值用） */
+function mainBuild(c) {
+  const list = c.builds || [];
+  return list.find(b => b.priority === 'main') || list[0] || { sets: [], main: {}, subs: [] };
 }
 
 /* ============================================================
@@ -144,9 +270,9 @@ function computePlan(includeAlt = true) {
           m.set(key, rec);
         });
 
-        // 沙 / 杯 / 冠
+        // 沙 / 杯 / 冠（词条需求取自【本组配装】）
         ['sands', 'goblet', 'circlet'].forEach(slot => {
-          (c.main[slot] || []).forEach(mi => {
+          (b.main[slot] || []).forEach(mi => {
             const m = bucket.slots[slot];
             const rec = m.get(mi.stat) || { stat: mi.stat, score: 0, chars: new Map() };
             rec.score += w * (W_RANK[mi.rank] || 0.25);
@@ -236,19 +362,27 @@ function statLabel(slot, r) {
 }
 function isSwap(r) { return !!r.swap; }
 
-/* 各套装的副词条权重（需求角色平均） */
-function computeSetWeights(includeAlt = true) {
-  const acc = new Map(); // set -> { sum:{}, n:0 }
+/* 遍历「已启用角色 × 有效配装组」 */
+function walkEnabledBuilds(includeAlt, fn) {
   state.characters.filter(c => c.enabled).forEach(c => {
-    c.builds.forEach(b => {
+    (c.builds || []).forEach(b => {
       if (!includeAlt && b.priority === 'alt') return;
       if (!b.sets || !b.sets.length) return;
-      b.sets.forEach(sn => {
-        let o = acc.get(sn);
-        if (!o) { o = { sum: {}, n: 0 }; acc.set(sn, o); }
-        o.n++;
-        SUB_STATS.forEach(s => { o.sum[s.id] = (o.sum[s.id] || 0) + (c.subs[s.id] || 0); });
-      });
+      fn(c, b);
+    });
+  });
+}
+
+/* 各套装的副词条权重（按【配装组】平均，名次权重制） */
+function computeSetWeights(includeAlt = true) {
+  const acc = new Map(); // set -> { sum:{}, n:0 }
+  walkEnabledBuilds(includeAlt, (c, b) => {
+    const sw = subWeights(b.subs);
+    b.sets.forEach(sn => {
+      let o = acc.get(sn);
+      if (!o) { o = { sum: {}, n: 0 }; acc.set(sn, o); }
+      o.n++;
+      SUB_STATS.forEach(s => { o.sum[s.id] = (o.sum[s.id] || 0) + sw[s.id]; });
     });
   });
   const out = new Map();
@@ -260,14 +394,48 @@ function computeSetWeights(includeAlt = true) {
   return out;
 }
 
+/* 各套装的副词条【需求排序】：按「名次权重」平均降序，并统计有多少角色标了★必选
+ * 返回 Map: 套装 -> { n, list: [{ id, name, score, reqRatio, must }] }
+ */
+function setSubRanking(includeAlt = true) {
+  const acc = new Map(); // set -> { n, sum:{}, req:{} }
+  walkEnabledBuilds(includeAlt, (c, b) => {
+    const sw = subWeights(b.subs);
+    b.sets.forEach(sn => {
+      let o = acc.get(sn);
+      if (!o) { o = { n: 0, sum: {}, req: {} }; acc.set(sn, o); }
+      o.n++;
+      SUB_STATS.forEach(s => { o.sum[s.id] = (o.sum[s.id] || 0) + sw[s.id]; });
+      reqSubs(b.subs).forEach(id => { o.req[id] = (o.req[id] || 0) + 1; });
+    });
+  });
+  const out = new Map();
+  acc.forEach((o, sn) => {
+    const list = SUB_STATS.map(s => ({
+      id: s.id,
+      name: s.name,
+      score: (o.sum[s.id] || 0) / o.n,
+      reqRatio: (o.req[s.id] || 0) / o.n,
+    })).filter(x => x.score > 0.01)
+      .sort((a, b) => b.score - a.score)
+      .map(x => Object.assign(x, { must: x.reqRatio >= 0.5 }));
+    out.set(sn, { n: o.n, list });
+  });
+  return out;
+}
+
 /* 全部启用角色的平均副词条权重（兜底） */
 function globalWeights() {
-  const list = state.characters.filter(c => c.enabled);
   const w = {};
   SUB_STATS.forEach(s => { w[s.id] = 0; });
-  if (!list.length) return Object.assign({}, SUB_PRESETS.crit);
-  list.forEach(c => SUB_STATS.forEach(s => { w[s.id] += (c.subs[s.id] || 0); }));
-  SUB_STATS.forEach(s => { w[s.id] = w[s.id] / list.length; });
+  let n = 0;
+  walkEnabledBuilds(true, (c, b) => {
+    n++;
+    const sw = subWeights(b.subs);
+    SUB_STATS.forEach(s => { w[s.id] += sw[s.id]; });
+  });
+  if (!n) return subWeights(toSubs(SUB_PRESETS.crit));
+  SUB_STATS.forEach(s => { w[s.id] = w[s.id] / n; });
   return w;
 }
 
@@ -286,12 +454,11 @@ function globalWeights() {
  *      超出槽位时出现「手动合并」面板，默认按相似度自动归入，可手动调整
  *   ② 主属性：花/羽固定；沙/杯/冠按「票数 × 优先级」降序，
  *      取到累计覆盖 ≥ MAIN_COVER 为止，上限 MAIN_MAX
- *   ③ ★必须：组内全体角色共有的核心副词条，按平均权重降序，上限 2
- *   ④ 候选池：组内任一角色需要的副词条（剔除与唯一主词条冲突项）
+ *   ③ ★必须：组内全体角色都标了「必选」的副词条，按平均名次权重降序，上限 2
+ *   ④ 候选池：组内任一角色前 SUB_POOL_TOP 条需求（剔除与唯一主词条冲突项）
  *   ⑤ 至少命中 N：round(组内平均核心词条数 × 部位严格度系数)，
  *      下限 = ★必须数量（否则★之外的候选形同虚设），上限 = min(4, 候选池-1)
  * ============================================================ */
-const SUB_CORE_TH = 0.4;   // 副词条权重达到该值视为「核心需求」
 const MERGE_SIM_TH = 0.95; // 需求「几乎一致」的角色自动并为一组（节省预设名额）
 const MANUAL_MAX_GROUPS = 9; // 单套装自然分组上限（再多就先强制合并，避免手动列表过长）
 const MAIN_MAX    = 3;     // 单部位主属性上限（条件过宽会「存伪」）
@@ -303,11 +470,6 @@ const MAIN_COVER  = 0.7;   // 主属性取到累计覆盖该比例为止
  *   杯    ：元素伤害杯本就稀有            → 放宽（×0.8）
  */
 const SLOT_STRICT = { flower: 1.0, plume: 1.0, sands: 1.0, circlet: 0.95, goblet: 0.8 };
-
-/* 角色的核心副词条集合 */
-function coreSubs(ch) {
-  return SUB_STATS.filter(s => (ch.subs[s.id] || 0) >= SUB_CORE_TH).map(s => s.id);
-}
 
 function jaccard(a, b) {
   const A = new Set(a), B = new Set(b);
@@ -444,8 +606,8 @@ const FIXED_MAIN = { flower: 'hp', plume: 'atk' };
 /* ③④⑤ 合并一组角色在【某个部位】的追加属性条件 —— 每个部位独立计算
  *   ① 冲突剔除：副词条不可能与同部位主词条相同，任何已选主词条都必须从候选池剔除，
  *      否则把它设成★会导致该件【永远不满足】而无法锁定
- *   ② ★必须：组内「所有」角色都需要的核心词条（剔除冲突项后），按平均权重降序，最多 2 个
- *   ③ 候选池：组内任一角色需要的词条（剔除冲突项后）
+ *   ② ★必须：组内「所有」角色都勾选了必选的词条（剔除冲突项后），按平均名次权重降序，最多 2 个
+ *   ③ 候选池：组内任一角色前 SUB_POOL_TOP 条需求（剔除冲突项），按「广度 × 名次」降序
  *   ④ 包含任意 N 条：以【未剔除的】组内平均核心词条数为基准 × 部位严格度系数，
  *      下限 = ★必须数量，上限 = min(4, 候选池-1, 3)
  */
@@ -454,22 +616,33 @@ function mergeSubSlot(group, slot, mainIds) {
   const banned = new Set(mainIds || []);
   if (FIXED_MAIN[slot]) banned.add(FIXED_MAIN[slot]);   // 花/羽主词条固定，恒冲突
 
-  /* 原始核心词条（用于统计需求广度） */
+  /* 原始核心词条（用于统计需求广度，不做冲突剔除） */
   const rawCores = group.map(r => r.core);
   const avgW = id => group.reduce((s, r) => s + (r.subs[id] || 0), 0) / n;
 
-  /* 剔除冲突项后的核心词条 */
-  const cores = rawCores.map(list => list.filter(id => !banned.has(id)));
-  const cnt = new Map();
-  cores.forEach(list => list.forEach(id => cnt.set(id, (cnt.get(id) || 0) + 1)));
-
-  const required = [...cnt.entries()]
-    .filter(([, c]) => c === n)          // 全员共有
+  /* ② ★必须：全员共有的「必选」标记 */
+  const reqCnt = new Map();
+  group.forEach(r => new Set(r.req).forEach(id => {
+    if (banned.has(id)) return;
+    reqCnt.set(id, (reqCnt.get(id) || 0) + 1);
+  }));
+  const required = [...reqCnt.entries()]
+    .filter(([, c]) => c === n)          // 全员都标了必选
     .map(([id]) => id)
-    .sort((a, b) => avgW(b) - avgW(a))   // 权重高的优先
+    .sort((a, b) => avgW(b) - avgW(a))   // 名次靠前的优先
     .slice(0, 2);                        // 最多 2 个，避免条件过严
 
-  const pool = [...cnt.keys()].sort((a, b) => avgW(b) - avgW(a));
+  /* ③ 候选池：按「出现人数 × 名次权重」累加 */
+  const poolScore = new Map();
+  group.forEach(r => (r.pool || []).forEach((id, i) => {
+    if (banned.has(id)) return;
+    poolScore.set(id, (poolScore.get(id) || 0) + subRankWeight(i));
+  }));
+  let pool = [...poolScore.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
+  // ★必须一定得在候选池里（可能排名在 SUB_POOL_TOP 之外）
+  required.forEach(id => { if (!pool.includes(id)) pool.push(id); });
+  // 候选池收口：太宽就等于「不限」，失去筛选意义
+  if (pool.length > SUB_POOL_MAX) pool = pool.slice(0, SUB_POOL_MAX);
   if (!pool.length) return { required: [], pool: [], minHit: 0 };  // 只挑主词条，副词条不限
 
   const rawCore = rawCores.reduce((s, l) => s + l.length, 0) / n;
@@ -492,20 +665,35 @@ function mergeGroups(gs) {
   return { chars: g.map(r => r.name), slots };
 }
 
-function toRoles(charList) {
+/* 角色在某套装下，由「使用该套装的配装组」提供词条需求；
+ * 若没有配装组用到该套装（例如只在别处被引用），回落到主推配装 */
+function pickBuild(c, setName) {
+  const list = c.builds || [];
+  if (!list.length) return null;
+  const use = setName ? list.filter(b => (b.sets || []).includes(setName)) : [];
+  const pool = use.length ? use : list;
+  return pool.find(b => b.priority === 'main') || pool[0];
+}
+
+function toRoles(charList, setName) {
   const seen = new Set();
   return charList
     .filter(c => { if (seen.has(c.name)) return false; seen.add(c.name); return true; })
-    .map(c => ({
-      name: c.name,
-      mains: {
-        sands:   (c.main.sands   || []).map(m => m.stat),
-        goblet:  (c.main.goblet  || []).map(m => m.stat),
-        circlet: (c.main.circlet || []).map(m => m.stat),
-      },
-      subs: c.subs || {},
-      core: coreSubs(c),
-    }));
+    .map(c => {
+      const b = pickBuild(c, setName) || { main: {}, subs: [] };
+      return {
+        name: c.name,
+        mains: {
+          sands:   (b.main.sands   || []).map(m => m.stat),
+          goblet:  (b.main.goblet  || []).map(m => m.stat),
+          circlet: (b.main.circlet || []).map(m => m.stat),
+        },
+        subs: subWeights(b.subs),   // 名次权重向量（用于相似度 / 评分）
+        core: coreSubs(b.subs),     // 核心需求，决定「包含任意 N 条」
+        req:  reqSubs(b.subs),      // ★必选标记
+        pool: poolSubs(b.subs),     // 候选池
+      };
+    });
 }
 
 /* 生成某套装的游戏内锁定方案（≤ maxPlans 个）
@@ -515,7 +703,7 @@ function toRoles(charList) {
  *   assign —— 每个组当前归入的槽位号
  */
 function buildGamePlanInfo(charList, maxPlans, setName) {
-  const roles = toRoles(charList);
+  const roles = toRoles(charList, setName);
   if (!roles.length) return { plans: [], groups: [], assign: [] };
 
   const groups = naturalClusters(roles, MANUAL_MAX_GROUPS);
@@ -586,9 +774,10 @@ function renderChars() {
     const el = ELEMENTS[c.element];
     const rg = c.region;
     const roleTxt = (c.roles || []).map(r => ROLE_NAME[r] || r).join('·');
-    const sets = (c.builds[0] ? c.builds[0].sets : []);
+    const mb = mainBuild(c);
+    const sets = mb.sets || [];
     const mainRow = (slot) => {
-      const arr = c.main[slot] || [];
+      const arr = (mb.main && mb.main[slot]) || [];
       if (!arr.length) return '';
       return `<div class="cc-main-row"><span>${SLOTS.find(s => s.id === slot).short}</span><span class="ms">${
         arr.map(m => `<span class="ms r${m.rank}">${esc(mainStatName(slot, m.stat))}</span>`).join(' / ')
@@ -608,7 +797,7 @@ function renderChars() {
       </div>
       <div class="cc-sets">
         ${sets.length
-          ? sets.map(s => `<span class="set-tag ${c.builds[0].priority === 'main' ? 'main' : ''}">${esc(s)}${sets.length > 1 ? ' ·2+2' : ''}</span>`).join('')
+          ? sets.map(s => `<span class="set-tag ${mb.priority === 'main' ? 'main' : ''}">${esc(s)}${sets.length > 1 ? ' ·2+2' : ''}</span>`).join('')
           : '<span class="set-tag">未配置套装</span>'}
         ${c.builds.length > 1 ? `<span class="set-tag">+${c.builds.length - 1}备选</span>` : ''}
       </div>
@@ -722,6 +911,7 @@ function openDrawer(id) {
   if (!src) return;
   editing = JSON.parse(JSON.stringify(src));
   editingIsNew = false;
+  ui.buildIdx = 0;
   $('#drawerTitle').textContent = '编辑 ' + src.name;
   $('#btnDeleteChar').classList.remove('hidden');
   drawDrawer();
@@ -733,11 +923,10 @@ function openNewChar() {
     id: 'c_new_' + Date.now(),
     name: '', element: 'pyro', region: 'liyue', roles: ['maindps'],
     enabled: true, note: '', custom: true,
-    builds: [{ sets: [], priority: 'main' }],
-    subs: Object.assign({}, SUB_PRESETS.crit),
-    main: { sands: [], goblet: [], circlet: [] },
+    builds: [freshBuild()],
   };
   editingIsNew = true;
+  ui.buildIdx = 0;
   $('#drawerTitle').textContent = '新增角色';
   $('#btnDeleteChar').classList.add('hidden');
   drawDrawer();
@@ -799,6 +988,21 @@ function drawDrawer() {
     <button type="button" class="btn sm" id="edAddBuild">+ 添加一组配装</button>
   </div>
 
+  <div class="fgroup">
+    <span class="glabel">词条需求归属 <span class="hint">主词条 / 副词条按配装组分别设置</span></span>
+    <div class="seg" id="edBuildTabs">
+      ${c.builds.map((b, i) => `<button type="button" class="seg-btn ${i === ui.buildIdx ? 'active' : ''}" data-bt="${i}">配装${i + 1}${b.priority === 'main' ? '·主推' : ''}</button>`).join('')}
+    </div>
+    <div class="copy-row">
+      <select id="edCopyFrom">
+        <option value="">📋 从…一键复制词条（主词条 + 副词条）</option>
+        ${c.builds.map((b, i) => i === ui.buildIdx ? '' :
+          `<option value="b${i}">配装${i + 1}（${esc((b.sets || []).join('+') || '未选套装')}）</option>`).join('')}
+        ${Object.keys(SUB_PRESETS).map(k => `<option value="p${k}">预设 · ${SUB_PRESET_NAMES[k]}（仅副词条）</option>`).join('')}
+      </select>
+    </div>
+  </div>
+
   ${['sands', 'goblet', 'circlet'].map(slot => `
     <div class="fgroup">
       <span class="glabel">${SLOTS.find(s => s.id === slot).name}主词条 <span class="hint">越靠前优先级越高</span></span>
@@ -807,9 +1011,12 @@ function drawDrawer() {
     </div>`).join('')}
 
   <div class="fgroup">
-    <span class="glabel">副词条权重 <span class="hint">0 = 完全无用，1 = 核心词条</span></span>
-    <div id="edSubs"></div>
-    <button type="button" class="btn sm" id="edPreset">套用预设…</button>
+    <span class="glabel">副词条需求 <span class="hint">越靠前越想要；★ = 游戏内锁定方案的「必须」</span></span>
+    <div class="ms-list" id="edSubs"></div>
+    <select id="edAddSub">
+      <option value="">+ 添加副词条…</option>
+      ${SUB_STATS.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+    </select>
   </div>
 
   <div class="fgroup">
@@ -846,27 +1053,64 @@ function drawDrawer() {
   body.querySelector('#edName').oninput = e => { editing.name = e.target.value; };
   body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; };
 
-  // 配装
+  // 配装：新增一组时默认复制当前组的词条需求（也可稍后用下拉从别的组一键复制）
   body.querySelector('#edAddBuild').onclick = () => {
-    editing.builds.push({ sets: [], priority: 'alt' });
-    drawBuilds();
+    const srcIdx = ui.buildIdx;
+    const src = curBuild();
+    editing.builds.push({
+      sets: [],
+      priority: 'alt',
+      main: JSON.parse(JSON.stringify(src.main || {})),
+      subs: JSON.parse(JSON.stringify(src.subs || [])),
+    });
+    const from = srcIdx + 1;
+    ui.buildIdx = editing.builds.length - 1;
+    drawDrawer();
+    toast(`已新增配装${ui.buildIdx + 1}，词条需求复制自配装${from}`);
+  };
+  // 词条需求归属哪一组配装
+  body.querySelectorAll('#edBuildTabs [data-bt]').forEach(b => {
+    b.onclick = () => {
+      ui.buildIdx = +b.dataset.bt;
+      drawDrawer();
+    };
+  });
+  // 一键复制词条
+  body.querySelector('#edCopyFrom').onchange = e => {
+    const v = e.target.value;
+    if (!v) return;
+    const cur = curBuild();
+    if (v[0] === 'b') {
+      const src = editing.builds[+v.slice(1)];
+      if (!src) return;
+      cur.main = JSON.parse(JSON.stringify(src.main || {}));
+      cur.subs = JSON.parse(JSON.stringify(src.subs || []));
+      toast('已复制配装' + (+v.slice(1) + 1) + '的词条需求');
+    } else {
+      cur.subs = toSubs(SUB_PRESETS[v.slice(1)] || SUB_PRESETS.crit);
+      toast('已套用预设：' + SUB_PRESET_NAMES[v.slice(1)]);
+    }
+    drawDrawer();
   };
   // 主词条
   ['sands', 'goblet', 'circlet'].forEach(slot => {
     body.querySelector('#edAdd_' + slot).onclick = () => {
-      const used = new Set(editing.main[slot].map(m => m.stat));
+      const arr = curBuild().main[slot];
+      const used = new Set(arr.map(m => m.stat));
       const next = MAIN_STATS[slot].find(s => !used.has(s.id));
       if (!next) return toast('该部位主词条已全部添加');
-      editing.main[slot].push({ stat: next.id, rank: editing.main[slot].length + 1 });
+      arr.push({ stat: next.id, rank: arr.length + 1 });
       drawMains();
     };
   });
   // 副词条
-  body.querySelector('#edPreset').onclick = () => {
-    const keys = Object.keys(SUB_PRESETS);
-    const names = { crit: '双暴输出', critHp: '双暴+生命', critDef: '双暴+防御', em: '精通流', hp: '生命流', def: '防御流', er: '充能辅助', atk: '攻击流', heal: '治疗辅助' };
-    const pick = prompt('输入预设：' + keys.map(k => `${k}(${names[k]})`).join('  '));
-    if (pick && SUB_PRESETS[pick]) { editing.subs = Object.assign({}, SUB_PRESETS[pick]); drawSubs(); }
+  body.querySelector('#edAddSub').onchange = e => {
+    const id = e.target.value;
+    if (!id) return;
+    const subs = curBuild().subs;
+    if (subs.some(s => s.id === id)) return toast('该副词条已在列表中');
+    subs.push({ id, req: false });
+    drawSubs();
   };
 
   drawBuilds();
@@ -874,11 +1118,18 @@ function drawDrawer() {
   drawSubs();
 }
 
+/* 抽屉里正在编辑的配装组 */
+function curBuild() {
+  if (!editing.builds.length) editing.builds.push({ sets: [], priority: 'main' });
+  if (ui.buildIdx >= editing.builds.length) ui.buildIdx = 0;
+  return editing.builds[ui.buildIdx];
+}
+
 function drawBuilds() {
   const box = $('#edBuilds');
   if (!box) return;
   box.innerHTML = editing.builds.map((b, i) => `
-    <div class="build-item" data-bi="${i}">
+    <div class="build-item ${i === ui.buildIdx ? 'editing' : ''}" data-bi="${i}">
       <div class="bi-head">
         <span class="prio-tag ${b.priority}">${b.priority === 'main' ? '主推' : '备选'}</span>
         <select data-set="0">${setOptions(b.sets[0])}<option value=""${!b.sets[0] ? ' selected' : ''}>（选择套装）</option></select>
@@ -888,9 +1139,14 @@ function drawBuilds() {
       </div>
       <div class="bi-head" style="margin:0">
         <label class="chk"><input type="checkbox" data-main="${i}" ${b.priority === 'main' ? 'checked' : ''}> 设为主推</label>
+        <button type="button" class="btn sm ${i === ui.buildIdx ? 'primary' : ''}" data-ed="${i}">${i === ui.buildIdx ? '✎ 正在编辑词条' : '✎ 编辑该组词条'}</button>
         <span class="muted small">${b.sets.filter(Boolean).length === 2 ? '2+2 组合' : (b.sets.filter(Boolean).length === 1 ? '4 件套' : '未选择套装')}</span>
       </div>
     </div>`).join('');
+
+  box.querySelectorAll('[data-ed]').forEach(btn => {
+    btn.onclick = () => { ui.buildIdx = +btn.dataset.ed; drawDrawer(); };
+  });
 
   box.querySelectorAll('select[data-set]').forEach(sel => {
     sel.onchange = () => {
@@ -921,10 +1177,11 @@ function drawBuilds() {
 }
 
 function drawMains() {
+  const B = curBuild();
   ['sands', 'goblet', 'circlet'].forEach(slot => {
     const box = $('#edMain_' + slot);
     if (!box) return;
-    const arr = editing.main[slot];
+    const arr = B.main[slot];
     box.innerHTML = arr.map((m, i) => `
       <div class="ms-item" data-mi="${i}" data-slot="${slot}">
         <span class="ord">${i === 0 ? '最优' : '第' + (i + 1)}</span>
@@ -938,7 +1195,7 @@ function drawMains() {
     box.querySelectorAll('select').forEach(sel => {
       sel.onchange = () => {
         const i = +sel.closest('.ms-item').dataset.mi;
-        editing.main[slot][i].stat = sel.value;
+        B.main[slot][i].stat = sel.value;
       };
     });
     box.querySelectorAll('[data-up]').forEach(b => b.onclick = () => {
@@ -954,36 +1211,73 @@ function drawMains() {
       renank(slot); drawMains();
     });
     box.querySelectorAll('[data-rmm]').forEach(b => b.onclick = () => {
-      editing.main[slot].splice(+b.dataset.rmm, 1);
+      B.main[slot].splice(+b.dataset.rmm, 1);
       renank(slot); drawMains();
     });
   });
 }
-function renank(slot) { editing.main[slot].forEach((m, i) => { m.rank = i + 1; }); }
+function renank(slot) { curBuild().main[slot].forEach((m, i) => { m.rank = i + 1; }); }
 
+/* 副词条：与主词条一致的「排序」编辑器，外加 ★必选 开关 */
 function drawSubs() {
   const box = $('#edSubs');
   if (!box) return;
-  box.innerHTML = SUB_STATS.map(s => `
-    <div class="w-row">
-      <span class="wn">${s.name}</span>
-      <input type="range" min="0" max="1" step="0.05" value="${editing.subs[s.id] || 0}" data-sub="${s.id}">
-      <span class="wv" id="wv_${s.id}">${(editing.subs[s.id] || 0).toFixed(2)}</span>
-    </div>`).join('');
-  box.querySelectorAll('[data-sub]').forEach(r => {
-    r.oninput = () => {
-      editing.subs[r.dataset.sub] = +r.value;
-      $('#wv_' + r.dataset.sub).textContent = (+r.value).toFixed(2);
-    };
+  const subs = curBuild().subs;
+  box.innerHTML = subs.map((s, i) => `
+    <div class="ms-item" data-si="${i}">
+      <span class="ord">${i === 0 ? '最优' : '第' + (i + 1)}</span>
+      <span class="ss-name">${esc(subStatName(s.id))}</span>
+      <button type="button" class="star-btn ${s.req ? 'on' : ''}" data-st="${i}" title="★必须（游戏内锁定方案的「必须」）">${s.req ? '★' : '☆'}</button>
+      <button type="button" class="up" data-su="${i}">↑</button>
+      <button type="button" class="down" data-sd="${i}">↓</button>
+      <button type="button" class="rm" data-sr="${i}">×</button>
+    </div>`).join('') || '<p class="muted small">未设置，可在下方添加</p>';
+
+  box.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.st;
+    subs[i].req = !subs[i].req;
+    drawSubs();
   });
+  box.querySelectorAll('[data-su]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.su;
+    if (i === 0) return;
+    [subs[i - 1], subs[i]] = [subs[i], subs[i - 1]];
+    drawSubs();
+  });
+  box.querySelectorAll('[data-sd]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.sd;
+    if (i === subs.length - 1) return;
+    [subs[i + 1], subs[i]] = [subs[i], subs[i + 1]];
+    drawSubs();
+  });
+  box.querySelectorAll('[data-sr]').forEach(b => b.onclick = () => {
+    subs.splice(+b.dataset.sr, 1);
+    drawSubs();
+  });
+  const add = $('#edAddSub');
+  if (add) add.value = '';
+}
+
+/* 一组空的配装（默认双暴输出词条需求） */
+function freshBuild(priority) {
+  return {
+    sets: [],
+    priority: priority || 'main',
+    main: { sands: [], goblet: [], circlet: [] },
+    subs: toSubs(SUB_PRESETS.crit),
+  };
 }
 
 function saveChar() {
   const c = editing;
   if (!c.name.trim()) return toast('请填写角色名称');
   c.name = c.name.trim();
-  c.builds = c.builds.filter(b => b.sets && b.sets.length);
-  if (!c.builds.length) c.builds = [{ sets: [], priority: 'main' }];
+  c.builds = c.builds
+    .filter(b => b.sets && b.sets.length)
+    .map(b => normalizeBuild(b, c));
+  if (!c.builds.length) c.builds = [freshBuild()];
+  if (!c.builds.some(b => b.priority === 'main')) c.builds[0].priority = 'main';
+  delete c.main; delete c.subs;   // 词条需求已完全下沉到配装组
 
   if (editingIsNew) {
     state.characters.push(c);
@@ -1036,7 +1330,7 @@ function renderPlan() {
     if (has) usedSets++; else fodderSets++;
   });
 
-  const setWeights = computeSetWeights(includeAlt);
+  const setWeights = setSubRanking(includeAlt);
   const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
 
   const html = blocks
@@ -1079,12 +1373,10 @@ function renderSetBlock(name, b, slotFilter, setWeights, maxPlans = 3) {
   const gpHtml = info.plans.some(Boolean)
     ? renderGamePlans(name, info, maxPlans, slotFilter) : '';
 
-  // 该套装的核心副词条（用于花/羽行提示）
-  const w = setWeights ? setWeights.get(name) : null;
-  const topSubs = w
-    ? SUB_STATS.map(s => ({ name: s.name, v: w[s.id] || 0 }))
-        .sort((a, b) => b.v - a.v).filter(x => x.v >= 0.2).slice(0, 3)
-        .map(x => x.name + x.v.toFixed(1)).join(' > ')
+  // 该套装的副词条需求排序（用于花/羽行提示）
+  const rank = setWeights ? (setWeights.get(name) || {}).list : null;
+  const topSubs = rank
+    ? rank.slice(0, 3).map(x => x.name + (x.must ? '★' : '')).join(' > ')
     : '';
 
   const slotsHtml = SLOTS
@@ -1374,12 +1666,14 @@ function renderSubs() {
       <h4>C 级 · 狗粮</h4>
       <p>主词条不在任何已启用角色的需求列表中。<br>操作：直接喂。<span class="hint">例外：同套装的对应元素伤害杯极难出货，建议无脑保留。</span></p>
     </div>
-    <p class="muted small" style="margin-top:14px">${n ? '当前已启用 ' + n + ' 个角色，下方评分器会按这些角色的副词条权重打分。' : '尚未启用角色，评分器暂用「双暴输出」默认权重。'}</p>`;
+    <p class="muted small" style="margin-top:14px">${n ? '当前已启用 ' + n + ' 个角色，下方评分器按这些角色的副词条<b>需求排序</b>打分（按配装组统计）。' : '尚未启用角色，评分器暂用「双暴输出」默认排序。'}</p>`;
 
   // 评分器：初始化
   const sS = $('#scoreSet'), sL = $('#scoreSlot');
-  if (sS.options.length <= 1) {
+  {
+    const cur = sS.value;
     sS.innerHTML = '<option value="">（不限套装）</option>' + allSets().map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    sS.value = cur;
   }
   if (!sL.options.length) {
     sL.innerHTML = SLOTS.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
@@ -1495,36 +1789,150 @@ function runScore() {
 }
 
 function renderSetSubTable() {
-  const sw = computeSetWeights($('#planAltBuild') ? $('#planAltBuild').checked : true);
-  const rows = Array.from(sw.entries())
+  const rank = setSubRanking($('#planAltBuild') ? $('#planAltBuild').checked : true);
+  const rows = Array.from(rank.entries())
     .sort((a, b) => a[0].localeCompare(b[0], 'zh'))
-    .map(([setName, w]) => {
-      const top = SUB_STATS.map(s => ({ name: s.name, v: w[s.id] || 0 }))
-        .sort((a, b) => b.v - a.v).slice(0, 5);
-      const max = Math.max(0.001, top[0].v);
+    .map(([setName, o]) => {
+      const top = o.list.slice(0, 5);
+      if (!top.length) return '';
+      const max = Math.max(0.001, top[0].score);
+      const tags = top.map((t, i) =>
+        `<span class="set-tag ${t.must ? 'main' : ''}" style="margin-right:4px">${i + 1}. ${esc(t.name)}${t.must ? '★' : ''}</span>`).join('');
+      const bars = top.map(t =>
+        `<div style="display:flex;align-items:center;gap:5px;margin:2px 0"><span class="wbar" style="width:${Math.max(2, (t.score / max) * 90)}px"></span></div>`).join('');
       return `<tr>
-        <td style="white-space:nowrap">${esc(setName)}</td>
-        <td>${top.map(t => `<span class="set-tag" style="margin-right:4px">${esc(t.name)} ${t.v.toFixed(2)}</span>`).join('')}</td>
-        <td style="width:130px">${top.map(t => `<div style="display:flex;align-items:center;gap:5px;margin:2px 0"><span class="wbar" style="width:${Math.max(2, (t.v / max) * 90)}px"></span></div>`).join('')}</td>
+        <td style="white-space:nowrap">${esc(setName)}<span class="muted small"> ×${o.n}</span></td>
+        <td>${tags}</td>
+        <td style="width:130px">${bars}</td>
       </tr>`;
     }).join('');
 
   $('#setSubTable').innerHTML = rows
-    ? `<table class="tbl"><thead><tr><th>套装</th><th>核心副词条（权重 Top5）</th><th>相对强度</th></tr></thead><tbody>${rows}</tbody></table>`
-    : '<p class="muted small">启用角色后这里会显示每个套装的核心副词条。</p>';
+    ? `<table class="tbl"><thead><tr><th>套装</th><th>副词条需求排序 Top5（★= 多数角色标为必选）</th><th>相对强度</th></tr></thead><tbody>${rows}</tbody></table>`
+    : '<p class="muted small">启用角色后这里会显示每个套装的副词条需求排序。</p>';
 }
 
 /* ============================================================
- * 页面 ④：数据管理
+ * 页面 ④：套装管理（增删 / 改名 / 改效果 / 排序）
  * ============================================================ */
-function renderCustomSets() {
-  $('#customSetList').innerHTML = state.customSets.map((s, i) =>
-    `<span class="chip">${esc(s.name)}<span class="muted small">${esc(s.bonus || '')}</span><span class="x" data-ds="${i}">×</span></span>`
-  ).join('') || '<p class="muted small">暂无自定义套装。</p>';
-  $('#customSetList').querySelectorAll('[data-ds]').forEach(x => {
-    x.onclick = () => { state.customSets.splice(+x.dataset.ds, 1); save(); renderCustomSets(); renderPlan(); };
+function renderSets() {
+  const box = $('#setManager');
+  if (!box) return;
+  const showHidden = $('#setShowHidden') && $('#setShowHidden').checked;
+  const hiddenCount = state.sets.filter(s => s.hidden).length;
+
+  const rows = state.sets
+    .map((s, i) => ({ s, i }))
+    .filter(x => showHidden || !x.s.hidden)
+    .map(({ s, i }) => `
+      <div class="sm-row ${s.hidden ? 'off' : ''}">
+        <span class="sm-no">${i + 1}</span>
+        <input type="text" class="sm-name" data-smname="${i}" value="${esc(s.name)}"${s.builtin ? ' title="内置套装"' : ''}>
+        <input type="text" class="sm-bonus" data-smbonus="${i}" value="${esc(s.bonus || '')}" placeholder="2 件套效果">
+        <span class="sm-ops">
+          <span class="sm-badge ${s.builtin ? 'bi' : 'cu'}">${s.builtin ? '内置' : '自定义'}</span>
+          <button class="btn sm" data-smup="${i}" title="上移">↑</button>
+          <button class="btn sm" data-smdown="${i}" title="下移">↓</button>
+          ${s.hidden
+            ? `<button class="btn sm" data-smshow="${i}">恢复</button>`
+            : `<button class="btn sm ${s.builtin ? '' : 'danger'}" data-smhide="${i}">${s.builtin ? '隐藏' : '删除'}</button>`}
+        </span>
+      </div>`).join('');
+
+  box.innerHTML = `
+    <div class="sm-row sm-head">
+      <span class="sm-no">#</span><span>套装名称</span><span>2 件套效果</span><span class="sm-ops">操作</span>
+    </div>
+    ${rows || '<p class="muted small">没有可显示的套装。</p>'}
+    <p class="muted small" style="margin-top:10px">
+      共 ${state.sets.length} 个套装${hiddenCount ? `（已隐藏 ${hiddenCount} 个）` : ''}；改名会自动同步到所有角色的配装。
+    </p>`;
+
+  // 改名（同步到角色配装）
+  box.querySelectorAll('[data-smname]').forEach(inp => {
+    inp.onchange = () => renameSet(+inp.dataset.smname, inp.value);
   });
+  // 改 2 件套效果
+  box.querySelectorAll('[data-smbonus]').forEach(inp => {
+    inp.onchange = () => {
+      const s = state.sets[+inp.dataset.smbonus];
+      if (!s) return;
+      s.bonus = inp.value.trim();
+      save(); renderPlan();
+    };
+  });
+  // 上移 / 下移
+  box.querySelectorAll('[data-smup]').forEach(b => b.onclick = () => moveSet(+b.dataset.smup, -1));
+  box.querySelectorAll('[data-smdown]').forEach(b => b.onclick = () => moveSet(+b.dataset.smdown, 1));
+  // 隐藏 / 删除
+  box.querySelectorAll('[data-smhide]').forEach(b => b.onclick = () => hideSet(+b.dataset.smhide));
+  box.querySelectorAll('[data-smshow]').forEach(b => b.onclick = () => {
+    const s = state.sets[+b.dataset.smshow];
+    if (!s) return;
+    s.hidden = false;
+    save(); afterSetsChange();
+    toast('已恢复：' + s.name);
+  });
+
+  const cnt = $('#statSetCount');
+  if (cnt) cnt.textContent = state.sets.filter(s => !s.hidden).length;
 }
+
+/* 套装改名：同步替换所有角色配装里的引用 */
+function renameSet(idx, newName) {
+  const s = state.sets[idx];
+  if (!s) return;
+  const nn = (newName || '').trim();
+  if (!nn) { renderSets(); return toast('套装名称不能为空'); }
+  if (nn === s.name) return;
+  if (state.sets.some((x, i) => i !== idx && x.name === nn)) {
+    renderSets();
+    return toast('已存在同名套装');
+  }
+  const old = s.name;
+  let n = 0;
+  state.characters.forEach(c => c.builds.forEach(b => {
+    b.sets = (b.sets || []).map(x => { if (x === old) { n++; return nn; } return x; });
+  }));
+  s.name = nn;
+  save(); afterSetsChange();
+  toast(`已改名为「${nn}」${n ? `，同步更新 ${n} 处配装引用` : ''}`);
+}
+
+function moveSet(i, dir) {
+  const j = i + dir;
+  if (i < 0 || j < 0 || i >= state.sets.length || j >= state.sets.length) return;
+  [state.sets[i], state.sets[j]] = [state.sets[j], state.sets[i]];
+  save(); afterSetsChange();
+}
+
+function hideSet(i) {
+  const s = state.sets[i];
+  if (!s) return;
+  if (s.builtin) {
+    s.hidden = true;
+    save(); afterSetsChange();
+    return toast('已隐藏：' + s.name + '（角色配装引用保留）');
+  }
+  const used = state.characters.filter(c => (c.builds || []).some(b => (b.sets || []).includes(s.name)));
+  if (!confirm(`删除自定义套装「${s.name}」？${used.length ? `\n有 ${used.length} 个角色的配装用到了它，会一并移除。` : ''}`)) return;
+  state.characters.forEach(c => c.builds.forEach(b => {
+    b.sets = (b.sets || []).filter(x => x !== s.name);
+  }));
+  state.sets.splice(i, 1);
+  delete state.planAssign[s.name];
+  save(); afterSetsChange();
+  toast('已删除：' + s.name);
+}
+
+/* 套装列表变动后的联动刷新 */
+function afterSetsChange() {
+  renderSets(); renderChars(); renderPlan(); renderSubs();
+}
+
+/* ============================================================
+ * 页面 ⑤：数据管理
+ * ============================================================ */
 
 /* ============================================================
  * 事件绑定
@@ -1536,6 +1944,7 @@ function bind() {
     $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + t.dataset.tab));
     if (t.dataset.tab === 'plan') renderPlan();
     if (t.dataset.tab === 'subs') renderSubs();
+    if (t.dataset.tab === 'sets') renderSets();
   });
 
   // 角色页筛选
@@ -1646,7 +2055,7 @@ function bind() {
         const o = JSON.parse(r.result);
         state = normalize(o);
         save();
-        renderChars(); renderPlan(); renderSubs(); renderCustomSets();
+        renderChars(); renderPlan(); renderSubs(); renderSets();
         toast('导入成功：' + state.characters.length + ' 个角色');
       } catch (err) { toast('导入失败：文件格式不正确'); }
     };
@@ -1660,9 +2069,9 @@ function bind() {
     toast('已清空启用状态');
   };
   $('#btnReset').onclick = () => {
-    if (!confirm('恢复内置默认角色库？你的自定义修改会丢失。')) return;
-    state = { characters: buildDefaultCharacters(), customSets: [], planAssign: {} };
-    save(); renderChars(); renderPlan(); renderSubs(); renderCustomSets();
+    if (!confirm('恢复内置默认角色库与套装列表？你的自定义修改会丢失。')) return;
+    state = { characters: buildDefaultCharacters(), sets: defaultSets(), planAssign: {} };
+    save(); renderChars(); renderPlan(); renderSubs(); renderSets();
     toast('已恢复默认库');
   };
   $('#btnAddSet').onclick = () => {
@@ -1670,12 +2079,21 @@ function bind() {
     const b = $('#newSetBonus').value.trim();
     if (!n) return toast('请输入套装名称');
     if (allSets().includes(n)) return toast('该套装已存在');
-    state.customSets.push({ name: n, bonus: b });
+    state.sets.push({ name: n, bonus: b, builtin: false, hidden: false });
     $('#newSetName').value = ''; $('#newSetBonus').value = '';
-    save(); renderCustomSets(); renderPlan();
-    // 刷新评分器下拉
-    $('#scoreSet').innerHTML = '<option value="">（不限套装）</option>' + allSets().map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+    save(); renderSets(); renderPlan(); renderChars();
     toast('已添加套装：' + n);
+  };
+  $('#setShowHidden').onchange = renderSets;
+  $('#btnRestoreSets').onclick = () => {
+    let n = 0;
+    SETS.forEach(s => {
+      const cur = state.sets.find(x => x.name === s.name);
+      if (cur) { if (cur.hidden) { cur.hidden = false; n++; } }
+      else { state.sets.push({ name: s.name, bonus: s.bonus, builtin: true, hidden: false }); n++; }
+    });
+    save(); renderSets(); renderPlan(); renderChars();
+    toast(n ? `已恢复 ${n} 个内置套装` : '内置套装已全部在列表中');
   };
 
   // 帮助
@@ -1719,7 +2137,7 @@ function syncTopbarHeight() {
   renderChars();
   renderPlan();
   renderSubs();
-  renderCustomSets();
+  renderSets();
   syncTopbarHeight();
   window.addEventListener('resize', syncTopbarHeight);
   window.addEventListener('orientationchange', () => setTimeout(syncTopbarHeight, 120));

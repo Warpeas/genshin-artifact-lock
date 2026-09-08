@@ -139,18 +139,35 @@ const SETS = [
 const SET_NAMES = SETS.map(s => s.name);
 const SET_BONUS = Object.fromEntries(SETS.map(s => [s.name, s.bonus]));
 
-/* ---------- 副词条权重预设 ---------- */
+/* ---------- 副词条需求预设 ----------
+ * 用【排序 + 必选】表达，不再使用数值权重：
+ *   数组顺序 = 想要程度（越靠前越想要）
+ *   第 2 项为 true = 「必选」，对应游戏内锁定方案的 ★必须
+ * 例：crit → [暴击率(必选), 暴击伤害(必选), 攻击力%, 元素充能效率, 元素精通, 攻击力]
+ */
 const SUB_PRESETS = {
-  crit:    { cr: 1, cd: 1, atkP: 0.7, er: 0.25, em: 0.25, atk: 0.15, hpP: 0, hp: 0, defP: 0, def: 0 },
-  critHp:  { cr: 1, cd: 1, hpP: 0.7, er: 0.3,  em: 0.2,  hp: 0.15, atkP: 0.15, atk: 0, defP: 0, def: 0 },
-  critDef: { cr: 1, cd: 1, defP: 0.7, er: 0.2, def: 0.15, atkP: 0.1, atk: 0, hpP: 0, hp: 0, em: 0 },
-  em:      { em: 1, er: 0.5, cr: 0.4, cd: 0.4, atkP: 0.1, hpP: 0, hp: 0, defP: 0, def: 0, atk: 0 },
-  hp:      { hpP: 1, er: 0.6, cr: 0.3, cd: 0.3, hp: 0.2, em: 0.1, atkP: 0, atk: 0, defP: 0, def: 0 },
-  def:     { defP: 1, cr: 0.5, cd: 0.5, er: 0.3, def: 0.2, atkP: 0, atk: 0, hpP: 0, hp: 0, em: 0 },
-  er:      { er: 1, cr: 0.4, cd: 0.4, hpP: 0.3, atkP: 0.2, em: 0.1, hp: 0.1, atk: 0, defP: 0, def: 0 },
-  atk:     { atkP: 1, cr: 0.5, cd: 0.5, er: 0.3, atk: 0.2, em: 0.1, hpP: 0, hp: 0, defP: 0, def: 0 },
-  heal:    { hpP: 1, er: 0.7, hp: 0.3, atkP: 0.1, cr: 0.05, cd: 0.05, atk: 0, defP: 0, def: 0, em: 0 },
+  crit:    [['cr', 1], ['cd', 1], ['atkP'], ['er'], ['em'], ['atk']],
+  critHp:  [['cr', 1], ['cd', 1], ['hpP'], ['er'], ['em'], ['hp']],
+  critDef: [['cr', 1], ['cd', 1], ['defP'], ['er'], ['def'], ['atkP']],
+  em:      [['em', 1], ['er'], ['cr'], ['cd'], ['atkP']],
+  hp:      [['hpP', 1], ['er'], ['cr'], ['cd'], ['hp'], ['em']],
+  def:     [['defP', 1], ['cr'], ['cd'], ['er'], ['def']],
+  er:      [['er', 1], ['cr'], ['cd'], ['hpP'], ['atkP'], ['em'], ['hp']],
+  atk:     [['atkP', 1], ['cr'], ['cd'], ['er'], ['atk'], ['em']],
+  heal:    [['hpP', 1], ['er'], ['hp'], ['atkP']],
 };
+
+/* 预设的中文名（供界面下拉使用） */
+const SUB_PRESET_NAMES = {
+  crit: '双暴输出', critHp: '双暴+生命', critDef: '双暴+防御',
+  em: '精通流', hp: '生命流', def: '防御流',
+  er: '充能辅助', atk: '攻击流', heal: '治疗辅助',
+};
+
+/* 把 [id, req] 简写展开成 [{ id, req }] */
+function toSubs(list) {
+  return (list || []).map(([id, req]) => ({ id, req: !!req }));
+}
 
 /* ============================================================
  * 角色元信息：国度 + 定位
@@ -373,9 +390,22 @@ const RAW_CHARS = [
 ];
 
 /* ---------- 展开为完整结构 ---------- */
+/* 生成一份「主词条 + 副词条」需求（按配装组独立） */
+function makeStatNeeds(sands, goblet, circlet, subPreset) {
+  return {
+    main: {
+      sands:   sands.map((stat, i) => ({ stat, rank: i + 1 })),
+      goblet:  goblet.map((stat, i) => ({ stat, rank: i + 1 })),
+      circlet: circlet.map((stat, i) => ({ stat, rank: i + 1 })),
+    },
+    subs: toSubs(SUB_PRESETS[subPreset] || SUB_PRESETS.crit),
+  };
+}
+
 function buildDefaultCharacters() {
   return RAW_CHARS.map(([name, element, subPreset, builds, sands, goblet, circlet], i) => {
     const meta = CH_META[name] || ['snezhnaya', ['maindps']];
+    const need = makeStatNeeds(sands, goblet, circlet, subPreset);
     return {
     id: 'c' + i + '_' + name,
     name,
@@ -385,23 +415,12 @@ function buildDefaultCharacters() {
     enabled: false,
     note: '',
     custom: false,
-    builds: builds.map((sets, idx) => ({
+    // 主 / 副词条需求按【配装组】区分：一组配装 = 一套词条需求
+    builds: builds.map((sets, idx) => Object.assign({
       sets,
       priority: idx === 0 ? 'main' : 'alt',
-    })),
-    subs: Object.assign({}, SUB_PRESETS[subPreset] || SUB_PRESETS.crit),
-    main: {
-      sands:   sands.map(stat => ({ stat, rank: 1 })),
-      goblet:  goblet.map(stat => ({ stat, rank: 1 })),
-      circlet: circlet.map(stat => ({ stat, rank: 1 })),
-    },
-  };}).map(c => {
-    // 主词条按数组顺序赋予 rank（1 = 最优）
-    ['sands', 'goblet', 'circlet'].forEach(slot => {
-      c.main[slot].forEach((m, i) => { m.rank = i + 1; });
-    });
-    return c;
-  });
+    }, JSON.parse(JSON.stringify(need)))),
+  };});
 }
 
 /* ---------- 工具：取主词条名称 ---------- */

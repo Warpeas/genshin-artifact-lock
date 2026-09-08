@@ -26,7 +26,8 @@
   <button class="tab active" data-tab="chars"><span class="t-long">① 角色配置</span><span class="t-short">① 角色</span></button>
   <button class="tab" data-tab="plan"><span class="t-long">② 锁定方案</span><span class="t-short">② 方案</span></button>
   <button class="tab" data-tab="subs"><span class="t-long">③ 副词条规则</span><span class="t-short">③ 副词条</span></button>
-  <button class="tab" data-tab="data"><span class="t-long">④ 数据管理</span><span class="t-short">④ 数据</span></button>
+  <button class="tab" data-tab="sets"><span class="t-long">④ 套装管理</span><span class="t-short">④ 套装</span></button>
+  <button class="tab" data-tab="data"><span class="t-long">⑤ 数据管理</span><span class="t-short">⑤ 数据</span></button>
 </nav>
 
 <main>
@@ -139,8 +140,30 @@
 
     <div class="card">
       <h3>各套装推荐副词条</h3>
-      <p class="muted small">取该套装下所有需求角色的副词条权重平均值，用于判断「这个胚子值得喂到 20 级吗」。</p>
+      <p class="muted small">按该套装下所有需求角色的<b>排序</b>汇总：越靠前 = 越多人把它排在前面；
+        ★ 表示多数角色把它标成了「必选」（对应锁定方案里的 ★必须）。主词条 / 副词条需求<b>按配装组</b>统计。</p>
       <div id="setSubTable"></div>
+    </div>
+  </section>
+
+  <!-- ============ 套装管理 ============ -->
+  <section id="tab-sets" class="tabpane">
+    <div class="card">
+      <h3>圣遗物套装列表</h3>
+      <p class="muted small">
+        这里的<b>顺序</b>就是各处下拉与方案页的展示顺序；可改 2 件套效果说明。
+        内置套装点「隐藏」只是不显示（角色配装里的引用会保留），点「恢复」即可放回；
+        自定义套装点「删除」会真正移除，并同步清掉角色配装里的引用。
+      </p>
+      <div class="toolbar wrap">
+        <input id="newSetName" placeholder="新套装名称，例：某某之梦">
+        <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%">
+        <button id="btnAddSet" class="btn primary">+ 添加套装</button>
+        <span class="spacer"></span>
+        <label class="chk"><input type="checkbox" id="setShowHidden"> 显示已隐藏的内置套装</label>
+        <button id="btnRestoreSets" class="btn">恢复全部内置套装</button>
+      </div>
+      <div id="setManager"></div>
     </div>
   </section>
 
@@ -159,23 +182,13 @@
     </div>
 
     <div class="card">
-      <h3>新增自定义套装</h3>
-      <p class="muted small">版本更新后若新增套装，可自行添加（刷新前一直有效）。</p>
-      <div class="form-row">
-        <input id="newSetName" placeholder="套装名称，例：某某之梦">
-        <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%">
-        <button id="btnAddSet" class="btn">添加</button>
-      </div>
-      <div id="customSetList" class="chip-wrap"></div>
-    </div>
-
-    <div class="card">
       <h3>关于数据</h3>
       <ul class="muted small notes">
-        <li>内置 <b id="statCharCount">0</b> 个角色的配装，整理自社区常见推荐，随版本变动请自行校正。</li>
+        <li>内置 <b id="statCharCount">0</b> 个角色、<b id="statSetCount">0</b> 个套装，整理自社区常见推荐，随版本变动请自行校正。</li>
         <li>「主推 / 备选」权重：主推 = 1.0，备选 = 0.5；主词条优先级 1/2/3 权重 = 1.0 / 0.5 / 0.25。</li>
         <li>建议保留件数 = 以该主词条为最优解的角色数（同一角色多套配装不重复计数），区间 1–4。</li>
         <li>2+2 配装对单套的件数需求更低，汇总时按 0.6 系数折算。</li>
+        <li>主词条 / 副词条需求<b>按配装组</b>分别保存：同一角色换套装时可以有不同的词条需求。</li>
       </ul>
     </div>
   </section>
@@ -207,16 +220,18 @@
   <div class="modal-body">
     <h4>三步走</h4>
     <ol>
-      <li><b>① 角色配置</b>：勾选你实际要养的角色。点卡片可改套装、主词条优先级和副词条权重。主词条越靠前优先级越高。</li>
+      <li><b>① 角色配置</b>：勾选你实际要养的角色。点卡片可改套装、主词条优先级和副词条排序；主词条 / 副词条都<b>越靠前优先级越高</b>，副词条还能点 ☆ 标成 ★必须。
+        一个角色可以有多组配装（4件套 / 2+2），<b>每组的词条需求分开保存</b>；新增配装组时会默认复制当前组的词条，也可以从别组一键复制。</li>
       <li><b>② 锁定方案</b>：每个套装直接给出「游戏内锁定方案」——把该套装下所有角色的需求聚类合并成 ≤3 个预设，
         每个预设逐个部位列出主要属性、★必须副词条、候选副词条与「包含任意 N 条」。照着填进游戏即可。</li>
       <li><b>③ 副词条规则</b>：给出分档判定 + 胚子评分器，解决「主词条对了但副词条能不能留」。</li>
+      <li><b>④ 套装管理</b>：增删套装、改 2 件套说明、拖动式上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
     </ol>
     <h4>怎么看方案</h4>
     <ul>
       <li><b>方案 N</b>：由需求相近的角色合并而来，标题写明「供谁使用」。同一套装的多个方案在锁定界面<b>共同生效</b>（彼此是「或」的关系）。</li>
       <li><b>✂️ 手动合并</b>：某套装的需求分组超过 3 个时会出现该面板，默认按相似度自动归入，可把任意分组改到方案 1/2/3；改动会保存，「重置为自动合并」一键还原。</li>
-      <li><b>★必须</b>：金色词条，这件圣遗物<b>必须</b>有它，否则不锁定。</li>
+      <li><b>★必须</b>：金色词条，这件圣遗物<b>必须</b>有它，否则不锁定。来自组内<b>全体角色都勾选了「必选」</b>的副词条（在角色抽屉里点 ☆ 设置），最多 2 个。</li>
       <li><b>包含任意 N 条</b>：候选池里命中任意 N 条即锁定，★必须的词条也计入这 N 条。</li>
       <li>勾选工具栏「<b>显示详细件数</b>」可展开每套的建议保留件数与需求来源；不勾选时页面只显示可直接照搬的锁定方案。</li>
     </ul>
