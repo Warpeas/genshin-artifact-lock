@@ -26,8 +26,7 @@
   <button class="tab active" data-tab="chars"><span class="t-long">① 角色配置</span><span class="t-short">① 角色</span></button>
   <button class="tab" data-tab="plan"><span class="t-long">② 锁定方案</span><span class="t-short">② 方案</span></button>
   <button class="tab" data-tab="subs"><span class="t-long">③ 副词条规则</span><span class="t-short">③ 副词条</span></button>
-  <button class="tab" data-tab="sets"><span class="t-long">④ 套装管理</span><span class="t-short">④ 套装</span></button>
-  <button class="tab" data-tab="data"><span class="t-long">⑤ 数据管理</span><span class="t-short">⑤ 数据</span></button>
+  <button class="tab" data-tab="data"><span class="t-long">④ 数据管理</span><span class="t-short">④ 数据</span></button>
 </nav>
 
 <main>
@@ -146,29 +145,13 @@
     </div>
   </section>
 
-  <!-- ============ 套装管理 ============ -->
-  <section id="tab-sets" class="tabpane">
-    <div class="card">
-      <h3>圣遗物套装列表</h3>
-      <p class="muted small">
-        这里的<b>顺序</b>就是各处下拉与方案页的展示顺序；可改 2 件套效果说明。
-        内置套装点「隐藏」只是不显示（角色配装里的引用会保留），点「恢复」即可放回；
-        自定义套装点「删除」会真正移除，并同步清掉角色配装里的引用。
-      </p>
-      <div class="toolbar wrap">
-        <input id="newSetName" placeholder="新套装名称，例：某某之梦">
-        <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%">
-        <button id="btnAddSet" class="btn primary">+ 添加套装</button>
-        <span class="spacer"></span>
-        <label class="chk"><input type="checkbox" id="setShowHidden"> 显示已隐藏的内置套装</label>
-        <button id="btnRestoreSets" class="btn">恢复全部内置套装</button>
-      </div>
-      <div id="setManager"></div>
-    </div>
-  </section>
-
   <!-- ============ 数据管理 ============ -->
   <section id="tab-data" class="tabpane">
+    <div class="card">
+      <h3>圣遗物套装管理</h3>
+      <p class="muted small">增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。点下面按钮在浮窗里操作。</p>
+      <button id="btnOpenSetMgr" class="btn primary">打开套装管理</button>
+    </div>
     <div class="card">
       <h3>备份与恢复</h3>
       <p class="muted small">配置保存在浏览器 localStorage，换设备或清缓存前请先导出。</p>
@@ -225,7 +208,7 @@
       <li><b>② 锁定方案</b>：每个套装直接给出「游戏内锁定方案」——把该套装下所有角色的需求聚类合并成 ≤3 个预设，
         每个预设逐个部位列出主要属性、★必须副词条、候选副词条与「包含任意 N 条」。照着填进游戏即可。</li>
       <li><b>③ 副词条规则</b>：给出分档判定 + 胚子评分器，解决「主词条对了但副词条能不能留」。</li>
-      <li><b>④ 套装管理</b>：增删套装、改 2 件套说明、拖动式上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
+      <li><b>④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
     </ol>
     <h4>怎么看方案</h4>
     <ul>
@@ -242,6 +225,27 @@
       <li>副词条不可能与同部位主词条相同，方案里已自动剔除这类无效勾选。</li>
       <li>数据存在本机浏览器，换设备用「数据管理 → 导出 JSON」迁移。</li>
     </ul>
+  </div>
+</div>
+
+<!-- ========== 套装管理浮窗 ========== -->
+<div id="setMgrMask" class="modal-mask hidden"></div>
+<div id="setMgrBox" class="modal hidden">
+  <div class="drawer-head">
+    <h2>圣遗物套装管理</h2>
+    <button id="btnCloseSetMgr" class="icon-btn">×</button>
+  </div>
+  <div class="modal-body">
+    <p class="muted small">这里的<b>顺序</b>就是各处下拉与方案页的展示顺序；可改 2 件套效果说明。内置套装点「隐藏」只是不显示（角色配装里的引用会保留），点「恢复」即可放回；自定义套装点「删除」会真正移除，并同步清掉角色配装里的引用。</p>
+    <div class="toolbar wrap">
+      <input id="newSetName" placeholder="新套装名称，例：某某之梦">
+      <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%">
+      <button id="btnAddSet" class="btn primary">+ 添加套装</button>
+      <span class="spacer"></span>
+      <label class="chk"><input type="checkbox" id="setShowHidden"> 显示已隐藏的内置套装</label>
+      <button id="btnRestoreSets" class="btn">恢复全部内置套装</button>
+    </div>
+    <div id="setManager"></div>
   </div>
 </div>
 

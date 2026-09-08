@@ -1451,6 +1451,28 @@ function groupBrief(g) {
   return `沙 ${part('sands')} · 杯 ${part('goblet')} · 冠 ${part('circlet')}`;
 }
 
+/* 一组的副词条需求摘要：★ = 组内全员都标了必选，其余按「出现人数 × 名次」取前 3
+ * 与主属性并排展示，方便判断这两组到底能不能并进同一个方案 */
+function groupSubBrief(g) {
+  const n = g.length;
+  const reqCnt = new Map();
+  g.forEach(r => (r.req || []).forEach(id => reqCnt.set(id, (reqCnt.get(id) || 0) + 1)));
+  const must = [...reqCnt.entries()].filter(([, c]) => c === n).map(([id]) => id);
+
+  const score = new Map();
+  g.forEach(r => (r.pool || []).forEach((id, i) => {
+    score.set(id, (score.get(id) || 0) + subRankWeight(i));
+  }));
+  const rest = [...score.entries()]
+    .filter(([id]) => !must.includes(id))
+    .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => id);
+
+  if (!must.length && !rest.length) return '<span class="muted">不限</span>';
+  const starTxt = must.map(id => `<b class="gp-mstar">★${esc(subStatName(id))}</b>`).join(' ');
+  const restTxt = rest.map(id => esc(subStatName(id))).join(' > ');
+  return [starTxt, restTxt].filter(Boolean).join((must.length && rest.length) ? ' > ' : '');
+}
+
 /* 渲染「手动合并」面板：自然分组数超过槽位时，让用户自己决定哪些组并到一个方案 */
 function renderMergePanel(setName, info) {
   const { groups, assign, maxPlans } = info;
@@ -1461,6 +1483,7 @@ function renderMergePanel(setName, info) {
       <div class="gp-mrow">
         <span class="gp-mname">${g.map(r => esc(r.name)).join('、')}</span>
         <span class="gp-minfo">${esc(groupBrief(g))}</span>
+        <span class="gp-msubs">${esc(groupSubBrief(g))}</span>
         <select class="gp-msel" data-gp-assign="${esc(setName)}|${i}">${opts}</select>
       </div>`;
   }).join('');
@@ -1472,11 +1495,13 @@ function renderMergePanel(setName, info) {
       <span class="gp-merge-hint">自动结果已预填，可自行调整每组归入哪个方案</span>
     </summary>
     <div class="gp-merge-body">
-      <div class="gp-mhead"><span>角色组</span><span>主属性需求</span><span>归入</span></div>
+      <div class="gp-mhead">
+        <span>角色组</span><span>主属性需求</span><span>副属性需求（★=全员必选）</span><span>归入</span>
+      </div>
       ${rows}
       <div class="gp-mfoot">
         <button class="btn sm" data-gp-reset="${esc(setName)}">重置为自动合并</button>
-        <span class="gp-mtip">改动会随本地存档一起保存</span>
+        <span class="gp-mtip">改动会随本地存档一起保存　·　把主 / 副属性需求相近的组并到一起最划算</span>
       </div>
     </div>
   </details>`;
@@ -1813,7 +1838,7 @@ function renderSetSubTable() {
 }
 
 /* ============================================================
- * 页面 ④：套装管理（增删 / 改名 / 改效果 / 排序）
+ * 套装管理（数据管理页浮窗，点「打开套装管理」弹出）
  * ============================================================ */
 function renderSets() {
   const box = $('#setManager');
@@ -1930,8 +1955,19 @@ function afterSetsChange() {
   renderSets(); renderChars(); renderPlan(); renderSubs();
 }
 
+/* 套装管理浮窗的开关（入口在数据管理页） */
+function openSetMgr() {
+  renderSets();
+  $('#setMgrBox').classList.remove('hidden');
+  $('#setMgrMask').classList.remove('hidden');
+}
+function closeSetMgr() {
+  $('#setMgrBox').classList.add('hidden');
+  $('#setMgrMask').classList.add('hidden');
+}
+
 /* ============================================================
- * 页面 ⑤：数据管理
+ * 页面 ④：数据管理
  * ============================================================ */
 
 /* ============================================================
@@ -1944,7 +1980,6 @@ function bind() {
     $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + t.dataset.tab));
     if (t.dataset.tab === 'plan') renderPlan();
     if (t.dataset.tab === 'subs') renderSubs();
-    if (t.dataset.tab === 'sets') renderSets();
   });
 
   // 角色页筛选
@@ -2095,6 +2130,10 @@ function bind() {
     save(); renderSets(); renderPlan(); renderChars();
     toast(n ? `已恢复 ${n} 个内置套装` : '内置套装已全部在列表中');
   };
+  // 套装管理浮窗
+  $('#btnOpenSetMgr').onclick = openSetMgr;
+  $('#btnCloseSetMgr').onclick = closeSetMgr;
+  $('#setMgrMask').onclick = closeSetMgr;
 
   // 帮助
   const openHelp = () => { $('#helpBox').classList.remove('hidden'); $('#helpMask').classList.remove('hidden'); };
@@ -2104,7 +2143,7 @@ function bind() {
   $('#helpMask').onclick = closeHelp;
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { showDrawer(false); closeHelp(); }
+    if (e.key === 'Escape') { showDrawer(false); closeHelp(); closeSetMgr(); }
   });
 }
 
