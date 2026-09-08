@@ -165,17 +165,14 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 /* 编辑抽屉：攻略来源一行一链接 + 加减按钮 */
 .src-list{display:flex;flex-direction:column;gap:6px;margin-bottom:7px;}
 .src-row{display:flex;align-items:center;gap:6px;}
-.src-open{flex:none;width:30px;height:30px;line-height:1;font-size:14px;border-radius:6px;border:1px solid #2a4a5e;background:#0e2433;color:#5fc4f0;cursor:pointer;}
-.src-open:hover{background:#13344a;color:#9fdcff;}
+.src-go{flex:none;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:5px 8px;font-size:12px;color:#5fc4f0;text-decoration:none;border:1px solid #2a4a5e;border-radius:6px;background:#0e2433;}
+.src-go:hover{background:#13344a;color:#9fdcff;border-color:#3a6685;}
 .src-input{flex:1;min-width:0;padding:6px 9px;font-size:12.5px;color:var(--txt);background:#0f1922;border:1px solid #2c3a47;border-radius:6px;}
 .src-input:focus{outline:none;border-color:#5fb6e6;}
 .src-input::placeholder{color:var(--txt3);}
 .src-del{flex:none;width:30px;height:30px;line-height:1;font-size:18px;border-radius:6px;border:1px solid #3a2730;background:#231319;color:#ff8a9c;cursor:pointer;}
 .src-del:hover{background:#3a1f29;color:#ffb3c0;}
 .src-empty{font-size:12px;color:var(--txt3);padding:3px 2px;}
-
-/* 卡片：有攻略来源时的 🔗 指示（点卡片打开抽屉查看/跳转） */
-.cc-hasrc{margin-left:8px;font-size:13px;opacity:.85;cursor:pointer;filter:drop-shadow(0 0 2px rgba(95,196,240,.5));}
 .fgroup textarea{width:100%;resize:vertical;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--bg1);color:var(--txt);border:1px solid #2a3845;border-radius:7px;padding:7px 9px;box-sizing:border-box;}
 .fgroup textarea:focus{outline:none;border-color:var(--gold);}
 .ms.r1{color:var(--gold2);font-weight:600;}
@@ -1585,6 +1582,11 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 
+/* 从链接取主机名做可点击跳转标签（去掉 www. 前缀） */
+function srcHost(u) {
+  try { return new URL(u).host.replace(/^www\./, ''); } catch (e) { return '链接'; }
+}
+
 let toastTimer = null;
 function toast(msg) {
   const el = $('#toast');
@@ -2238,7 +2240,6 @@ function renderChars() {
       <div class="cc-top">
         <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
         <span class="cc-name">${esc(c.name)}</span>
-        ${c.src && c.src.length ? '<span class="cc-hasrc" title="有攻略来源，点开角色查看/跳转">🔗</span>' : ''}
         <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
       </div>
       <div class="cc-meta">
@@ -2509,19 +2510,16 @@ function drawDrawer() {
   body.querySelector('#edName').oninput = e => { editing.name = e.target.value; };
   body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; };
 
-  // 攻略来源：一行一链接 = 可打开(↗) + 可编辑 + 可删除(−)，可加多源
+  // 攻略来源：一行一链接 = 可点击直接跳转(锚) + 可编辑 + 可删除(−)，可加多源
   function renderSrcRows() {
     const wrap = body.querySelector('#edSrcList');
     const arr = editing.src || [];
     wrap.innerHTML = arr.length ? arr.map((u, i) => `
       <div class="src-row">
-        <button type="button" class="src-open" data-i="${i}" title="打开链接">↗</button>
+        <a class="src-go" href="${esc(u)}" target="_blank" rel="noopener" title="点击打开：${esc(u)}">${esc(srcHost(u))}</a>
         <input type="text" class="src-input" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
         <button type="button" class="src-del" data-i="${i}" title="删除该链接">−</button>
       </div>`).join('') : '<div class="src-empty">暂无来源，点击下方「+ 添加链接」</div>';
-    wrap.querySelectorAll('.src-open').forEach(btn => {
-      btn.onclick = () => { const u = (editing.src || [])[+btn.dataset.i]; if (u) window.open(u, '_blank', 'noopener'); };
-    });
     wrap.querySelectorAll('.src-input').forEach(inp => {
       inp.oninput = e => { const i = +e.target.dataset.i; (editing.src = editing.src || [])[i] = e.target.value.trim(); };
     });

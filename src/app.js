@@ -193,6 +193,11 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 
+/* 从链接取主机名做可点击跳转标签（去掉 www. 前缀） */
+function srcHost(u) {
+  try { return new URL(u).host.replace(/^www\./, ''); } catch (e) { return '链接'; }
+}
+
 let toastTimer = null;
 function toast(msg) {
   const el = $('#toast');
@@ -846,7 +851,6 @@ function renderChars() {
       <div class="cc-top">
         <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
         <span class="cc-name">${esc(c.name)}</span>
-        ${c.src && c.src.length ? '<span class="cc-hasrc" title="有攻略来源，点开角色查看/跳转">🔗</span>' : ''}
         <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
       </div>
       <div class="cc-meta">
@@ -1117,19 +1121,16 @@ function drawDrawer() {
   body.querySelector('#edName').oninput = e => { editing.name = e.target.value; };
   body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; };
 
-  // 攻略来源：一行一链接 = 可打开(↗) + 可编辑 + 可删除(−)，可加多源
+  // 攻略来源：一行一链接 = 可点击直接跳转(锚) + 可编辑 + 可删除(−)，可加多源
   function renderSrcRows() {
     const wrap = body.querySelector('#edSrcList');
     const arr = editing.src || [];
     wrap.innerHTML = arr.length ? arr.map((u, i) => `
       <div class="src-row">
-        <button type="button" class="src-open" data-i="${i}" title="打开链接">↗</button>
+        <a class="src-go" href="${esc(u)}" target="_blank" rel="noopener" title="点击打开：${esc(u)}">${esc(srcHost(u))}</a>
         <input type="text" class="src-input" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
         <button type="button" class="src-del" data-i="${i}" title="删除该链接">−</button>
       </div>`).join('') : '<div class="src-empty">暂无来源，点击下方「+ 添加链接」</div>';
-    wrap.querySelectorAll('.src-open').forEach(btn => {
-      btn.onclick = () => { const u = (editing.src || [])[+btn.dataset.i]; if (u) window.open(u, '_blank', 'noopener'); };
-    });
     wrap.querySelectorAll('.src-input').forEach(inp => {
       inp.oninput = e => { const i = +e.target.dataset.i; (editing.src = editing.src || [])[i] = e.target.value.trim(); };
     });
