@@ -1033,18 +1033,28 @@ const SET_BONUS = Object.fromEntries(SETS.map(s => [s.name, s.bonus]));
  * 用【排序 + 必选 + 重要度算子】表达，不再使用数值权重：
  *   数组顺序 = 想要程度（越靠前越想要）
  *   第 2 项为 true = 「必选」，对应游戏内锁定方案的 ★必须
- *   每条 op 默认 '>'（比上一条更低），可理解成「逐级降权」；详见 app.js 的 opWeights
- * 例：crit → [暴击率(必选), 暴击伤害(必选), 攻击力%, 元素充能效率, 元素精通, 攻击力]
+ *   第 3 项 op：'=' 表示与上一条同等重要（同权），缺省 '>' 表示比上一条更低（逐级降权 0.72×）
+ *   重要度原则依据社区攻略共识整理（双暴并列最优先、攻击%/精通按反应定位排序等），非逐角色编造
+ * 例：crit → [暴击率(必选), 暴击伤害(必选,=暴击率), 攻击力%, 充能, 精通, 攻击]
  */
 const SUB_PRESETS = {
-  crit:    [['cr', 1], ['cd', 1], ['atkP'], ['er'], ['em'], ['atk']],
-  critHp:  [['cr', 1], ['cd', 1], ['hpP'], ['er'], ['em'], ['hp']],
-  critDef: [['cr', 1], ['cd', 1], ['defP'], ['er'], ['def'], ['atkP']],
+  // 双暴输出（通用主C/副C）：双暴并列最优先(=)，攻击% > 充能 ≈ 精通
+  crit:    [['cr', 1], ['cd', 1, '='], ['atkP'], ['er'], ['em'], ['atk']],
+  // 双暴+生命（生命转攻类：胡桃/夜兰/芙宁娜等）：双暴并列，生命% 紧随
+  critHp:  [['cr', 1], ['cd', 1, '='], ['hpP'], ['er'], ['em'], ['atk']],
+  // 双暴+防御（防御转攻类：诺艾尔/荒泷/娜维娅等）：双暴并列，防御% 紧随
+  critDef: [['cr', 1], ['cd', 1, '='], ['defP'], ['er'], ['def'], ['atkP']],
+  // 精通流（剧变/反应主C：纳西妲/艾尔海森/久岐忍等）：精通必选，充能次之，双暴按需
   em:      [['em', 1], ['er'], ['cr'], ['cd'], ['atkP']],
+  // 生命流（生命辅助/绽放辅：妮露/心海等）：生命%必选，充能次之
   hp:      [['hpP', 1], ['er'], ['cr'], ['cd'], ['hp'], ['em']],
+  // 防御流（防御向：阿贝多/荒泷等）
   def:     [['defP', 1], ['cr'], ['cd'], ['er'], ['def']],
+  // 充能辅助（依赖大招的辅助：班尼特/香菱/行秋等）：充能必选，双暴/生命按需
   er:      [['er', 1], ['cr'], ['cd'], ['hpP'], ['atkP'], ['em'], ['hp']],
+  // 攻击流（攻击向副C/辅：九条/云堇等）：攻击%必选，双暴次之
   atk:     [['atkP', 1], ['cr'], ['cd'], ['er'], ['atk'], ['em']],
+  // 治疗辅助：生命%必选，充能次之，生命固定值
   heal:    [['hpP', 1], ['er'], ['hp'], ['atkP']],
 };
 
@@ -1055,9 +1065,9 @@ const SUB_PRESET_NAMES = {
   er: '充能辅助', atk: '攻击流', heal: '治疗辅助',
 };
 
-/* 把 [id, req] 简写展开成 [{ id, req, op }]；op 缺省 '>'（比上一条更低） */
+/* 把 [id, req, op?] 简写展开成 [{ id, req, op }]；op 缺省 '>'（比上一条更低） */
 function toSubs(list) {
-  return (list || []).map(([id, req]) => ({ id, req: !!req, op: '>' }));
+  return (list || []).map(([id, req, op]) => ({ id, req: !!req, op: op || '>' }));
 }
 
 /* ============================================================
@@ -1408,6 +1418,7 @@ const SWAP_GROUPS = {
 
 let state = null;
 let pendingMigrate = null;   // load() 若从旧存档回填了数据，init 里据此回写本地存储
+const SUB_EPOCH = 1;         // 副词条预设重要度版本；递增即把精炼后的预设同步给旧存档
 let ui = { elem: 'all', search: '', onlyEnabled: false, planSet: 'all', planSlot: 'all', buildIdx: 0 };
 let editing = null;      // 正在编辑的角色副本
 let editingIsNew = false;
@@ -1435,6 +1446,25 @@ function migrateFromDefaults(o) {
       }
     });
     o._srcMigrated = true;
+  }
+  // 同步精炼后的副词条预设重要度（epoch 防循环）：仅刷新「词条集合未改」的内置角色，
+  // 不覆盖用户自定义增删过的词条；双暴等真正同等重要的词条在此标为 '=' 同权
+  const subBy = {};
+  RAW_CHARS.forEach(([name, , sp]) => { subBy[name] = sp; });
+  if (o._subEpoch !== SUB_EPOCH) {
+    (o.characters || []).forEach(c => {
+      if (c.custom) return;
+      const sp = subBy[c.name];
+      if (!sp || !SUB_PRESETS[sp]) return;
+      const preset = toSubs(SUB_PRESETS[sp]);
+      const presetIds = preset.map(s => s.id).sort().join(',');
+      (c.builds || []).forEach(b => {
+        if (!Array.isArray(b.subs) || !b.subs.length) { b.subs = JSON.parse(JSON.stringify(preset)); return; }
+        const curIds = b.subs.map(s => s.id).sort().join(',');
+        if (curIds === presetIds) b.subs = JSON.parse(JSON.stringify(preset));  // 集合未改→刷新排序/算子
+      });
+    });
+    o._subEpoch = SUB_EPOCH;
   }
   // 补齐存档缺失的内置新角色（天然幂等：已存在则不重复添加）
   defs.forEach(d => {

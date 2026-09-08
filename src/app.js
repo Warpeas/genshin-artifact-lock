@@ -19,6 +19,7 @@ const SWAP_GROUPS = {
 
 let state = null;
 let pendingMigrate = null;   // load() 若从旧存档回填了数据，init 里据此回写本地存储
+const SUB_EPOCH = 1;         // 副词条预设重要度版本；递增即把精炼后的预设同步给旧存档
 let ui = { elem: 'all', search: '', onlyEnabled: false, planSet: 'all', planSlot: 'all', buildIdx: 0 };
 let editing = null;      // 正在编辑的角色副本
 let editingIsNew = false;
@@ -46,6 +47,25 @@ function migrateFromDefaults(o) {
       }
     });
     o._srcMigrated = true;
+  }
+  // 同步精炼后的副词条预设重要度（epoch 防循环）：仅刷新「词条集合未改」的内置角色，
+  // 不覆盖用户自定义增删过的词条；双暴等真正同等重要的词条在此标为 '=' 同权
+  const subBy = {};
+  RAW_CHARS.forEach(([name, , sp]) => { subBy[name] = sp; });
+  if (o._subEpoch !== SUB_EPOCH) {
+    (o.characters || []).forEach(c => {
+      if (c.custom) return;
+      const sp = subBy[c.name];
+      if (!sp || !SUB_PRESETS[sp]) return;
+      const preset = toSubs(SUB_PRESETS[sp]);
+      const presetIds = preset.map(s => s.id).sort().join(',');
+      (c.builds || []).forEach(b => {
+        if (!Array.isArray(b.subs) || !b.subs.length) { b.subs = JSON.parse(JSON.stringify(preset)); return; }
+        const curIds = b.subs.map(s => s.id).sort().join(',');
+        if (curIds === presetIds) b.subs = JSON.parse(JSON.stringify(preset));  // 集合未改→刷新排序/算子
+      });
+    });
+    o._subEpoch = SUB_EPOCH;
   }
   // 补齐存档缺失的内置新角色（天然幂等：已存在则不重复添加）
   defs.forEach(d => {
