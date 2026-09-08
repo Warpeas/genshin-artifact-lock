@@ -1410,6 +1410,7 @@ const SWAP_GROUPS = {
 };
 
 let state = null;
+let pendingMigrate = null;   // load() 若从旧存档回填了数据，init 里据此回写本地存储
 let ui = { elem: 'all', search: '', onlyEnabled: false, planSet: 'all', planSlot: 'all', buildIdx: 0 };
 let editing = null;      // 正在编辑的角色副本
 let editingIsNew = false;
@@ -1417,12 +1418,46 @@ let editingIsNew = false;
 /* ============================================================
  * 存储
  * ============================================================ */
+/* 把旧存档与内置默认对齐，解决「旧版本存档覆盖了带 src 的新默认数据，
+   导致卡片/编辑抽屉看不到攻略链接」的问题：
+   1) 若某内置角色的存档里没有来源、但内置默认有，则回填来源链接；
+   2) 把内置默认里、存档没有的新角色补进来（按名字去重）。
+   回填仅在首次迁移时执行（用 _srcMigrated 标记），不覆盖用户之后手动清空/自定义。 */
+function migrateFromDefaults(o) {
+  const defs = buildDefaultCharacters();
+  const byName = {};
+  defs.forEach(d => { byName[d.name] = d; });
+  if (!o._srcMigrated) {
+    (o.characters || []).forEach(c => {
+      if (c.custom) return;
+      const d = byName[c.name];
+      if (!d) return;
+      const savedSrc = Array.isArray(c.src) ? c.src : (c.src ? [c.src] : []);
+      if (!savedSrc.length && Array.isArray(d.src) && d.src.length) {
+        c.src = d.src.slice();
+      }
+    });
+    o._srcMigrated = true;
+  }
+  // 补齐存档缺失的内置新角色（天然幂等：已存在则不重复添加）
+  defs.forEach(d => {
+    if (!o.characters.some(c => c.name === d.name)) {
+      o.characters.push(JSON.parse(JSON.stringify(d)));
+    }
+  });
+  return o;
+}
+
 function load() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const o = JSON.parse(raw);
-      if (o && Array.isArray(o.characters) && o.characters.length) return normalize(o);
+      if (o && Array.isArray(o.characters) && o.characters.length) {
+        const migrated = migrateFromDefaults(o);
+        pendingMigrate = migrated;   // 让 init 在渲染后回写，把迁移固化到本地存储
+        return normalize(migrated);
+      }
     }
   } catch (e) { console.warn('读取本地数据失败', e); }
   return normalize({ characters: buildDefaultCharacters(), sets: defaultSets(), planAssign: {} });
@@ -3637,6 +3672,7 @@ function syncTopbarHeight() {
 
 (function init() {
   state = load();
+  if (pendingMigrate) { save(); pendingMigrate = null; }   // 固化从默认数据的回填
   bind();
   renderBatchBar();
   renderChars();
