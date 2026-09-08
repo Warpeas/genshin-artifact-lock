@@ -155,6 +155,10 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .cc-main-row span:first-child{color:var(--txt3);flex:none;width:26px;}
 .cc-main-row .ms{color:var(--txt2);}
 .cc-src{margin-top:9px;font-size:11px;line-height:1.45;color:#8fa3b8;background:rgba(28,38,48,.72);border:1px solid #2a3845;border-radius:6px;padding:5px 8px;word-break:break-word;}
+.cc-src a{color:#5fb6e6;text-decoration:none;border-bottom:1px dotted #5fb6e6;}
+.cc-src a:hover{color:#8fd0f0;border-bottom-color:#8fd0f0;}
+.fgroup textarea{width:100%;resize:vertical;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--bg1);color:var(--txt);border:1px solid #2a3845;border-radius:7px;padding:7px 9px;box-sizing:border-box;}
+.fgroup textarea:focus{outline:none;border-color:var(--gold);}
 .ms.r1{color:var(--gold2);font-weight:600;}
 
 /* ---------- plan ---------- */

@@ -162,6 +162,10 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .cc-main-row span:first-child{color:var(--txt3);flex:none;width:26px;}
 .cc-main-row .ms{color:var(--txt2);}
 .cc-src{margin-top:9px;font-size:11px;line-height:1.45;color:#8fa3b8;background:rgba(28,38,48,.72);border:1px solid #2a3845;border-radius:6px;padding:5px 8px;word-break:break-word;}
+.cc-src a{color:#5fb6e6;text-decoration:none;border-bottom:1px dotted #5fb6e6;}
+.cc-src a:hover{color:#8fd0f0;border-bottom-color:#8fd0f0;}
+.fgroup textarea{width:100%;resize:vertical;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--bg1);color:var(--txt);border:1px solid #2a3845;border-radius:7px;padding:7px 9px;box-sizing:border-box;}
+.fgroup textarea:focus{outline:none;border-color:var(--gold);}
 .ms.r1{color:var(--gold2);font-weight:600;}
 
 /* ---------- plan ---------- */
@@ -1187,144 +1191,146 @@ const CH_META = {
 
 /* ============================================================
  * 内置角色库
- * 紧凑格式：[ 名称, 元素, 副词条预设, builds, 沙, 杯, 冠 ]
+ * 紧凑格式：[ 名称, 元素, 副词条预设, builds, 沙, 杯, 冠, src ]
  *   builds: 数组，第 1 项为主推（4件套或2+2），其余为备选
  *           单项含 1 个套装名 = 4件套；含 2 个 = 2+2
  *   主词条数组按优先级从高到低排列（第1项=最优）
+ *   src: 攻略来源链接数组（来自米游社 baike.mihoyo.com 角色攻略频道）
+ *        可列多个；找不到来源时留空数组 []
  * ============================================================ */
 const RAW_CHARS = [
   /* ---------- 火 ---------- */
-  ['胡桃', 'pyro', 'critHp', [['炽烈的炎之魔女'], ['追忆之注连']], ['em', 'hpP'], ['pyro', 'hpP'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['迪卢克', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['可莉', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['宵宫', 'pyro', 'crit', [['追忆之注连'], ['来歆余响'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['林尼', 'pyro', 'crit', [['辰砂往生录'], ['来歆余响']], ['atkP'], ['pyro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['香菱', 'pyro', 'crit', [['绝缘之旗印'], ['炽烈的炎之魔女']], ['er', 'atkP', 'em'], ['pyro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['班尼特', 'pyro', 'heal', [['昔日宗室之仪'], ['被怜爱的少女']], ['er', 'hpP'], ['hpP'], ['hpP', 'heal'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['玛薇卡', 'pyro', 'crit', [['黑曜秘典'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['阿蕾奇诺', 'pyro', 'crit', [['谐律异想断章'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['托马', 'pyro', 'hp', [['千岩牢固'], ['绝缘之旗印']], ['hpP', 'er'], ['hpP'], ['hpP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['烟绯', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['迪希雅', 'pyro', 'hp', [['千岩牢固'], ['烬城勇者绘卷']], ['hpP'], ['pyro', 'hpP'], ['cr', 'cd', 'hpP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['嘉明', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['辛焱', 'pyro', 'def', [['千岩牢固'], ['逆飞的流星']], ['defP'], ['phys', 'defP'], ['cr', 'defP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
+  ['胡桃', 'pyro', 'critHp', [['炽烈的炎之魔女'], ['追忆之注连']], ['em', 'hpP'], ['pyro', 'hpP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/43804422', 'https://www.miyoushe.com/ys/article/58957682', 'https://www.miyoushe.com/ys/article/58955919']],
+  ['迪卢克', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/73900753', 'https://bbs.mihoyo.com/ys/article/22237040', 'https://bbs.mihoyo.com/ys/article/20413601']],
+  ['可莉', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/73558152', 'https://www.miyoushe.com/ys/article/71866180', 'https://www.miyoushe.com/ys/article/71102349']],
+  ['宵宫', 'pyro', 'crit', [['追忆之注连'], ['来歆余响'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64575893', 'https://www.miyoushe.com/ys/article/47804923', 'https://www.miyoushe.com/ys/article/47752227']],
+  ['林尼', 'pyro', 'crit', [['辰砂往生录'], ['来歆余响']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/59510751', 'https://www.miyoushe.com/ys/article/75046083', 'https://www.miyoushe.com/ys/article/74678199']],
+  ['香菱', 'pyro', 'crit', [['绝缘之旗印'], ['炽烈的炎之魔女']], ['er', 'atkP', 'em'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/75875081', 'https://bbs.mihoyo.com/ys/article/25074981', 'https://bbs.mihoyo.com/ys/article/20230070']],
+  ['班尼特', 'pyro', 'heal', [['昔日宗室之仪'], ['被怜爱的少女']], ['er', 'hpP'], ['hpP'], ['hpP', 'heal'], ['https://www.miyoushe.com/ys/article/54022194', 'https://bbs.mihoyo.com/ys/article/25074159', 'https://bbs.mihoyo.com/ys/article/20068461']],
+  ['玛薇卡', 'pyro', 'crit', [['黑曜秘典'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/66177682', 'https://www.miyoushe.com/ys/article/75910511', 'https://www.miyoushe.com/ys/article/75905772']],
+  ['阿蕾奇诺', 'pyro', 'crit', [['谐律异想断章'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/70507908', 'https://www.miyoushe.com/ys/article/51936359', 'https://www.miyoushe.com/ys/article/51920910']],
+  ['托马', 'pyro', 'hp', [['千岩牢固'], ['绝缘之旗印']], ['hpP', 'er'], ['hpP'], ['hpP'], ['https://www.miyoushe.com/ys/article/32388545', 'https://www.miyoushe.com/ys/article/54061940', 'https://bbs.mihoyo.com/ys/article/25074912']],
+  ['烟绯', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/25075070', 'https://bbs.mihoyo.com/ys/article/23419183', 'https://bbs.mihoyo.com/ys/article/21268500']],
+  ['迪希雅', 'pyro', 'hp', [['千岩牢固'], ['烬城勇者绘卷']], ['hpP'], ['pyro', 'hpP'], ['cr', 'cd', 'hpP'], ['https://www.miyoushe.com/ys/article/36342244', 'https://www.miyoushe.com/ys/article/68183574', 'https://www.miyoushe.com/ys/article/36343279']],
+  ['嘉明', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/48532329', 'https://www.miyoushe.com/ys/article/71813629', 'https://www.miyoushe.com/ys/article/54223358']],
+  ['辛焱', 'pyro', 'def', [['千岩牢固'], ['逆飞的流星']], ['defP'], ['phys', 'defP'], ['cr', 'defP'], ['https://bbs.mihoyo.com/ys/article/25075001', 'https://bbs.mihoyo.com/ys/article/21741667', 'https://bbs.mihoyo.com/ys/article/18634883']],
 
   /* ---------- 水 ---------- */
-  ['行秋', 'hydro', 'crit', [['绝缘之旗印'], ['沉沦之心']], ['atkP', 'er'], ['hydro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['夜兰', 'hydro', 'critHp', [['绝缘之旗印'], ['沉沦之心'], ['千岩牢固']], ['hpP'], ['hydro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['达达利亚', 'hydro', 'crit', [['沉沦之心'], ['水仙十字之圣遗物']], ['atkP'], ['hydro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['珊瑚宫心海', 'hydro', 'hp', [['海染砗磲'], ['千岩牢固']], ['hpP', 'er'], ['hydro', 'hpP'], ['heal', 'hpP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['莫娜', 'hydro', 'er', [['绝缘之旗印'], ['昔日宗室之仪']], ['er', 'atkP'], ['hydro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['妮露', 'hydro', 'hp', [['乐园遗落之花'], ['千岩牢固', '乐园遗落之花']], ['hpP'], ['hpP'], ['hpP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['芙宁娜', 'hydro', 'critHp', [['黄金剧团'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['那维莱特', 'hydro', 'critHp', [['水仙十字之圣遗物'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['芭芭拉', 'hydro', 'heal', [['被怜爱的少女'], ['海染砗磲']], ['hpP'], ['hpP'], ['heal'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['玛拉妮', 'hydro', 'critHp', [['黑曜秘典'], ['沉沦之心']], ['hpP'], ['hydro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['梦见月瑞希', 'anemo', 'em', [['翠绿之影'], ['饰金之梦', '流浪大地的乐团']], ['em', 'er'], ['em'], ['em'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['塔利雅', 'hydro', 'atk', [['昔日宗室之仪'], ['绝缘之旗印']], ['atkP', 'er'], ['hydro', 'atkP'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['希格雯', 'hydro', 'heal', [['昔时之歌'], ['海染砗磲']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['坎蒂丝', 'hydro', 'hp', [['千岩牢固'], ['绝缘之旗印']], ['hpP', 'er'], ['hpP'], ['hpP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
+  ['行秋', 'hydro', 'crit', [['绝缘之旗印'], ['沉沦之心']], ['atkP', 'er'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/75141780', 'https://www.miyoushe.com/ys/article/70022906', 'https://bbs.mihoyo.com/ys/article/25075041']],
+  ['夜兰', 'hydro', 'critHp', [['绝缘之旗印'], ['沉沦之心'], ['千岩牢固']], ['hpP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/69095833', 'https://www.miyoushe.com/ys/article/35379633', 'https://bbs.mihoyo.com/ys/article/23365969']],
+  ['达达利亚', 'hydro', 'crit', [['沉沦之心'], ['水仙十字之圣遗物']], ['atkP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/61217705', 'https://bbs.mihoyo.com/ys/article/31675253', 'https://bbs.mihoyo.com/ys/article/22237098']],
+  ['珊瑚宫心海', 'hydro', 'hp', [['海染砗磲'], ['千岩牢固']], ['hpP', 'er'], ['hydro', 'hpP'], ['heal', 'hpP'], ['https://bbs.mihoyo.com/ys/article/9783187', 'https://bbs.mihoyo.com/ys/article/28670439', 'https://bbs.mihoyo.com/ys/article/9811643']],
+  ['莫娜', 'hydro', 'er', [['绝缘之旗印'], ['昔日宗室之仪']], ['er', 'atkP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/71353241', 'https://www.miyoushe.com/ys/article/71293999', 'https://bbs.mihoyo.com/ys/article/22242956']],
+  ['妮露', 'hydro', 'hp', [['乐园遗落之花'], ['千岩牢固', '乐园遗落之花']], ['hpP'], ['hpP'], ['hpP'], ['https://www.miyoushe.com/ys/article/37891114', 'https://bbs.mihoyo.com/ys/article/30319453', 'https://www.miyoushe.com/ys/article/68308954']],
+  ['芙宁娜', 'hydro', 'critHp', [['黄金剧团'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/69835283', 'https://www.miyoushe.com/ys/article/54231026', 'https://www.miyoushe.com/ys/article/45238744']],
+  ['那维莱特', 'hydro', 'critHp', [['水仙十字之圣遗物'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/72892872', 'https://www.miyoushe.com/ys/article/51019831', 'https://www.miyoushe.com/ys/article/43799619']],
+  ['芭芭拉', 'hydro', 'heal', [['被怜爱的少女'], ['海染砗磲']], ['hpP'], ['hpP'], ['heal'], ['https://www.miyoushe.com/ys/article/68736041', 'https://bbs.mihoyo.com/ys/article/25074129', 'https://bbs.mihoyo.com/ys/article/23419183']],
+  ['玛拉妮', 'hydro', 'critHp', [['黑曜秘典'], ['沉沦之心']], ['hpP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/67605282', 'https://www.miyoushe.com/ys/article/56901714', 'https://www.miyoushe.com/ys/article/67669637']],
+  ['梦见月瑞希', 'anemo', 'em', [['翠绿之影'], ['饰金之梦', '流浪大地的乐团']], ['em', 'er'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/61944028', 'https://www.miyoushe.com/ys/article/61942278', 'https://www.miyoushe.com/ys/article/77540856']],
+  ['塔利雅', 'hydro', 'atk', [['昔日宗室之仪'], ['绝缘之旗印']], ['atkP', 'er'], ['hydro', 'atkP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/65679835', 'https://www.miyoushe.com/ys/article/65404405', 'https://www.miyoushe.com/ys/article/65404256']],
+  ['希格雯', 'hydro', 'heal', [['昔时之歌'], ['海染砗磲']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP'], ['https://www.miyoushe.com/ys/article/54243679', 'https://www.miyoushe.com/ys/article/54229003', 'https://www.miyoushe.com/ys/article/61942374']],
+  ['坎蒂丝', 'hydro', 'hp', [['千岩牢固'], ['绝缘之旗印']], ['hpP', 'er'], ['hpP'], ['hpP'], ['https://bbs.mihoyo.com/ys/article/29482398', 'https://www.miyoushe.com/ys/article/74049148', 'https://bbs.mihoyo.com/ys/article/29611709']],
 
   /* ---------- 冰 ---------- */
-  ['甘雨', 'cryo', 'crit', [['冰风迷途的勇士'], ['流浪大地的乐团']], ['atkP'], ['cryo'], ['cd', 'cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['神里绫华', 'cryo', 'crit', [['冰风迷途的勇士'], ['沉沦之心']], ['atkP'], ['cryo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['优菈', 'cryo', 'crit', [['苍白之火'], ['苍白之火', '染血的骑士道']], ['atkP'], ['phys'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['申鹤', 'cryo', 'atk', [['千岩牢固'], ['冰风迷途的勇士', '追忆之注连']], ['atkP'], ['atkP'], ['atkP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['莱欧斯利', 'cryo', 'crit', [['水仙十字之圣遗物'], ['冰风迷途的勇士']], ['atkP'], ['cryo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['迪奥娜', 'cryo', 'hp', [['千岩牢固'], ['被怜爱的少女']], ['hpP', 'er'], ['hpP'], ['hpP', 'heal'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['罗莎莉亚', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['七七', 'cryo', 'heal', [['被怜爱的少女'], ['千岩牢固']], ['atkP', 'er'], ['atkP'], ['heal'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['爱可菲', 'cryo', 'atk', [['黄金剧团'], ['冰风迷途的勇士']], ['atkP'], ['cryo', 'atkP'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['丝柯克', 'cryo', 'crit', [['深廊终曲'], ['冰风迷途的勇士']], ['atkP'], ['cryo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['夏沃蕾', 'pyro', 'hp', [['昔日宗室之仪'], ['昔时之歌'], ['烬城勇者绘卷']], ['hpP', 'er'], ['hpP'], ['hpP', 'heal'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['重云', 'cryo', 'crit', [['冰风迷途的勇士'], ['昔日宗室之仪']], ['atkP'], ['cryo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['菲米尼', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo', 'phys'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['夏洛蒂', 'cryo', 'heal', [['千岩牢固'], ['被怜爱的少女']], ['atkP', 'er'], ['atkP'], ['heal', 'atkP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['米卡', 'cryo', 'heal', [['千岩牢固'], ['被怜爱的少女']], ['atkP', 'er'], ['atkP'], ['heal', 'atkP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
+  ['甘雨', 'cryo', 'crit', [['冰风迷途的勇士'], ['流浪大地的乐团']], ['atkP'], ['cryo'], ['cd', 'cr'], ['https://bbs.mihoyo.com/ys/article/14957113', 'https://www.miyoushe.com/ys/article/61283838', 'https://www.miyoushe.com/ys/article/38956966']],
+  ['神里绫华', 'cryo', 'crit', [['冰风迷途的勇士'], ['沉沦之心']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64527638', 'https://www.miyoushe.com/ys/article/32720596', 'https://bbs.mihoyo.com/ys/article/20714244']],
+  ['优菈', 'cryo', 'crit', [['苍白之火'], ['苍白之火', '染血的骑士道']], ['atkP'], ['phys'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/40948437', 'https://www.miyoushe.com/ys/article/73861985', 'https://www.miyoushe.com/ys/article/40951883']],
+  ['申鹤', 'cryo', 'atk', [['千岩牢固'], ['冰风迷途的勇士', '追忆之注连']], ['atkP'], ['atkP'], ['atkP'], ['https://www.miyoushe.com/ys/article/65787422', 'https://www.miyoushe.com/ys/article/65404318', 'https://www.miyoushe.com/ys/article/65464845']],
+  ['莱欧斯利', 'cryo', 'crit', [['水仙十字之圣遗物'], ['冰风迷途的勇士']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/44583182', 'https://www.miyoushe.com/ys/article/62417764', 'https://www.miyoushe.com/ys/article/76302270']],
+  ['迪奥娜', 'cryo', 'hp', [['千岩牢固'], ['被怜爱的少女']], ['hpP', 'er'], ['hpP'], ['hpP', 'heal'], ['https://www.miyoushe.com/ys/article/76347079', 'https://www.miyoushe.com/ys/article/76479642', 'https://bbs.mihoyo.com/ys/article/27923191']],
+  ['罗莎莉亚', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/70615140', 'https://bbs.mihoyo.com/ys/article/25074734', 'https://bbs.mihoyo.com/ys/article/20802145']],
+  ['七七', 'cryo', 'heal', [['被怜爱的少女'], ['千岩牢固']], ['atkP', 'er'], ['atkP'], ['heal'], ['https://www.miyoushe.com/ys/article/76326299', 'https://www.miyoushe.com/sr/article/61091178', 'https://bbs.mihoyo.com/ys/article/21881008']],
+  ['爱可菲', 'cryo', 'atk', [['黄金剧团'], ['冰风迷途的勇士']], ['atkP'], ['cryo', 'atkP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/73995271', 'https://www.miyoushe.com/ys/article/64215753', 'https://www.miyoushe.com/ys/article/64193368']],
+  ['丝柯克', 'cryo', 'crit', [['深廊终曲'], ['冰风迷途的勇士']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/73991725', 'https://www.miyoushe.com/ys/article/65478404', 'https://www.miyoushe.com/ys/article/65404377']],
+  ['夏沃蕾', 'pyro', 'hp', [['昔日宗室之仪'], ['昔时之歌'], ['烬城勇者绘卷']], ['hpP', 'er'], ['hpP'], ['hpP', 'heal'], ['https://www.miyoushe.com/ys/article/47759303', 'https://www.miyoushe.com/ys/article/71769196', 'https://www.miyoushe.com/ys/article/47762991']],
+  ['重云', 'cryo', 'crit', [['冰风迷途的勇士'], ['昔日宗室之仪']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/11361211', 'https://bbs.mihoyo.com/ys/article/25075185', 'https://bbs.mihoyo.com/ys/article/24476281']],
+  ['菲米尼', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo', 'phys'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/43154250', 'https://www.miyoushe.com/ys/article/76548802', 'https://www.miyoushe.com/ys/article/43066421']],
+  ['夏洛蒂', 'cryo', 'heal', [['千岩牢固'], ['被怜爱的少女']], ['atkP', 'er'], ['atkP'], ['heal', 'atkP'], ['https://www.miyoushe.com/ys/article/45238643', 'https://www.miyoushe.com/ys/article/74068739', 'https://www.miyoushe.com/ys/article/45186920']],
+  ['米卡', 'cryo', 'heal', [['千岩牢固'], ['被怜爱的少女']], ['atkP', 'er'], ['atkP'], ['heal', 'atkP'], ['https://www.miyoushe.com/ys/article/75831154', 'https://www.miyoushe.com/ys/article/37059683', 'https://www.miyoushe.com/ys/article/37103850']],
 
   /* ---------- 雷 ---------- */
-  ['雷电将军', 'electro', 'crit', [['绝缘之旗印']], ['er', 'atkP'], ['electro', 'atkP'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['八重神子', 'electro', 'crit', [['饰金之梦'], ['如雷的盛怒']], ['atkP'], ['electro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['菲谢尔', 'electro', 'crit', [['如雷的盛怒'], ['饰金之梦'], ['绝缘之旗印']], ['atkP'], ['electro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['刻晴', 'electro', 'crit', [['如雷的盛怒'], ['饰金之梦']], ['atkP'], ['electro'], ['cd', 'cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['赛诺', 'electro', 'em', [['饰金之梦'], ['如雷的盛怒']], ['em', 'atkP'], ['electro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['久岐忍', 'electro', 'em', [['饰金之梦'], ['乐园遗落之花']], ['em'], ['em'], ['em'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['九条裟罗', 'electro', 'atk', [['昔日宗室之仪'], ['绝缘之旗印']], ['er', 'atkP'], ['electro', 'atkP'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['雷泽', 'electro', 'crit', [['苍白之火'], ['平息鸣雷的尊者']], ['atkP'], ['phys'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['克洛琳德', 'electro', 'crit', [['谐律异想断章'], ['如雷的盛怒']], ['atkP'], ['electro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['瓦雷莎', 'electro', 'crit', [['黑曜秘典'], ['长夜之誓']], ['atkP'], ['electro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['伊安珊', 'electro', 'atk', [['烬城勇者绘卷'], ['昔日宗室之仪']], ['atkP', 'er'], ['electro', 'atkP'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['欧洛伦', 'electro', 'atk', [['烬城勇者绘卷'], ['绝缘之旗印']], ['atkP', 'er'], ['electro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['多莉', 'electro', 'hp', [['千岩牢固'], ['被怜爱的少女']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
+  ['雷电将军', 'electro', 'crit', [['绝缘之旗印']], ['er', 'atkP'], ['electro', 'atkP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/47804425', 'https://www.miyoushe.com/ys/article/32613094', 'https://bbs.mihoyo.com/ys/article/18889634']],
+  ['八重神子', 'electro', 'crit', [['饰金之梦'], ['如雷的盛怒']], ['atkP'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64762050', 'https://www.miyoushe.com/ys/article/64630754', 'https://bbs.mihoyo.com/ys/article/17929472']],
+  ['菲谢尔', 'electro', 'crit', [['如雷的盛怒'], ['饰金之梦'], ['绝缘之旗印']], ['atkP'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/72463227', 'https://www.miyoushe.com/ys/article/72528522', 'https://www.miyoushe.com/ys/article/44410305']],
+  ['刻晴', 'electro', 'crit', [['如雷的盛怒'], ['饰金之梦']], ['atkP'], ['electro'], ['cd', 'cr'], ['https://www.miyoushe.com/ys/article/61261935', 'https://www.miyoushe.com/sr/article/61091188', 'https://www.miyoushe.com/ys/article/33231059']],
+  ['赛诺', 'electro', 'em', [['饰金之梦'], ['如雷的盛怒']], ['em', 'atkP'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/45995448', 'https://bbs.mihoyo.com/ys/article/29480539', 'https://www.miyoushe.com/ys/article/68307851']],
+  ['久岐忍', 'electro', 'em', [['饰金之梦'], ['乐园遗落之花']], ['em'], ['em'], ['em'], ['https://bbs.mihoyo.com/ys/article/24454467', 'https://www.miyoushe.com/sr/article/68674152', 'https://www.miyoushe.com/ys/article/32513206']],
+  ['九条裟罗', 'electro', 'atk', [['昔日宗室之仪'], ['绝缘之旗印']], ['er', 'atkP'], ['electro', 'atkP'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/9505598', 'https://bbs.mihoyo.com/ys/article/25074355', 'https://bbs.mihoyo.com/ys/article/21593056']],
+  ['雷泽', 'electro', 'crit', [['苍白之火'], ['平息鸣雷的尊者']], ['atkP'], ['phys'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/71260308', 'https://www.miyoushe.com/sr/article/75508081', 'https://bbs.mihoyo.com/ys/article/25074526']],
+  ['克洛琳德', 'electro', 'crit', [['谐律异想断章'], ['如雷的盛怒']], ['atkP'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/53505994', 'https://www.miyoushe.com/ys/article/53493282', 'https://www.miyoushe.com/ys/article/61261814']],
+  ['瓦雷莎', 'electro', 'crit', [['黑曜秘典'], ['长夜之誓']], ['atkP'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/62923305', 'https://www.miyoushe.com/ys/article/62882282', 'https://www.miyoushe.com/ys/article/71889313']],
+  ['伊安珊', 'electro', 'atk', [['烬城勇者绘卷'], ['昔日宗室之仪']], ['atkP', 'er'], ['electro', 'atkP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/62923263', 'https://www.miyoushe.com/ys/article/62890274', 'https://www.miyoushe.com/ys/article/62922913']],
+  ['欧洛伦', 'electro', 'atk', [['烬城勇者绘卷'], ['绝缘之旗印']], ['atkP', 'er'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/59513932', 'https://www.miyoushe.com/ys/article/59513936', 'https://www.miyoushe.com/ys/article/76822394']],
+  ['多莉', 'electro', 'hp', [['千岩牢固'], ['被怜爱的少女']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP'], ['https://www.miyoushe.com/sr/article/69337526', 'https://bbs.mihoyo.com/ys/article/28690959', 'https://bbs.mihoyo.com/ys/article/28936608']],
 
   /* ---------- 风 ---------- */
-  ['枫原万叶', 'anemo', 'em', [['翠绿之影']], ['em'], ['em'], ['em'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['温迪', 'anemo', 'em', [['翠绿之影']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['砂糖', 'anemo', 'em', [['翠绿之影']], ['em'], ['em'], ['em'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['琴', 'anemo', 'atk', [['翠绿之影'], ['被怜爱的少女']], ['atkP', 'er'], ['anemo', 'atkP'], ['atkP', 'heal'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['魈', 'anemo', 'crit', [['辰砂往生录'], ['翠绿之影', '追忆之注连']], ['atkP'], ['anemo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['鹿野院平藏', 'anemo', 'em', [['翠绿之影']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['早柚', 'anemo', 'em', [['翠绿之影']], ['em', 'er'], ['em'], ['em', 'heal'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['流浪者', 'anemo', 'crit', [['沙上楼阁史话'], ['翠绿之影']], ['atkP'], ['anemo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['闲云', 'anemo', 'atk', [['昔时之歌'], ['翠绿之影']], ['atkP', 'er'], ['atkP'], ['atkP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['恰斯卡', 'anemo', 'crit', [['黑曜秘典'], ['翠绿之影']], ['atkP'], ['anemo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['琳妮特', 'anemo', 'crit', [['翠绿之影'], ['沙上楼阁史话']], ['atkP'], ['anemo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['伊法', 'anemo', 'em', [['翠绿之影'], ['烬城勇者绘卷']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
+  ['枫原万叶', 'anemo', 'em', [['翠绿之影']], ['em'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/51026414', 'https://bbs.mihoyo.com/ys/article/25403328', 'https://www.miyoushe.com/ys/article/51015181']],
+  ['温迪', 'anemo', 'em', [['翠绿之影']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr'], ['https://www.miyoushe.com/ys/article/71235177', 'https://www.miyoushe.com/ys/article/71128239', 'https://www.miyoushe.com/ys/article/63567342']],
+  ['砂糖', 'anemo', 'em', [['翠绿之影']], ['em'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/73607818', 'https://www.miyoushe.com/sr/article/69299682', 'https://bbs.mihoyo.com/ys/article/25074877']],
+  ['琴', 'anemo', 'atk', [['翠绿之影'], ['被怜爱的少女']], ['atkP', 'er'], ['anemo', 'atkP'], ['atkP', 'heal'], ['https://www.miyoushe.com/ys/article/73882906', 'https://bbs.mihoyo.com/ys/article/22243055', 'https://bbs.mihoyo.com/ys/article/20636331']],
+  ['魈', 'anemo', 'crit', [['辰砂往生录'], ['翠绿之影', '追忆之注连']], ['atkP'], ['anemo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/49507346', 'https://bbs.mihoyo.com/ys/article/14291328', 'https://www.miyoushe.com/zzz/article/61286356']],
+  ['鹿野院平藏', 'anemo', 'em', [['翠绿之影']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr'], ['https://bbs.mihoyo.com/ys/article/25502533', 'https://bbs.mihoyo.com/ys/article/25515428', 'https://bbs.mihoyo.com/ys/article/25475900']],
+  ['早柚', 'anemo', 'em', [['翠绿之影']], ['em', 'er'], ['em'], ['em', 'heal'], ['https://bbs.mihoyo.com/ys/article/25075158', 'https://bbs.mihoyo.com/ys/article/20803122', 'https://bbs.mihoyo.com/ys/article/20756639']],
+  ['流浪者', 'anemo', 'crit', [['沙上楼阁史话'], ['翠绿之影']], ['atkP'], ['anemo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/52854441', 'https://www.miyoushe.com/ys/article/32509992', 'https://www.miyoushe.com/ys/article/68213153']],
+  ['闲云', 'anemo', 'atk', [['昔时之歌'], ['翠绿之影']], ['atkP', 'er'], ['atkP'], ['atkP'], ['https://www.miyoushe.com/ys/article/62923290', 'https://www.miyoushe.com/ys/article/48531983', 'https://www.miyoushe.com/ys/article/62920755']],
+  ['恰斯卡', 'anemo', 'crit', [['黑曜秘典'], ['翠绿之影']], ['atkP'], ['anemo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/67613530', 'https://www.miyoushe.com/ys/article/67504158', 'https://www.miyoushe.com/ys/article/59513958']],
+  ['琳妮特', 'anemo', 'crit', [['翠绿之影'], ['沙上楼阁史话']], ['atkP'], ['anemo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64763434', 'https://www.miyoushe.com/ys/article/42420011', 'https://www.miyoushe.com/ys/article/77532016']],
+  ['伊法', 'anemo', 'em', [['翠绿之影'], ['烬城勇者绘卷']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr'], ['https://www.miyoushe.com/ys/article/64215763', 'https://www.miyoushe.com/ys/article/64193378', 'https://www.miyoushe.com/ys/article/64215506']],
 
   /* ---------- 岩 ---------- */
-  ['钟离', 'geo', 'hp', [['千岩牢固'], ['悠古的磐岩']], ['hpP'], ['geo', 'hpP'], ['hpP', 'cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['阿贝多', 'geo', 'def', [['华馆梦醒形骸记'], ['悠古的磐岩']], ['defP'], ['geo', 'defP'], ['cr', 'cd', 'defP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['荒泷一斗', 'geo', 'def', [['华馆梦醒形骸记']], ['defP'], ['geo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['诺艾尔', 'geo', 'def', [['华馆梦醒形骸记'], ['逆飞的流星']], ['defP'], ['geo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['五郎', 'geo', 'def', [['华馆梦醒形骸记'], ['千岩牢固']], ['defP', 'er'], ['defP'], ['defP', 'cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['凝光', 'geo', 'crit', [['悠古的磐岩'], ['追忆之注连']], ['atkP'], ['geo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['娜维娅', 'geo', 'crit', [['回声之林夜话'], ['逆飞的流星']], ['atkP'], ['geo'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['希诺宁', 'geo', 'def', [['烬城勇者绘卷'], ['华馆梦醒形骸记']], ['defP'], ['defP'], ['defP', 'heal'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['卡齐娜', 'geo', 'def', [['烬城勇者绘卷'], ['华馆梦醒形骸记']], ['defP'], ['geo', 'defP'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['云堇', 'geo', 'def', [['华馆梦醒形骸记'], ['千岩牢固']], ['defP', 'er'], ['defP'], ['defP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
+  ['钟离', 'geo', 'hp', [['千岩牢固'], ['悠古的磐岩']], ['hpP'], ['geo', 'hpP'], ['hpP', 'cr'], ['https://www.miyoushe.com/ys/article/70478147', 'https://www.miyoushe.com/ys/article/43113435', 'https://bbs.mihoyo.com/ys/article/15008953']],
+  ['阿贝多', 'geo', 'def', [['华馆梦醒形骸记'], ['悠古的磐岩']], ['defP'], ['geo', 'defP'], ['cr', 'cd', 'defP'], ['https://bbs.mihoyo.com/ys/article/12540853', 'https://www.miyoushe.com/ys/article/71204498', 'https://bbs.mihoyo.com/ys/article/12492354']],
+  ['荒泷一斗', 'geo', 'def', [['华馆梦醒形骸记']], ['defP'], ['geo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/50510058', 'https://bbs.mihoyo.com/ys/article/24446310', 'https://www.miyoushe.com/ys/article/50248084']],
+  ['诺艾尔', 'geo', 'def', [['华馆梦醒形骸记'], ['逆飞的流星']], ['defP'], ['geo'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/25074833', 'https://bbs.mihoyo.com/ys/article/23419183', 'https://bbs.mihoyo.com/ys/article/20700735']],
+  ['五郎', 'geo', 'def', [['华馆梦醒形骸记'], ['千岩牢固']], ['defP', 'er'], ['defP'], ['defP', 'cr'], ['https://bbs.mihoyo.com/ys/article/13360837', 'https://bbs.mihoyo.com/ys/article/13058643', 'https://www.miyoushe.com/ys/article/72730171']],
+  ['凝光', 'geo', 'crit', [['悠古的磐岩'], ['追忆之注连']], ['atkP'], ['geo'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/11354285', 'https://bbs.mihoyo.com/ys/article/25074768', 'https://bbs.mihoyo.com/ys/article/21079968']],
+  ['娜维娅', 'geo', 'crit', [['回声之林夜话'], ['逆飞的流星']], ['atkP'], ['geo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64214960', 'https://www.miyoushe.com/ys/article/64215722', 'https://www.miyoushe.com/ys/article/46721884']],
+  ['希诺宁', 'geo', 'def', [['烬城勇者绘卷'], ['华馆梦醒形骸记']], ['defP'], ['defP'], ['defP', 'heal'], ['https://www.miyoushe.com/ys/article/71701174', 'https://www.miyoushe.com/ys/article/63567294', 'https://www.miyoushe.com/ys/article/58423970']],
+  ['卡齐娜', 'geo', 'def', [['烬城勇者绘卷'], ['华馆梦醒形骸记']], ['defP'], ['geo', 'defP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/56901692', 'https://www.miyoushe.com/ys/article/57054342', 'https://www.miyoushe.com/ys/article/57054661']],
+  ['云堇', 'geo', 'def', [['华馆梦醒形骸记'], ['千岩牢固']], ['defP', 'er'], ['defP'], ['defP'], ['https://bbs.mihoyo.com/ys/article/14159567', 'https://bbs.mihoyo.com/ys/article/14168921', 'https://www.miyoushe.com/ys/article/70590053']],
 
   /* ---------- 草 ---------- */
-  ['纳西妲', 'dendro', 'em', [['深林的记忆'], ['饰金之梦']], ['em'], ['dendro', 'em'], ['em', 'cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['艾尔海森', 'dendro', 'em', [['饰金之梦'], ['深林的记忆']], ['em', 'atkP'], ['dendro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['提纳里', 'dendro', 'em', [['深林的记忆'], ['流浪大地的乐团']], ['em', 'atkP'], ['dendro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['基尼奇', 'dendro', 'crit', [['黑曜秘典'], ['深林的记忆', '追忆之注连']], ['atkP'], ['dendro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['艾梅莉埃', 'dendro', 'atk', [['未竟的遐思'], ['深林的记忆', '追忆之注连']], ['atkP'], ['dendro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['白术', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP', 'er'], ['hpP'], ['hpP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['瑶瑶', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['柯莱', 'dendro', 'er', [['深林的记忆'], ['绝缘之旗印']], ['er'], ['dendro'], ['cr', 'cd'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['卡维', 'dendro', 'em', [['饰金之梦'], ['深林的记忆']], ['em', 'er'], ['em'], ['em'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['绮良良', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP'], ['hpP'], ['hpP'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
+  ['纳西妲', 'dendro', 'em', [['深林的记忆'], ['饰金之梦']], ['em'], ['dendro', 'em'], ['em', 'cr'], ['https://www.miyoushe.com/ys/article/68365889', 'https://www.miyoushe.com/ys/article/48532156', 'https://www.miyoushe.com/ys/article/48527814']],
+  ['艾尔海森', 'dendro', 'em', [['饰金之梦'], ['深林的记忆']], ['em', 'atkP'], ['dendro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/34393808', 'https://www.miyoushe.com/ys/article/68243036', 'https://www.miyoushe.com/ys/article/53490437']],
+  ['提纳里', 'dendro', 'em', [['深林的记忆'], ['流浪大地的乐团']], ['em', 'atkP'], ['dendro'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/27858534', 'https://www.miyoushe.com/ys/article/68276063', 'https://bbs.mihoyo.com/ys/article/27882468']],
+  ['基尼奇', 'dendro', 'crit', [['黑曜秘典'], ['深林的记忆', '追忆之注连']], ['atkP'], ['dendro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64733796', 'https://www.miyoushe.com/ys/article/57703059', 'https://www.miyoushe.com/ys/article/64763431']],
+  ['艾梅莉埃', 'dendro', 'atk', [['未竟的遐思'], ['深林的记忆', '追忆之注连']], ['atkP'], ['dendro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/66265444', 'https://www.miyoushe.com/ys/article/66196228', 'https://www.miyoushe.com/ys/article/56283870']],
+  ['白术', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP', 'er'], ['hpP'], ['hpP'], ['https://www.miyoushe.com/ys/article/45242415', 'https://www.miyoushe.com/ys/article/52845613', 'https://www.miyoushe.com/ys/article/61217694']],
+  ['瑶瑶', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP'], ['https://www.miyoushe.com/ys/article/70045506', 'https://www.miyoushe.com/ys/article/36315371', 'https://www.miyoushe.com/ys/article/34411972']],
+  ['柯莱', 'dendro', 'er', [['深林的记忆'], ['绝缘之旗印']], ['er'], ['dendro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/70046336', 'https://bbs.mihoyo.com/ys/article/27942377', 'https://bbs.mihoyo.com/ys/article/27923191']],
+  ['卡维', 'dendro', 'em', [['饰金之梦'], ['深林的记忆']], ['em', 'er'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/38866023', 'https://www.miyoushe.com/ys/article/68699830', 'https://www.miyoushe.com/ys/article/38867337']],
+  ['绮良良', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP'], ['hpP'], ['hpP'], ['https://www.miyoushe.com/ys/article/75118187', 'https://www.miyoushe.com/ys/article/39667535', 'https://www.miyoushe.com/ys/article/39654659']],
 
   /* ---------- 补遗：2.x–4.x 老角色（初始库未收录） ---------- */
-  ['安柏', 'pyro', 'crit', [['炽烈的炎之魔女'], ['炽烈的炎之魔女', '流浪大地的乐团']], ['atkP'], ['pyro'], ['cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['丽莎', 'electro', 'crit', [['如雷的盛怒'], ['如雷的盛怒', '饰金之梦']], ['atkP'], ['electro'], ['cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['凯亚', 'cryo', 'crit', [['冰风迷途的勇士'], ['冰风迷途的勇士', '苍白之火']], ['atkP'], ['cryo'], ['cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['北斗', 'electro', 'crit', [['如雷的盛怒'], ['如雷的盛怒', '绝缘之旗印']], ['atkP'], ['electro'], ['cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['埃洛伊', 'cryo', 'crit', [['冰风迷途的勇士'], ['冰风迷途的勇士', '苍白之火']], ['atkP'], ['cryo'], ['cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['神里绫人', 'hydro', 'crit', [['沉沦之心'], ['沉沦之心', '来歆余响']], ['atkP'], ['hydro'], ['cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['千织', 'geo', 'critDef', [['黄金剧团'], ['黄金剧团', '悠古的磐岩']], ['defP'], ['geo'], ['cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['珐露珊', 'anemo', 'er', [['翠绿之影'], ['翠绿之影', '绝缘之旗印']], ['er'], ['anemo'], ['cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['莱依拉', 'cryo', 'hp', [['千岩牢固'], ['千岩牢固', '昔日宗室之仪']], ['hpP'], ['hpP'], ['heal'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['赛索斯', 'electro', 'crit', [['来歆余响'], ['来歆余响', '如雷的盛怒']], ['atkP'], ['electro'], ['cr'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['蓝砚', 'anemo', 'er', [['翠绿之影'], ['翠绿之影', '千岩牢固']], ['er'], ['anemo'], ['heal'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
-  ['茜特菈莉', 'cryo', 'em', [['烬城勇者绘卷'], ['乐园遗落之花', '饰金之梦']], ['em', 'er'], ['em'], ['em'], '社区共识：KQM / Game8 / 米游社（整理截至 7.0）'],
+  ['安柏', 'pyro', 'crit', [['炽烈的炎之魔女'], ['炽烈的炎之魔女', '流浪大地的乐团']], ['atkP'], ['pyro'], ['cr'], ['https://bbs.mihoyo.com/ys/article/25074046', 'https://bbs.mihoyo.com/ys/article/21900143', 'https://bbs.mihoyo.com/ys/article/8286004']],
+  ['丽莎', 'electro', 'crit', [['如雷的盛怒'], ['如雷的盛怒', '饰金之梦']], ['atkP'], ['electro'], ['cr'], ['https://bbs.mihoyo.com/ys/article/18195176', 'https://bbs.mihoyo.com/ys/article/25074562', 'https://bbs.mihoyo.com/ys/article/21905051']],
+  ['凯亚', 'cryo', 'crit', [['冰风迷途的勇士'], ['冰风迷途的勇士', '苍白之火']], ['atkP'], ['cryo'], ['cr'], ['https://bbs.mihoyo.com/ys/article/25074424', 'https://bbs.mihoyo.com/ys/article/21902157', 'https://bbs.mihoyo.com/ys/article/15434494']],
+  ['北斗', 'electro', 'crit', [['如雷的盛怒'], ['如雷的盛怒', '绝缘之旗印']], ['atkP'], ['electro'], ['cr'], ['https://www.miyoushe.com/ys/article/76326682', 'https://www.miyoushe.com/ys/article/76458044', 'https://bbs.mihoyo.com/ys/article/25074190']],
+  ['埃洛伊', 'cryo', 'crit', [['冰风迷途的勇士'], ['冰风迷途的勇士', '苍白之火']], ['atkP'], ['cryo'], ['cr'], ['https://bbs.mihoyo.com/ys/article/22236845', 'https://bbs.mihoyo.com/ys/article/20991211', 'https://bbs.mihoyo.com/ys/article/11394064']],
+  ['神里绫人', 'hydro', 'crit', [['沉沦之心'], ['沉沦之心', '来歆余响']], ['atkP'], ['hydro'], ['cr'], ['https://www.miyoushe.com/ys/article/64552586', 'https://www.miyoushe.com/ys/article/45995770?create=1', 'https://www.miyoushe.com/ys/article/33348334']],
+  ['千织', 'geo', 'critDef', [['黄金剧团'], ['黄金剧团', '悠古的磐岩']], ['defP'], ['geo'], ['cr'], ['https://www.miyoushe.com/ys/article/64606530', 'https://www.miyoushe.com/ys/article/50261907', 'https://www.miyoushe.com/ys/article/50251961']],
+  ['珐露珊', 'anemo', 'er', [['翠绿之影'], ['翠绿之影', '绝缘之旗印']], ['er'], ['anemo'], ['cr'], ['https://www.miyoushe.com/ys/article/71373526', 'https://www.miyoushe.com/ys/article/32525530', 'https://www.miyoushe.com/ys/article/32504999']],
+  ['莱依拉', 'cryo', 'hp', [['千岩牢固'], ['千岩牢固', '昔日宗室之仪']], ['hpP'], ['hpP'], ['heal'], ['https://bbs.mihoyo.com/ys/article/31870136', 'https://bbs.mihoyo.com/ys/article/31944305', 'https://bbs.mihoyo.com/ys/article/31721820']],
+  ['赛索斯', 'electro', 'crit', [['来歆余响'], ['来歆余响', '如雷的盛怒']], ['atkP'], ['electro'], ['cr'], ['https://www.miyoushe.com/ys/article/53493547', 'https://www.miyoushe.com/ys/article/53494323', 'https://www.miyoushe.com/ys/article/72499518']],
+  ['蓝砚', 'anemo', 'er', [['翠绿之影'], ['翠绿之影', '千岩牢固']], ['er'], ['anemo'], ['heal'], ['https://www.miyoushe.com/ys/article/61341054', 'https://www.miyoushe.com/ys/article/61261987', 'https://www.miyoushe.com/ys/article/61128886']],
+  ['茜特菈莉', 'cryo', 'em', [['烬城勇者绘卷'], ['乐园遗落之花', '饰金之梦']], ['em', 'er'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/66928936', 'https://www.miyoushe.com/ys/article/60616408', 'https://www.miyoushe.com/ys/article/66889568']],
 
   /* ---------- 补遗：5.8 伊涅芙 + 6.0–6.5 挪德卡莱 ---------- */
-  ['伊涅芙', 'electro', 'crit', [['穹境示现之夜'], ['如雷的盛怒', '饰金之梦']], ['atkP'], ['atkP'], ['cr'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
-  ['菈乌玛', 'dendro', 'em', [['纺月的夜歌'], ['深林的记忆', '饰金之梦']], ['em'], ['em'], ['em'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
-  ['菲林斯', 'electro', 'crit', [['穹境示现之夜'], ['饰金之梦', '如雷的盛怒']], ['atkP'], ['electro'], ['cr'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
-  ['爱诺', 'hydro', 'er', [['纺月的夜歌'], ['昔日宗室之仪', '千岩牢固']], ['er'], ['hpP'], ['heal'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
-  ['奈芙尔', 'dendro', 'em', [['穹境示现之夜'], ['深林的记忆', '饰金之梦']], ['em'], ['em'], ['cr'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
-  ['杜林', 'pyro', 'crit', [['风起之日'], ['昔日宗室之仪', '辰砂往生录']], ['atkP'], ['pyro'], ['cr'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
-  ['哥伦比娅', 'hydro', 'hp', [['晨星与月的晓歌'], ['千岩牢固', '昔日宗室之仪']], ['hpP', 'er'], ['hpP'], ['cr'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
-  ['兹白', 'geo', 'critDef', [['穹境示现之夜'], ['华馆梦醒形骸记', '悠古的磐岩']], ['defP'], ['defP'], ['cr'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
-  ['依鲁加', 'geo', 'em', [['饰金之梦'], ['饰金之梦', '流浪大地的乐团']], ['em'], ['em'], ['em'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
+  ['伊涅芙', 'electro', 'crit', [['穹境示现之夜'], ['如雷的盛怒', '饰金之梦']], ['atkP'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/66930889', 'https://www.miyoushe.com/ys/article/66926002', 'https://www.miyoushe.com/ys/article/66860312']],
+  ['菈乌玛', 'dendro', 'em', [['纺月的夜歌'], ['深林的记忆', '饰金之梦']], ['em'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/75010416', 'https://www.miyoushe.com/ys/article/68379786', 'https://www.miyoushe.com/ys/article/68366449']],
+  ['菲林斯', 'electro', 'crit', [['穹境示现之夜'], ['饰金之梦', '如雷的盛怒']], ['atkP'], ['electro'], ['cr'], ['https://bbs.mihoyo.com/ys/article/73536135', 'https://www.miyoushe.com/ys/article/69103292', 'https://www.miyoushe.com/ys/article/69057298']],
+  ['爱诺', 'hydro', 'er', [['纺月的夜歌'], ['昔日宗室之仪', '千岩牢固']], ['er'], ['hpP'], ['heal'], ['https://www.miyoushe.com/ys/article/68366413', 'https://www.miyoushe.com/ys/article/68335669', 'https://www.miyoushe.com/ys/article/68363201']],
+  ['奈芙尔', 'dendro', 'em', [['穹境示现之夜'], ['深林的记忆', '饰金之梦']], ['em'], ['em'], ['cr'], ['https://www.miyoushe.com/ys/article/74992752', 'https://www.miyoushe.com/ys/article/69841102', 'https://www.miyoushe.com/ys/article/69783347']],
+  ['杜林', 'pyro', 'crit', [['风起之日'], ['昔日宗室之仪', '辰砂往生录']], ['atkP'], ['pyro'], ['cr'], ['https://www.miyoushe.com/ys/article/75458713', 'https://www.miyoushe.com/ys/article/71128406', 'https://www.miyoushe.com/ys/article/71078792']],
+  ['哥伦比娅', 'hydro', 'hp', [['晨星与月的晓歌'], ['千岩牢固', '昔日宗室之仪']], ['hpP', 'er'], ['hpP'], ['cr'], ['https://www.miyoushe.com/ys/article/72303663', 'https://www.miyoushe.com/ys/article/72259629', 'https://www.miyoushe.com/ys/article/72259367']],
+  ['兹白', 'geo', 'critDef', [['穹境示现之夜'], ['华馆梦醒形骸记', '悠古的磐岩']], ['defP'], ['defP'], ['cr'], ['https://www.miyoushe.com/ys/article/72899669', 'https://www.miyoushe.com/ys/article/72865664', 'https://www.miyoushe.com/ys/article/72928080']],
+  ['依鲁加', 'geo', 'em', [['饰金之梦'], ['饰金之梦', '流浪大地的乐团']], ['em'], ['em'], ['em'], []],
 
   /* ---------- 补遗：6.6–7.0（新版本，配装可能随环境微调） ---------- */
-  ['桑多涅', 'cryo', 'crit', [['影中沉凝的幻灭'], ['苍白之火', '染血的骑士道']], ['atkP'], ['atkP'], ['cr'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
-  ['奥黛塔', 'cryo', 'crit', [['炉火融炼之心'], ['昔日宗室之仪', '辰砂往生录']], ['atkP'], ['atkP'], ['cr'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
-  ['阿罗夏', 'electro', 'er', [['昔日宗室之仪'], ['昔日宗室之仪', '辰砂往生录']], ['er'], ['atkP'], ['cr'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
-  ['法尔伽', 'anemo', 'crit', [['风起之日'], ['沙上楼阁史话', '辰砂往生录']], ['atkP'], ['anemo'], ['cr'], '米游社更新公告 + 社区早期共识（7.0，配装可能随环境微调）'],
+  ['桑多涅', 'cryo', 'crit', [['影中沉凝的幻灭'], ['苍白之火', '染血的骑士道']], ['atkP'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/76432747', 'https://www.miyoushe.com/ys/article/76348458', 'https://www.miyoushe.com/ys/article/76348139']],
+  ['奥黛塔', 'cryo', 'crit', [['炉火融炼之心'], ['昔日宗室之仪', '辰砂往生录']], ['atkP'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/77385286', 'https://www.miyoushe.com/ys/article/77367319', 'https://www.miyoushe.com/ys/article/77319627']],
+  ['阿罗夏', 'electro', 'er', [['昔日宗室之仪'], ['昔日宗室之仪', '辰砂往生录']], ['er'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/77397277', 'https://www.miyoushe.com/ys/article/77367254', 'https://www.miyoushe.com/ys/article/77259762']],
+  ['法尔伽', 'anemo', 'crit', [['风起之日'], ['沙上楼阁史话', '辰砂往生录']], ['atkP'], ['anemo'], ['cr'], ['https://bbs.mihoyo.com/ys/article/73525902', 'https://www.miyoushe.com/ys/article/73567276', 'https://www.miyoushe.com/ys/article/73524547']],
 ];
 
 /* ---------- 展开为完整结构 ---------- */
@@ -1352,7 +1358,7 @@ function buildDefaultCharacters() {
     roles: meta[1].slice(),
     enabled: false,
     note: '',
-    src: src || '',
+    src: Array.isArray(src) ? src.slice() : (src ? [src] : []),
     custom: false,
     // 主 / 副词条需求按【配装组】区分：一组配装 = 一套词条需求
     builds: builds.map((sets, idx) => Object.assign({
@@ -1454,7 +1460,7 @@ function normalize(o) {
       ? c.roles.filter(r => ROLE_NAME[r]) : ['maindps'],
     enabled: !!c.enabled,
     note: c.note || '',
-    src: c.src || '社区共识：KQM / Game8 / 米游社（整理截至 7.0）',
+    src: Array.isArray(c.src) ? c.src.slice() : (c.src ? [c.src] : []),
     custom: !!c.custom,
     builds: (Array.isArray(c.builds) && c.builds.length)
       ? c.builds.map(b => normalizeBuild(b, c))
@@ -2164,6 +2170,15 @@ function filteredChars() {
   });
 }
 
+/* 把 src（攻略链接数组）渲染成可点击来源；空数组不显示 */
+function renderSrcLinks(src) {
+  if (!Array.isArray(src) || !src.length) return '';
+  const links = src.map((u, i) =>
+    `<a href="${esc(u)}" target="_blank" rel="noopener" title="${esc(u)}">攻略${src.length > 1 ? i + 1 : ''}</a>`
+  ).join(' · ');
+  return `<div class="cc-src">🔗 攻略来源：${links}</div>`;
+}
+
 function renderChars() {
   const grid = $('#charGrid');
   const list = filteredChars();
@@ -2202,7 +2217,7 @@ function renderChars() {
       <div class="cc-main">
         ${mainRow('sands')}${mainRow('goblet')}${mainRow('circlet')}
       </div>
-      ${c.src ? `<div class="cc-src" title="配装信息来源">📌 来源：${esc(c.src)}</div>` : ''}
+      ${renderSrcLinks(c.src)}
     </div>`;
   }).join('') || '<p class="muted">没有匹配的角色。</p>';
 
@@ -2321,7 +2336,7 @@ function openNewChar() {
   editing = {
     id: 'c_new_' + Date.now(),
     name: '', element: 'pyro', region: 'liyue', roles: ['maindps'],
-    enabled: true, note: '', src: '', custom: true,
+    enabled: true, note: '', src: [], custom: true,
     builds: [freshBuild()],
   };
   editingIsNew = true;
@@ -2423,8 +2438,8 @@ function drawDrawer() {
     <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
   </div>
   <div class="fgroup">
-    <label>信息来源 <span class="hint">配装推荐出处，可改成你认可的攻略链接或说明</span></label>
-    <input type="text" id="edSrc" value="${esc(c.src)}" placeholder="例：KQM / Game8 / 米游社 社区共识">
+    <label>攻略来源链接 <span class="hint">每行一个链接，可列多个；本栏仅用于存档你认可的配装攻略，工具不作任何解析。留空表示暂无来源</span></label>
+    <textarea id="edSrc" rows="3" placeholder="https://www.miyoushe.com/ys/article/xxxxxx&#10;https://www.miyoushe.com/ys/article/yyyyyy">${esc(Array.isArray(c.src) ? c.src.join('\\n') : (c.src || ''))}</textarea>
   </div>`;
 
   // 元素切换
@@ -2455,7 +2470,9 @@ function drawDrawer() {
   // 名称
   body.querySelector('#edName').oninput = e => { editing.name = e.target.value; };
   body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; };
-  body.querySelector('#edSrc').oninput = e => { editing.src = e.target.value; };
+  body.querySelector('#edSrc').oninput = e => {
+    editing.src = e.target.value.split('\n').map(s => s.trim()).filter(Boolean);
+  };
 
   // 配装：新增一组时默认复制当前组的词条需求（也可稍后用下拉从别的组一键复制）
   body.querySelector('#edAddBuild').onclick = () => {

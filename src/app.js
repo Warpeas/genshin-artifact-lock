@@ -78,7 +78,7 @@ function normalize(o) {
       ? c.roles.filter(r => ROLE_NAME[r]) : ['maindps'],
     enabled: !!c.enabled,
     note: c.note || '',
-    src: c.src || '社区共识：KQM / Game8 / 米游社（整理截至 7.0）',
+    src: Array.isArray(c.src) ? c.src.slice() : (c.src ? [c.src] : []),
     custom: !!c.custom,
     builds: (Array.isArray(c.builds) && c.builds.length)
       ? c.builds.map(b => normalizeBuild(b, c))
@@ -788,6 +788,15 @@ function filteredChars() {
   });
 }
 
+/* 把 src（攻略链接数组）渲染成可点击来源；空数组不显示 */
+function renderSrcLinks(src) {
+  if (!Array.isArray(src) || !src.length) return '';
+  const links = src.map((u, i) =>
+    `<a href="${esc(u)}" target="_blank" rel="noopener" title="${esc(u)}">攻略${src.length > 1 ? i + 1 : ''}</a>`
+  ).join(' · ');
+  return `<div class="cc-src">🔗 攻略来源：${links}</div>`;
+}
+
 function renderChars() {
   const grid = $('#charGrid');
   const list = filteredChars();
@@ -826,7 +835,7 @@ function renderChars() {
       <div class="cc-main">
         ${mainRow('sands')}${mainRow('goblet')}${mainRow('circlet')}
       </div>
-      ${c.src ? `<div class="cc-src" title="配装信息来源">📌 来源：${esc(c.src)}</div>` : ''}
+      ${renderSrcLinks(c.src)}
     </div>`;
   }).join('') || '<p class="muted">没有匹配的角色。</p>';
 
@@ -945,7 +954,7 @@ function openNewChar() {
   editing = {
     id: 'c_new_' + Date.now(),
     name: '', element: 'pyro', region: 'liyue', roles: ['maindps'],
-    enabled: true, note: '', src: '', custom: true,
+    enabled: true, note: '', src: [], custom: true,
     builds: [freshBuild()],
   };
   editingIsNew = true;
@@ -1047,8 +1056,8 @@ function drawDrawer() {
     <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
   </div>
   <div class="fgroup">
-    <label>信息来源 <span class="hint">配装推荐出处，可改成你认可的攻略链接或说明</span></label>
-    <input type="text" id="edSrc" value="${esc(c.src)}" placeholder="例：KQM / Game8 / 米游社 社区共识">
+    <label>攻略来源链接 <span class="hint">每行一个链接，可列多个；本栏仅用于存档你认可的配装攻略，工具不作任何解析。留空表示暂无来源</span></label>
+    <textarea id="edSrc" rows="3" placeholder="https://www.miyoushe.com/ys/article/xxxxxx&#10;https://www.miyoushe.com/ys/article/yyyyyy">${esc(Array.isArray(c.src) ? c.src.join('\\n') : (c.src || ''))}</textarea>
   </div>`;
 
   // 元素切换
@@ -1079,7 +1088,9 @@ function drawDrawer() {
   // 名称
   body.querySelector('#edName').oninput = e => { editing.name = e.target.value; };
   body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; };
-  body.querySelector('#edSrc').oninput = e => { editing.src = e.target.value; };
+  body.querySelector('#edSrc').oninput = e => {
+    editing.src = e.target.value.split('\n').map(s => s.trim()).filter(Boolean);
+  };
 
   // 配装：新增一组时默认复制当前组的词条需求（也可稍后用下拉从别的组一键复制）
   body.querySelector('#edAddBuild').onclick = () => {
