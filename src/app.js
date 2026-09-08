@@ -8,7 +8,6 @@ const STORE_KEY = 'genshin_artifact_lock_v1';
 /* 权重常量 */
 const W_PRIORITY   = { main: 1.0, alt: 0.55 };   // 主推 / 备选配装
 const W_SET_COUNT  = { 1: 1.0, 2: 0.8 };         // 4件套 / 2+2
-const W_RANK       = { 1: 1.0, 2: 0.5, 3: 0.25 };// 主词条优先级
 const TIER_KEEP    = 0.8;                        // ≥ 视为必留
 const TIER_TRANS   = 0.4;                        // ≥ 视为过渡
 const KEEP_MAX     = 4;
@@ -34,7 +33,7 @@ function load() {
       if (o && Array.isArray(o.characters) && o.characters.length) return normalize(o);
     }
   } catch (e) { console.warn('读取本地数据失败', e); }
-  return { characters: buildDefaultCharacters(), sets: defaultSets(), planAssign: {} };
+  return normalize({ characters: buildDefaultCharacters(), sets: defaultSets(), planAssign: {} });
 }
 
 /* 默认套装列表（内置套装 + 空自定义列表） */
@@ -113,7 +112,7 @@ function normalizeMains(list, slot) {
   const arr = (Array.isArray(list) ? list : [])
     .map(m => (typeof m === 'string' ? { stat: m } : m))
     .filter(m => m && valid.has(m.stat));
-  arr.forEach((m, i) => { m.rank = i + 1; });
+  arr.forEach((m, i) => { m.rank = i + 1; m.op = (m.op === '=' || m.op === '>') ? m.op : '>'; });
   return arr;
 }
 
@@ -128,13 +127,13 @@ function normalizeSubs(subs) {
     return subs
       .map(s => (typeof s === 'string' ? { id: s } : s))
       .filter(s => s && valid.has(s.id) && !seen.has(s.id) && seen.add(s.id))
-      .map(s => ({ id: s.id, req: !!s.req }));
+      .map(s => ({ id: s.id, req: !!s.req, op: (s.op === '=' || s.op === '>') ? s.op : '>' }));
   }
   if (subs && typeof subs === 'object') {
     return Object.entries(subs)
       .filter(([id, v]) => valid.has(id) && +v >= 0.1)
       .sort((a, b) => b[1] - a[1])
-      .map(([id, v]) => ({ id, req: +v >= 0.9 }));
+      .map(([id, v]) => ({ id, req: +v >= 0.9, op: '>' }));
   }
   return toSubs(SUB_PRESETS.crit);
 }
@@ -198,15 +197,33 @@ const SUB_CORE_TOP   = 3;     // 前 N 名算「核心需求」（参与「包�
 const SUB_POOL_TOP   = 5;     // 每人最多贡献 N 条候选副词条，避免候选池过宽
 const SUB_POOL_MAX   = 5;     // 合并后的候选池上限（再宽就等同于「不限」，失去筛选意义）
 
-function subRankWeight(i) { return Math.pow(SUB_RANK_DECAY, i); }
+/* 重要度链：把「= / >」算子展开成每条词条的权重
+ *   第 1 条最顶（权重 1.0）；其后每条：
+ *     op === '='  → 与上一条【同重要】（权重不衰减，沿用上一条）
+ *     op === '>' 或缺失 → 比上一条【更低】（× SUB_RANK_DECAY）
+ *   这样「顺序 / 排序」由显式的相邻比较算子表达，而不是隐含的位置序号。
+ *   旧存档没有 op 字段时一律视为 '>'，行为等价于改造前的 0.72^i 衰减。
+ */
+function opWeights(list, decay) {
+  const d = (decay == null) ? SUB_RANK_DECAY : decay;
+  const out = [];
+  let prev = 1;
+  (list || []).forEach((s, i) => {
+    if (i === 0) prev = 1;
+    else prev = (s.op === '=') ? prev : prev * d;
+    out.push(prev);
+  });
+  return out;
+}
 
 /* 有序副词条 → { id: 权重 }，★必选额外加权，保证它一定算核心需求 */
 function subWeights(list) {
   const w = {};
   SUB_STATS.forEach(s => { w[s.id] = 0; });
+  const ws = opWeights(list);
   (list || []).forEach((s, i) => {
     if (!(s.id in w)) return;
-    w[s.id] = subRankWeight(i) * (s.req ? 1.25 : 1);
+    w[s.id] = ws[i] * (s.req ? 1.25 : 1);
   });
   return w;
 }
@@ -221,9 +238,10 @@ function coreSubs(list) {
 function reqSubs(list) {
   return (list || []).filter(s => s.req).map(s => s.id);
 }
-/* 候选池：取前 SUB_POOL_TOP 名 */
+/* 候选池：取前 SUB_POOL_TOP 名，并带上各自的算子权重（供合并时按重要度累加） */
 function poolSubs(list) {
-  return (list || []).slice(0, SUB_POOL_TOP).map(s => s.id);
+  const ws = opWeights(list);
+  return (list || []).slice(0, SUB_POOL_TOP).map((s, i) => ({ id: s.id, w: ws[i] }));
 }
 
 /* 角色的主推配装组（卡片展示 / 兜底取值用） */
@@ -270,12 +288,13 @@ function computePlan(includeAlt = true) {
           m.set(key, rec);
         });
 
-        // 沙 / 杯 / 冠（词条需求取自【本组配装】）
+        // 沙 / 杯 / 冠（词条需求取自【本组配装】，按「= / >」重要度链加权）
         ['sands', 'goblet', 'circlet'].forEach(slot => {
-          (b.main[slot] || []).forEach(mi => {
+          const mws = opWeights(b.main[slot]);
+          (b.main[slot] || []).forEach((mi, i) => {
             const m = bucket.slots[slot];
             const rec = m.get(mi.stat) || { stat: mi.stat, score: 0, chars: new Map() };
-            rec.score += w * (W_RANK[mi.rank] || 0.25);
+            rec.score += w * (mws[i] != null ? mws[i] : 0.25);
             const old = rec.chars.get(c.name);
             if (!old || mi.rank < old.rank) rec.chars.set(c.name, { rank: mi.rank, alt: isAlt });
             m.set(mi.stat, rec);
@@ -584,8 +603,9 @@ function resolveAssign(setName, groups, maxPlans) {
 function mergeMain(group, slot) {
   const score = new Map();
   group.forEach(r => {
-    (r.mains[slot] || []).forEach((st, i) => {
-      score.set(st, (score.get(st) || 0) + 1 / (i + 1));
+    const ws = opWeights(r.mains[slot] || []);
+    (r.mains[slot] || []).forEach((m, i) => {
+      score.set(m.stat, (score.get(m.stat) || 0) + ws[i]);
     });
   });
   const arr = [...score.entries()].sort((a, b) => b[1] - a[1]);
@@ -632,11 +652,11 @@ function mergeSubSlot(group, slot, mainIds) {
     .sort((a, b) => avgW(b) - avgW(a))   // 名次靠前的优先
     .slice(0, 2);                        // 最多 2 个，避免条件过严
 
-  /* ③ 候选池：按「出现人数 × 名次权重」累加 */
+  /* ③ 候选池：按「出现人数 × 算子权重」累加 */
   const poolScore = new Map();
-  group.forEach(r => (r.pool || []).forEach((id, i) => {
-    if (banned.has(id)) return;
-    poolScore.set(id, (poolScore.get(id) || 0) + subRankWeight(i));
+  group.forEach(r => (r.pool || []).forEach(p => {
+    if (banned.has(p.id)) return;
+    poolScore.set(p.id, (poolScore.get(p.id) || 0) + p.w);
   }));
   let pool = [...poolScore.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
   // ★必须一定得在候选池里（可能排名在 SUB_POOL_TOP 之外）
@@ -684,11 +704,12 @@ function toRoles(charList, setName) {
       return {
         name: c.name,
         mains: {
-          sands:   (b.main.sands   || []).map(m => m.stat),
-          goblet:  (b.main.goblet  || []).map(m => m.stat),
-          circlet: (b.main.circlet || []).map(m => m.stat),
+          sands:   (b.main.sands   || []).map(m => ({ stat: m.stat, op: m.op || '>' })),
+          goblet:  (b.main.goblet  || []).map(m => ({ stat: m.stat, op: m.op || '>' })),
+          circlet: (b.main.circlet || []).map(m => ({ stat: m.stat, op: m.op || '>' })),
         },
         subs: subWeights(b.subs),   // 名次权重向量（用于相似度 / 评分）
+        subList: b.subs || [],      // 原始词条（含 op），供候选池按重要度打分
         core: coreSubs(b.subs),     // 核心需求，决定「包含任意 N 条」
         req:  reqSubs(b.subs),      // ★必选标记
         pool: poolSubs(b.subs),     // 候选池
@@ -1099,7 +1120,7 @@ function drawDrawer() {
       const used = new Set(arr.map(m => m.stat));
       const next = MAIN_STATS[slot].find(s => !used.has(s.id));
       if (!next) return toast('该部位主词条已全部添加');
-      arr.push({ stat: next.id, rank: arr.length + 1 });
+      arr.push({ stat: next.id, rank: arr.length + 1, op: '>' });
       drawMains();
     };
   });
@@ -1109,7 +1130,7 @@ function drawDrawer() {
     if (!id) return;
     const subs = curBuild().subs;
     if (subs.some(s => s.id === id)) return toast('该副词条已在列表中');
-    subs.push({ id, req: false });
+    subs.push({ id, req: false, op: '>' });
     drawSubs();
   };
 
@@ -1184,7 +1205,9 @@ function drawMains() {
     const arr = B.main[slot];
     box.innerHTML = arr.map((m, i) => `
       <div class="ms-item" data-mi="${i}" data-slot="${slot}">
-        <span class="ord">${i === 0 ? '最优' : '第' + (i + 1)}</span>
+        ${i === 0
+          ? '<span class="ord">最优</span>'
+          : `<button type="button" class="op-btn ${m.op === '=' ? 'eq' : ''}" data-mop="${i}" title="与上一条的重要度关系：= 同为最想要，> 较次之">${m.op === '=' ? '=' : '>'}</button>`}
         <select>${MAIN_STATS[slot].map(s =>
           `<option value="${s.id}"${s.id === m.stat ? ' selected' : ''}>${s.name}</option>`).join('')}</select>
         <button type="button" class="up" data-up="${i}">↑</button>
@@ -1197,6 +1220,13 @@ function drawMains() {
         const i = +sel.closest('.ms-item').dataset.mi;
         B.main[slot][i].stat = sel.value;
       };
+    });
+    box.querySelectorAll('[data-mop]').forEach(b => b.onclick = () => {
+      const slot = b.closest('.ms-item').dataset.slot;
+      const i = +b.dataset.mop;
+      const it = curBuild().main[slot][i];
+      it.op = it.op === '=' ? '>' : '=';
+      drawMains();
     });
     box.querySelectorAll('[data-up]').forEach(b => b.onclick = () => {
       const i = +b.dataset.up;
@@ -1225,7 +1255,9 @@ function drawSubs() {
   const subs = curBuild().subs;
   box.innerHTML = subs.map((s, i) => `
     <div class="ms-item" data-si="${i}">
-      <span class="ord">${i === 0 ? '最优' : '第' + (i + 1)}</span>
+      ${i === 0
+        ? '<span class="ord">最优</span>'
+        : `<button type="button" class="op-btn ${s.op === '=' ? 'eq' : ''}" data-op="${i}" title="与上一条的重要度关系：= 同为最想要，> 较次之">${s.op === '=' ? '=' : '>'}</button>`}
       <span class="ss-name">${esc(subStatName(s.id))}</span>
       <button type="button" class="star-btn ${s.req ? 'on' : ''}" data-st="${i}" title="★必须（游戏内锁定方案的「必须」）">${s.req ? '★' : '☆'}</button>
       <button type="button" class="up" data-su="${i}">↑</button>
@@ -1236,6 +1268,11 @@ function drawSubs() {
   box.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     const i = +b.dataset.st;
     subs[i].req = !subs[i].req;
+    drawSubs();
+  });
+  box.querySelectorAll('[data-op]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.op;
+    subs[i].op = subs[i].op === '=' ? '>' : '=';
     drawSubs();
   });
   box.querySelectorAll('[data-su]').forEach(b => b.onclick = () => {
@@ -1460,8 +1497,8 @@ function groupSubBrief(g) {
   const must = [...reqCnt.entries()].filter(([, c]) => c === n).map(([id]) => id);
 
   const score = new Map();
-  g.forEach(r => (r.pool || []).forEach((id, i) => {
-    score.set(id, (score.get(id) || 0) + subRankWeight(i));
+  g.forEach(r => (r.pool || []).forEach(p => {
+    score.set(p.id, (score.get(p.id) || 0) + p.w);
   }));
   const rest = [...score.entries()]
     .filter(([id]) => !must.includes(id))
@@ -2105,7 +2142,7 @@ function bind() {
   };
   $('#btnReset').onclick = () => {
     if (!confirm('恢复内置默认角色库与套装列表？你的自定义修改会丢失。')) return;
-    state = { characters: buildDefaultCharacters(), sets: defaultSets(), planAssign: {} };
+    state = normalize({ characters: buildDefaultCharacters(), sets: defaultSets(), planAssign: {} });
     save(); renderChars(); renderPlan(); renderSubs(); renderSets();
     toast('已恢复默认库');
   };

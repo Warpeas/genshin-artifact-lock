@@ -329,6 +329,13 @@ table.tbl tr:hover td{background:#1d242e;}
 }
 .ms-item .star-btn:hover{color:var(--gold);border-color:var(--gold);}
 .ms-item .star-btn.on{background:#3a3a1d;border-color:var(--gold);color:var(--gold2);}
+/* 重要度算子按钮：= 与上一条同重要，> 比上一条更低 */
+.ms-item .op-btn{
+  background:none;border:1px solid var(--line);border-radius:6px;
+  color:var(--txt2);cursor:pointer;font-size:13px;font-weight:700;padding:1px 7px;line-height:1.3;flex:none;min-width:26px;
+}
+.ms-item .op-btn:hover{color:var(--gold);border-color:var(--gold);}
+.ms-item .op-btn.eq{background:#1d2f3a;border-color:#3aa0c8;color:#3aa0c8;}
 .ms-item .rm{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:15px;padding:0 3px;}
 .ms-item .rm:hover{color:var(--red);}
 .copy-row{margin-top:8px;}
@@ -548,6 +555,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   /* 排序 / ★ / 删除 这几个小按钮在手机端放大点击区域 */
   .ms-item .up,.ms-item .down,.ms-item .rm{min-width:32px;min-height:32px;font-size:16px;}
   .ms-item .star-btn{min-height:32px;padding:4px 12px;font-size:16px;}
+  .ms-item .op-btn{min-height:32px;padding:4px 12px;font-size:16px;}
 
   /* --- 抽屉 / 弹窗：占满宽度，底部按钮平铺 --- */
   .drawer{width:100vw;border-left:none;}

@@ -140,9 +140,10 @@ const SET_NAMES = SETS.map(s => s.name);
 const SET_BONUS = Object.fromEntries(SETS.map(s => [s.name, s.bonus]));
 
 /* ---------- 副词条需求预设 ----------
- * 用【排序 + 必选】表达，不再使用数值权重：
+ * 用【排序 + 必选 + 重要度算子】表达，不再使用数值权重：
  *   数组顺序 = 想要程度（越靠前越想要）
  *   第 2 项为 true = 「必选」，对应游戏内锁定方案的 ★必须
+ *   每条 op 默认 '>'（比上一条更低），可理解成「逐级降权」；详见 app.js 的 opWeights
  * 例：crit → [暴击率(必选), 暴击伤害(必选), 攻击力%, 元素充能效率, 元素精通, 攻击力]
  */
 const SUB_PRESETS = {
@@ -164,9 +165,9 @@ const SUB_PRESET_NAMES = {
   er: '充能辅助', atk: '攻击流', heal: '治疗辅助',
 };
 
-/* 把 [id, req] 简写展开成 [{ id, req }] */
+/* 把 [id, req] 简写展开成 [{ id, req, op }]；op 缺省 '>'（比上一条更低） */
 function toSubs(list) {
-  return (list || []).map(([id, req]) => ({ id, req: !!req }));
+  return (list || []).map(([id, req]) => ({ id, req: !!req, op: '>' }));
 }
 
 /* ============================================================
