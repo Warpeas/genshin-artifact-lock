@@ -78,6 +78,7 @@ function normalize(o) {
       ? c.roles.filter(r => ROLE_NAME[r]) : ['maindps'],
     enabled: !!c.enabled,
     note: c.note || '',
+    src: c.src || '社区共识：KQM / Game8 / 米游社（整理截至 7.0）',
     custom: !!c.custom,
     builds: (Array.isArray(c.builds) && c.builds.length)
       ? c.builds.map(b => normalizeBuild(b, c))
@@ -825,6 +826,7 @@ function renderChars() {
       <div class="cc-main">
         ${mainRow('sands')}${mainRow('goblet')}${mainRow('circlet')}
       </div>
+      ${c.src ? `<div class="cc-src" title="配装信息来源">📌 来源：${esc(c.src)}</div>` : ''}
     </div>`;
   }).join('') || '<p class="muted">没有匹配的角色。</p>';
 
@@ -943,7 +945,7 @@ function openNewChar() {
   editing = {
     id: 'c_new_' + Date.now(),
     name: '', element: 'pyro', region: 'liyue', roles: ['maindps'],
-    enabled: true, note: '', custom: true,
+    enabled: true, note: '', src: '', custom: true,
     builds: [freshBuild()],
   };
   editingIsNew = true;
@@ -1043,6 +1045,10 @@ function drawDrawer() {
   <div class="fgroup">
     <label>备注</label>
     <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
+  </div>
+  <div class="fgroup">
+    <label>信息来源 <span class="hint">配装推荐出处，可改成你认可的攻略链接或说明</span></label>
+    <input type="text" id="edSrc" value="${esc(c.src)}" placeholder="例：KQM / Game8 / 米游社 社区共识">
   </div>`;
 
   // 元素切换
@@ -1073,6 +1079,7 @@ function drawDrawer() {
   // 名称
   body.querySelector('#edName').oninput = e => { editing.name = e.target.value; };
   body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; };
+  body.querySelector('#edSrc').oninput = e => { editing.src = e.target.value; };
 
   // 配装：新增一组时默认复制当前组的词条需求（也可稍后用下拉从别的组一键复制）
   body.querySelector('#edAddBuild').onclick = () => {
