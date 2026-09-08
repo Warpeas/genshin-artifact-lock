@@ -269,6 +269,23 @@ table.tbl tr:hover td{background:#1d242e;}
   border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;
   box-shadow:0 20px 60px rgba(0,0,0,.6);
 }
+/* 套装管理浮窗：宽屏更大，便于一次看清 37 套装的排序/效果 */
+.modal-lg{
+  width:min(900px,96vw);
+  max-height:90vh;
+  top:50%;
+}
+.modal-lg .modal-body{padding:18px 26px 26px;font-size:13.5px;}
+/* 4 列网格仅在宽屏生效；窄屏回退到 .sm-row 的两行块布局，避免被挤变形 */
+@media (min-width:561px){
+  .modal-lg .sm-row{
+    grid-template-columns:38px minmax(130px,1.4fr) minmax(180px,2.4fr) auto;
+    gap:12px;
+    align-items:center;
+  }
+  .modal-lg .sm-row input[type=text]{font-size:13px;padding:7px 10px;}
+  .modal-lg .sm-ops{gap:7px;}
+}
 .modal-body{padding:16px 22px 22px;overflow-y:auto;font-size:13.5px;color:var(--txt2);}
 .modal-body h4{color:var(--gold2);margin:16px 0 6px;font-size:14px;}
 .modal-body ol,.modal-body ul{margin:6px 0;padding-left:22px;}
