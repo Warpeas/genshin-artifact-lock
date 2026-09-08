@@ -316,7 +316,6 @@ const CH_META = {
   '杜林': ['mondstadt', ['subdps']],
   '哥伦比娅': ['snezhnaya', ['support']],
   '兹白': ['liyue', ['maindps']],
-  '依鲁加': ['snezhnaya', ['subdps']],
   '桑多涅': ['snezhnaya', ['maindps']],
   '奥黛塔': ['snezhnaya', ['support']],
   '阿罗夏': ['snezhnaya', ['support']],
@@ -329,7 +328,7 @@ const CH_META = {
  *   builds: 数组，第 1 项为主推（4件套或2+2），其余为备选
  *           单项含 1 个套装名 = 4件套；含 2 个 = 2+2
  *   主词条数组按优先级从高到低排列（第1项=最优）
- *   src: 攻略来源链接数组（来自米游社 baike.mihoyo.com 角色攻略频道）
+ *   src: 攻略来源链接数组（不限定来源，米游社/Game8/KQM/B站等均可，取置信度高、更新新、不重复的链接）
  *        可列多个；找不到来源时留空数组 []
  * ============================================================ */
 const RAW_CHARS = [
@@ -458,7 +457,6 @@ const RAW_CHARS = [
   ['杜林', 'pyro', 'crit', [['风起之日'], ['昔日宗室之仪', '辰砂往生录']], ['atkP'], ['pyro'], ['cr'], ['https://www.miyoushe.com/ys/article/75458713', 'https://www.miyoushe.com/ys/article/71128406', 'https://www.miyoushe.com/ys/article/71078792']],
   ['哥伦比娅', 'hydro', 'hp', [['晨星与月的晓歌'], ['千岩牢固', '昔日宗室之仪']], ['hpP', 'er'], ['hpP'], ['cr'], ['https://www.miyoushe.com/ys/article/72303663', 'https://www.miyoushe.com/ys/article/72259629', 'https://www.miyoushe.com/ys/article/72259367']],
   ['兹白', 'geo', 'critDef', [['穹境示现之夜'], ['华馆梦醒形骸记', '悠古的磐岩']], ['defP'], ['defP'], ['cr'], ['https://www.miyoushe.com/ys/article/72899669', 'https://www.miyoushe.com/ys/article/72865664', 'https://www.miyoushe.com/ys/article/72928080']],
-  ['依鲁加', 'geo', 'em', [['饰金之梦'], ['饰金之梦', '流浪大地的乐团']], ['em'], ['em'], ['em'], []],
 
   /* ---------- 补遗：6.6–7.0（新版本，配装可能随环境微调） ---------- */
   ['桑多涅', 'cryo', 'crit', [['影中沉凝的幻灭'], ['苍白之火', '染血的骑士道']], ['atkP'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/76432747', 'https://www.miyoushe.com/ys/article/76348458', 'https://www.miyoushe.com/ys/article/76348139']],

@@ -161,9 +161,19 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .cc-main-row{display:flex;gap:6px;font-size:11.5px;color:var(--txt3);}
 .cc-main-row span:first-child{color:var(--txt3);flex:none;width:26px;}
 .cc-main-row .ms{color:var(--txt2);}
-.cc-src{margin-top:9px;font-size:11px;line-height:1.45;color:#8fa3b8;background:rgba(28,38,48,.72);border:1px solid #2a3845;border-radius:6px;padding:5px 8px;word-break:break-word;}
-.cc-src a{color:#5fb6e6;text-decoration:none;border-bottom:1px dotted #5fb6e6;}
-.cc-src a:hover{color:#8fd0f0;border-bottom-color:#8fd0f0;}
+.cc-src{margin-top:10px;font-size:12px;line-height:1.55;color:#c5d4e2;background:rgba(16,26,36,.92);border:1px solid #32536e;border-left:3px solid #5fb6e6;border-radius:6px;padding:6px 9px;word-break:break-word;}
+.cc-src a{display:inline-block;color:#5fc4f0;font-weight:600;text-decoration:none;border-bottom:1px dotted #5fc4f0;margin:0 1px;}
+.cc-src a:hover{color:#9fdcff;border-bottom-color:#9fdcff;}
+
+/* 编辑抽屉：攻略来源一行一链接 + 加减按钮 */
+.src-list{display:flex;flex-direction:column;gap:6px;margin-bottom:7px;}
+.src-row{display:flex;align-items:center;gap:6px;}
+.src-input{flex:1;min-width:0;padding:6px 9px;font-size:12.5px;color:var(--txt);background:#0f1922;border:1px solid #2c3a47;border-radius:6px;}
+.src-input:focus{outline:none;border-color:#5fb6e6;}
+.src-input::placeholder{color:var(--txt3);}
+.src-del{flex:none;width:30px;height:30px;line-height:1;font-size:18px;border-radius:6px;border:1px solid #3a2730;background:#231319;color:#ff8a9c;cursor:pointer;}
+.src-del:hover{background:#3a1f29;color:#ffb3c0;}
+.src-empty{font-size:12px;color:var(--txt3);padding:3px 2px;}
 .fgroup textarea{width:100%;resize:vertical;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--bg1);color:var(--txt);border:1px solid #2a3845;border-radius:7px;padding:7px 9px;box-sizing:border-box;}
 .fgroup textarea:focus{outline:none;border-color:var(--gold);}
 .ms.r1{color:var(--gold2);font-weight:600;}
@@ -1182,7 +1192,6 @@ const CH_META = {
   '杜林': ['mondstadt', ['subdps']],
   '哥伦比娅': ['snezhnaya', ['support']],
   '兹白': ['liyue', ['maindps']],
-  '依鲁加': ['snezhnaya', ['subdps']],
   '桑多涅': ['snezhnaya', ['maindps']],
   '奥黛塔': ['snezhnaya', ['support']],
   '阿罗夏': ['snezhnaya', ['support']],
@@ -1195,7 +1204,7 @@ const CH_META = {
  *   builds: 数组，第 1 项为主推（4件套或2+2），其余为备选
  *           单项含 1 个套装名 = 4件套；含 2 个 = 2+2
  *   主词条数组按优先级从高到低排列（第1项=最优）
- *   src: 攻略来源链接数组（来自米游社 baike.mihoyo.com 角色攻略频道）
+ *   src: 攻略来源链接数组（不限定来源，米游社/Game8/KQM/B站等均可，取置信度高、更新新、不重复的链接）
  *        可列多个；找不到来源时留空数组 []
  * ============================================================ */
 const RAW_CHARS = [
@@ -1324,7 +1333,6 @@ const RAW_CHARS = [
   ['杜林', 'pyro', 'crit', [['风起之日'], ['昔日宗室之仪', '辰砂往生录']], ['atkP'], ['pyro'], ['cr'], ['https://www.miyoushe.com/ys/article/75458713', 'https://www.miyoushe.com/ys/article/71128406', 'https://www.miyoushe.com/ys/article/71078792']],
   ['哥伦比娅', 'hydro', 'hp', [['晨星与月的晓歌'], ['千岩牢固', '昔日宗室之仪']], ['hpP', 'er'], ['hpP'], ['cr'], ['https://www.miyoushe.com/ys/article/72303663', 'https://www.miyoushe.com/ys/article/72259629', 'https://www.miyoushe.com/ys/article/72259367']],
   ['兹白', 'geo', 'critDef', [['穹境示现之夜'], ['华馆梦醒形骸记', '悠古的磐岩']], ['defP'], ['defP'], ['cr'], ['https://www.miyoushe.com/ys/article/72899669', 'https://www.miyoushe.com/ys/article/72865664', 'https://www.miyoushe.com/ys/article/72928080']],
-  ['依鲁加', 'geo', 'em', [['饰金之梦'], ['饰金之梦', '流浪大地的乐团']], ['em'], ['em'], ['em'], []],
 
   /* ---------- 补遗：6.6–7.0（新版本，配装可能随环境微调） ---------- */
   ['桑多涅', 'cryo', 'crit', [['影中沉凝的幻灭'], ['苍白之火', '染血的骑士道']], ['atkP'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/76432747', 'https://www.miyoushe.com/ys/article/76348458', 'https://www.miyoushe.com/ys/article/76348139']],
@@ -2171,10 +2179,19 @@ function filteredChars() {
 }
 
 /* 把 src（攻略链接数组）渲染成可点击来源；空数组不显示 */
+function srcPlatform(u) {
+  const h = (u || '').toLowerCase();
+  if (h.includes('miyoushe.com') || h.includes('bbs.mihoyo.com')) return '米游社';
+  if (h.includes('game8')) return 'Game8';
+  if (h.includes('keqingmains')) return 'KQM';
+  if (h.includes('bilibili.com') || h.includes('b23.tv')) return 'B站';
+  if (h.includes('yuanshen') || h.includes('genshin')) return '原神WIKI';
+  return '攻略';
+}
 function renderSrcLinks(src) {
   if (!Array.isArray(src) || !src.length) return '';
   const links = src.map((u, i) =>
-    `<a href="${esc(u)}" target="_blank" rel="noopener" title="${esc(u)}">攻略${src.length > 1 ? i + 1 : ''}</a>`
+    `<a href="${esc(u)}" target="_blank" rel="noopener" title="${esc(u)}">${srcPlatform(u)}${src.length > 1 ? (i + 1) : ''}</a>`
   ).join(' · ');
   return `<div class="cc-src">🔗 攻略来源：${links}</div>`;
 }
@@ -2438,8 +2455,9 @@ function drawDrawer() {
     <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
   </div>
   <div class="fgroup">
-    <label>攻略来源链接 <span class="hint">每行一个链接，可列多个；本栏仅用于存档你认可的配装攻略，工具不作任何解析。留空表示暂无来源</span></label>
-    <textarea id="edSrc" rows="3" placeholder="https://www.miyoushe.com/ys/article/xxxxxx&#10;https://www.miyoushe.com/ys/article/yyyyyy">${esc(Array.isArray(c.src) ? c.src.join('\\n') : (c.src || ''))}</textarea>
+    <label>攻略来源链接 <span class="hint">每行一条，可加多个来源；本栏仅存档你认可的配装攻略，工具不作解析。留空表示暂无来源</span></label>
+    <div id="edSrcList" class="src-list"></div>
+    <button type="button" class="btn sm" id="edAddSrc">+ 添加链接</button>
   </div>`;
 
   // 元素切换
@@ -2470,8 +2488,29 @@ function drawDrawer() {
   // 名称
   body.querySelector('#edName').oninput = e => { editing.name = e.target.value; };
   body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; };
-  body.querySelector('#edSrc').oninput = e => {
-    editing.src = e.target.value.split('\n').map(s => s.trim()).filter(Boolean);
+
+  // 攻略来源：一行一链接 + 删除按钮，可加多源
+  function renderSrcRows() {
+    const wrap = body.querySelector('#edSrcList');
+    const arr = editing.src || [];
+    wrap.innerHTML = arr.length ? arr.map((u, i) => `
+      <div class="src-row">
+        <input type="text" class="src-input" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
+        <button type="button" class="src-del" data-i="${i}" title="删除该链接">−</button>
+      </div>`).join('') : '<div class="src-empty">暂无来源，点击下方「+ 添加链接」</div>';
+    wrap.querySelectorAll('.src-input').forEach(inp => {
+      inp.oninput = e => { const i = +e.target.dataset.i; (editing.src = editing.src || [])[i] = e.target.value.trim(); };
+    });
+    wrap.querySelectorAll('.src-del').forEach(btn => {
+      btn.onclick = () => { (editing.src = editing.src || []).splice(+btn.dataset.i, 1); renderSrcRows(); };
+    });
+  }
+  renderSrcRows();
+  body.querySelector('#edAddSrc').onclick = () => {
+    (editing.src = editing.src || []).push('');
+    renderSrcRows();
+    const inputs = body.querySelectorAll('#edSrcList .src-input');
+    if (inputs.length) inputs[inputs.length - 1].focus();
   };
 
   // 配装：新增一组时默认复制当前组的词条需求（也可稍后用下拉从别的组一键复制）
@@ -2714,6 +2753,7 @@ function saveChar() {
     .map(b => normalizeBuild(b, c));
   if (!c.builds.length) c.builds = [freshBuild()];
   if (!c.builds.some(b => b.priority === 'main')) c.builds[0].priority = 'main';
+  c.src = Array.from(new Set((c.src || []).map(s => (s || '').trim()).filter(Boolean))); // 去空 + 去重
   delete c.main; delete c.subs;   // 词条需求已完全下沉到配装组
 
   if (editingIsNew) {
