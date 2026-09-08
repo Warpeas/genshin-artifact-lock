@@ -1107,7 +1107,7 @@ function drawDrawer() {
     <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
   </div>
   <div class="fgroup">
-    <label>攻略来源 <span class="hint">点每行左侧 ↗ 可打开链接；每行可改、可删，支持多个来源；工具不作解析，仅存档你认可的配装攻略。留空表示暂无来源</span></label>
+    <label>攻略来源 <span class="hint">点链接可直接跳转打开；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源；工具不作解析，仅存档你认可的配装攻略。留空表示暂无来源</span></label>
     <div id="edSrcList" class="src-list"></div>
     <button type="button" class="btn sm" id="edAddSrc">+ 添加链接</button>
   </div>`;
@@ -1142,28 +1142,72 @@ function drawDrawer() {
   body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; };
 
   // 攻略来源：一行一链接 = 可点击直接跳转(锚) + 可编辑 + 可删除(−)，可加多源
+  let srcEditIdx = null;   // 当前正在编辑的来源行；null = 全部为「可跳转链接」态
+  function commitSrc(i) {   // 确认：把输入框当前值写回并退出编辑态
+    const inp = body.querySelector(`#edSrcList .src-input[data-i="${i}"]`);
+    if (inp) (editing.src = editing.src || [])[i] = inp.value.trim();
+    srcEditIdx = null;
+    renderSrcRows();
+  }
   function renderSrcRows() {
     const wrap = body.querySelector('#edSrcList');
     const arr = editing.src || [];
-    wrap.innerHTML = arr.length ? arr.map((u, i) => `
+    wrap.innerHTML = arr.length ? arr.map((u, i) => {
+      const on = srcEditIdx === i;
+      return `
       <div class="src-row">
-        <a class="src-go" href="${esc(u)}" target="_blank" rel="noopener" title="点击打开：${esc(u)}">${esc(srcHost(u))}</a>
-        <input type="text" class="src-input" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
+        ${on
+          ? `<input type="text" class="src-input" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
+             <button type="button" class="src-ok" data-i="${i}" title="确认修改">✓</button>
+             <button type="button" class="src-cancel" data-i="${i}" title="取消">×</button>`
+          : `<a class="src-go" href="${esc(u)}" target="_blank" rel="noopener" title="点击打开：${esc(u)}">${esc(srcHost(u))}</a>
+             <button type="button" class="src-edit" data-i="${i}" title="编辑链接">✎</button>`}
         <button type="button" class="src-del" data-i="${i}" title="删除该链接">−</button>
-      </div>`).join('') : '<div class="src-empty">暂无来源，点击下方「+ 添加链接」</div>';
-    wrap.querySelectorAll('.src-input').forEach(inp => {
-      inp.oninput = e => { const i = +e.target.dataset.i; (editing.src = editing.src || [])[i] = e.target.value.trim(); };
+      </div>`;
+    }).join('') : '<div class="src-empty">暂无来源，点击下方「+ 添加链接」</div>';
+
+    // 默认态：右侧「✎ 编辑」按钮 → 进入编辑态
+    wrap.querySelectorAll('.src-edit').forEach(btn => {
+      btn.onclick = () => {
+        srcEditIdx = +btn.dataset.i;
+        renderSrcRows();
+        const inp = body.querySelector(`#edSrcList .src-input[data-i="${srcEditIdx}"]`);
+        if (inp) { inp.focus(); inp.select(); }
+      };
     });
+    // 编辑态：✓ 确认 / × 取消（mousedown 阻止输入框先失焦，交由 click 处理）
+    wrap.querySelectorAll('.src-ok').forEach(btn => {
+      btn.onmousedown = e => e.preventDefault();
+      btn.onclick = () => commitSrc(+btn.dataset.i);
+    });
+    wrap.querySelectorAll('.src-cancel').forEach(btn => {
+      btn.onmousedown = e => e.preventDefault();
+      btn.onclick = () => { srcEditIdx = null; renderSrcRows(); };
+    });
+    // 编辑态：输入框失焦（点框外）= 确认；回车确认、Esc 取消
+    wrap.querySelectorAll('.src-input').forEach(inp => {
+      inp.onblur = () => { if (srcEditIdx === +inp.dataset.i) commitSrc(+inp.dataset.i); };
+      inp.onkeydown = e => {
+        if (e.key === 'Enter') { e.preventDefault(); commitSrc(+inp.dataset.i); }
+        else if (e.key === 'Escape') { e.preventDefault(); srcEditIdx = null; renderSrcRows(); }
+      };
+    });
+    // 删除（两种状态都可用）
     wrap.querySelectorAll('.src-del').forEach(btn => {
-      btn.onclick = () => { (editing.src = editing.src || []).splice(+btn.dataset.i, 1); renderSrcRows(); };
+      btn.onclick = () => {
+        (editing.src = editing.src || []).splice(+btn.dataset.i, 1);
+        if (srcEditIdx === +btn.dataset.i) srcEditIdx = null;
+        renderSrcRows();
+      };
     });
   }
   renderSrcRows();
   body.querySelector('#edAddSrc').onclick = () => {
     (editing.src = editing.src || []).push('');
+    srcEditIdx = (editing.src || []).length - 1;   // 新增后直接进编辑态
     renderSrcRows();
-    const inputs = body.querySelectorAll('#edSrcList .src-input');
-    if (inputs.length) inputs[inputs.length - 1].focus();
+    const inp = body.querySelector(`#edSrcList .src-input[data-i="${srcEditIdx}"]`);
+    if (inp) inp.focus();
   };
 
   // 配装：新增一组时默认复制当前组的词条需求（也可稍后用下拉从别的组一键复制）
