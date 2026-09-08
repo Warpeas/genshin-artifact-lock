@@ -789,23 +789,6 @@ function filteredChars() {
 }
 
 /* 把 src（攻略链接数组）渲染成可点击来源；空数组不显示 */
-function srcPlatform(u) {
-  const h = (u || '').toLowerCase();
-  if (h.includes('miyoushe.com') || h.includes('bbs.mihoyo.com')) return '米游社';
-  if (h.includes('game8')) return 'Game8';
-  if (h.includes('keqingmains')) return 'KQM';
-  if (h.includes('bilibili.com') || h.includes('b23.tv')) return 'B站';
-  if (h.includes('yuanshen') || h.includes('genshin')) return '原神WIKI';
-  return '攻略';
-}
-function renderSrcLinks(src) {
-  if (!Array.isArray(src) || !src.length) return '';
-  const links = src.map((u, i) =>
-    `<a href="${esc(u)}" target="_blank" rel="noopener" title="${esc(u)}">${srcPlatform(u)}${src.length > 1 ? (i + 1) : ''}</a>`
-  ).join(' · ');
-  return `<div class="cc-src">🔗 攻略来源：${links}</div>`;
-}
-
 function renderChars() {
   const grid = $('#charGrid');
   const list = filteredChars();
@@ -828,6 +811,7 @@ function renderChars() {
       <div class="cc-top">
         <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
         <span class="cc-name">${esc(c.name)}</span>
+        ${c.src && c.src.length ? '<span class="cc-hasrc" title="有攻略来源，点开角色查看/跳转">🔗</span>' : ''}
         <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
       </div>
       <div class="cc-meta">
@@ -844,7 +828,6 @@ function renderChars() {
       <div class="cc-main">
         ${mainRow('sands')}${mainRow('goblet')}${mainRow('circlet')}
       </div>
-      ${renderSrcLinks(c.src)}
     </div>`;
   }).join('') || '<p class="muted">没有匹配的角色。</p>';
 
@@ -1065,7 +1048,7 @@ function drawDrawer() {
     <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
   </div>
   <div class="fgroup">
-    <label>攻略来源链接 <span class="hint">每行一条，可加多个来源；本栏仅存档你认可的配装攻略，工具不作解析。留空表示暂无来源</span></label>
+    <label>攻略来源 <span class="hint">点每行左侧 ↗ 可打开链接；每行可改、可删，支持多个来源；工具不作解析，仅存档你认可的配装攻略。留空表示暂无来源</span></label>
     <div id="edSrcList" class="src-list"></div>
     <button type="button" class="btn sm" id="edAddSrc">+ 添加链接</button>
   </div>`;
@@ -1099,15 +1082,19 @@ function drawDrawer() {
   body.querySelector('#edName').oninput = e => { editing.name = e.target.value; };
   body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; };
 
-  // 攻略来源：一行一链接 + 删除按钮，可加多源
+  // 攻略来源：一行一链接 = 可打开(↗) + 可编辑 + 可删除(−)，可加多源
   function renderSrcRows() {
     const wrap = body.querySelector('#edSrcList');
     const arr = editing.src || [];
     wrap.innerHTML = arr.length ? arr.map((u, i) => `
       <div class="src-row">
+        <button type="button" class="src-open" data-i="${i}" title="打开链接">↗</button>
         <input type="text" class="src-input" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
         <button type="button" class="src-del" data-i="${i}" title="删除该链接">−</button>
       </div>`).join('') : '<div class="src-empty">暂无来源，点击下方「+ 添加链接」</div>';
+    wrap.querySelectorAll('.src-open').forEach(btn => {
+      btn.onclick = () => { const u = (editing.src || [])[+btn.dataset.i]; if (u) window.open(u, '_blank', 'noopener'); };
+    });
     wrap.querySelectorAll('.src-input').forEach(inp => {
       inp.oninput = e => { const i = +e.target.dataset.i; (editing.src = editing.src || [])[i] = e.target.value.trim(); };
     });
