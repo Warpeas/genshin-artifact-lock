@@ -355,6 +355,41 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-hit b{color:var(--gold,#e8c88a);font-size:13px;}
 .gp-tip{margin:9px 0 0;font-size:11px;color:#6f7b8c;line-height:1.65;}
 
+/* ---------- 手动合并面板 ---------- */
+.gp-merge{margin:0 0 12px;border:1px solid #3a4a5e;border-radius:8px;background:#18202b;overflow:hidden;}
+.gp-merge>summary{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:8px 12px;cursor:pointer;list-style:none;user-select:none;background:#1d2733;
+}
+.gp-merge>summary::-webkit-details-marker{display:none;}
+.gp-merge>summary::before{content:'▸ ';color:var(--gold,#e8c88a);}
+.gp-merge[open]>summary::before{content:'▾ ';}
+.gp-merge-title{font-size:12.5px;font-weight:600;color:#cfe3ff;}
+.gp-merge-title b{color:var(--gold,#e8c88a);}
+.gp-merge-hint{font-size:11px;color:#7d8798;}
+.gp-merge-body{padding:8px 12px 10px;}
+.gp-mhead,.gp-mrow{
+  display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(180px,2fr) 92px;
+  gap:10px;align-items:center;
+}
+.gp-mhead{padding:0 0 6px;font-size:11px;color:#6f7b8c;border-bottom:1px solid #2a3546;}
+.gp-mrow{padding:5px 0;border-bottom:1px dashed #222b38;font-size:12px;}
+.gp-mrow:last-of-type{border-bottom:none;}
+.gp-mname{color:var(--txt,#e6edf5);font-weight:600;line-height:1.5;}
+.gp-minfo{color:#8a94a6;font-size:11px;line-height:1.5;}
+.gp-msel{
+  background:#243040;color:#cfe3ff;border:1px solid #3a4a5e;border-radius:5px;
+  padding:3px 6px;font-size:11.5px;width:100%;cursor:pointer;
+}
+.gp-msel:focus{outline:none;border-color:var(--gold,#e8c88a);}
+.gp-mfoot{display:flex;align-items:center;gap:10px;margin-top:9px;}
+.gp-mtip{font-size:11px;color:#6f7b8c;}
+@media (max-width:720px){
+  .gp-mhead{display:none;}
+  .gp-mrow{grid-template-columns:1fr 92px;row-gap:2px;}
+  .gp-minfo{grid-column:1 / -1;}
+}
+
 /* ---------- print ---------- */
 @media print{
   .topbar,.tabs,.toolbar,.summary-strip,.btn,.drawer,.modal,.modal-mask,.toast,.set-users{display:none !important;}
@@ -580,7 +615,8 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     </ol>
     <h4>怎么看方案</h4>
     <ul>
-      <li><b>方案 N</b>：由需求相近的角色聚类合并而来，标题写明「供谁使用」。同一套装的多个方案在锁定界面<b>共同生效</b>（彼此是「或」的关系）。</li>
+      <li><b>方案 N</b>：由需求相近的角色合并而来，标题写明「供谁使用」。同一套装的多个方案在锁定界面<b>共同生效</b>（彼此是「或」的关系）。</li>
+      <li><b>✂️ 手动合并</b>：某套装的需求分组超过 3 个时会出现该面板，默认按相似度自动归入，可把任意分组改到方案 1/2/3；改动会保存，「重置为自动合并」一键还原。</li>
       <li><b>★必须</b>：金色词条，这件圣遗物<b>必须</b>有它，否则不锁定。</li>
       <li><b>包含任意 N 条</b>：候选池里命中任意 N 条即锁定，★必须的词条也计入这 N 条。</li>
       <li>勾选工具栏「<b>显示详细件数</b>」可展开每套的建议保留件数与需求来源；不勾选时页面只显示可直接照搬的锁定方案。</li>
@@ -1052,11 +1088,13 @@ function load() {
       if (o && Array.isArray(o.characters) && o.characters.length) return normalize(o);
     }
   } catch (e) { console.warn('读取本地数据失败', e); }
-  return { characters: buildDefaultCharacters(), customSets: [] };
+  return { characters: buildDefaultCharacters(), customSets: [], planAssign: {} };
 }
 
 function normalize(o) {
   o.customSets = Array.isArray(o.customSets) ? o.customSets : [];
+  // 用户对「哪些角色合并到哪个方案槽」的手动指定：{ 套装名: { 组指纹: 槽位下标 } }
+  o.planAssign = (o.planAssign && typeof o.planAssign === 'object') ? o.planAssign : {};
   o.characters = o.characters.map(c => ({
     id: c.id || ('c_' + Math.random().toString(36).slice(2)),
     name: c.name || '未命名',
@@ -1298,7 +1336,8 @@ function globalWeights() {
  *   - 需求差异大的角色不宜合并到同一方案，否则会「存伪」（锁进无用件）
  *
  * 固定算法（每个套装 × 每个部位独立聚合，结果可复现）：
- *   ① 角色聚类：按需求相似度层次聚类，合并成 ≤ 槽位数 组
+ *   ① 角色分组：需求「几乎一致」的角色并为一组，组数不强行压到槽位数；
+ *      超出槽位时出现「手动合并」面板，默认按相似度自动归入，可手动调整
  *   ② 主属性：花/羽固定；沙/杯/冠按「票数 × 优先级」降序，
  *      取到累计覆盖 ≥ MAIN_COVER 为止，上限 MAIN_MAX
  *   ③ ★必须：组内全体角色共有的核心副词条，按平均权重降序，上限 2
@@ -1307,7 +1346,8 @@ function globalWeights() {
  *      下限 = ★必须数量（否则★之外的候选形同虚设），上限 = min(4, 候选池-1)
  * ============================================================ */
 const SUB_CORE_TH = 0.4;   // 副词条权重达到该值视为「核心需求」
-const MERGE_SIM_TH = 0.95; // 需求「几乎一致」的两组自愿共用一个槽位（节省预设名额）
+const MERGE_SIM_TH = 0.95; // 需求「几乎一致」的角色自动并为一组（节省预设名额）
+const MANUAL_MAX_GROUPS = 9; // 单套装自然分组上限（再多就先强制合并，避免手动列表过长）
 const MAIN_MAX    = 3;     // 单部位主属性上限（条件过宽会「存伪」）
 const MAIN_COVER  = 0.7;   // 主属性取到累计覆盖该比例为止
 
@@ -1355,12 +1395,12 @@ function groupSim(g1, g2) {
   return n ? sum / n : 0;
 }
 
-/* 层次聚类：反复合并最相似的两组，直到组数 ≤ maxGroups
- *   注意：游戏内槽位是硬上限，组数超限时【强制】合并最相似的两组；
- *   之后进入「自愿合并」阶段：相似度 ≥ MERGE_SIM_TH 的组主动共用一个槽位；
- *   低于该阈值则不再合并，避免把需求无关的角色硬塞进同一方案造成「存伪」。
+/* ①-a 自然分组
+ *   只把「需求几乎一致」（相似度 ≥ MERGE_SIM_TH）的角色并为一组，其余保持独立。
+ *   这样得到的分组保留最大差异度，供后续自动或手动归入方案槽。
+ *   capGroups：组数上限保护（防止一个套装下几十个角色时列表过长）
  */
-function clusterRoles(roles, maxGroups) {
+function naturalClusters(roles, capGroups) {
   const groups = roles.map(r => [r]);
 
   const bestPair = () => {
@@ -1374,21 +1414,60 @@ function clusterRoles(roles, maxGroups) {
     return best;
   };
 
-  while (groups.length > maxGroups) {
-    const best = bestPair();
-    if (!best) break;                       // 只剩一组，无法再合并
-    groups[best.i] = groups[best.i].concat(groups[best.j]);
-    groups.splice(best.j, 1);
-  }
-
-  // 自愿合并：需求几乎一致的两组可以共用一个槽位，把宝贵的预设名额让给差异更大的角色
+  // 自愿合并：需求几乎一致的角色共用一个槽位，把名额让给差异更大的角色
   while (groups.length > 1) {
     const best = bestPair();
     if (!best || best.s < MERGE_SIM_TH) break;
     groups[best.i] = groups[best.i].concat(groups[best.j]);
     groups.splice(best.j, 1);
   }
+
+  // 组数保护：超出上限时强制合并最相似的两组
+  while (capGroups && groups.length > capGroups) {
+    const best = bestPair();
+    if (!best) break;
+    groups[best.i] = groups[best.i].concat(groups[best.j]);
+    groups.splice(best.j, 1);
+  }
   return groups;
+}
+
+/* 组的指纹：组内角色名排序后拼接，用于持久化用户的手动归属 */
+function groupKey(g) {
+  return g.map(r => r.name).sort().join('+');
+}
+
+/* ①-b 自动槽位分配：把若干组贪心归并到 ≤ maxPlans 个桶（每次合并最相似的桶），
+ *      作为「手动合并」面板的预填值；返回「每组所属槽位下标」 */
+function autoBuckets(groups, maxPlans) {
+  const buckets = groups.map((g, i) => ({ ids: [i], roles: g.slice() }));
+  while (buckets.length > maxPlans) {
+    let best = null;
+    for (let i = 0; i < buckets.length; i++) {
+      for (let j = i + 1; j < buckets.length; j++) {
+        const s = groupSim(buckets[i].roles, buckets[j].roles);
+        if (!best || s > best.s) best = { s, i, j };
+      }
+    }
+    if (!best) break;
+    buckets[best.i].ids = buckets[best.i].ids.concat(buckets[best.j].ids);
+    buckets[best.i].roles = buckets[best.i].roles.concat(buckets[best.j].roles);
+    buckets.splice(best.j, 1);
+  }
+  const assign = new Array(groups.length).fill(0);
+  buckets.forEach((b, k) => b.ids.forEach(id => { assign[id] = k; }));
+  return assign;
+}
+
+/* ①-c 最终归属：以用户手动指定为准，未指定 / 越界的组回落到自动分配 */
+function resolveAssign(setName, groups, maxPlans) {
+  const auto = autoBuckets(groups, maxPlans);
+  const saved = (state.planAssign && state.planAssign[setName]) || null;
+  if (!saved) return auto;
+  return groups.map((g, i) => {
+    const v = saved[groupKey(g)];
+    return (Number.isInteger(v) && v >= 0 && v < maxPlans) ? v : auto[i];
+  });
 }
 
 /* ② 合并一组角色在某部位的主属性需求
@@ -1454,10 +1533,22 @@ function mergeSubSlot(group, slot, mainIds) {
   return { required, pool, minHit };
 }
 
-/* 生成某套装的游戏内锁定方案（≤ maxPlans 个） */
-function buildGamePlans(charList, maxPlans) {
+/* 把若干【自然分组】合并成一个方案 */
+function mergeGroups(gs) {
+  const g = gs.flat();
+  const slots = {};
+  SLOTS.forEach(sd => {
+    // 花 / 羽 主词条固定，游戏内只能设追加属性
+    const main = (sd.id === 'flower' || sd.id === 'plume') ? null : mergeMain(g, sd.id);
+    // 每个部位独立聚合副词条规则
+    slots[sd.id] = { main, sub: mergeSubSlot(g, sd.id, main || []) };
+  });
+  return { chars: g.map(r => r.name), slots };
+}
+
+function toRoles(charList) {
   const seen = new Set();
-  const roles = charList
+  return charList
     .filter(c => { if (seen.has(c.name)) return false; seen.add(c.name); return true; })
     .map(c => ({
       name: c.name,
@@ -1469,18 +1560,35 @@ function buildGamePlans(charList, maxPlans) {
       subs: c.subs || {},
       core: coreSubs(c),
     }));
-  if (!roles.length) return [];
+}
 
-  return clusterRoles(roles, maxPlans).map(g => {
-    const slots = {};
-    SLOTS.forEach(sd => {
-      // 花 / 羽 主词条固定，游戏内只能设追加属性
-      const main = (sd.id === 'flower' || sd.id === 'plume') ? null : mergeMain(g, sd.id);
-      // 每个部位独立聚合副词条规则
-      slots[sd.id] = { main, sub: mergeSubSlot(g, sd.id, main || []) };
-    });
-    return { chars: g.map(r => r.name), slots };
+/* 生成某套装的游戏内锁定方案（≤ maxPlans 个）
+ * 返回 { plans, groups, assign }：
+ *   plans  —— 下标即方案槽位号（可能跳号，空槽为 null）
+ *   groups —— 自然分组结果（供用户手动指定归属）
+ *   assign —— 每个组当前归入的槽位号
+ */
+function buildGamePlanInfo(charList, maxPlans, setName) {
+  const roles = toRoles(charList);
+  if (!roles.length) return { plans: [], groups: [], assign: [] };
+
+  const groups = naturalClusters(roles, MANUAL_MAX_GROUPS);
+  const assign = resolveAssign(setName, groups, maxPlans);
+
+  const bySlot = new Map();
+  groups.forEach((g, i) => {
+    const k = assign[i];
+    if (!bySlot.has(k)) bySlot.set(k, []);
+    bySlot.get(k).push(g);
   });
+  const plans = new Array(maxPlans).fill(null);
+  bySlot.forEach((gs, k) => { plans[k] = mergeGroups(gs); });
+  return { plans, groups, assign, maxPlans };
+}
+
+/* 只要方案数组（跳过空槽，重新连续编号） */
+function buildGamePlans(charList, maxPlans, setName) {
+  return buildGamePlanInfo(charList, maxPlans, setName).plans.filter(Boolean);
 }
 
 /* 单个方案转成游戏内操作步骤文本 */
@@ -1987,7 +2095,7 @@ function renderPlan() {
   blocks.forEach(([name, b]) => {
     if (!b.users.size) return;
     const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
-    planCount += buildGamePlans(chars, maxPlans).length;
+    planCount += buildGamePlans(chars, maxPlans, name).length;
   });
 
   $('#planSummary').innerHTML = `
@@ -2012,8 +2120,10 @@ function renderSetBlock(name, b, slotFilter, setWeights, maxPlans = 3) {
 
   // 游戏内锁定方案：把该套装下的角色需求聚类合并成 ≤ maxPlans 组
   const charsForPlan = state.characters.filter(c => c.enabled && b.users.has(c.name));
-  const plans = unused ? [] : buildGamePlans(charsForPlan, maxPlans);
-  const gpHtml = plans.length ? renderGamePlans(name, plans, maxPlans, slotFilter) : '';
+  const info = unused ? { plans: [], groups: [], assign: [] }
+                      : buildGamePlanInfo(charsForPlan, maxPlans, name);
+  const gpHtml = info.plans.some(Boolean)
+    ? renderGamePlans(name, info, maxPlans, slotFilter) : '';
 
   // 该套装的核心副词条（用于花/羽行提示）
   const w = setWeights ? setWeights.get(name) : null;
@@ -2085,9 +2195,52 @@ function showDetail() {
   return !!(el && el.checked);
 }
 
+/* 一组角色的需求摘要（用于手动合并面板辨认该组是谁、要什么） */
+function groupBrief(g) {
+  const part = slot => {
+    const set = new Set();
+    g.forEach(r => (r.mains[slot] || []).slice(0, 2).forEach(s => set.add(s)));
+    return [...set].slice(0, 3).map(id => mainStatName(slot, id)).join('/');
+  };
+  return `沙 ${part('sands')} · 杯 ${part('goblet')} · 冠 ${part('circlet')}`;
+}
+
+/* 渲染「手动合并」面板：自然分组数超过槽位时，让用户自己决定哪些组并到一个方案 */
+function renderMergePanel(setName, info) {
+  const { groups, assign, maxPlans } = info;
+  const rows = groups.map((g, i) => {
+    const opts = Array.from({ length: maxPlans }, (_, k) =>
+      `<option value="${k}"${assign[i] === k ? ' selected' : ''}>方案${k + 1}</option>`).join('');
+    return `
+      <div class="gp-mrow">
+        <span class="gp-mname">${g.map(r => esc(r.name)).join('、')}</span>
+        <span class="gp-minfo">${esc(groupBrief(g))}</span>
+        <select class="gp-msel" data-gp-assign="${esc(setName)}|${i}">${opts}</select>
+      </div>`;
+  }).join('');
+
+  return `
+  <details class="gp-merge"${Object.keys(state.planAssign[setName] || {}).length ? ' open' : ''}>
+    <summary>
+      <span class="gp-merge-title">✂️ 手动合并：需求分为 <b>${groups.length}</b> 组，需合并到 <b>${maxPlans}</b> 个方案槽</span>
+      <span class="gp-merge-hint">自动结果已预填，可自行调整每组归入哪个方案</span>
+    </summary>
+    <div class="gp-merge-body">
+      <div class="gp-mhead"><span>角色组</span><span>主属性需求</span><span>归入</span></div>
+      ${rows}
+      <div class="gp-mfoot">
+        <button class="btn sm" data-gp-reset="${esc(setName)}">重置为自动合并</button>
+        <span class="gp-mtip">改动会随本地存档一起保存</span>
+      </div>
+    </div>
+  </details>`;
+}
+
 /* 渲染「游戏内锁定方案」区块 */
-function renderGamePlans(setName, plans, maxPlans, slotFilter = 'all') {
+function renderGamePlans(setName, info, maxPlans, slotFilter = 'all') {
+  const plans = info.plans;
   const cards = plans.map((p, i) => {
+    if (!p) return '';
     const rows = SLOTS
       .filter(sd => slotFilter === 'all' || sd.id === slotFilter)
       .map(sd => {
@@ -2126,12 +2279,17 @@ function renderGamePlans(setName, plans, maxPlans, slotFilter = 'all') {
     </div>`;
   }).join('');
 
+  const used = plans.filter(Boolean).length;
+  const mergeHtml = (info.groups && info.groups.length > maxPlans)
+    ? renderMergePanel(setName, info) : '';
+
   return `
   <div class="gp-wrap">
     <div class="gp-head">
       <span class="gp-title">🎮 游戏内锁定方案</span>
-      <span class="gp-meta">${plans.length} / ${maxPlans} 个预设 · 多个方案共同生效</span>
+      <span class="gp-meta">${used} / ${maxPlans} 个预设 · 多个方案共同生效</span>
     </div>
+    ${mergeHtml}
     <div class="gp-cards">${cards}</div>
     <p class="gp-tip">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上表逐部位设置；
       仅有 3 条追加属性的圣遗物，所需数量会自动减 1。</p>
@@ -2157,14 +2315,15 @@ function gamePlansToText() {
     .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
     .forEach(([name, b]) => {
       const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
-      const plans = buildGamePlans(chars, maxPlans);
-      if (!plans.length) return;
+      const info = buildGamePlanInfo(chars, maxPlans, name);
+      const used = info.plans.filter(Boolean).length;
+      if (!used) return;
       setCount++;
       L.push('━━━━━━━━━━━━━━━━━━━━━━━━');
-      L.push(`【${name}】${plans.length} 个预设`);
-      plans.forEach((p, i) => L.push(planToGameText(name, p, i)));
+      L.push(`【${name}】${used} 个预设`);
+      info.plans.forEach((p, i) => { if (p) L.push(planToGameText(name, p, i)); });
       L.push('');
-      total += plans.length;
+      total += used;
     });
 
   L.push(`合计：${setCount} 个套装、${total} 个锁定方案`);
@@ -2463,22 +2622,50 @@ function bind() {
     try { await navigator.clipboard.writeText(txt); toast('游戏内方案已复制'); }
     catch (e) { fallbackCopy(txt); }
   };
-  // 单个方案卡的复制按钮（元素动态生成，用事件委托）
+  // 方案页内的动态元素（复制按钮 / 手动合并下拉 / 重置按钮），统一事件委托
   $('#planBody').addEventListener('click', e => {
     const btn = e.target.closest('.gp-copy');
-    if (!btn) return;
-    const [ setName, idxStr ] = btn.dataset.gpCopy.split('|');
+    if (btn) { copyOnePlan(btn.dataset.gpCopy); return; }
+
+    const reset = e.target.closest('[data-gp-reset]');
+    if (reset) {
+      const setName = reset.dataset.gpReset;
+      delete state.planAssign[setName];
+      save(); renderPlan();
+      toast(`「${setName}」已重置为自动合并`);
+    }
+  });
+  $('#planBody').addEventListener('change', e => {
+    const sel = e.target.closest('[data-gp-assign]');
+    if (!sel) return;
+    const [ setName, idxStr ] = sel.dataset.gpAssign.split('|');
     const b = computePlan($('#planAltBuild').checked).get(setName);
     if (!b) return;
     const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
-    const plans = buildGamePlans(chars, +($('#planSlots') ? $('#planSlots').value : 3) || 3);
+    const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
+    const info = buildGamePlanInfo(chars, maxPlans, setName);
+    const g = info.groups[+idxStr];
+    if (!g) return;
+    if (!state.planAssign[setName]) state.planAssign[setName] = {};
+    state.planAssign[setName][groupKey(g)] = +sel.value;
+    save();
+    renderPlan();
+  });
+
+  function copyOnePlan(dataset) {
+    const [ setName, idxStr ] = dataset.split('|');
+    const b = computePlan($('#planAltBuild').checked).get(setName);
+    if (!b) return;
+    const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
+    const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
+    const plans = buildGamePlanInfo(chars, maxPlans, setName).plans;
     const p = plans[+idxStr];
     if (!p) return;
     const txt = `【${setName}】\n` + planToGameText(setName, p, +idxStr);
     navigator.clipboard.writeText(txt)
       .then(() => toast(`已复制「${setName} 方案${+idxStr + 1}」`))
       .catch(() => fallbackCopy(txt));
-  });
+  }
   $('#btnCopyPlan').onclick = async () => {
     const txt = planToText();
     try { await navigator.clipboard.writeText(txt); toast('清单已复制到剪贴板'); }
@@ -2520,7 +2707,7 @@ function bind() {
   };
   $('#btnReset').onclick = () => {
     if (!confirm('恢复内置默认角色库？你的自定义修改会丢失。')) return;
-    state = { characters: buildDefaultCharacters(), customSets: [] };
+    state = { characters: buildDefaultCharacters(), customSets: [], planAssign: {} };
     save(); renderChars(); renderPlan(); renderSubs(); renderCustomSets();
     toast('已恢复默认库');
   };
