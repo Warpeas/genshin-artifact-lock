@@ -747,6 +747,14 @@ function openNewChar() {
 function showDrawer(show) {
   $('#charDrawer').classList.toggle('hidden', !show);
   $('#modalMask').classList.toggle('hidden', !show);
+  // 手机端分段按钮（元素 / 国度）可能横向溢出，把当前选中项滚到可见位置
+  if (show) requestAnimationFrame(() => {
+    $('#charDrawer').querySelectorAll('.seg').forEach(s => {
+      const on = s.querySelector('.seg-btn.active');
+      if (!on || s.scrollWidth <= s.clientWidth + 1) return;
+      s.scrollLeft = on.offsetLeft - s.clientWidth / 2 + on.offsetWidth / 2;
+    });
+  });
 }
 
 function setOptions(sel) {
@@ -1697,6 +1705,13 @@ function fallbackCopy(txt) {
 /* ============================================================
  * 启动
  * ============================================================ */
+/* 顶栏高度会随视口宽度变化（手机端会隐藏副标题），
+ * 用 CSS 变量同步给 sticky 的标签栏，避免硬编码偏移导致重叠或空隙 */
+function syncTopbarHeight() {
+  const tb = document.querySelector('.topbar');
+  if (tb) document.documentElement.style.setProperty('--tbh', tb.offsetHeight + 'px');
+}
+
 (function init() {
   state = load();
   bind();
@@ -1705,4 +1720,7 @@ function fallbackCopy(txt) {
   renderPlan();
   renderSubs();
   renderCustomSets();
+  syncTopbarHeight();
+  window.addEventListener('resize', syncTopbarHeight);
+  window.addEventListener('orientationchange', () => setTimeout(syncTopbarHeight, 120));
 })();
