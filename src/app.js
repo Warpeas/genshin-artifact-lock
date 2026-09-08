@@ -41,7 +41,7 @@ function migrateFromDefaults(o) {
       if (c.custom) return;
       const d = byName[c.name];
       if (!d) return;
-      const savedSrc = Array.isArray(c.src) ? c.src : (c.src ? [c.src] : []);
+      const savedSrc = normSrcList(c.src);
       if (!savedSrc.length && Array.isArray(d.src) && d.src.length) {
         c.src = d.src.slice();
       }
@@ -133,7 +133,7 @@ function normalize(o) {
       ? c.roles.filter(r => ROLE_NAME[r]) : ['maindps'],
     enabled: !!c.enabled,
     note: c.note || '',
-    src: Array.isArray(c.src) ? c.src.slice() : (c.src ? [c.src] : []),
+    src: normSrcList(c.src),
     custom: !!c.custom,
     builds: (Array.isArray(c.builds) && c.builds.length)
       ? c.builds.map(b => normalizeBuild(b, c))
@@ -216,6 +216,16 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m =>
 /* 从链接取主机名做可点击跳转标签（去掉 www. 前缀） */
 function srcHost(u) {
   try { return new URL(u).host.replace(/^www\./, ''); } catch (e) { return '链接'; }
+}
+/* 链接无标题时，按域名给出可识别的来源平台名（不编造具体作者） */
+function srcPlatformName(u) {
+  const h = (u || '').toLowerCase();
+  if (h.includes('miyoushe.com') || h.includes('bbs.mihoyo.com')) return '米游社';
+  if (h.includes('bilibili.com') || h.includes('b23.tv')) return 'B站';
+  if (h.includes('game8')) return 'Game8';
+  if (h.includes('keqingmains')) return 'KQM';
+  if (h.includes('yuanshen') || h.includes('genshin')) return '原神WIKI';
+  return srcHost(u) || '链接';
 }
 
 let toastTimer = null;
@@ -1107,7 +1117,7 @@ function drawDrawer() {
     <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
   </div>
   <div class="fgroup">
-    <label>攻略来源 <span class="hint">点链接可直接跳转打开；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源；工具不作解析，仅存档你认可的配装攻略。留空表示暂无来源</span></label>
+    <label>攻略来源 <span class="hint">链接触摸完整 URL 可直接跳转；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源；编辑时「作者/标题」选填，不填则按域名显示来源平台；工具不作解析，仅存档你认可的配装攻略。留空表示暂无来源</span></label>
     <div id="edSrcList" class="src-list"></div>
     <button type="button" class="btn sm" id="edAddSrc">+ 添加链接</button>
   </div>`;
@@ -1144,23 +1154,33 @@ function drawDrawer() {
   // 攻略来源：一行一链接 = 可点击直接跳转(锚) + 可编辑 + 可删除(−)，可加多源
   let srcEditIdx = null;   // 当前正在编辑的来源行；null = 全部为「可跳转链接」态
   function commitSrc(i) {   // 确认：把输入框当前值写回并退出编辑态
-    const inp = body.querySelector(`#edSrcList .src-input[data-i="${i}"]`);
-    if (inp) (editing.src = editing.src || [])[i] = inp.value.trim();
+    const wrap = body.querySelector('#edSrcList');
+    const uInp = wrap.querySelector(`.src-url[data-i="${i}"]`);
+    const tInp = wrap.querySelector(`.src-title-in[data-i="${i}"]`);
+    const url = uInp ? uInp.value.trim() : '';
+    const title = tInp ? tInp.value.trim() : '';
+    const list = (editing.src = editing.src || []);
+    if (!url) list.splice(i, 1);            // 清空 URL = 删除该行
+    else list[i] = { url, title };
     srcEditIdx = null;
     renderSrcRows();
   }
   function renderSrcRows() {
     const wrap = body.querySelector('#edSrcList');
-    const arr = editing.src || [];
-    wrap.innerHTML = arr.length ? arr.map((u, i) => {
+    const arr = (editing.src || []).map(normSrcItem).filter(Boolean);
+    wrap.innerHTML = arr.length ? arr.map((it, i) => {
+      const u = it.url, title = it.title || '';
       const on = srcEditIdx === i;
+      const prefix = esc(title || srcPlatformName(u));   // 有标题显示标题，否则显示来源平台
       return `
-      <div class="src-row">
+      <div class="src-row" data-i="${i}">
         ${on
-          ? `<input type="text" class="src-input" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
+          ? `<input type="text" class="src-url" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
+             <input type="text" class="src-title-in" data-i="${i}" value="${esc(title)}" placeholder="作者/标题(选填)" spellcheck="false">
              <button type="button" class="src-ok" data-i="${i}" title="确认修改">✓</button>
              <button type="button" class="src-cancel" data-i="${i}" title="取消">×</button>`
-          : `<a class="src-go" href="${esc(u)}" target="_blank" rel="noopener" title="点击打开：${esc(u)}">${esc(srcHost(u))}</a>
+          : `<span class="src-title">${prefix}</span>
+             <a class="src-go" href="${esc(u)}" target="_blank" rel="noopener" title="点击打开：${esc(u)}">${esc(u)}</a>
              <button type="button" class="src-edit" data-i="${i}" title="编辑链接">✎</button>`}
         <button type="button" class="src-del" data-i="${i}" title="删除该链接">−</button>
       </div>`;
@@ -1171,8 +1191,8 @@ function drawDrawer() {
       btn.onclick = () => {
         srcEditIdx = +btn.dataset.i;
         renderSrcRows();
-        const inp = body.querySelector(`#edSrcList .src-input[data-i="${srcEditIdx}"]`);
-        if (inp) { inp.focus(); inp.select(); }
+        const inp = body.querySelector(`#edSrcList .src-url[data-i="${srcEditIdx}"]`);
+        if (inp) inp.focus();
       };
     });
     // 编辑态：✓ 确认 / × 取消（mousedown 阻止输入框先失焦，交由 click 处理）
@@ -1184,9 +1204,13 @@ function drawDrawer() {
       btn.onmousedown = e => e.preventDefault();
       btn.onclick = () => { srcEditIdx = null; renderSrcRows(); };
     });
-    // 编辑态：输入框失焦（点框外）= 确认；回车确认、Esc 取消
-    wrap.querySelectorAll('.src-input').forEach(inp => {
-      inp.onblur = () => { if (srcEditIdx === +inp.dataset.i) commitSrc(+inp.dataset.i); };
+    // 编辑态：输入框失焦（焦点离开编辑区）= 确认；编辑态内部切换焦点不提交；回车确认、Esc 取消
+    wrap.querySelectorAll('.src-url, .src-title-in').forEach(inp => {
+      inp.onblur = e => {
+        const rt = e.relatedTarget;
+        if (rt && rt.classList && (rt.classList.contains('src-url') || rt.classList.contains('src-title-in'))) return;
+        if (srcEditIdx === +inp.dataset.i) commitSrc(+inp.dataset.i);
+      };
       inp.onkeydown = e => {
         if (e.key === 'Enter') { e.preventDefault(); commitSrc(+inp.dataset.i); }
         else if (e.key === 'Escape') { e.preventDefault(); srcEditIdx = null; renderSrcRows(); }
@@ -1203,10 +1227,10 @@ function drawDrawer() {
   }
   renderSrcRows();
   body.querySelector('#edAddSrc').onclick = () => {
-    (editing.src = editing.src || []).push('');
+    (editing.src = editing.src || []).push({ url: '', title: '' });
     srcEditIdx = (editing.src || []).length - 1;   // 新增后直接进编辑态
     renderSrcRows();
-    const inp = body.querySelector(`#edSrcList .src-input[data-i="${srcEditIdx}"]`);
+    const inp = body.querySelector(`#edSrcList .src-url[data-i="${srcEditIdx}"]`);
     if (inp) inp.focus();
   };
 
@@ -1450,7 +1474,8 @@ function saveChar() {
     .map(b => normalizeBuild(b, c));
   if (!c.builds.length) c.builds = [freshBuild()];
   if (!c.builds.some(b => b.priority === 'main')) c.builds[0].priority = 'main';
-  c.src = Array.from(new Set((c.src || []).map(s => (s || '').trim()).filter(Boolean))); // 去空 + 去重
+  c.src = (c.src || []).map(normSrcItem).filter(x => x && x.url)   // 去空 + 转对象
+    .filter((v, i, a) => a.findIndex(z => z.url === v.url) === i);  // 按 url 去重
   delete c.main; delete c.subs;   // 词条需求已完全下沉到配装组
 
   if (editingIsNew) {

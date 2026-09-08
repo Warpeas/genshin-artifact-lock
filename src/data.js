@@ -338,8 +338,9 @@ const CH_META = {
  *   builds: 数组，第 1 项为主推（4件套或2+2），其余为备选
  *           单项含 1 个套装名 = 4件套；含 2 个 = 2+2
  *   主词条数组按优先级从高到低排列（第1项=最优）
- *   src: 攻略来源链接数组（不限定来源，米游社/Game8/KQM/B站等均可，取置信度高、更新新、不重复的链接）
- *        可列多个；找不到来源时留空数组 []
+ *   src: 攻略来源数组（不限定来源，米游社/Game8/KQM/B站等均可，取置信度高、更新新、不重复的链接）
+ *        每项为 {url, title}；title 为「作者/标题」标注（选填，留空时按链接域名显示来源平台），可列多个
+ *        旧版纯字符串链接会在加载时自动补成 {url, title:''}
  * ============================================================ */
 const RAW_CHARS = [
   /* ---------- 火 ---------- */
@@ -488,6 +489,19 @@ function makeStatNeeds(sands, goblet, circlet, subPreset) {
   };
 }
 
+/* 把来源链接项归一化为 {url, title}（兼容旧版纯字符串 / [url,title] 数组 / 对象） */
+function normSrcItem(s) {
+  if (!s) return null;
+  if (typeof s === 'string') return { url: s.trim(), title: '' };
+  if (Array.isArray(s)) return { url: String(s[0] || '').trim(), title: String(s[1] || '').trim() };
+  if (typeof s === 'object') return { url: String(s.url || '').trim(), title: String(s.title || '').trim() };
+  return null;
+}
+function normSrcList(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map(normSrcItem).filter(x => x && x.url);
+}
+
 function buildDefaultCharacters() {
   return RAW_CHARS.map(([name, element, subPreset, builds, sands, goblet, circlet, src], i) => {
     const meta = CH_META[name] || ['snezhnaya', ['maindps']];
@@ -500,7 +514,7 @@ function buildDefaultCharacters() {
     roles: meta[1].slice(),
     enabled: false,
     note: '',
-    src: Array.isArray(src) ? src.slice() : (src ? [src] : []),
+    src: normSrcList(src),
     custom: false,
     // 主 / 副词条需求按【配装组】区分：一组配装 = 一套词条需求
     builds: builds.map((sets, idx) => Object.assign({
