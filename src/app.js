@@ -1639,7 +1639,7 @@ function showDetail() {
 function groupBrief(g) {
   const part = slot => {
     const set = new Set();
-    g.forEach(r => (r.mains[slot] || []).slice(0, 2).forEach(s => set.add(s)));
+    g.forEach(r => (r.mains[slot] || []).slice(0, 2).forEach(m => set.add(m.stat)));
     return [...set].slice(0, 3).map(id => mainStatName(slot, id)).join('/');
   };
   return `沙 ${part('sands')} · 杯 ${part('goblet')} · 冠 ${part('circlet')}`;
