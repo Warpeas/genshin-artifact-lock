@@ -84,12 +84,6 @@
           <option value="circlet">理之冠</option>
         </select>
       </label>
-      <label class="fld" title="数值＝允许自动合并的贴合度下限。调高：分得更细、候选更多但更贴合；调低：并得更狠、候选更少但条件更宽">方案贴合度
-        <span class="ctl-inline">
-          <input type="range" id="clusterTh" min="0.40" max="1" step="0.01" value="0.72">
-          <b id="clusterThVal">0.72</b>
-        </span>
-      </label>
       <span class="spacer"></span>
       <label class="chk"><input type="checkbox" id="planHideUnused" checked> 隐藏无人需要的套装</label>
       <label class="chk"><input type="checkbox" id="planAltBuild" checked> 计入备选配装</label>
@@ -107,13 +101,18 @@
       <h3>🧩 散件 / 过渡 保留规则 <span id="krCount" class="kr-count"></span></h3>
       <p class="muted small">与具体角色无关、只因「主要属性本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
         每条启用的规则会生成一份<b>候选方案</b>，与角色聚类结果<b>同权</b>出现在下面的候选区；
-        你可以「并入」到某个角色方案里、或单独采纳。<b>游戏内每种套装至多 3 个自定义预设</b>，请自行控制在 3 套以内。</p>
+        你可以「并入」到某个角色方案里、或单独采纳。<b>游戏内每种套装至多 3 个自定义预设</b>，请自行控制在 3 套以内。
+        <br><b>内置规则也能改</b>：点「编辑」即可修改（名称 / 描述 / 部位 / 主要属性 / 追加属性 / ★必须），改过的会标记「已修改」，可一键「恢复默认」。</p>
       <div id="keepRuleList" class="kr-list"></div>
-      <details class="kr-add">
-        <summary>＋ 新增自定义规则</summary>
+      <details class="kr-add" id="krForm">
+        <summary id="krFormTitle">＋ 新增自定义规则</summary>
         <div class="kr-form">
+          <input type="hidden" id="krEditing" value="">
           <label class="fld">名称
             <input type="text" id="krName" placeholder="如：防御杯" spellcheck="false">
+          </label>
+          <label class="fld">描述（可选）
+            <input type="text" id="krDesc" placeholder="说明这条规则为什么该留" spellcheck="false">
           </label>
           <label class="fld">部位
             <select id="krSlot">
@@ -122,15 +121,15 @@
               <option value="circlet">理之冠</option>
             </select>
           </label>
-          <label class="fld">包含任意 N 条
-            <input type="number" id="krMinHit" min="0" max="4" value="1" style="width:70px">
-          </label>
           <div class="kr-pick">
             <div><b>要留的主要属性</b><div id="krMains" class="kr-chk"></div></div>
             <div><b>追加属性</b><div id="krPool" class="kr-chk"></div></div>
+            <div><b>★必须追加属性</b><div id="krRequired" class="kr-chk"></div></div>
           </div>
+          <p class="muted small">命中条数固定为<b>「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条符合要求才值得留下强化，契合得越多越好。</p>
           <div class="btn-row">
             <button id="btnKrAdd" class="btn primary">添加规则</button>
+            <button id="btnKrCancel" class="btn" hidden>取消编辑</button>
           </div>
         </div>
       </details>
@@ -254,16 +253,18 @@
       <li><b>方案 N</b>：由追加属性需求相近的角色合并而来，标题写明「供谁使用」。同一套装的多个方案在锁定界面<b>共同生效</b>（彼此是「或」的关系）。</li>
       <li><b>采纳 / 并入… / 拆回</b>：每个候选默认「已采纳」；「并入…」把两个候选并成一套，「拆回」还原。改动会保存；
         采纳数超过游戏内上限（每套 3 个）时，页面顶部会给出橙色提醒。</li>
-      <li><b>方案贴合度</b>（工具栏滑块）：控制自动合并的激进程度。调高 = 分得更细、候选更多但更贴合；调低 = 并得更狠、候选更少但条件更宽。</li>
+      <li><b>自动合并</b>：方案按角色的<b>追加属性需求相似度</b>自动聚类——需求差不多（如主C / 副C 都要双暴 + 攻击）就并为一套，
+        差得多（辅助要充能 / 生命 / 精通）就分开；主要属性则<b>逐部位独立合并</b>。无需手动调参。</li>
       <li><b>★必须</b>：金色词条，这件圣遗物<b>必须</b>有它，否则不锁定。来自组内<b>全体角色都勾选了「必选」</b>的追加属性（在角色抽屉里点 ☆ 设置），最多 2 个。</li>
-      <li><b>包含任意 N 条</b>：追加属性池里命中任意 N 条即锁定，★必须的词条也计入这 N 条。</li>
+      <li><b>至少两条</b>：命中条数固定为「至少两条」——圣遗物最终 4 条追加属性，至少 2 条落在追加属性池里才锁定，
+        ★必须的词条也计入这两条。契合得越多越好，不足两条直接喂掉。</li>
       <li>勾选工具栏「<b>显示详细件数</b>」可展开每套的建议保留件数与需求来源；不勾选时页面只显示可直接照搬的锁定方案。</li>
     </ul>
     <h4>注意</h4>
     <ul>
       <li>花和羽毛主要属性固定，游戏内只能设追加属性，因此这两个部位对追加属性要求最严；方案级统一追加属性后，★必须 / 追加属性池只剔除与花 / 羽冲突的词条。</li>
-      <li>空之杯的元素伤杯掉率极低，算法已自动放宽该部位要求，避免漏锁。</li>
-      <li>追加属性不可能与同部位主要属性相同，方案里已自动剔除这类无效勾选。</li>
+      <li>空之杯的元素伤杯掉率极低，建议启用「🧩 散件 / 过渡 保留规则」里的「元素伤害杯」单独留一套。</li>
+      <li>追加属性不可能与同部位主要属性相同。方案级统一追加属性后，已自动剔除与花 / 羽固定主要属性（生命值 / 攻击力）冲突的项；沙 / 杯 / 冠的主要属性随方案而变，无法逐部位剔除——照抄时请自行留意，跳过即可。</li>
       <li>数据存在本机浏览器，换设备用「数据管理 → 导出 JSON」迁移。</li>
     </ul>
   </div>

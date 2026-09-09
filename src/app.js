@@ -235,26 +235,57 @@ function normalizeSubs(subs) {
   return toSubs(SUB_PRESETS.crit);
 }
 
-/* 散件 / 过渡 保留规则归一化：兼容旧存档（无此字段时按内置默认启用） */
+/* 散件 / 过渡 保留规则归一化：兼容旧存档（无此字段时按内置默认启用）
+ *   enabled   —— 启用的规则 id 列表
+ *   custom    —— 用户自建的规则
+ *   overrides —— 对【内置】规则的修改覆盖：{ 内置id: { 被改的字段 } }，删掉即恢复默认
+ */
 function normalizeKeepRules(raw) {
   const r = (raw && typeof raw === 'object') ? raw : {};
   const validSlot = id => !!MAIN_STATS[id];
   const validSub = id => SUB_STATS.some(s => s.id === id);
+  const builtinIds = new Set(KEEP_RULES.map(x => x.id));
+
+  /* 可编辑字段白名单校验（内置覆盖与自定义规则共用）
+   *   slot 变更后，主要属性要按【新部位】重新过滤，避免留下无效项 */
+  const cleanFields = (x, slot) => ({
+    name: (typeof x.name === 'string' && x.name.trim()) ? x.name.trim() : '',
+    desc: (typeof x.desc === 'string') ? x.desc : '',
+    slot,
+    mains: (Array.isArray(x.mains) ? x.mains : []).filter(m => (MAIN_STATS[slot] || []).some(s => s.id === m)),
+    required: (Array.isArray(x.required) ? x.required : []).filter(validSub),
+    pool: (Array.isArray(x.pool) ? x.pool : []).filter(validSub),
+  });
+
+  const overrides = {};
+  if (r.overrides && typeof r.overrides === 'object') {
+    KEEP_RULES.forEach(b => {
+      const ov = r.overrides[b.id];
+      if (!ov || typeof ov !== 'object') return;
+      const slot = validSlot(ov.slot) ? ov.slot : b.slot;
+      const f = cleanFields(ov, slot);
+      // 只存「真的被改过」的字段，恢复默认时整体删掉即可
+      const patch = {};
+      ['name', 'desc', 'slot', 'mains', 'required', 'pool'].forEach(k => {
+        if (JSON.stringify(f[k]) !== JSON.stringify(b[k])) patch[k] = f[k];
+      });
+      if (Object.keys(patch).length) overrides[b.id] = patch;
+    });
+  }
+
   return {
     enabled: Array.isArray(r.enabled)
       ? r.enabled.filter(x => typeof x === 'string')
       : ['goblet_elem'],
-    custom: (Array.isArray(r.custom) ? r.custom : []).filter(x => x && x.id && validSlot(x.slot)).map(x => ({
-      id: String(x.id),
-      name: String(x.name || '自定义规则'),
-      desc: String(x.desc || ''),
-      builtin: false,
-      slot: x.slot,
-      mains: (Array.isArray(x.mains) ? x.mains : []).filter(m => (MAIN_STATS[x.slot] || []).some(s => s.id === m)),
-      required: (Array.isArray(x.required) ? x.required : []).filter(validSub),
-      pool: (Array.isArray(x.pool) ? x.pool : []).filter(validSub),
-      minHit: Number(x.minHit) > 0 ? Math.min(4, Number(x.minHit)) : 0,
-    })),
+    custom: (Array.isArray(r.custom) ? r.custom : [])
+      .filter(x => x && x.id && validSlot(x.slot) && !builtinIds.has(String(x.id)))
+      .map(x => ({
+        id: String(x.id),
+        builtin: false,
+        ...cleanFields(x, x.slot),
+        name: (typeof x.name === 'string' && x.name.trim()) ? x.name.trim() : '自定义规则',
+      })),
+    overrides,
   };
 }
 
@@ -328,7 +359,6 @@ function isBuiltinSet(name) {
  *   名次权重用于「相似度 / 评分 / 排序」等需要数值的场合（界面上不暴露给用户的内部量）
  * ============================================================ */
 const SUB_RANK_DECAY = 0.72;  // 名次权重衰减：第 1 名 1.0，之后 ×0.72
-const SUB_CORE_TOP   = 3;     // 前 N 名算「核心需求」（参与「包含任意 N 条」的基准）
 const SUB_POOL_TOP   = 5;     // 每人最多贡献 N 条追加属性，避免追加属性池过宽
 const SUB_POOL_MAX   = 5;     // 合并后的追加属性池上限（再宽就等同于「不限」，失去筛选意义）
 
@@ -363,12 +393,6 @@ function subWeights(list) {
   return w;
 }
 
-/* 核心需求 = 前 SUB_CORE_TOP 名 ∪ 所有 ★必选 */
-function coreSubs(list) {
-  const seen = new Set();
-  return (list || []).filter((s, i) => i < SUB_CORE_TOP || s.req)
-    .map(s => s.id).filter(id => !seen.has(id) && seen.add(id));
-}
 /* ★必选词条集合 */
 function reqSubs(list) {
   return (list || []).filter(s => s.req).map(s => s.id);
@@ -599,44 +623,30 @@ function globalWeights() {
  * 规则依据（社区攻略实测 + 游戏内界面）：
  *   - 每种圣遗物套装至多预设 3 个自定义方案，多个方案在锁定时共同生效
  *   - 每个部位（含花 / 羽）都可分别设定主要属性与追加属性
- *   - 追加属性支持「★必须」与「包含任意 N 条」
+ *   - 追加属性支持「★必须」，命中条数固定为「至少两条」
  *   - 仅有 3 条追加属性的圣遗物，所需数量相应减 1
  *   - 需求差异大的角色不宜合并到同一方案，否则会「存伪」（锁进无用件）
  *
- * 固定算法（每个套装 × 每个部位独立聚合，结果可复现）：
- *   ① 角色分组：需求「几乎一致」的角色并为一组，组数不强行压到槽位数；
- *      超出槽位时出现「手动合并」面板，默认按相似度自动归入，可手动调整
- *   ② 主属性：花/羽固定；沙/杯/冠按「票数 × 优先级」降序，
- *      取到累计覆盖 ≥ MAIN_COVER 为止，上限 MAIN_MAX
+ * 固定算法（结果可复现）：
+ *   ① 角色分组：按【追加属性需求相似度】凝聚聚类——最相似的两组相似度 ≥ MERGE_SUB_SIM
+ *      才合并，否则保留为独立候选。追加属性需求相近的角色（主C / 副C 都要
+ *      双暴 + 攻击）会自然并成一套；辅助（充能 / 生命 / 精通）则被拆开
+ *   ② 主属性：花/羽固定；沙/杯/冠【逐部位独立合并】——按「票数 × 优先级」
+ *      降序，取到累计覆盖 ≥ MAIN_COVER 为止，上限 MAIN_MAX
  *   ③ ★必须：组内全体角色都标了「必选」的追加属性，按平均名次权重降序，上限 2
  *   ④ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求（剔除与唯一主要属性冲突项）
- *   ⑤ 至少命中 N：round(组内平均核心词条数 × 部位严格度系数)，
- *      下限 = ★必须数量（否则★之外的候选形同虚设），上限 = min(4, 追加属性池-1)
+ *   ⑤ 命中条数：固定「至少两条」——圣遗物最终 4 条追加属性，至少 2 条符合要求
+ *      才值得留下强化，契合得越多越好
  * ============================================================ */
-const MERGE_FIT    = 0.72; // 默认「贴合度下限」：合并后方案的贴合度低于它就停手（界面可调）
-const SUB_SIM_W     = 0.75; // 相似度里「追加属性倾向」的权重，其余给主属性（以追加属性聚类）
-const FIT_COV_W    = 0.8;  // 贴合度里「成员需求被代表程度」的权重
-const FIT_WIDTH_W  = 0.2;  // 贴合度里「追加属性池宽度」的权重（追加属性池越宽越不贴合）
-const CAND_SOFT_CAP = 24;   // 候选数保护上限（防止极端数据下列表过长，正常不会触发）
-const GAME_MAX_PRESET = 3;  // 游戏内每种套装至多 3 个自定义预设（仅作提示，工具侧不再硬限制）
-const MAIN_MAX    = 3;     // 单部位主属性上限（条件过宽会「存伪」）
-const MAIN_COVER  = 0.7;   // 主属性取到累计覆盖该比例为止
-
-/* 部位严格度系数：影响各部位「至少命中 N 条」的取值
- *   花 / 羽：主要属性固定，追加属性是唯一变量 → 要求最严（×1.2）
- *   沙 / 冠：主要属性与追加属性互补          → 标准（×1.0）
- *   杯    ：元素伤害杯本就稀有            → 放宽（×0.8）
- */
-const SLOT_STRICT = { flower: 1.0, plume: 1.0, sands: 1.0, circlet: 0.95, goblet: 0.8 };
-
-function jaccard(a, b) {
-  const A = new Set(a), B = new Set(b);
-  if (!A.size && !B.size) return 1;
-  let inter = 0;
-  A.forEach(x => { if (B.has(x)) inter++; });
-  const uni = new Set([...A, ...B]).size;
-  return uni ? inter / uni : 0;
-}
+/* 追加属性相似度下限：≥ 该值才合并（实测标定，见 README「合并标定」）
+ *   0.875 → 绝缘套「香菱/行秋/雷电将军」与「夜兰」分开；0.87 → 被并到一起。
+ *   取 0.88 留出余量：主 C / 副 C（双暴 + 攻击）合并，辅助（充能 / 生命 / 精通）拆开。 */
+const MERGE_SUB_SIM  = 0.88;
+const CAND_SOFT_CAP  = 24;   // 候选数保护上限（防止极端数据下列表过长，正常不会触发）
+const GAME_MAX_PRESET = 3;   // 游戏内每种套装至多 3 个自定义预设（仅作提示，工具侧不再硬限制）
+const MAIN_MAX    = 3;       // 单部位主属性上限（条件过宽会「存伪」）
+const MAIN_COVER  = 0.7;     // 主属性取到累计覆盖该比例为止
+const SUB_MIN_HIT = 2;       // 追加属性命中条数：固定「至少两条」
 
 function cosSim(a, b) {
   let dot = 0, na = 0, nb = 0;
@@ -648,12 +658,16 @@ function cosSim(a, b) {
   return d ? dot / d : 0;
 }
 
-/* 角色需求相似度：追加属性倾向为主，主属性为辅
- *   本次改为「按追加属性需求聚类」，所以追加属性权重占大头（SUB_SIM_W） */
+/* 角色需求相似度 = 纯【追加属性】余弦相似度（0–1）
+ *   合并只看追加属性需求像不像：主C / 副C 都要双暴 + 攻击 → 相似度高，并为一套；
+ *   辅助要充能 / 生命 / 精通 → 与输出流差异大，自动拆开。
+ *   主要属性不参与相似度，而是【逐部位独立合并】（见 mergeMain）。
+ *
+ *   注：旧实现还掺了「三个部位主属性的 Jaccard」，但 mains[slot] 是 [{stat,op}]
+ *   对象数组，new Set 按引用去重 → 不同角色的同名 stat 永不相等，该项恒为 0，
+ *   等于从未生效。本次直接删掉，语义反而更干净。 */
 function roleSimilarity(a, b) {
-  let ms = 0;
-  ['sands', 'goblet', 'circlet'].forEach(slot => { ms += jaccard(a.mains[slot], b.mains[slot]); });
-  return SUB_SIM_W * cosSim(a.subs, b.subs) + (1 - SUB_SIM_W) * (ms / 3);
+  return cosSim(a.subs, b.subs);
 }
 
 function groupSim(g1, g2) {
@@ -662,70 +676,23 @@ function groupSim(g1, g2) {
   return n ? sum / n : 0;
 }
 
-/* 方案贴合度（0–1，越高越贴合）：用来判断「还能不能再合一次」
- *   ① 覆盖率：拿合并后的追加属性池对照每个成员自己的【有序】需求表，按名次加权计算
- *      「还剩下多少被代表」——最看重的第 1 名没进池，扣得最多
- *   ② 宽度：追加属性池越宽越接近「不限」，筛选意义越弱
+/* ①-a 自然分组：按【追加属性需求相似度】凝聚聚类
+ *   每次挑「当前追加属性需求最相似的两组」；只有相似度 ≥ MERGE_SUB_SIM 才合并，
+ *   否则停手，各组保持独立候选。
  *
- *   为什么不用「相似度阈值」直接卡：真实数据里大量角色共用同一套预设，
- *   相似度非 1 即 0.75 左右，是台阶式分布，阈值滑块会变成几档跳变（实测
- *   0.75 一处候选数从 238 直接掉到 90）。贴合度是连续量，滑块才能平滑控制。
+ *   为什么用相似度阈值而不是「贴合度」：贴合度是自造的抽象量，说法不直观，也解释
+ *   不清「为什么这两组不能合」。改用追加属性相似度后，判据就是一句能直接理解的话——
+ *   「追加属性需求差不多就合，差得多就分开」。
+ *   阈值不再暴露成滑块（全自动），所以也不存在「一档跳到底」的手感问题。
+ *
+ *   threshold 参数仅用于离线标定与回归测试，界面不传值。
  */
-function planFit(group) {
-  if (!group.length) return 1;
-  const pool = new Set(mergeSubUniform(group).pool);
-  let cov = 0;
-  group.forEach(r => {
-    const list = r.subList || [];
-    let num = 0, den = 0;
-    list.forEach((s, i) => {
-      const w = Math.pow(SUB_RANK_DECAY, i);
-      den += w;
-      if (pool.has(statIdOf(s))) num += w;
-    });
-    cov += den ? num / den : 1;
-  });
-  cov = cov / group.length;
-  const width = Math.max(0, pool.size - 1) / Math.max(1, SUB_POOL_MAX - 1);
-  return FIT_COV_W * cov + FIT_WIDTH_W * (1 - Math.min(1, width));
-}
-
-/* ①-a 自然分组（本次改造的核心）
- *   【按追加属性需求合并】：每一步都在「当前最相似的两组」里挑，保证并起来的
- *   一定是追加属性需求最接近的；但【停不停手】改由「合并后贴合度」决定——
- *   贴合度仍在下限以上才允许并，否则保留为独立候选。
- *   下限越高 → 分得越细、候选越多越贴合；越低 → 并得越狠、候选越少越宽松。
- *   不再有 3 个槽位的硬限制，每组日后即成为一份「候选方案」。
- */
-function naturalClusters(roles, floor) {
-  const minFit = (typeof floor === 'number') ? floor : MERGE_FIT;
+function naturalClusters(roles, threshold) {
+  const th = (typeof threshold === 'number') ? threshold : MERGE_SUB_SIM;
   const groups = roles.map(r => [r]);
 
-  // 按相似度降序找「第一个合并后贴合度仍达标」的组合
-  const nextMerge = () => {
-    const pairs = [];
-    for (let i = 0; i < groups.length; i++) {
-      for (let j = i + 1; j < groups.length; j++) {
-        pairs.push({ s: groupSim(groups[i], groups[j]), i, j });
-      }
-    }
-    pairs.sort((a, b) => b.s - a.s);
-    for (const p of pairs) {
-      const merged = groups[p.i].concat(groups[p.j]);
-      if (planFit(merged) >= minFit) return { ...p, merged };
-    }
-    return null;
-  };
-
-  while (groups.length > 1) {
-    const best = nextMerge();
-    if (!best) break;
-    groups[best.i] = best.merged;
-    groups.splice(best.j, 1);
-  }
-
-  // 保护上限：极端数据下防止候选列表过长（正常不会触发）
-  while (groups.length > CAND_SOFT_CAP) {
+  /* 当前最相似的一对（平均连接：两组间所有角色对的相似度取平均） */
+  const bestPair = () => {
     let best = null;
     for (let i = 0; i < groups.length; i++) {
       for (let j = i + 1; j < groups.length; j++) {
@@ -733,6 +700,20 @@ function naturalClusters(roles, floor) {
         if (!best || s > best.s) best = { s, i, j };
       }
     }
+    return best;
+  };
+
+  // 追加属性需求够像才并：最相似的一对都不够像 → 停手
+  while (groups.length > 1) {
+    const best = bestPair();
+    if (!best || best.s < th) break;
+    groups[best.i] = groups[best.i].concat(groups[best.j]);
+    groups.splice(best.j, 1);
+  }
+
+  // 保护上限：极端数据下防止候选列表过长（正常不会触发）
+  while (groups.length > CAND_SOFT_CAP) {
+    const best = bestPair();
     if (!best) break;
     groups[best.i] = groups[best.i].concat(groups[best.j]);
     groups.splice(best.j, 1);
@@ -772,14 +753,14 @@ const FIXED_MAIN = { flower: 'hp', plume: 'atk' };
  *      方案而变，无法再逐部位剔除——这是「统一追加属性」换取一致性的固有取舍。
  *   ② ★必须：组内「所有」角色都标了必选的词条（交集），按平均名次权重降序，最多 2 个
  *   ③ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求，按「广度 × 名次」累加降序
- *   ④ 包含任意 N 条：以组内平均核心词条数为基准 × 最宽松部位系数（宁可锁松也不漏）
+ *   ④ 命中条数：固定「至少两条」（SUB_MIN_HIT）。圣遗物最终 4 条追加属性，
+ *      至少 2 条符合要求才值得留下强化——契合得越多越好，不足 2 条直接喂掉
  */
 function mergeSubUniform(group) {
   const n = group.length;
   if (!n) return { required: [], pool: [], minHit: 0 };
   const banned = new Set([FIXED_MAIN.flower, FIXED_MAIN.plume]);  // 花/羽主要属性固定，恒冲突
 
-  const rawCores = group.map(r => r.core);
   const avgW = id => group.reduce((s, r) => s + (r.subs[id] || 0), 0) / n;
 
   /* ② ★必须：组内全员必选的交集 */
@@ -810,27 +791,21 @@ function mergeSubUniform(group) {
   if (pool.length > SUB_POOL_MAX) pool = pool.slice(0, SUB_POOL_MAX);
   if (!pool.length) return { required: [], pool: [], minHit: 0 };  // 只挑主要属性，追加属性不限
 
-  const rawCore = rawCores.reduce((s, l) => s + l.length, 0) / n;
-  // 统一取值：沿用最宽松部位的系数（空之杯 0.8），宁可锁松也不漏
-  const strict = Math.min(...Object.values(SLOT_STRICT));
-  const cap = Math.min(4, Math.max(required.length, Math.min(pool.length - 1, 3), 1));
-  const minHit = Math.min(cap, Math.max(Math.round(rawCore * strict), required.length, 1));
-  return { required, pool, minHit };
+  // 固定「至少两条」；池里不足 2 条时退化为池的长度（池为空已在上面返回「不限」）
+  return { required, pool, minHit: Math.min(SUB_MIN_HIT, pool.length) };
 }
 
 /* 融合两份追加属性条件（手动合并方案时用）：
- *   ★必须取交集（两边都要才算必须）、追加属性池取并集、包含条数取小值（更宽松） */
+ *   ★必须取交集（两边都要才算必须）、追加属性池取并集；
+ *   命中条数固定「至少两条」，不再取两者的较小值 */
 function fuseSub(a, b) {
   if (!a) return b;
   if (!b) return a;
   const required = a.required.filter(id => b.required.includes(id));
   const pool = [...new Set([...a.pool, ...b.pool])];
   required.forEach(id => { if (!pool.includes(id)) pool.unshift(id); });
-  return {
-    required,
-    pool: pool.slice(0, SUB_POOL_MAX),
-    minHit: Math.min(a.minHit, b.minHit),
-  };
+  const p = pool.slice(0, SUB_POOL_MAX);
+  return { required, pool: p, minHit: Math.min(SUB_MIN_HIT, p.length) };
 }
 
 /* 一组角色 -> 候选方案（追加属性条件全方案统一） */
@@ -866,12 +841,15 @@ function mergePlans(list) {
   if (!acc && nonGroup.length) acc = nonGroup[0].sub;
   rest.forEach(p => { acc = fuseSub(acc, p.sub); });
 
+  /* 主要属性【逐部位独立合并】：有角色组时按「票数 × 优先级」重算（与自动合并同一套
+   * 规则，权重最准），再并入规则类方案指定的主要属性，最后统一截断到 MAIN_MAX——
+   * 避免手动「并入…」越并越宽、最后宽到等于「不限」 */
   const mains = {};
   SLOTS.forEach(sd => {
     if (sd.id === 'flower' || sd.id === 'plume') { mains[sd.id] = null; return; }
-    const seen = new Set();
+    const seen = new Set(groups.length ? mergeMain(groups, sd.id) : []);
     ps.forEach(p => (p.mains[sd.id] || []).forEach(id => seen.add(id)));
-    mains[sd.id] = [...seen];
+    mains[sd.id] = [...seen].slice(0, MAIN_MAX);
   });
 
   const rules = ps.filter(p => p.kind === 'rule');
@@ -914,7 +892,6 @@ function toRoles(charList, setName) {
         },
         subs: subWeights(b.subs),   // 名次权重向量（用于相似度 / 评分）
         subList: b.subs || [],      // 原始词条（含 op），供追加属性池按重要度打分
-        core: coreSubs(b.subs),     // 核心需求，决定「包含任意 N 条」
         req:  reqSubs(b.subs),      // ★必选标记
         pool: poolSubs(b.subs),     // 追加属性池
       };
@@ -970,10 +947,29 @@ function applyPlanOverlay(setName, cands) {
  *   与具体角色无关，用于保留高价值散件（稀有主要属性）或过渡 2 件套胚子。
  *   每条启用的规则会转成一份候选方案，与角色聚类结果【同权】参与后续合并 / 采纳。
  * ============================================================ */
+/* 规则可编辑字段（内置覆盖与自定义规则共用） */
+const KR_EDITABLE = ['name', 'desc', 'slot', 'mains', 'required', 'pool'];
+/* 取（必要时创建）内置规则的覆盖层 */
+function krOverrides() {
+  if (!state || !state.keepRules) return {};
+  if (!state.keepRules.overrides || typeof state.keepRules.overrides !== 'object') {
+    state.keepRules.overrides = {};
+  }
+  return state.keepRules.overrides;
+}
+/* 取某内置规则的用户覆盖（没有就是没改过） */
+function keepRuleOverride(id) {
+  return krOverrides()[id] || null;
+}
 function allKeepRules() {
   const custom = (state && state.keepRules && Array.isArray(state.keepRules.custom))
     ? state.keepRules.custom : [];
-  return [...KEEP_RULES, ...custom];
+  // 内置规则先套用用户的修改覆盖（overrides 里没有该 id = 保持出厂设置）
+  const builtin = KEEP_RULES.map(r => {
+    const ov = keepRuleOverride(r.id);
+    return ov ? { ...r, ...ov, builtin: true } : r;
+  });
+  return [...builtin, ...custom];
 }
 function keepRuleEnabled(id) {
   return !!(state && state.keepRules && Array.isArray(state.keepRules.enabled)
@@ -1000,11 +996,12 @@ function ruleToPlan(rule) {
     chars: [],
     ruleName: rule.name,
     ruleDesc: rule.desc || '',
-    sub: {
-      required: (rule.required || []).filter(id => !banned.has(id)),
-      pool: (rule.pool || []).filter(id => !banned.has(id)),
-      minHit: rule.minHit || 0,
-    },
+    sub: (() => {
+      const required = (rule.required || []).filter(id => !banned.has(id));
+      const pool = (rule.pool || []).filter(id => !banned.has(id));
+      // 与角色方案一致：固定「至少两条」，不再读规则自带的命中条数
+      return { required, pool, minHit: Math.min(SUB_MIN_HIT, pool.length) };
+    })(),
     mains,
     _group: null,
   };
@@ -1028,11 +1025,10 @@ function candsOfSet(setName) {
   return setCandidates(chars, setName, clusterThreshold());
 }
 
-/* 界面上的「方案贴合度」滑块：数值 = 允许合并的贴合度下限 */
+/* 合并阈值：界面不再提供滑块（「方案贴合度」的说法不直观，已移除），
+ * 统一使用常量 MERGE_SUB_SIM——追加属性需求差不多就合并，全自动。 */
 function clusterThreshold() {
-  const el = $('#clusterTh');
-  const v = el ? parseFloat(el.value) : NaN;
-  return Number.isFinite(v) ? v : MERGE_FIT;
+  return MERGE_SUB_SIM;
 }
 
 /* 方案的「适用对象」标题：角色组 / 散件规则 / 手动合并后的混合 */
@@ -1056,8 +1052,15 @@ function subCondText(sub) {
     .map(id => `<span class="gp-sub">${esc(subStatName(id))}</span>`).join('');
   return (star || rest) ? star + rest : '<span class="gp-fixed">不限</span>';
 }
+/* 命中条数：固定「至少两条」（池不足 2 条时退化；池为空 = 不限，返回空串） */
+function subHitPlain(sub) {
+  const n = sub.minHit || 0;
+  if (!n) return '';
+  return n >= SUB_MIN_HIT ? '至少两条' : '至少一条';
+}
 function subHitText(sub) {
-  return sub.minHit ? `包含任意 <b>${sub.minHit}</b> 条` : '<span class="gp-fixed">不限</span>';
+  const t = subHitPlain(sub);
+  return t ? `<b>${t}</b>` : '<span class="gp-fixed">不限</span>';
 }
 /* 单部位主要属性：null = 固定（花 / 羽），[] = 不限 */
 function mainCondText(slotId, list) {
@@ -1075,7 +1078,8 @@ function planCopyText(setName, plan, idx) {
   // 追加属性是全方案统一的一份，先说一遍，五个部位再各自列主要属性
   const subAll = [...plan.sub.required.map(id => '★' + subStatName(id)),
     ...plan.sub.pool.filter(id => !plan.sub.required.includes(id)).map(id => subStatName(id))].join('、');
-  L.push(`  追加属性（五个部位相同）：${subAll || '不限'}${plan.sub.minHit ? `　·　包含任意 ${plan.sub.minHit} 条` : ''}`);
+  const hitTxt = subHitPlain(plan.sub);
+  L.push(`  追加属性（五个部位相同）：${subAll || '不限'}${hitTxt ? `　·　${hitTxt}` : ''}`);
   SLOTS.forEach(sd => {
     const list = plan.mains[sd.id];
     const mainTxt = list === null || list === undefined
@@ -1815,29 +1819,34 @@ function renderPlan() {
 
 const ELEM_DMG_STATS = ['pyro', 'hydro', 'cryo', 'electro', 'anemo', 'geo', 'dendro', 'phys'];
 
-/* 渲染「散件 / 过渡 保留规则」面板：开关内置 / 自定义规则
+/* 渲染「散件 / 过渡 保留规则」面板：开关 + 编辑
+ *   内置规则也能改：改动存进 overrides 覆盖层，标「已修改」，可一键「恢复默认」。
  *   启用后每条规则会生成一份候选方案，与角色聚类结果同权出现在候选区 */
 function renderKeepRules() {
   const wrap = $('#keepRuleList');
   if (!wrap || !state || !state.keepRules) return;
   const active = activeKeepRules();
-  const activeIds = new Set(active.map(r => r.id));
 
   wrap.innerHTML = allKeepRules().map(r => {
     const on = keepRuleEnabled(r.id);
-    const truncated = on && !activeIds.has(r.id);   // 启用但槽位不够，被截断
     const slotName = (SLOTS.find(s => s.id === r.slot) || {}).name || '';
     const mainsTxt = (r.mains || []).map(id => mainStatName(r.slot, id)).join(' / ') || '不限';
     const poolTxt = (r.pool || []).map(id => subStatName(id)).join('、');
+    const reqTxt = (r.required || []).map(id => '★' + subStatName(id)).join('、');
+    const modified = !!r.builtin && !!keepRuleOverride(r.id);
     return `
-      <label class="kr-item${on ? ' on' : ''}${truncated ? ' truncated' : ''}">
+      <label class="kr-item${on ? ' on' : ''}">
         <input type="checkbox" data-kr-toggle="${esc(r.id)}"${on ? ' checked' : ''}>
         <span class="kr-name">${esc(r.name)}</span>
         <span class="kr-slot">${esc(slotName)}</span>
-        <span class="kr-cond">主要属性：${esc(mainsTxt)}${poolTxt ? `　·　追加属性：${esc(poolTxt)}` : ''}${r.minHit ? `　·　任意 ${r.minHit} 条` : ''}</span>
+        ${modified ? '<span class="kr-mod" title="已改过，点「恢复默认」可还原">已修改</span>' : ''}
+        <span class="kr-cond">主要属性：${esc(mainsTxt)}${poolTxt ? `　·　追加属性：${esc(poolTxt)}` : ''}${reqTxt ? `　·　★必须：${esc(reqTxt)}` : ''}</span>
         ${r.desc ? `<span class="kr-desc">${esc(r.desc)}</span>` : ''}
-        ${r.builtin ? '' : `<button type="button" class="kr-del" data-kr-del="${esc(r.id)}" title="删除该自定义规则">删除</button>`}
-        ${truncated ? '<span class="kr-warn">槽位不足，本条暂未生效</span>' : ''}
+        <span class="kr-btns">
+          <button type="button" class="kr-edit" data-kr-edit="${esc(r.id)}" title="修改这条规则">编辑</button>
+          ${modified ? `<button type="button" class="kr-reset" data-kr-reset="${esc(r.id)}" title="放弃修改，恢复出厂设置">恢复默认</button>` : ''}
+          ${r.builtin ? '' : `<button type="button" class="kr-del" data-kr-del="${esc(r.id)}" title="删除该自定义规则">删除</button>`}
+        </span>
       </label>`;
   }).join('');
 
@@ -2003,8 +2012,8 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
         已采纳 <b>${picked}</b> / 游戏上限 ${GAME_MAX_PRESET}${over ? ' ⚠️' : ''}
       </span>
     </div>
-    <p class="gp-lead">候选按「角色的<b>追加属性需求</b>」自动聚类：<b>数值调低 = 并得更狠、候选更少但条件更宽；调高 = 分得更细、候选更多但更贴合。</b>
-      每个方案的<b>五个部位共用同一份追加属性条件</b>，照抄即可；觉得多了就用「并入…」合并、或取消勾选「采纳」。</p>
+    <p class="gp-lead">候选按「角色的<b>追加属性需求</b>」自动合并：主 C / 副 C（双暴 + 攻击）会并成一套，辅助（充能 / 生命 / 精通）自动拆开，<b>全自动、无需调参</b>。
+      每个方案的<b>五个部位共用同一份追加属性条件</b>（命中条数固定「至少两条」），主要属性逐部位独立合并；觉得多了就用「并入…」合并、或取消勾选「采纳」。</p>
     <div class="gp-cards">${cards}</div>
     <p class="gp-tip">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上方逐套设置；
       每种套装游戏内<b>至多 ${GAME_MAX_PRESET} 个自定义预设</b>，请自行收敛。仅有 3 条追加属性的圣遗物，所需数量会自动减 1。</p>
@@ -2470,29 +2479,50 @@ function bind() {
   $('#planHideUnused').onchange = renderPlan;
   $('#planDetail').onchange = renderPlan;
   $('#planAltBuild').onchange = () => { renderPlan(); if ($('#tab-subs').classList.contains('active')) renderSubs(); };
-  if ($('#clusterTh')) {
-    const syncTh = () => { $('#clusterThVal').textContent = (+$('#clusterTh').value).toFixed(2); renderPlan(); };
-    $('#clusterTh').oninput = () => { $('#clusterThVal').textContent = (+$('#clusterTh').value).toFixed(2); };
-    $('#clusterTh').onchange = syncTh;
-    $('#clusterThVal').textContent = (+$('#clusterTh').value).toFixed(2);
-  }
 
   /* ---- 散件 / 过渡 保留规则面板 ---- */
-  function renderKrMains() {
+  /* 三组多选框都可传「已选集合」回填（编辑态用），不传就是全空的新建态 */
+  const krChk = (w, list, checked) => {
+    if (!w) return;
+    const set = new Set(checked || []);
+    w.innerHTML = list.map(s =>
+      `<label class="kr-chk-item"><input type="checkbox" value="${esc(s.id)}"${set.has(s.id) ? ' checked' : ''}> ${esc(s.name)}</label>`).join('');
+  };
+  function renderKrMains(checked) {
     const slot = $('#krSlot') ? $('#krSlot').value : 'goblet';
-    const w = $('#krMains');
-    if (!w) return;
-    w.innerHTML = (MAIN_STATS[slot] || []).map(s =>
-      `<label class="kr-chk-item"><input type="checkbox" value="${esc(s.id)}"> ${esc(s.name)}</label>`).join('');
+    krChk($('#krMains'), MAIN_STATS[slot] || [], checked);
   }
-  function renderKrPool() {
-    const w = $('#krPool');
-    if (!w) return;
-    w.innerHTML = SUB_STATS.map(s =>
-      `<label class="kr-chk-item"><input type="checkbox" value="${esc(s.id)}"> ${esc(s.name)}</label>`).join('');
+  function renderKrPool(checked) { krChk($('#krPool'), SUB_STATS, checked); }
+  function renderKrRequired(checked) { krChk($('#krRequired'), SUB_STATS, checked); }
+
+  /* 进入「编辑某条规则」模式：表单回填该规则当前值（内置规则同样可编辑） */
+  function editKeepRule(id) {
+    const r = allKeepRules().find(x => x.id === id);
+    if (!r) return;
+    $('#krEditing').value = id;
+    $('#krName').value = r.name || '';
+    $('#krDesc').value = r.desc || '';
+    $('#krSlot').value = r.slot || 'goblet';
+    renderKrMains(r.mains); renderKrPool(r.pool); renderKrRequired(r.required);
+    $('#krFormTitle').textContent = `✏️ 正在编辑：${r.name}`;
+    $('#btnKrAdd').textContent = '保存修改';
+    $('#btnKrCancel').hidden = false;
+    if ($('#krForm')) $('#krForm').open = true;
   }
-  renderKrMains(); renderKrPool();
-  if ($('#krSlot')) $('#krSlot').onchange = renderKrMains;
+  /* 退出编辑态，回到新建 */
+  function resetKrForm() {
+    $('#krEditing').value = '';
+    $('#krName').value = '';
+    $('#krDesc').value = '';
+    $('#krSlot').value = 'goblet';
+    renderKrMains(); renderKrPool(); renderKrRequired();
+    $('#krFormTitle').textContent = '＋ 新增自定义规则';
+    $('#btnKrAdd').textContent = '添加规则';
+    $('#btnKrCancel').hidden = true;
+  }
+  renderKrMains(); renderKrPool(); renderKrRequired();
+  // 换部位要重渲染「主要属性」候选（各部位可选主要属性不同），此时清空已选
+  if ($('#krSlot')) $('#krSlot').onchange = () => renderKrMains();
 
   const krList = $('#keepRuleList');
   if (krList) {
@@ -2506,33 +2536,70 @@ function bind() {
     });
     krList.addEventListener('click', e => {
       const del = e.target.closest('[data-kr-del]');
-      if (!del) return;
-      const id = del.dataset.krDel;
-      const rule = allKeepRules().find(r => r.id === id);
-      if (!confirm(`删除自定义规则「${rule ? rule.name : id}」？`)) return;
-      state.keepRules.custom = state.keepRules.custom.filter(r => r.id !== id);
-      state.keepRules.enabled = state.keepRules.enabled.filter(x => x !== id);
-      save(); renderKeepRules(); renderPlan();
-      toast('已删除规则');
+      if (del) {
+        const id = del.dataset.krDel;
+        const rule = allKeepRules().find(r => r.id === id);
+        if (!confirm(`删除自定义规则「${rule ? rule.name : id}」？`)) return;
+        state.keepRules.custom = state.keepRules.custom.filter(r => r.id !== id);
+        state.keepRules.enabled = state.keepRules.enabled.filter(x => x !== id);
+        if ($('#krEditing').value === id) resetKrForm();
+        save(); renderKeepRules(); renderPlan();
+        toast('已删除规则');
+        return;
+      }
+      const ed = e.target.closest('[data-kr-edit]');
+      if (ed) { editKeepRule(ed.dataset.krEdit); return; }
+      const rs = e.target.closest('[data-kr-reset]');
+      if (rs) {
+        const id = rs.dataset.krReset;
+        delete krOverrides()[id];            // 删掉覆盖层 = 恢复出厂设置
+        if ($('#krEditing').value === id) resetKrForm();
+        save(); renderKeepRules(); renderPlan();
+        toast('已恢复默认设置');
+      }
     });
   }
+  if ($('#btnKrCancel')) $('#btnKrCancel').onclick = resetKrForm;
+
   if ($('#btnKrAdd')) $('#btnKrAdd').onclick = () => {
     const name = ($('#krName').value || '').trim();
+    const desc = ($('#krDesc').value || '').trim();
     const slot = $('#krSlot').value;
     const mains = [...document.querySelectorAll('#krMains input:checked')].map(i => i.value);
     const pool = [...document.querySelectorAll('#krPool input:checked')].map(i => i.value);
-    const minHit = Math.max(0, Math.min(4, +$('#krMinHit').value || 0));
+    const required = [...document.querySelectorAll('#krRequired input:checked')].map(i => i.value);
     if (!name) return toast('请填写规则名称');
     if (!mains.length) return toast('请至少勾选一个要留的主要属性');
-    const id = 'custom_' + Date.now().toString(36);
-    state.keepRules.custom.push({
-      id, name, desc: '自定义保留规则', builtin: false,
-      slot, mains, required: [], pool, minHit,
-    });
-    state.keepRules.enabled.push(id);
-    $('#krName').value = '';
+
+    const editingId = $('#krEditing').value;
+    const fields = { name, desc, slot, mains, required, pool };
+
+    if (editingId) {
+      const builtin = KEEP_RULES.find(r => r.id === editingId);
+      if (builtin) {
+        // 内置规则：只把「与出厂值不同的字段」写进覆盖层，其余保持出厂
+        const patch = {};
+        KR_EDITABLE.forEach(k => {
+          if (JSON.stringify(fields[k]) !== JSON.stringify(builtin[k])) patch[k] = fields[k];
+        });
+        if (Object.keys(patch).length) krOverrides()[editingId] = patch;
+        else delete krOverrides()[editingId];
+        toast(`已修改内置规则：${name}`);
+      } else {
+        // 自定义规则：就地更新
+        const r = state.keepRules.custom.find(x => x.id === editingId);
+        if (r) Object.assign(r, fields);
+        toast(`已保存规则：${name}`);
+      }
+      resetKrForm();
+    } else {
+      const id = 'custom_' + Date.now().toString(36);
+      state.keepRules.custom.push({ id, builtin: false, ...fields });
+      state.keepRules.enabled.push(id);
+      $('#krName').value = '';
+      toast('已添加规则：' + name);
+    }
     save(); renderKeepRules(); renderPlan();
-    toast('已添加规则：' + name);
   };
   renderKeepRules();
 

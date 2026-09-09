@@ -105,7 +105,8 @@ const SUB_STATS = [
  *   mains    —— 要留的主要属性 id 列表（多个 = 任一即可）
  *   required —— ★必须追加属性（金标）
  *   pool     —— 追加属性池
- *   minHit   —— 追加属性池里命中任意 N 条即锁定（0 = 不限）
+ *
+ * 命中条数不再由规则自带：所有方案统一固定为「至少两条」（见 app.js SUB_MIN_HIT）。
  */
 const KEEP_RULES = [
   {
@@ -113,28 +114,28 @@ const KEEP_RULES = [
     desc: '空之杯主要属性为任意元素 / 物理伤害加成——掉率极低，是公认必留的稀有胚子',
     slot: 'goblet',
     mains: ['pyro', 'hydro', 'cryo', 'electro', 'anemo', 'geo', 'dendro', 'phys'],
-    required: [], pool: ['cr', 'cd', 'atkP', 'em', 'er'], minHit: 1,
+    required: [], pool: ['cr', 'cd', 'atkP', 'em', 'er'],
   },
   {
     id: 'circlet_crit', name: '双暴头', builtin: true,
     desc: '理之冠主要属性为暴击率 / 暴击伤害，追加属性带双暴等好词条即留',
     slot: 'circlet',
     mains: ['cr', 'cd'],
-    required: [], pool: ['cr', 'cd', 'atkP', 'em', 'er'], minHit: 2,
+    required: [], pool: ['cr', 'cd', 'atkP', 'em', 'er'],
   },
   {
     id: 'sands_er', name: '充能沙', builtin: true,
     desc: '时之沙主要属性为元素充能效率，追加属性带双暴 / 攻击等即留',
     slot: 'sands',
     mains: ['er'],
-    required: [], pool: ['cr', 'cd', 'atkP', 'em'], minHit: 2,
+    required: [], pool: ['cr', 'cd', 'atkP', 'em'],
   },
   {
     id: 'goblet_em', name: '精通杯', builtin: true,
     desc: '空之杯主要属性为元素精通——草系反应队常用，同样稀有',
     slot: 'goblet',
     mains: ['em'],
-    required: [], pool: ['cr', 'cd', 'er', 'atkP'], minHit: 1,
+    required: [], pool: ['cr', 'cd', 'er', 'atkP'],
   },
 ];
 
