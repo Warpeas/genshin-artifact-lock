@@ -406,33 +406,67 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .print-only{display:none;}
 .print-meta{font-size:11px;color:#666;margin:0 0 12px;}
 
-/* ---------- 游戏内锁定方案 ---------- */
-.gp-wrap{margin:0;padding:12px 16px 14px;background:#131a24;}
-.gp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+/* ---------- 游戏内锁定方案（候选区） ---------- */
+.gp-wrap{margin:10px 0;padding:12px 14px 14px;background:#131a24;border-radius:8px;}
+.gp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
 .gp-title{font-size:13px;font-weight:700;color:var(--gold,#e8c88a);}
 .gp-meta{font-size:11px;color:#7d8798;}
-.gp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px;}
-.gp-card{background:#1a2330;border:1px solid #2a3546;border-radius:8px;padding:10px 12px;}
-.gp-ctitle{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
-.gp-idx{font-size:12.5px;font-weight:700;color:#cfe3ff;background:#24374f;padding:2px 9px;border-radius:4px;}
-.gp-for{font-size:11.5px;color:#8a94a6;flex:1;min-width:120px;}
-.gp-copy{font-size:11px;padding:2px 8px;}
+.gp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px;}
 /* 散件 / 过渡 保留规则生成的方案卡（与主流程的「供谁使用」区分开） */
 .gp-card-rule{background:#1d2634;border-color:#3d4a3a;box-shadow:inset 3px 0 0 #7fbf6a;}
 .gp-rule-for{color:#a9d69b;font-weight:600;}
 .gp-rule-desc{font-size:11px;color:#7d8a78;margin:-2px 0 8px;line-height:1.5;}
-.gp-tbl{width:100%;border-collapse:collapse;font-size:11.5px;}
-.gp-tbl th{text-align:left;font-weight:600;color:#7d8798;padding:4px 6px;border-bottom:1px solid #2a3546;font-size:11px;}
-.gp-tbl td{padding:5px 6px;border-bottom:1px solid #222b38;vertical-align:top;line-height:1.6;}
-.gp-tbl tr:last-child td{border-bottom:none;}
-.gp-slot{color:#9fb0c6;white-space:nowrap;font-weight:600;}
+.gp-slot,.gp-mini .gp-slot{color:#9fb0c6;white-space:nowrap;font-weight:600;}
 .gp-main{display:inline-block;background:#233447;color:#bcd8f5;border:1px solid #33506e;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
 .gp-star{display:inline-block;background:#3d2f18;color:#f0c674;border:1px solid #6b5326;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;font-weight:600;}
 .gp-sub{display:inline-block;background:#232a33;color:#93a1b3;border:1px solid #333d4a;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
 .gp-fixed{color:#6f7b8c;font-size:11px;font-style:italic;}
-.gp-hit{white-space:nowrap;color:#9fb0c6;}
-.gp-hit b{color:var(--gold,#e8c88a);font-size:13px;}
 .gp-tip{margin:9px 0 0;font-size:11px;color:#6f7b8c;line-height:1.65;}
+
+/* ---------- 候选方案卡片（新版：方案级统一副词条 + 采纳 + 并入/拆回） ---------- */
+.gp-wrap{margin:10px 0;}
+.gp-meta.warn{color:#e8a45c;font-weight:600;}
+.gp-lead{margin:0 0 10px;font-size:11.5px;color:#7d8798;line-height:1.7;}
+.gp-lead b{color:#9fb0c6;}
+
+.gp-card{background:#1a2330;border:1px solid #2a3546;border-radius:8px;padding:9px 11px;transition:opacity .15s;}
+.gp-card-off{opacity:.45;}
+.gp-card-off .gp-subline,.gp-card-off .gp-mains{filter:saturate(.4);}
+.gp-ctitle{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.gp-idx{font-size:12px;font-weight:700;color:#cfe3ff;background:#24374f;padding:2px 8px;border-radius:4px;}
+.gp-adopt{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#8a94a6;cursor:pointer;user-select:none;}
+.gp-adopt input{width:15px;height:15px;accent-color:#7fbf6a;cursor:pointer;}
+.gp-for{font-size:11.5px;color:#8a94a6;flex:1;min-width:110px;line-height:1.5;}
+.gp-more{color:#6f7b8c;}
+.gp-badge{font-size:10.5px;color:#a9d69b;background:#22301f;border:1px solid #3d4a3a;padding:1px 6px;border-radius:3px;white-space:nowrap;}
+.gp-acts{display:inline-flex;align-items:center;gap:6px;margin-left:auto;}
+.gp-mergesel{font-size:11px;background:#131a24;color:#cfe3ff;border:1px solid #33506e;border-radius:4px;padding:2px 6px;max-width:190px;}
+.gp-mergesel:focus{outline:none;border-color:var(--gold,#e8c88a);}
+.gp-split{font-size:11px;padding:2px 8px;}
+.gp-copy{font-size:11px;padding:2px 8px;}
+
+/* 追加属性：方案级唯一一份，五部位共用，写在标题下方 */
+.gp-subline{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;
+  padding:6px 8px;margin-bottom:6px;background:#16202c;border:1px solid #26313f;border-radius:6px;}
+.gp-subline .gp-lab{font-size:10.5px;color:#6f7b8c;white-space:nowrap;}
+.gp-subline .gp-val{font-size:11.5px;color:#cfe3ff;line-height:1.6;}
+.gp-subline .gp-val+.gp-lab{margin-left:8px;}
+/* 主词条：紧凑行，一行一个部位 */
+.gp-mains{display:flex;flex-direction:column;gap:2px;}
+.gp-mini{display:grid;grid-template-columns:56px 1fr;align-items:start;gap:6px;
+  padding:3px 4px;border-bottom:1px dashed #212a37;font-size:11.5px;}
+.gp-mini:last-child{border-bottom:none;}
+.gp-mini .gp-cell{line-height:1.7;}
+
+/* 顶部采纳提示 */
+.pick-info:empty{display:none;}
+.pick-info{margin:0 0 10px;}
+.pick-warn{background:#2b2118;border:1px solid #5c4526;border-radius:7px;
+  padding:8px 11px;font-size:11.5px;color:#e6c795;line-height:1.7;}
+.pick-warn b{color:var(--gold,#e8c88a);}
+.ctl-inline{display:inline-flex;align-items:center;gap:6px;}
+.ctl-inline input[type=range]{width:96px;accent-color:var(--gold,#e8c88a);}
+.ctl-inline b{font-size:11.5px;color:var(--gold,#e8c88a);min-width:30px;}
 
 /* ---------- 散件 / 过渡 保留规则面板 ---------- */
 .kr-card{margin-bottom:12px;}
@@ -441,7 +475,6 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .kr-item{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:4px 8px;
   padding:7px 9px;border:1px solid #2a3546;border-radius:7px;background:#141c26;cursor:pointer;line-height:1.5;}
 .kr-item.on{border-color:#3d5a3a;background:#16241a;}
-.kr-item.truncated{opacity:.62;border-style:dashed;}
 .kr-item input[type=checkbox]{width:15px;height:15px;accent-color:#7fbf6a;cursor:pointer;}
 .kr-name{font-size:12.5px;font-weight:600;color:#cfe3ff;}
 .kr-slot{font-size:11px;color:#7d8798;background:#223041;border:1px solid #2f4356;border-radius:4px;padding:1px 6px;}
@@ -469,38 +502,6 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .kr-pick{grid-template-columns:1fr;}
 }
 
-/* ---------- 手动合并面板 ---------- */
-.gp-merge{margin:0 0 12px;border:1px solid #3a4a5e;border-radius:8px;background:#18202b;overflow:hidden;}
-.gp-merge>summary{
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding:8px 12px;cursor:pointer;list-style:none;user-select:none;background:#1d2733;
-}
-.gp-merge>summary::-webkit-details-marker{display:none;}
-.gp-merge>summary::before{content:'▸ ';color:var(--gold,#e8c88a);}
-.gp-merge[open]>summary::before{content:'▾ ';}
-.gp-merge-title{font-size:12.5px;font-weight:600;color:#cfe3ff;}
-.gp-merge-title b{color:var(--gold,#e8c88a);}
-.gp-merge-hint{font-size:11px;color:#7d8798;}
-.gp-merge-body{padding:8px 12px 10px;}
-.gp-mhead,.gp-mrow{
-  display:grid;grid-template-columns:minmax(130px,1fr) minmax(160px,1.5fr) minmax(170px,1.6fr) 92px;
-  gap:10px;align-items:center;
-}
-.gp-mhead{padding:0 0 6px;font-size:11px;color:#6f7b8c;border-bottom:1px solid #2a3546;}
-.gp-mrow{padding:5px 0;border-bottom:1px dashed #222b38;font-size:12px;}
-.gp-mrow:last-of-type{border-bottom:none;}
-.gp-mname{color:var(--txt,#e6edf5);font-weight:600;line-height:1.5;}
-.gp-minfo{color:#8a94a6;font-size:11px;line-height:1.5;}
-.gp-msubs{color:#8a94a6;font-size:11px;line-height:1.5;}
-/* ★必选词条单独高亮，一眼看出这组的核心副词条 */
-.gp-msubs .gp-mstar{color:var(--gold,#e8c88a);font-weight:600;}
-.gp-msel{
-  background:#243040;color:#cfe3ff;border:1px solid #3a4a5e;border-radius:5px;
-  padding:3px 6px;font-size:11.5px;width:100%;cursor:pointer;
-}
-.gp-msel:focus{outline:none;border-color:var(--gold,#e8c88a);}
-.gp-mfoot{display:flex;align-items:center;gap:10px;margin-top:9px;}
-.gp-mtip{font-size:11px;color:#6f7b8c;}
 
 /* ============================================================
  * 手机端竖屏适配（≤ 560px）
@@ -575,27 +576,14 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .slot-name{width:100%;padding:7px 12px;border-right:none;border-bottom:1px solid var(--line);}
   .slot-cells{padding:9px 12px;}
 
-  /* --- 游戏内方案：表格转「部位 | 内容」两列块，避免横向挤压 --- */
+  /* --- 游戏内方案：候选卡在窄屏下堆叠，操作区换行铺满 --- */
   .gp-wrap{padding:10px 12px 12px;}
   .gp-cards{grid-template-columns:1fr;gap:10px;}
-  .gp-tbl thead{display:none;}
-  .gp-tbl tr{
-    display:grid;grid-template-columns:58px 1fr;gap:2px 8px;align-items:start;
-    padding:7px 0;border-bottom:1px dashed #26303d;
-  }
-  .gp-tbl tr:last-child{border-bottom:none;}
-  .gp-tbl td{padding:0;border-bottom:none;}
-  .gp-tbl td.gp-slot{grid-column:1;grid-row:1;font-size:12px;}
-  .gp-tbl td:nth-child(2){grid-column:2;grid-row:1;}
-  .gp-tbl td:nth-child(3){grid-column:2;grid-row:2;}
-  .gp-tbl td.gp-hit{grid-column:1;grid-row:2;font-size:10.5px;line-height:1.5;white-space:normal;}
-  .gp-hit b{font-size:12px;}
-
-  /* --- 手动合并面板 --- */
-  .gp-mhead{display:none;}
-  .gp-mrow{grid-template-columns:1fr 92px;gap:3px 8px;padding:8px 0;}
-  .gp-msel{grid-column:2;grid-row:1;padding:6px 8px;min-height:34px;}
-  .gp-minfo{grid-column:1 / -1;}
+  .gp-ctitle{gap:6px;}
+  .gp-for{min-width:0;flex-basis:100%;order:3;}
+  .gp-acts{width:100%;margin-left:0;justify-content:flex-end;flex-wrap:wrap;}
+  .gp-mergesel{flex:1;max-width:none;min-width:120px;padding:6px 8px;min-height:34px;}
+  .gp-mini{grid-template-columns:52px 1fr;}
 
   /* --- 副词条页 --- */
   .sub-inputs{grid-template-columns:1fr;}
@@ -635,7 +623,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 
   /* iOS 聚焦输入框会自动放大页面，字号 ≥16px 可避免 */
   .toolbar input[type=search],.fld select,.fld input,input[type=text],input.txt,
-  .sub-input input,.build-item select,.ms-item select,.gp-msel,
+  .sub-input input,.build-item select,.ms-item select,.gp-mergesel,
   .copy-row select,#edAddSub,.sm-row input[type=text]{font-size:16px;}
 }
 

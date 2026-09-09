@@ -97,12 +97,40 @@ function load() {
       }
     }
   } catch (e) { console.warn('读取本地数据失败', e); }
-  return normalize({ characters: buildDefaultCharacters(), sets: defaultSets(), planAssign: {} });
+  return normalize({ characters: buildDefaultCharacters(), sets: defaultSets(), planCfg: {} });
 }
 
 /* 默认套装列表（内置套装 + 空自定义列表） */
 function defaultSets() {
   return SETS.map(s => ({ name: s.name, bonus: s.bonus, builtin: true, hidden: false }));
+}
+
+/* planCfg 归一化：{ 套装名: { merge: [[key...]], hide: [key...] } }
+ *   只保留结构合法的条目；成员不足 2 个的 merge 组视为无效（已无意义） */
+function normalizePlanCfg(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  Object.entries(raw).forEach(([setName, cfg]) => {
+    if (!cfg || typeof cfg !== 'object') return;
+    const merge = (Array.isArray(cfg.merge) ? cfg.merge : [])
+      .map(g => (Array.isArray(g) ? g.filter(k => typeof k === 'string') : []))
+      .filter(g => g.length >= 2);
+    const hide = (Array.isArray(cfg.hide) ? cfg.hide : []).filter(k => typeof k === 'string');
+    // 已并入某组的候选，不要再单独躺在 hide 里
+    const mergedFlat = new Set(merge.flat());
+    out[setName] = { merge, hide: hide.filter(k => !mergedFlat.has(k)) };
+  });
+  return out;
+}
+
+/* 取某套装的 planCfg（不存在则返回空结构，调用方可安全读写后存回） */
+function planCfgOf(setName) {
+  if (!state.planCfg) state.planCfg = {};
+  if (!state.planCfg[setName]) state.planCfg[setName] = { merge: [], hide: [] };
+  const c = state.planCfg[setName];
+  if (!Array.isArray(c.merge)) c.merge = [];
+  if (!Array.isArray(c.hide)) c.hide = [];
+  return c;
 }
 
 function normalize(o) {
@@ -131,8 +159,10 @@ function normalize(o) {
   });
   delete o.customSets;
 
-  // 用户对「哪些角色合并到哪个方案槽」的手动指定：{ 套装名: { 组指纹: 槽位下标 } }
-  o.planAssign = (o.planAssign && typeof o.planAssign === 'object') ? o.planAssign : {};
+  // 用户对候选方案的手动整理结果：{ 套装名: { merge: [[key,key,...]], hide: [key] } }
+  //   merge = 若干个「并入同一套」的候选组合；hide = 弃用的候选（不采纳，也不参与导出）
+  o.planCfg = normalizePlanCfg(o.planCfg);
+  delete o.planAssign;   // 旧字段（组指纹 → 槽位下标），已被 3 槽位限制一同废弃
   // 散件 / 过渡 保留规则：enabled = 启用的规则 id 列表，custom = 用户自定义规则
   o.keepRules = normalizeKeepRules(o.keepRules);
   o.characters = o.characters.map(c => ({
@@ -583,8 +613,12 @@ function globalWeights() {
  *   ⑤ 至少命中 N：round(组内平均核心词条数 × 部位严格度系数)，
  *      下限 = ★必须数量（否则★之外的候选形同虚设），上限 = min(4, 候选池-1)
  * ============================================================ */
-const MERGE_SIM_TH = 0.95; // 需求「几乎一致」的角色自动并为一组（节省预设名额）
-const MANUAL_MAX_GROUPS = 9; // 单套装自然分组上限（再多就先强制合并，避免手动列表过长）
+const MERGE_FIT    = 0.72; // 默认「贴合度下限」：合并后方案的贴合度低于它就停手（界面可调）
+const SUB_SIM_W     = 0.75; // 相似度里「副词条倾向」的权重，其余给主属性（以副词条聚类）
+const FIT_COV_W    = 0.8;  // 贴合度里「成员需求被代表程度」的权重
+const FIT_WIDTH_W  = 0.2;  // 贴合度里「候选池宽度」的权重（候选池越宽越不贴合）
+const CAND_SOFT_CAP = 24;   // 候选数保护上限（防止极端数据下列表过长，正常不会触发）
+const GAME_MAX_PRESET = 3;  // 游戏内每种套装至多 3 个自定义预设（仅作提示，工具侧不再硬限制）
 const MAIN_MAX    = 3;     // 单部位主属性上限（条件过宽会「存伪」）
 const MAIN_COVER  = 0.7;   // 主属性取到累计覆盖该比例为止
 
@@ -614,11 +648,12 @@ function cosSim(a, b) {
   return d ? dot / d : 0;
 }
 
-/* 角色需求相似度：主属性重合度为主，副词条倾向为辅 */
+/* 角色需求相似度：副词条倾向为主，主属性为辅
+ *   本次改为「按副词条需求聚类」，所以副词条权重占大头（SUB_SIM_W） */
 function roleSimilarity(a, b) {
   let ms = 0;
   ['sands', 'goblet', 'circlet'].forEach(slot => { ms += jaccard(a.mains[slot], b.mains[slot]); });
-  return 0.65 * (ms / 3) + 0.35 * cosSim(a.subs, b.subs);
+  return SUB_SIM_W * cosSim(a.subs, b.subs) + (1 - SUB_SIM_W) * (ms / 3);
 }
 
 function groupSim(g1, g2) {
@@ -627,15 +662,70 @@ function groupSim(g1, g2) {
   return n ? sum / n : 0;
 }
 
-/* ①-a 自然分组
- *   只把「需求几乎一致」（相似度 ≥ MERGE_SIM_TH）的角色并为一组，其余保持独立。
- *   这样得到的分组保留最大差异度，供后续自动或手动归入方案槽。
- *   capGroups：组数上限保护（防止一个套装下几十个角色时列表过长）
+/* 方案贴合度（0–1，越高越贴合）：用来判断「还能不能再合一次」
+ *   ① 覆盖率：拿合并后的候选池对照每个成员自己的【有序】需求表，按名次加权计算
+ *      「还剩下多少被代表」——最看重的第 1 名没进池，扣得最多
+ *   ② 宽度：候选池越宽越接近「不限」，筛选意义越弱
+ *
+ *   为什么不用「相似度阈值」直接卡：真实数据里大量角色共用同一套预设，
+ *   相似度非 1 即 0.75 左右，是台阶式分布，阈值滑块会变成几档跳变（实测
+ *   0.75 一处候选数从 238 直接掉到 90）。贴合度是连续量，滑块才能平滑控制。
  */
-function naturalClusters(roles, capGroups) {
+function planFit(group) {
+  if (!group.length) return 1;
+  const pool = new Set(mergeSubUniform(group).pool);
+  let cov = 0;
+  group.forEach(r => {
+    const list = r.subList || [];
+    let num = 0, den = 0;
+    list.forEach((s, i) => {
+      const w = Math.pow(SUB_RANK_DECAY, i);
+      den += w;
+      if (pool.has(statIdOf(s))) num += w;
+    });
+    cov += den ? num / den : 1;
+  });
+  cov = cov / group.length;
+  const width = Math.max(0, pool.size - 1) / Math.max(1, SUB_POOL_MAX - 1);
+  return FIT_COV_W * cov + FIT_WIDTH_W * (1 - Math.min(1, width));
+}
+
+/* ①-a 自然分组（本次改造的核心）
+ *   【按副词条需求合并】：每一步都在「当前最相似的两组」里挑，保证并起来的
+ *   一定是副词条需求最接近的；但【停不停手】改由「合并后贴合度」决定——
+ *   贴合度仍在下限以上才允许并，否则保留为独立候选。
+ *   下限越高 → 分得越细、候选越多越贴合；越低 → 并得越狠、候选越少越宽松。
+ *   不再有 3 个槽位的硬限制，每组日后即成为一份「候选方案」。
+ */
+function naturalClusters(roles, floor) {
+  const minFit = (typeof floor === 'number') ? floor : MERGE_FIT;
   const groups = roles.map(r => [r]);
 
-  const bestPair = () => {
+  // 按相似度降序找「第一个合并后贴合度仍达标」的组合
+  const nextMerge = () => {
+    const pairs = [];
+    for (let i = 0; i < groups.length; i++) {
+      for (let j = i + 1; j < groups.length; j++) {
+        pairs.push({ s: groupSim(groups[i], groups[j]), i, j });
+      }
+    }
+    pairs.sort((a, b) => b.s - a.s);
+    for (const p of pairs) {
+      const merged = groups[p.i].concat(groups[p.j]);
+      if (planFit(merged) >= minFit) return { ...p, merged };
+    }
+    return null;
+  };
+
+  while (groups.length > 1) {
+    const best = nextMerge();
+    if (!best) break;
+    groups[best.i] = best.merged;
+    groups.splice(best.j, 1);
+  }
+
+  // 保护上限：极端数据下防止候选列表过长（正常不会触发）
+  while (groups.length > CAND_SOFT_CAP) {
     let best = null;
     for (let i = 0; i < groups.length; i++) {
       for (let j = i + 1; j < groups.length; j++) {
@@ -643,63 +733,11 @@ function naturalClusters(roles, capGroups) {
         if (!best || s > best.s) best = { s, i, j };
       }
     }
-    return best;
-  };
-
-  // 自愿合并：需求几乎一致的角色共用一个槽位，把名额让给差异更大的角色
-  while (groups.length > 1) {
-    const best = bestPair();
-    if (!best || best.s < MERGE_SIM_TH) break;
-    groups[best.i] = groups[best.i].concat(groups[best.j]);
-    groups.splice(best.j, 1);
-  }
-
-  // 组数保护：超出上限时强制合并最相似的两组
-  while (capGroups && groups.length > capGroups) {
-    const best = bestPair();
     if (!best) break;
     groups[best.i] = groups[best.i].concat(groups[best.j]);
     groups.splice(best.j, 1);
   }
   return groups;
-}
-
-/* 组的指纹：组内角色名排序后拼接，用于持久化用户的手动归属 */
-function groupKey(g) {
-  return g.map(r => r.name).sort().join('+');
-}
-
-/* ①-b 自动槽位分配：把若干组贪心归并到 ≤ maxPlans 个桶（每次合并最相似的桶），
- *      作为「手动合并」面板的预填值；返回「每组所属槽位下标」 */
-function autoBuckets(groups, maxPlans) {
-  const buckets = groups.map((g, i) => ({ ids: [i], roles: g.slice() }));
-  while (buckets.length > maxPlans) {
-    let best = null;
-    for (let i = 0; i < buckets.length; i++) {
-      for (let j = i + 1; j < buckets.length; j++) {
-        const s = groupSim(buckets[i].roles, buckets[j].roles);
-        if (!best || s > best.s) best = { s, i, j };
-      }
-    }
-    if (!best) break;
-    buckets[best.i].ids = buckets[best.i].ids.concat(buckets[best.j].ids);
-    buckets[best.i].roles = buckets[best.i].roles.concat(buckets[best.j].roles);
-    buckets.splice(best.j, 1);
-  }
-  const assign = new Array(groups.length).fill(0);
-  buckets.forEach((b, k) => b.ids.forEach(id => { assign[id] = k; }));
-  return assign;
-}
-
-/* ①-c 最终归属：以用户手动指定为准，未指定 / 越界的组回落到自动分配 */
-function resolveAssign(setName, groups, maxPlans) {
-  const auto = autoBuckets(groups, maxPlans);
-  const saved = (state.planAssign && state.planAssign[setName]) || null;
-  if (!saved) return auto;
-  return groups.map((g, i) => {
-    const v = saved[groupKey(g)];
-    return (Number.isInteger(v) && v >= 0 && v < maxPlans) ? v : auto[i];
-  });
 }
 
 /* ② 合并一组角色在某部位的主属性需求
@@ -728,24 +766,23 @@ function mergeMain(group, slot) {
 /* 花/羽的主词条（固定值），该词条不可能作为同部位的副词条出现 */
 const FIXED_MAIN = { flower: 'hp', plume: 'atk' };
 
-/* ③④⑤ 合并一组角色在【某个部位】的追加属性条件 —— 每个部位独立计算
- *   ① 冲突剔除：副词条不可能与同部位主词条相同，任何已选主词条都必须从候选池剔除，
- *      否则把它设成★会导致该件【永远不满足】而无法锁定
- *   ② ★必须：组内「所有」角色都勾选了必选的词条（剔除冲突项后），按平均名次权重降序，最多 2 个
- *   ③ 候选池：组内任一角色前 SUB_POOL_TOP 条需求（剔除冲突项），按「广度 × 名次」降序
- *   ④ 包含任意 N 条：以【未剔除的】组内平均核心词条数为基准 × 部位严格度系数，
- *      下限 = ★必须数量，上限 = min(4, 候选池-1, 3)
+/* ③④⑤ 合并一组角色的追加属性条件 —— 【全方案唯一一份，五个部位共用】
+ *   ① 冲突剔除：副词条不可能与同部位主词条相同。改为方案级统一后，只能剔除
+ *      花 / 羽的固定主词条（hp / atk，这两部位主词条恒定）；其余部位的主词条随
+ *      方案而变，无法再逐部位剔除——这是「统一副词条」换取一致性的固有取舍。
+ *   ② ★必须：组内「所有」角色都标了必选的词条（交集），按平均名次权重降序，最多 2 个
+ *   ③ 候选池：组内任一角色前 SUB_POOL_TOP 条需求，按「广度 × 名次」累加降序
+ *   ④ 包含任意 N 条：以组内平均核心词条数为基准 × 最宽松部位系数（宁可锁松也不漏）
  */
-function mergeSubSlot(group, slot, mainIds) {
+function mergeSubUniform(group) {
   const n = group.length;
-  const banned = new Set(mainIds || []);
-  if (FIXED_MAIN[slot]) banned.add(FIXED_MAIN[slot]);   // 花/羽主词条固定，恒冲突
+  if (!n) return { required: [], pool: [], minHit: 0 };
+  const banned = new Set([FIXED_MAIN.flower, FIXED_MAIN.plume]);  // 花/羽主词条固定，恒冲突
 
-  /* 原始核心词条（用于统计需求广度，不做冲突剔除） */
   const rawCores = group.map(r => r.core);
   const avgW = id => group.reduce((s, r) => s + (r.subs[id] || 0), 0) / n;
 
-  /* ② ★必须：全员共有的「必选」标记 */
+  /* ② ★必须：组内全员必选的交集 */
   const reqCnt = new Map();
   group.forEach(r => new Set(r.req || []).forEach(raw => {
     const id = statIdOf(raw);
@@ -774,23 +811,82 @@ function mergeSubSlot(group, slot, mainIds) {
   if (!pool.length) return { required: [], pool: [], minHit: 0 };  // 只挑主词条，副词条不限
 
   const rawCore = rawCores.reduce((s, l) => s + l.length, 0) / n;
-  const strict = SLOT_STRICT[slot] || 1;
+  // 统一取值：沿用最宽松部位的系数（空之杯 0.8），宁可锁松也不漏
+  const strict = Math.min(...Object.values(SLOT_STRICT));
   const cap = Math.min(4, Math.max(required.length, Math.min(pool.length - 1, 3), 1));
   const minHit = Math.min(cap, Math.max(Math.round(rawCore * strict), required.length, 1));
   return { required, pool, minHit };
 }
 
-/* 把若干【自然分组】合并成一个方案 */
-function mergeGroups(gs) {
-  const g = gs.flat();
-  const slots = {};
+/* 融合两份副词条条件（手动合并方案时用）：
+ *   ★必须取交集（两边都要才算必须）、候选池取并集、包含条数取小值（更宽松） */
+function fuseSub(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  const required = a.required.filter(id => b.required.includes(id));
+  const pool = [...new Set([...a.pool, ...b.pool])];
+  required.forEach(id => { if (!pool.includes(id)) pool.unshift(id); });
+  return {
+    required,
+    pool: pool.slice(0, SUB_POOL_MAX),
+    minHit: Math.min(a.minHit, b.minHit),
+  };
+}
+
+/* 一组角色 -> 候选方案（副词条条件全方案统一） */
+function planFromGroup(group) {
+  const mains = {};
   SLOTS.forEach(sd => {
-    // 花 / 羽 主词条固定，游戏内只能设追加属性
-    const main = (sd.id === 'flower' || sd.id === 'plume') ? null : mergeMain(g, sd.id);
-    // 每个部位独立聚合副词条规则
-    slots[sd.id] = { main, sub: mergeSubSlot(g, sd.id, main || []) };
+    // 花 / 羽主词条固定，游戏内只能设追加属性
+    mains[sd.id] = (sd.id === 'flower' || sd.id === 'plume') ? null : mergeMain(group, sd.id);
   });
-  return { chars: g.map(r => r.name), slots };
+  const names = group.map(r => r.name);
+  return {
+    kind: 'chars',
+    key: 'g:' + [...names].sort().join('+'),
+    chars: names,
+    sub: mergeSubUniform(group),
+    mains,
+    _group: group,          // 保留原始角色组，供手动合并时重算权重
+  };
+}
+
+/* 把若干候选方案手动合并成一套（不再涉及槽位分配） */
+function mergePlans(list) {
+  const ps = list.filter(Boolean);
+  if (!ps.length) return null;
+  if (ps.length === 1) return ps[0];
+
+  const groups = ps.flatMap(p => p._group || []);
+  const nonGroup = ps.filter(p => !(p._group && p._group.length));
+
+  // 角色类：用合并后的原始角色组重算，权重最准；规则类：按 fuseSub 逐份融合
+  let acc = groups.length ? mergeSubUniform(groups) : null;
+  const rest = acc ? nonGroup : nonGroup.slice(1);
+  if (!acc && nonGroup.length) acc = nonGroup[0].sub;
+  rest.forEach(p => { acc = fuseSub(acc, p.sub); });
+
+  const mains = {};
+  SLOTS.forEach(sd => {
+    if (sd.id === 'flower' || sd.id === 'plume') { mains[sd.id] = null; return; }
+    const seen = new Set();
+    ps.forEach(p => (p.mains[sd.id] || []).forEach(id => seen.add(id)));
+    mains[sd.id] = [...seen];
+  });
+
+  const rules = ps.filter(p => p.kind === 'rule');
+  return {
+    kind: rules.length === ps.length ? 'rule' : 'chars',
+    key: mergeResultKey(ps.map(p => p.key)),
+    chars: ps.flatMap(p => p.chars || []),
+    ruleName: rules.length ? rules.map(r => r.ruleName).join(' + ') : '',
+    ruleDesc: '',
+    mergedCount: ps.length,
+    merged: ps.map(p => p.key),
+    sub: acc || { required: [], pool: [], minHit: 0 },
+    mains,
+    _group: groups.length ? groups : null,
+  };
 }
 
 /* 角色在某套装下，由「使用该套装的配装组」提供词条需求；
@@ -825,40 +921,54 @@ function toRoles(charList, setName) {
     });
 }
 
-/* 生成某套装的游戏内锁定方案（≤ maxPlans 个）
- * 返回 { plans, groups, assign }：
- *   plans  —— 下标即方案槽位号（可能跳号，空槽为 null）
- *   groups —— 自然分组结果（供用户手动指定归属）
- *   assign —— 每个组当前归入的槽位号
- */
-function buildGamePlanInfo(charList, maxPlans, setName) {
+/* ============================================================
+ * 候选方案生成（本次改造的核心管道）
+ *   不再有「几个槽位」的概念：按副词条需求把角色聚成若干候选，
+ *   散件 / 过渡规则也作为候选同权参与，之后由用户合并 / 挑选。
+ * ============================================================ */
+
+/* 生成某套装的全部候选方案 = 角色自然分组 + 启用的散件 / 过渡规则 */
+function buildPlanCandidates(charList, setName, threshold) {
   const roles = toRoles(charList, setName);
-  if (!roles.length) return { plans: [], groups: [], assign: [] };
-
-  const groups = naturalClusters(roles, MANUAL_MAX_GROUPS);
-  const assign = resolveAssign(setName, groups, maxPlans);
-
-  const bySlot = new Map();
-  groups.forEach((g, i) => {
-    const k = assign[i];
-    if (!bySlot.has(k)) bySlot.set(k, []);
-    bySlot.get(k).push(g);
-  });
-  const plans = new Array(maxPlans).fill(null);
-  bySlot.forEach((gs, k) => { plans[k] = mergeGroups(gs); });
-  return { plans, groups, assign, maxPlans };
+  const cands = roles.length ? naturalClusters(roles, threshold).map(planFromGroup) : [];
+  activeKeepRules().forEach(r => cands.push(ruleToPlan(r)));
+  return cands;
 }
 
-/* 只要方案数组（跳过空槽，重新连续编号） */
-function buildGamePlans(charList, maxPlans, setName) {
-  return buildGamePlanInfo(charList, maxPlans, setName).plans.filter(Boolean);
+/* 手动合并后生成的方案 key：由成员 key 排序拼接而成，可复算（拆回时靠它定位） */
+function mergeResultKey(keys) {
+  return 'm:' + [...keys].sort().join('|');
+}
+/* 一个候选的「原始成员 key」：已被合并过的方案展开回它的成员，方便继续往里并 */
+function baseKeysOf(p) {
+  return (p && p.merged && p.merged.length) ? p.merged.slice() : [p.key];
+}
+
+/* 套用用户的手工覆盖（把若干候选并为一套）→ 得到最终要展示的方案列表 */
+function applyPlanOverlay(setName, cands) {
+  const cfg = (state.planCfg && state.planCfg[setName]) || null;
+  if (!cfg || !Array.isArray(cfg.merge) || !cfg.merge.length) return cands;
+  const byKey = new Map(cands.map(c => [c.key, c]));
+  const consumed = new Set();
+  const out = [];
+  cfg.merge.forEach(keys => {
+    const members = (keys || []).map(k => byKey.get(k)).filter(Boolean);
+    if (members.length < 2) return;   // 成员已不存在（改了配装 / 阈值）→ 该合并自动失效
+    const merged = mergePlans(members);
+    if (merged) {
+      out.push(merged);
+      members.forEach(m => consumed.add(m.key));
+      byKey.set(merged.key, merged);   // 允许后续组再把它并进去（链式合并）
+    }
+  });
+  cands.forEach(c => { if (!consumed.has(c.key)) out.push(c); });
+  return out;
 }
 
 /* ============================================================
  * 散件 / 过渡 保留规则
  *   与具体角色无关，用于保留高价值散件（稀有主词条）或过渡 2 件套胚子。
- *   启用后每个规则独占一个游戏内预设槽位，角色需求合并方案自动压缩让位，
- *   保证「合并方案 + 规则」总数不超过官方上限（默认 3 个）。
+ *   每条启用的规则会转成一份候选方案，与角色聚类结果【同权】参与后续合并 / 采纳。
  * ============================================================ */
 function allKeepRules() {
   const custom = (state && state.keepRules && Array.isArray(state.keepRules.custom))
@@ -869,73 +979,109 @@ function keepRuleEnabled(id) {
   return !!(state && state.keepRules && Array.isArray(state.keepRules.enabled)
     && state.keepRules.enabled.includes(id));
 }
-/* 启用的规则，按给定预算截断（budget = 最多可占用几个槽位） */
-function activeKeepRules(budget) {
+/* 启用的散件 / 过渡 保留规则（不再有槽位预算限制，全部转为候选） */
+function activeKeepRules() {
   if (!state || !state.keepRules) return [];
-  return allKeepRules().filter(r => keepRuleEnabled(r.id))
-    .slice(0, Math.max(0, budget));
+  return allKeepRules().filter(r => keepRuleEnabled(r.id));
 }
-/* 规则 -> 方案对象（结构与 mergeGroups 一致，便于复用渲染 / 复制） */
+/* 规则 -> 候选方案（规则本就是单份副词条条件，天然符合「全方案统一」） */
 function ruleToPlan(rule) {
-  const slots = {};
+  const banned = new Set([FIXED_MAIN.flower, FIXED_MAIN.plume]);  // 花/羽主词条固定，恒冲突
+  const mains = {};
   SLOTS.forEach(sd => {
-    if (rule.slot === sd.id) {
-      slots[sd.id] = {
-        main: (rule.mains || []).slice(),
-        sub: {
-          required: (rule.required || []).slice(),
-          pool: (rule.pool || []).slice(),
-          minHit: rule.minHit || 0,
-        },
-      };
-    } else {
-      // 花 / 羽主词条固定；其余未涉及的部位对这条规则而言「不限」
-      slots[sd.id] = {
-        main: null,
-        sub: { required: [], pool: [], minHit: 0 },
-        free: !(sd.id === 'flower' || sd.id === 'plume'),
-      };
-    }
+    // 花 / 羽主词条固定，游戏内只能设追加属性
+    if (sd.id === 'flower' || sd.id === 'plume') { mains[sd.id] = null; return; }
+    // 命中的部位取规则指定的主词条，其余部位为「不限」（[]）
+    mains[sd.id] = (rule.slot === sd.id) ? (rule.mains || []).slice() : [];
   });
   return {
-    chars: [], rule: true, ruleId: rule.id,
-    ruleName: rule.name, ruleDesc: rule.desc || '', slots,
+    kind: 'rule',
+    key: 'r:' + rule.id,
+    chars: [],
+    ruleName: rule.name,
+    ruleDesc: rule.desc || '',
+    sub: {
+      required: (rule.required || []).filter(id => !banned.has(id)),
+      pool: (rule.pool || []).filter(id => !banned.has(id)),
+      minHit: rule.minHit || 0,
+    },
+    mains,
+    _group: null,
   };
 }
-/* 某套装的最终方案 = 角色需求合并方案 + 启用的散件规则（总数 ≤ maxPlans） */
-function buildSetPlans(chars, maxPlans, setName) {
-  // 有角色需求时给合并方案留 1 个槽位；该套装没人用时规则可用满
-  const reserve = chars.length ? 1 : 0;
-  const rules = activeKeepRules(maxPlans - reserve);
-  const mergeMax = maxPlans - rules.length;
-  let info = { plans: [], groups: [], assign: [], maxPlans: mergeMax };
-  let mergePlans = [];
-  if (mergeMax > 0 && chars.length) {
-    info = buildGamePlanInfo(chars, mergeMax, setName);
-    mergePlans = info.plans.filter(Boolean);
-  }
-  const rulePlans = rules.map(ruleToPlan);
-  return { plans: [...mergePlans, ...rulePlans], info, rules, mergeMax };
+
+/* 取 / 算某套装：候选方案 →（套用手工合并）→ 采纳中的方案，渲染与导出共用同一结果 */
+function setCandidates(chars, setName, threshold) {
+  return applyPlanOverlay(setName, buildPlanCandidates(chars, setName, threshold));
+}
+function adoptedPlans(chars, setName, threshold) {
+  const cfg = (state.planCfg && state.planCfg[setName]) || null;
+  const hide = new Set((cfg && cfg.hide) || []);
+  return setCandidates(chars, setName, threshold).filter(p => !hide.has(p.key));
+}
+/* 便捷入口：按套装名 + 当前界面参数重算候选（界面事件与导出共用，保证与页面一致） */
+function candsOfSet(setName) {
+  const el = $('#planAltBuild');
+  const b = computePlan(el ? el.checked : true).get(setName);
+  if (!b) return [];
+  const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
+  return setCandidates(chars, setName, clusterThreshold());
 }
 
-/* 单个方案转成游戏内操作步骤文本 */
-function planToGameText(setName, plan, idx) {
-  const who = plan.rule
+/* 界面上的「方案贴合度」滑块：数值 = 允许合并的贴合度下限 */
+function clusterThreshold() {
+  const el = $('#clusterTh');
+  const v = el ? parseFloat(el.value) : NaN;
+  return Number.isFinite(v) ? v : MERGE_FIT;
+}
+
+/* 方案的「适用对象」标题：角色组 / 散件规则 / 手动合并后的混合 */
+function planForText(p) {
+  if (p.kind === 'rule') {
+    return `<span class="gp-for gp-rule-for">🧩 散件 / 过渡保留：${esc(p.ruleName)}</span>`;
+  }
+  if (p.chars && p.chars.length) {
+    const more = p.chars.length > 6 ? ` <span class="gp-more">等 ${p.chars.length} 人</span>`
+      : (p.chars.length > 4 ? ` <span class="gp-more">共 ${p.chars.length} 人</span>` : '');
+    return `<span class="gp-for">供 ${p.chars.slice(0, 6).map(n => esc(n)).join('、')}${more} 使用</span>`;
+  }
+  return '<span class="gp-for">（未指定角色）</span>';
+}
+
+/* 方案级追加属性条件的统一渲染 —— 【五个部位共用这一份】 */
+function subCondText(sub) {
+  const req = sub.required || [];
+  const star = req.map(id => `<span class="gp-star">★${esc(subStatName(id))}</span>`).join('');
+  const rest = (sub.pool || []).filter(id => !req.includes(id))
+    .map(id => `<span class="gp-sub">${esc(subStatName(id))}</span>`).join('');
+  return (star || rest) ? star + rest : '<span class="gp-fixed">不限</span>';
+}
+function subHitText(sub) {
+  return sub.minHit ? `包含任意 <b>${sub.minHit}</b> 条` : '<span class="gp-fixed">不限</span>';
+}
+/* 单部位主词条：null = 固定（花 / 羽），[] = 不限 */
+function mainCondText(slotId, list) {
+  if (list === null || list === undefined) return '<span class="gp-fixed">主词条固定</span>';
+  return list.length
+    ? list.map(id => `<span class="gp-main">${esc(mainStatName(slotId, id))}</span>`).join('')
+    : '<span class="gp-fixed">不限</span>';
+}
+
+function planCopyText(setName, plan, idx) {
+  const who = plan.kind === 'rule'
     ? `散件 / 过渡保留：${plan.ruleName}`
     : `供 ${plan.chars.join('、')} 使用`;
   const L = [`  方案${idx + 1}（${who}）`];
+  // 追加属性是全方案统一的一份，先说一遍，五个部位再各自列主词条
+  const subAll = [...plan.sub.required.map(id => '★' + subStatName(id)),
+    ...plan.sub.pool.filter(id => !plan.sub.required.includes(id)).map(id => subStatName(id))].join('、');
+  L.push(`  追加属性（五个部位相同）：${subAll || '不限'}${plan.sub.minHit ? `　·　包含任意 ${plan.sub.minHit} 条` : ''}`);
   SLOTS.forEach(sd => {
-    const s = plan.slots[sd.id];
-    const mainTxt = s.main && s.main.length
-      ? s.main.map(id => mainStatName(sd.id, id)).join('、')
-      : (s.free ? '不限' : '（固定）');
-    const stars = s.sub.required.map(id => '★' + subStatName(id)).join(' ');
-    const rest = s.sub.pool.filter(id => !s.sub.required.includes(id))
-      .map(id => subStatName(id)).join('、');
-    const subTxt = [stars, rest].filter(Boolean).join(' / ');
-    L.push(s.sub.minHit
-      ? `  ${sd.name}：主属性 ${mainTxt}；追加 ${subTxt || '不限'}，包含任意 ${s.sub.minHit} 条`
-      : `  ${sd.name}：主属性 ${mainTxt}；追加属性不限`);
+    const list = plan.mains[sd.id];
+    const mainTxt = list === null || list === undefined
+      ? '主词条固定'
+      : (list.length ? list.map(id => mainStatName(sd.id, id)).join('、') : '不限');
+    L.push(`  ${sd.name}：主要属性 ${mainTxt}`);
   });
   return L.join('\n');
 }
@@ -1617,38 +1763,47 @@ function renderPlan() {
   if (!enabled) {
     $('#planBody').innerHTML = '<div class="card"><p class="muted">请先在「① 角色配置」页勾选你要养的角色，这里会自动生成锁定方案。</p></div>';
     $('#planSummary').innerHTML = '';
+    $('#pickInfo').innerHTML = '';
     return;
   }
 
   let blocks = Array.from(plan.entries());
   // 统计
-  let usedSets = 0, fodderSets = 0, planCount = 0;
+  let usedSets = 0, fodderSets = 0, planCount = 0, overSets = 0;
   blocks.forEach(([name, b]) => {
     const has = b.users.size > 0;
     if (has) usedSets++; else fodderSets++;
   });
 
   const setWeights = setSubRanking(includeAlt);
-  const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
-  renderKeepRules();   // 槽位 / 启用条数变化会影响规则面板的计数与截断提示
+  const threshold = clusterThreshold();
+  renderKeepRules();   // 规则面板：启用状态 + 计数
 
   const html = blocks
     .filter(([name]) => setFilter === 'all' || name === setFilter)
     .filter(([name, b]) => !hideUnused || b.users.size > 0)
     .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
-    .map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights, maxPlans))
+    .map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights, threshold))
     .join('');
 
   blocks.forEach(([name, b]) => {
     if (!b.users.size) return;
     const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
-    planCount += buildGamePlans(chars, maxPlans, name).length;
+    const res = adoptedPlans(chars, name, threshold);
+    planCount += res.length;
+    if (res.length > GAME_MAX_PRESET) overSets++;
   });
+
+  const overTip = overSets
+    ? `<div class="pick-warn">⚠️ 有 <b>${overSets}</b> 个套装采纳了超过 ${GAME_MAX_PRESET} 套方案（当前共 ${planCount} 套）。
+       游戏内每种套装<b>至多 ${GAME_MAX_PRESET} 个自定义预设</b>，请在下方取消勾选或用「并入…」压缩到 ${GAME_MAX_PRESET} 套以内。</div>`
+    : '';
+  $('#pickInfo').innerHTML = overTip;
 
   $('#planSummary').innerHTML = `
     <div class="stat-box"><div class="sv">${enabled}</div><div class="sl">启用角色</div></div>
     <div class="stat-box"><div class="sv">${usedSets}</div><div class="sl">涉及套装</div></div>
-    <div class="stat-box"><div class="sv">${planCount}</div><div class="sl">锁定方案总数</div></div>
+    <div class="stat-box"><div class="sv">${planCount}</div><div class="sl">采纳方案总数</div></div>
     <div class="stat-box"><div class="sv">${fodderSets}</div><div class="sl">可整套清理的套装</div></div>`;
 
   $('#printMeta').textContent =
@@ -1660,12 +1815,12 @@ function renderPlan() {
 
 const ELEM_DMG_STATS = ['pyro', 'hydro', 'cryo', 'electro', 'anemo', 'geo', 'dendro', 'phys'];
 
-/* 渲染「散件 / 过渡 保留规则」面板：开关内置 / 自定义规则，并提示槽位占用 */
+/* 渲染「散件 / 过渡 保留规则」面板：开关内置 / 自定义规则
+ *   启用后每条规则会生成一份候选方案，与角色聚类结果同权出现在候选区 */
 function renderKeepRules() {
   const wrap = $('#keepRuleList');
   if (!wrap || !state || !state.keepRules) return;
-  const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
-  const active = activeKeepRules(Math.max(0, maxPlans - 1));
+  const active = activeKeepRules();
   const activeIds = new Set(active.map(r => r.id));
 
   wrap.innerHTML = allKeepRules().map(r => {
@@ -1688,25 +1843,23 @@ function renderKeepRules() {
 
   const cnt = $('#krCount');
   if (cnt) {
-    const left = Math.max(0, maxPlans - active.length);
     cnt.textContent = active.length
-      ? `已启用 ${active.length} 条 · 占 ${active.length} 个槽位，角色方案剩 ${left} 个`
+      ? `已启用 ${active.length} 条 · 生成 ${active.length} 个候选方案`
       : '未启用';
   }
 }
 
-function renderSetBlock(name, b, slotFilter, setWeights, maxPlans = 3) {
+function renderSetBlock(name, b, slotFilter, setWeights, threshold) {
   const bonus = allSetBonus()[name] || '';
   const users = Array.from(b.users.entries());
   const unused = users.length === 0;
 
-  // 游戏内锁定方案：把该套装下的角色需求聚类合并成 ≤ maxPlans 组
+  // 游戏内锁定方案：先把该套装下的角色按副词条需求聚成若干候选，
+  // 散件 / 过渡规则也作为候选加入，再由用户手动合并 / 勾选采纳
   const charsForPlan = state.characters.filter(c => c.enabled && b.users.has(c.name));
-  // 最终方案 = 角色需求合并方案（自动压缩槽位）+ 启用的散件 / 过渡保留规则
-  const combo = buildSetPlans(charsForPlan, maxPlans, name);
-  const info = { ...combo.info, plans: combo.plans, mergeMax: combo.mergeMax };
-  const gpHtml = combo.plans.length
-    ? renderGamePlans(name, info, maxPlans, slotFilter) : '';
+  const cands = charsForPlan.length
+    ? setCandidates(charsForPlan, name, threshold) : [];
+  const gpHtml = cands.length ? renderGamePlans(name, cands, slotFilter) : '';
 
   // 该套装的副词条需求排序（用于花/羽行提示）
   const rank = setWeights ? (setWeights.get(name) || {}).list : null;
@@ -1776,144 +1929,96 @@ function showDetail() {
   return !!(el && el.checked);
 }
 
-/* 一组角色的需求摘要（用于手动合并面板辨认该组是谁、要什么） */
-function groupBrief(g) {
-  const part = slot => {
-    const set = new Set();
-    g.forEach(r => (r.mains[slot] || []).slice(0, 2).forEach(m => set.add(m.stat)));
-    return [...set].slice(0, 3).map(id => mainStatName(slot, id)).join('/');
-  };
-  return `沙 ${part('sands')} · 杯 ${part('goblet')} · 冠 ${part('circlet')}`;
-}
+/* 渲染「游戏内锁定方案」候选区
+ *   设计要点：
+ *   ① 没有槽位上限，列出全部候选（角色聚类 + 散件 / 过渡规则），由用户勾选「采纳」
+ *   ② 每个方案的【五个部位共用同一份追加属性条件】，所以副属性只在卡片标题下写一次
+ *   ③ 每个方案给出「并入…」下拉，可与任意其它候选合并；合并后的方案可「拆回」
+ *   ④ 采纳数 > 游戏上限（3）时提示用户自行收敛
+ */
+function renderGamePlans(setName, cands, slotFilter = 'all') {
+  const cfg = (state.planCfg && state.planCfg[setName]) || { merge: [], hide: [] };
+  const hidden = new Set(cfg.hide || []);
+  const slotsTodo = SLOTS.filter(sd => slotFilter === 'all' || sd.id === slotFilter);
 
-/* 一组的副词条需求摘要：★ = 组内全员都标了必选，其余按「出现人数 × 名次」取前 3
- * 与主属性并排展示，方便判断这两组到底能不能并进同一个方案 */
-function groupSubBrief(g) {
-  const n = g.length;
-  const reqCnt = new Map();
-  g.forEach(r => (r.req || []).forEach(raw => {
-    const id = statIdOf(raw);
-    if (id) reqCnt.set(id, (reqCnt.get(id) || 0) + 1);
-  }));
-  const must = [...reqCnt.entries()].filter(([, c]) => c === n).map(([id]) => id);
+  const cards = cands.map((p, i) => {
+    const off = hidden.has(p.key);
+    // 「并入…」的候选目标：除自己以外的其它候选
+    const opts = cands.filter((q, j) => j !== i)
+      .map(q => `<option value="${esc(q.key)}">${esc(mergeTargetLabel(q))}</option>`).join('');
 
-  const score = new Map();
-  g.forEach(r => (r.pool || []).forEach(p => {
-    const id = statIdOf(p);
-    const w = (p && typeof p === 'object' && typeof p.w === 'number') ? p.w : 0;
-    if (id) score.set(id, (score.get(id) || 0) + w);
-  }));
-  const rest = [...score.entries()]
-    .filter(([id]) => !must.includes(id))
-    .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => id);
+    const rows = slotsTodo.map(sd => `
+      <div class="gp-mini">
+        <span class="gp-slot">${sd.name}</span>
+        <span class="gp-cell">${mainCondText(sd.id, p.mains[sd.id])}</span>
+      </div>`).join('');
 
-  if (!must.length && !rest.length) return '<span class="muted">不限</span>';
-  const starTxt = must.map(id => `<b class="gp-mstar">★${esc(subStatName(id))}</b>`).join(' ');
-  const restTxt = rest.map(id => esc(subStatName(id))).join(' > ');
-  return [starTxt, restTxt].filter(Boolean).join((must.length && rest.length) ? ' > ' : '');
-}
+    const subTxt = subCondText(p.sub);
+    const hitTxt = subHitText(p.sub);
 
-/* 渲染「手动合并」面板：自然分组数超过槽位时，让用户自己决定哪些组并到一个方案 */
-function renderMergePanel(setName, info) {
-  const { groups, assign, maxPlans } = info;
-  const rows = groups.map((g, i) => {
-    const opts = Array.from({ length: maxPlans }, (_, k) =>
-      `<option value="${k}"${assign[i] === k ? ' selected' : ''}>方案${k + 1}</option>`).join('');
     return `
-      <div class="gp-mrow">
-        <span class="gp-mname">${g.map(r => esc(r.name)).join('、')}</span>
-        <span class="gp-minfo">${esc(groupBrief(g))}</span>
-        <span class="gp-msubs">${groupSubBrief(g)}</span>
-        <select class="gp-msel" data-gp-assign="${esc(setName)}|${i}">${opts}</select>
-      </div>`;
-  }).join('');
-
-  return `
-  <details class="gp-merge"${Object.keys(state.planAssign[setName] || {}).length ? ' open' : ''}>
-    <summary>
-      <span class="gp-merge-title">✂️ 手动合并：需求分为 <b>${groups.length}</b> 组，需合并到 <b>${maxPlans}</b> 个方案槽</span>
-      <span class="gp-merge-hint">自动结果已预填，可自行调整每组归入哪个方案</span>
-    </summary>
-    <div class="gp-merge-body">
-      <div class="gp-mhead">
-        <span>角色组</span><span>主属性需求</span><span>副属性需求（★=全员必选）</span><span>归入</span>
-      </div>
-      ${rows}
-      <div class="gp-mfoot">
-        <button class="btn sm" data-gp-reset="${esc(setName)}">重置为自动合并</button>
-        <span class="gp-mtip">改动会随本地存档一起保存　·　把主 / 副属性需求相近的组并到一起最划算</span>
-      </div>
-    </div>
-  </details>`;
-}
-
-/* 渲染「游戏内锁定方案」区块 */
-function renderGamePlans(setName, info, maxPlans, slotFilter = 'all') {
-  const plans = info.plans;
-  const cards = plans.map((p, i) => {
-    if (!p) return '';
-    const rows = SLOTS
-      .filter(sd => slotFilter === 'all' || sd.id === slotFilter)
-      .map(sd => {
-      const s = p.slots[sd.id];
-      const mainTxt = s.main && s.main.length
-        ? s.main.map(id => `<span class="gp-main">${esc(mainStatName(sd.id, id))}</span>`).join('')
-        : (s.free ? '<span class="gp-fixed">不限</span>' : '<span class="gp-fixed">主词条固定</span>');
-      const stars = s.sub.required
-        .map(id => `<span class="gp-star">★${esc(subStatName(id))}</span>`).join('');
-      const rest = s.sub.pool.filter(id => !s.sub.required.includes(id))
-        .map(id => `<span class="gp-sub">${esc(subStatName(id))}</span>`).join('');
-      const subTxt = (stars || rest) ? stars + rest : '<span class="gp-fixed">不限</span>';
-      const hitTxt = s.sub.minHit
-        ? `任意 <b>${s.sub.minHit}</b> 条`
-        : '<span class="gp-fixed">不限</span>';
-      return `
-        <tr>
-          <td class="gp-slot">${sd.name}</td>
-          <td>${mainTxt}</td>
-          <td>${subTxt}</td>
-          <td class="gp-hit">${hitTxt}</td>
-        </tr>`;
-    }).join('');
-
-    const isRule = !!p.rule;
-    const forTxt = isRule
-      ? `<span class="gp-for gp-rule-for">🧩 散件 / 过渡保留：${esc(p.ruleName)}</span>`
-      : `<span class="gp-for">供 ${p.chars.map(n => esc(n)).join('、')} 使用</span>`;
-    const descHtml = (isRule && p.ruleDesc)
-      ? `<div class="gp-rule-desc">${esc(p.ruleDesc)}</div>` : '';
-    return `
-    <div class="gp-card${isRule ? ' gp-card-rule' : ''}">
+    <div class="gp-card${p.kind === 'rule' ? ' gp-card-rule' : ''}${off ? ' gp-card-off' : ''}">
       <div class="gp-ctitle">
-        <span class="gp-idx">方案${i + 1}</span>
-        ${forTxt}
-        <button class="btn sm gp-copy" data-gp-copy="${esc(setName)}|${i}">复制</button>
+        <label class="gp-adopt" title="取消勾选＝不采纳，不计入游戏内设置与导出">
+          <input type="checkbox" data-gp-adopt="${esc(setName)}|${esc(p.key)}"${off ? '' : ' checked'}>
+          <span>采纳</span>
+        </label>
+        <span class="gp-idx">${i + 1}</span>
+        ${planForText(p)}
+        ${p.mergedCount ? `<span class="gp-badge">已合并 ${p.mergedCount} 组</span>` : ''}
+        <span class="gp-acts">
+          ${opts
+            ? `<select class="gp-mergesel" data-gp-merge="${esc(setName)}|${esc(p.key)}" title="把本方案并入另一个方案">
+                 <option value="">并入…</option>${opts}
+               </select>`
+            : ''}
+          ${p.mergedCount
+            ? `<button class="btn sm gp-split" data-gp-split="${esc(setName)}|${esc(p.key)}" title="还原为合并前的各个候选">拆回</button>`
+            : ''}
+          <button class="btn sm gp-copy" data-gp-copy="${esc(setName)}|${esc(p.key)}">复制</button>
+        </span>
       </div>
-      ${descHtml}
-      <table class="gp-tbl">
-        <thead><tr><th>部位</th><th>主要属性</th><th>追加属性</th><th>包含（★计入）</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      ${(p.kind === 'rule' && p.ruleDesc) ? `<div class="gp-rule-desc">${esc(p.ruleDesc)}</div>` : ''}
+      <div class="gp-subline">
+        <span class="gp-lab">追加属性（五部位相同）</span>
+        <span class="gp-val">${subTxt}</span>
+        <span class="gp-lab">包含（★计入）</span>
+        <span class="gp-val">${hitTxt}</span>
+      </div>
+      <div class="gp-mains">${rows}</div>
     </div>`;
   }).join('');
 
-  const used = plans.filter(Boolean).length;
-  const mergeBudget = (info.mergeMax != null) ? info.mergeMax : maxPlans;
-  const mergeHtml = (info.groups && info.groups.length > mergeBudget)
-    ? renderMergePanel(setName, info) : '';
+  const picked = cands.filter(p => !hidden.has(p.key)).length;
+  const over = picked > GAME_MAX_PRESET;
+  const ruleCnt = cands.filter(p => p.kind === 'rule').length;
+  const charCnt = cands.length - ruleCnt;
 
   return `
   <div class="gp-wrap">
     <div class="gp-head">
-      <span class="gp-title">🎮 游戏内锁定方案</span>
-      <span class="gp-meta">${used} / ${maxPlans} 个预设 · 多个方案共同生效</span>
+      <span class="gp-title">🎮 游戏内锁定方案候选</span>
+      <span class="gp-meta${over ? ' warn' : ''}">
+        共 ${cands.length} 个候选（角色组 ${charCnt} · 散件规则 ${ruleCnt}）　·
+        已采纳 <b>${picked}</b> / 游戏上限 ${GAME_MAX_PRESET}${over ? ' ⚠️' : ''}
+      </span>
     </div>
-    ${mergeHtml}
+    <p class="gp-lead">候选按「角色的<b>追加属性需求</b>」自动聚类：<b>数值调低 = 并得更狠、候选更少但条件更宽；调高 = 分得更细、候选更多但更贴合。</b>
+      每个方案的<b>五个部位共用同一份追加属性条件</b>，照抄即可；觉得多了就用「并入…」合并、或取消勾选「采纳」。</p>
     <div class="gp-cards">${cards}</div>
-    <p class="gp-tip">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上表逐部位设置；
-      仅有 3 条追加属性的圣遗物，所需数量会自动减 1。</p>
+    <p class="gp-tip">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上方逐套设置；
+      每种套装游戏内<b>至多 ${GAME_MAX_PRESET} 个自定义预设</b>，请自行收敛。仅有 3 条追加属性的圣遗物，所需数量会自动减 1。</p>
   </div>`;
 }
+
+/* 「并入…」下拉里的目标名：规则优先取规则名，角色组取前几个人名 */
+function mergeTargetLabel(q) {
+  if (q.kind === 'rule') return '🧩 ' + q.ruleName;
+  const names = q.chars || [];
+  const txt = names.length > 3 ? `${names.slice(0, 3).join('、')} 等 ${names.length} 人` : names.join('、');
+  return (q.mergedCount ? `[合并${q.mergedCount}] ` : '') + (txt || '（空）');
+}
+
 function slotRow(sd, inner) {
   return `<div class="slot-row">
     <div class="slot-name">${sd.name}</div>
@@ -1924,30 +2029,32 @@ function slotRow(sd, inner) {
 /* 导出：游戏内锁定方案（可照搬进游戏） */
 function gamePlansToText() {
   const includeAlt = $('#planAltBuild').checked;
-  const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
+  const threshold = clusterThreshold();
   const plan = computePlan(includeAlt);
-  const L = ['原神 · 圣遗物套装锁定方案（游戏内照此设置）', ''];
-  let total = 0, setCount = 0;
+  const L = ['原神 · 圣遗物套装锁定方案（游戏内照此设置）',
+    '说明：每个方案的【五个部位共用同一份追加属性条件】，照下方逐套设置即可。', ''];
+  let total = 0, setCount = 0, over = 0;
 
   Array.from(plan.entries())
     .filter(([, b]) => b.users.size > 0)
     .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
     .forEach(([name, b]) => {
       const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
-      // 与页面显示保持一致：角色合并方案 + 散件 / 过渡保留规则
-      const combo = buildSetPlans(chars, maxPlans, name);
-      const used = combo.plans.length;
-      if (!used) return;
+      // 与页面完全一致：角色聚类候选 + 散件 / 过渡规则，套用手工合并，只导出「已采纳」的
+      const plans = adoptedPlans(chars, name, threshold);
+      if (!plans.length) return;
       setCount++;
+      if (plans.length > GAME_MAX_PRESET) over++;
       L.push('━━━━━━━━━━━━━━━━━━━━━━━━');
-      L.push(`【${name}】${used} 个预设`);
-      combo.plans.forEach((p, i) => L.push(planToGameText(name, p, i)));
+      L.push(`【${name}】${plans.length} 个预设${plans.length > GAME_MAX_PRESET ? '（⚠️ 超过游戏上限 ' + GAME_MAX_PRESET + '）' : ''}`);
+      plans.forEach((p, i) => L.push(planCopyText(name, p, i)));
       L.push('');
-      total += used;
+      total += plans.length;
     });
 
   L.push(`合计：${setCount} 个套装、${total} 个锁定方案`);
-  L.push('提示：每种套装在游戏内至多 3 个自定义方案，多个方案共同生效；');
+  if (over) L.push(`⚠️ 其中 ${over} 个套装超过 ${GAME_MAX_PRESET} 套，游戏内放不下，请在页面裡用「并入…」或取消勾选收敛后再复制。`);
+  L.push(`提示：每种套装在游戏内至多 ${GAME_MAX_PRESET} 个自定义预设，多个预设共同生效；`);
   L.push('      仅有 3 条追加属性的圣遗物，所需数量会自动减 1。');
   return L.join('\n');
 }
@@ -2294,7 +2401,7 @@ function hideSet(i) {
     b.sets = (b.sets || []).filter(x => x !== s.name);
   }));
   state.sets.splice(i, 1);
-  delete state.planAssign[s.name];
+  if (state.planCfg) delete state.planCfg[s.name];   // 连同该套装的手动合并记录一起清理
   save(); afterSetsChange();
   toast('已删除：' + s.name);
 }
@@ -2363,7 +2470,12 @@ function bind() {
   $('#planHideUnused').onchange = renderPlan;
   $('#planDetail').onchange = renderPlan;
   $('#planAltBuild').onchange = () => { renderPlan(); if ($('#tab-subs').classList.contains('active')) renderSubs(); };
-  $('#planSlots').onchange = renderPlan;
+  if ($('#clusterTh')) {
+    const syncTh = () => { $('#clusterThVal').textContent = (+$('#clusterTh').value).toFixed(2); renderPlan(); };
+    $('#clusterTh').oninput = () => { $('#clusterThVal').textContent = (+$('#clusterTh').value).toFixed(2); };
+    $('#clusterTh').onchange = syncTh;
+    $('#clusterThVal').textContent = (+$('#clusterTh').value).toFixed(2);
+  }
 
   /* ---- 散件 / 过渡 保留规则面板 ---- */
   function renderKrMains() {
@@ -2429,50 +2541,79 @@ function bind() {
     try { await navigator.clipboard.writeText(txt); toast('游戏内方案已复制'); }
     catch (e) { fallbackCopy(txt); }
   };
-  // 方案页内的动态元素（复制按钮 / 手动合并下拉 / 重置按钮），统一事件委托
-  $('#planBody').addEventListener('click', e => {
-    const btn = e.target.closest('.gp-copy');
-    if (btn) { copyOnePlan(btn.dataset.gpCopy); return; }
+  /* ---- 候选方案的手动整理：采纳勾选 / 并入… / 拆回 / 复制 ---- */
+  /* 取某套装的候选（按当前界面参数重算，保证与页面展示一致） */
+  const candsOf = candsOfSet;
 
-    const reset = e.target.closest('[data-gp-reset]');
-    if (reset) {
-      const setName = reset.dataset.gpReset;
-      delete state.planAssign[setName];
+  $('#planBody').addEventListener('change', e => {
+    // ① 采纳勾选
+    const cb = e.target.closest('[data-gp-adopt]');
+    if (cb) {
+      const setName = cb.dataset.gpAdopt.split('|')[0];
+      const key = cb.dataset.gpAdopt.slice(setName.length + 1);
+      const cfg = planCfgOf(setName);
+      const set = new Set(cfg.hide);
+      if (cb.checked) set.delete(key); else set.add(key);
+      cfg.hide = [...set];
       save(); renderPlan();
-      toast(`「${setName}」已重置为自动合并`);
+      toast(cb.checked ? '已采纳该方案' : '已取消采纳');
+      return;
+    }
+    // ② 并入…
+    const sel = e.target.closest('[data-gp-merge]');
+    if (sel && sel.value) {
+      const raw = sel.dataset.gpMerge;
+      const setName = raw.split('|')[0];
+      const key = raw.slice(setName.length + 1);
+      const targetKey = sel.value;
+      sel.value = '';
+      const cands = candsOf(setName);
+      const src = cands.find(p => p.key === key);
+      const dst = cands.find(p => p.key === targetKey);
+      if (!src || !dst) return;
+      const cfg = planCfgOf(setName);
+      // 先把两边「原有的合并」都拆掉（含以它们为产物的组），再把成员摊平后作为一个新组，
+      // 这样「已合并过的方案」也能继续往里并，且拆回时能一步还原
+      const dropKeys = new Set([key, targetKey]);
+      cfg.merge = cfg.merge.filter(g =>
+        !dropKeys.has(mergeResultKey(g)) && !g.some(k => dropKeys.has(k)));
+      cfg.merge.push([...baseKeysOf(src), ...baseKeysOf(dst)]);
+      cfg.hide = cfg.hide.filter(k => k !== key && k !== targetKey);
+      save(); renderPlan();
+      toast('已合并为一个方案');
     }
   });
-  $('#planBody').addEventListener('change', e => {
-    const sel = e.target.closest('[data-gp-assign]');
-    if (!sel) return;
-    const [ setName, idxStr ] = sel.dataset.gpAssign.split('|');
-    const b = computePlan($('#planAltBuild').checked).get(setName);
-    if (!b) return;
-    const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
-    const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
-    const info = buildSetPlans(chars, maxPlans, setName).info;
-    const g = info.groups[+idxStr];
-    if (!g) return;
-    if (!state.planAssign[setName]) state.planAssign[setName] = {};
-    state.planAssign[setName][groupKey(g)] = +sel.value;
-    save();
-    renderPlan();
+
+  $('#planBody').addEventListener('click', e => {
+    const copy = e.target.closest('[data-gp-copy]');
+    if (copy) { copyOnePlan(copy.dataset.gpCopy); return; }
+
+    const split = e.target.closest('[data-gp-split]');
+    if (split) {
+      const raw = split.dataset.gpSplit;
+      const setName = raw.split('|')[0];
+      const key = raw.slice(setName.length + 1);
+      const cfg = planCfgOf(setName);
+      // key 是「合并产物」的 key，而 cfg.merge 里存的是成员 → 用复算的产物 key 去匹配
+      cfg.merge = cfg.merge.filter(g => mergeResultKey(g) !== key);
+      save(); renderPlan();
+      toast('已拆回为合并前的候选');
+      return;
+    }
   });
 
-  function copyOnePlan(dataset) {
-    const [ setName, idxStr ] = dataset.split('|');
-    const b = computePlan($('#planAltBuild').checked).get(setName);
-    if (!b) return;
-    const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
-    const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
-    const plans = buildSetPlans(chars, maxPlans, setName).plans;
-    const p = plans[+idxStr];
-    if (!p) return;
-    const txt = `【${setName}】\n` + planToGameText(setName, p, +idxStr);
+  function copyOnePlan(raw) {
+    const setName = raw.split('|')[0];
+    const key = raw.slice(setName.length + 1);
+    const list = candsOf(setName);
+    const idx = list.findIndex(p => p.key === key);
+    if (idx < 0) return;
+    const txt = `【${setName}】\n` + planCopyText(setName, list[idx], idx);
     navigator.clipboard.writeText(txt)
-      .then(() => toast(`已复制「${setName} 方案${+idxStr + 1}」`))
+      .then(() => toast(`已复制「${setName}」的该方案`))
       .catch(() => fallbackCopy(txt));
   }
+
   $('#btnCopyPlan').onclick = async () => {
     const txt = planToText();
     try { await navigator.clipboard.writeText(txt); toast('清单已复制到剪贴板'); }
@@ -2514,7 +2655,7 @@ function bind() {
   };
   $('#btnReset').onclick = () => {
     if (!confirm('恢复内置默认角色库与套装列表、清除你的全部自定义修改（相当于硬刷新）？\n\n提示：浏览器普通「刷新」不会清本地存档，所以旧数据 / 乱码会一直留着；这个按钮能彻底重置。')) return;
-    state = normalize({ characters: buildDefaultCharacters(), sets: defaultSets(), planAssign: {} });
+    state = normalize({ characters: buildDefaultCharacters(), sets: defaultSets(), planCfg: {} });
     save(); renderChars(); renderPlan(); renderSubs(); renderSets();
     toast('已恢复默认库');
   };
