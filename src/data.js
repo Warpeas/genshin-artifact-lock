@@ -96,6 +96,48 @@ const SUB_STATS = [
   { id: 'def',  name: '防御力',     max: 23   },
 ];
 
+/* ---------- 散件 / 过渡 保留规则（内置预置） ----------
+ * 与具体角色无关，用于「无条件保留」的高价值散件或过渡 2 件套胚子。
+ * 这类圣遗物的价值来自主词条本身稀有（如元素伤害杯），或能当 2+2 过渡件，
+ * 因此即便当前没有角色需要，也值得单独占一个锁定预设把它留住。
+ *
+ *   slot     —— 生效部位（sands / goblet / circlet；花 / 羽主词条固定，不参与）
+ *   mains    —— 要留的主词条 id 列表（多个 = 任一即可）
+ *   required —— ★必须副词条（金标）
+ *   pool     —— 候选副词条池
+ *   minHit   —— 候选池里命中任意 N 条即锁定（0 = 不限）
+ */
+const KEEP_RULES = [
+  {
+    id: 'goblet_elem', name: '元素伤害杯', builtin: true,
+    desc: '空之杯主词条为任意元素 / 物理伤害加成——掉率极低，是公认必留的稀有胚子',
+    slot: 'goblet',
+    mains: ['pyro', 'hydro', 'cryo', 'electro', 'anemo', 'geo', 'dendro', 'phys'],
+    required: [], pool: ['cr', 'cd', 'atkP', 'em', 'er'], minHit: 1,
+  },
+  {
+    id: 'circlet_crit', name: '双暴头', builtin: true,
+    desc: '理之冠主词条为暴击率 / 暴击伤害，副词条带双暴等好词条即留',
+    slot: 'circlet',
+    mains: ['cr', 'cd'],
+    required: [], pool: ['cr', 'cd', 'atkP', 'em', 'er'], minHit: 2,
+  },
+  {
+    id: 'sands_er', name: '充能沙', builtin: true,
+    desc: '时之沙主词条为元素充能效率，副词条带双暴 / 攻击等即留',
+    slot: 'sands',
+    mains: ['er'],
+    required: [], pool: ['cr', 'cd', 'atkP', 'em'], minHit: 2,
+  },
+  {
+    id: 'goblet_em', name: '精通杯', builtin: true,
+    desc: '空之杯主词条为元素精通——草系反应队常用，同样稀有',
+    slot: 'goblet',
+    mains: ['em'],
+    required: [], pool: ['cr', 'cd', 'er', 'atkP'], minHit: 1,
+  },
+];
+
 /* ---------- 圣遗物套装 ---------- */
 // bonus: 2件套效果简述（用于 2+2 搭配参考）
 const SETS = [

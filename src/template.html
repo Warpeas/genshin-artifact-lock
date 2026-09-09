@@ -101,6 +101,38 @@
       <button id="btnPrint" class="btn">打印 / 存 PDF</button>
     </div>
 
+    <div class="card kr-card">
+      <h3>🧩 散件 / 过渡 保留规则 <span id="krCount" class="kr-count"></span></h3>
+      <p class="muted small">与具体角色无关、只因「主词条本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
+        启用后每条规则会<b>占用一个游戏内预设槽位</b>——每套上限 3 个，角色需求合并方案会自动压缩让位，总数始终不超限。</p>
+      <div id="keepRuleList" class="kr-list"></div>
+      <details class="kr-add">
+        <summary>＋ 新增自定义规则</summary>
+        <div class="kr-form">
+          <label class="fld">名称
+            <input type="text" id="krName" placeholder="如：防御杯" spellcheck="false">
+          </label>
+          <label class="fld">部位
+            <select id="krSlot">
+              <option value="sands">时之沙</option>
+              <option value="goblet" selected>空之杯</option>
+              <option value="circlet">理之冠</option>
+            </select>
+          </label>
+          <label class="fld">包含任意 N 条
+            <input type="number" id="krMinHit" min="0" max="4" value="1" style="width:70px">
+          </label>
+          <div class="kr-pick">
+            <div><b>要留的主词条</b><div id="krMains" class="kr-chk"></div></div>
+            <div><b>候选副词条</b><div id="krPool" class="kr-chk"></div></div>
+          </div>
+          <div class="btn-row">
+            <button id="btnKrAdd" class="btn primary">添加规则</button>
+          </div>
+        </div>
+      </details>
+    </div>
+
     <div id="planSummary" class="summary-strip"></div>
     <h2 class="print-only">原神圣遗物锁定清单</h2>
     <p class="print-only print-meta" id="printMeta"></p>
@@ -207,7 +239,9 @@
       <li><b>① 角色配置</b>：勾选你实际要养的角色。点卡片可改套装、主词条优先级和副词条排序；主词条 / 副词条都<b>越靠前优先级越高</b>，副词条还能点 ☆ 标成 ★必须。
         一个角色可以有多组配装（4件套 / 2+2），<b>每组的词条需求分开保存</b>；新增配装组时会默认复制当前组的词条，也可以从别组一键复制。</li>
       <li><b>② 锁定方案</b>：每个套装直接给出「游戏内锁定方案」——把该套装下所有角色的需求聚类合并成 ≤3 个预设，
-        每个预设逐个部位列出主要属性、★必须副词条、候选副词条与「包含任意 N 条」。照着填进游戏即可。</li>
+        每个预设逐个部位列出主要属性、★必须副词条、候选副词条与「包含任意 N 条」。照着填进游戏即可。
+        页面顶部还有<b>「🧩 散件 / 过渡 保留规则」</b>：与角色无关、只因主词条稀有（如元素伤害杯）就值得留的圣遗物，
+        可单独开关；启用后每条规则占用一个预设槽位，角色合并方案会自动压缩让位。</li>
       <li><b>③ 副词条规则</b>：给出分档判定 + 胚子评分器，解决「主词条对了但副词条能不能留」。</li>
       <li><b>④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
     </ol>

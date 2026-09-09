@@ -424,6 +424,10 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-idx{font-size:12.5px;font-weight:700;color:#cfe3ff;background:#24374f;padding:2px 9px;border-radius:4px;}
 .gp-for{font-size:11.5px;color:#8a94a6;flex:1;min-width:120px;}
 .gp-copy{font-size:11px;padding:2px 8px;}
+/* 散件 / 过渡 保留规则生成的方案卡（与主流程的「供谁使用」区分开） */
+.gp-card-rule{background:#1d2634;border-color:#3d4a3a;box-shadow:inset 3px 0 0 #7fbf6a;}
+.gp-rule-for{color:#a9d69b;font-weight:600;}
+.gp-rule-desc{font-size:11px;color:#7d8a78;margin:-2px 0 8px;line-height:1.5;}
 .gp-tbl{width:100%;border-collapse:collapse;font-size:11.5px;}
 .gp-tbl th{text-align:left;font-weight:600;color:#7d8798;padding:4px 6px;border-bottom:1px solid #2a3546;font-size:11px;}
 .gp-tbl td{padding:5px 6px;border-bottom:1px solid #222b38;vertical-align:top;line-height:1.6;}
@@ -436,6 +440,41 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-hit{white-space:nowrap;color:#9fb0c6;}
 .gp-hit b{color:var(--gold,#e8c88a);font-size:13px;}
 .gp-tip{margin:9px 0 0;font-size:11px;color:#6f7b8c;line-height:1.65;}
+
+/* ---------- 散件 / 过渡 保留规则面板 ---------- */
+.kr-card{margin-bottom:12px;}
+.kr-count{font-size:11.5px;font-weight:600;color:var(--gold,#e8c88a);margin-left:6px;}
+.kr-list{display:flex;flex-direction:column;gap:6px;margin:8px 0 4px;}
+.kr-item{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:4px 8px;
+  padding:7px 9px;border:1px solid #2a3546;border-radius:7px;background:#141c26;cursor:pointer;line-height:1.5;}
+.kr-item.on{border-color:#3d5a3a;background:#16241a;}
+.kr-item.truncated{opacity:.62;border-style:dashed;}
+.kr-item input[type=checkbox]{width:15px;height:15px;accent-color:#7fbf6a;cursor:pointer;}
+.kr-name{font-size:12.5px;font-weight:600;color:#cfe3ff;}
+.kr-slot{font-size:11px;color:#7d8798;background:#223041;border:1px solid #2f4356;border-radius:4px;padding:1px 6px;}
+.kr-cond{grid-column:3 / -1;font-size:11px;color:#9fb0c6;}
+.kr-desc{grid-column:3 / -1;font-size:11px;color:#6f7b8c;}
+.kr-del{grid-column:4;justify-self:end;font-size:11px;padding:2px 8px;border-radius:5px;
+  border:1px solid #3a2730;background:#231319;color:#ff8a9c;cursor:pointer;}
+.kr-warn{grid-column:3 / -1;font-size:11px;color:#ffb86c;}
+.kr-add{margin-top:8px;}
+.kr-add>summary{cursor:pointer;font-size:12px;color:#5fc4f0;padding:4px 0;user-select:none;}
+.kr-form{display:flex;flex-direction:column;gap:10px;padding:8px 0 2px;}
+.kr-form .fld{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:#9fb0c6;}
+.kr-form .fld input,.kr-form .fld select{padding:6px 8px;font-size:12px;color:var(--txt,#e6edf5);
+  background:#0f1922;border:1px solid #2c3a47;border-radius:6px;}
+.kr-pick{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.kr-pick b{display:block;font-size:11.5px;color:#9fb0c6;margin-bottom:5px;}
+.kr-chk{display:flex;flex-wrap:wrap;gap:4px 10px;max-height:130px;overflow:auto;
+  padding:7px 9px;border:1px solid #2a3546;border-radius:6px;background:#111a23;}
+.kr-chk-item{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:#bcd0e6;cursor:pointer;white-space:nowrap;}
+.kr-chk-item input{width:14px;height:14px;accent-color:#5fb6e6;cursor:pointer;}
+@media (max-width:640px){
+  .kr-item{grid-template-columns:auto 1fr auto;}
+  .kr-slot{grid-column:2;}
+  .kr-cond,.kr-desc,.kr-warn{grid-column:2 / -1;}
+  .kr-pick{grid-template-columns:1fr;}
+}
 
 /* ---------- 手动合并面板 ---------- */
 .gp-merge{margin:0 0 12px;border:1px solid #3a4a5e;border-radius:8px;background:#18202b;overflow:hidden;}
@@ -728,6 +767,38 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
       <button id="btnPrint" class="btn">打印 / 存 PDF</button>
     </div>
 
+    <div class="card kr-card">
+      <h3>🧩 散件 / 过渡 保留规则 <span id="krCount" class="kr-count"></span></h3>
+      <p class="muted small">与具体角色无关、只因「主词条本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
+        启用后每条规则会<b>占用一个游戏内预设槽位</b>——每套上限 3 个，角色需求合并方案会自动压缩让位，总数始终不超限。</p>
+      <div id="keepRuleList" class="kr-list"></div>
+      <details class="kr-add">
+        <summary>＋ 新增自定义规则</summary>
+        <div class="kr-form">
+          <label class="fld">名称
+            <input type="text" id="krName" placeholder="如：防御杯" spellcheck="false">
+          </label>
+          <label class="fld">部位
+            <select id="krSlot">
+              <option value="sands">时之沙</option>
+              <option value="goblet" selected>空之杯</option>
+              <option value="circlet">理之冠</option>
+            </select>
+          </label>
+          <label class="fld">包含任意 N 条
+            <input type="number" id="krMinHit" min="0" max="4" value="1" style="width:70px">
+          </label>
+          <div class="kr-pick">
+            <div><b>要留的主词条</b><div id="krMains" class="kr-chk"></div></div>
+            <div><b>候选副词条</b><div id="krPool" class="kr-chk"></div></div>
+          </div>
+          <div class="btn-row">
+            <button id="btnKrAdd" class="btn primary">添加规则</button>
+          </div>
+        </div>
+      </details>
+    </div>
+
     <div id="planSummary" class="summary-strip"></div>
     <h2 class="print-only">原神圣遗物锁定清单</h2>
     <p class="print-only print-meta" id="printMeta"></p>
@@ -834,7 +905,9 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
       <li><b>① 角色配置</b>：勾选你实际要养的角色。点卡片可改套装、主词条优先级和副词条排序；主词条 / 副词条都<b>越靠前优先级越高</b>，副词条还能点 ☆ 标成 ★必须。
         一个角色可以有多组配装（4件套 / 2+2），<b>每组的词条需求分开保存</b>；新增配装组时会默认复制当前组的词条，也可以从别组一键复制。</li>
       <li><b>② 锁定方案</b>：每个套装直接给出「游戏内锁定方案」——把该套装下所有角色的需求聚类合并成 ≤3 个预设，
-        每个预设逐个部位列出主要属性、★必须副词条、候选副词条与「包含任意 N 条」。照着填进游戏即可。</li>
+        每个预设逐个部位列出主要属性、★必须副词条、候选副词条与「包含任意 N 条」。照着填进游戏即可。
+        页面顶部还有<b>「🧩 散件 / 过渡 保留规则」</b>：与角色无关、只因主词条稀有（如元素伤害杯）就值得留的圣遗物，
+        可单独开关；启用后每条规则占用一个预设槽位，角色合并方案会自动压缩让位。</li>
       <li><b>③ 副词条规则</b>：给出分档判定 + 胚子评分器，解决「主词条对了但副词条能不能留」。</li>
       <li><b>④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
     </ol>
@@ -976,6 +1049,48 @@ const SUB_STATS = [
   { id: 'atk',  name: '攻击力',     max: 19   },
   { id: 'hp',   name: '生命值',     max: 299  },
   { id: 'def',  name: '防御力',     max: 23   },
+];
+
+/* ---------- 散件 / 过渡 保留规则（内置预置） ----------
+ * 与具体角色无关，用于「无条件保留」的高价值散件或过渡 2 件套胚子。
+ * 这类圣遗物的价值来自主词条本身稀有（如元素伤害杯），或能当 2+2 过渡件，
+ * 因此即便当前没有角色需要，也值得单独占一个锁定预设把它留住。
+ *
+ *   slot     —— 生效部位（sands / goblet / circlet；花 / 羽主词条固定，不参与）
+ *   mains    —— 要留的主词条 id 列表（多个 = 任一即可）
+ *   required —— ★必须副词条（金标）
+ *   pool     —— 候选副词条池
+ *   minHit   —— 候选池里命中任意 N 条即锁定（0 = 不限）
+ */
+const KEEP_RULES = [
+  {
+    id: 'goblet_elem', name: '元素伤害杯', builtin: true,
+    desc: '空之杯主词条为任意元素 / 物理伤害加成——掉率极低，是公认必留的稀有胚子',
+    slot: 'goblet',
+    mains: ['pyro', 'hydro', 'cryo', 'electro', 'anemo', 'geo', 'dendro', 'phys'],
+    required: [], pool: ['cr', 'cd', 'atkP', 'em', 'er'], minHit: 1,
+  },
+  {
+    id: 'circlet_crit', name: '双暴头', builtin: true,
+    desc: '理之冠主词条为暴击率 / 暴击伤害，副词条带双暴等好词条即留',
+    slot: 'circlet',
+    mains: ['cr', 'cd'],
+    required: [], pool: ['cr', 'cd', 'atkP', 'em', 'er'], minHit: 2,
+  },
+  {
+    id: 'sands_er', name: '充能沙', builtin: true,
+    desc: '时之沙主词条为元素充能效率，副词条带双暴 / 攻击等即留',
+    slot: 'sands',
+    mains: ['er'],
+    required: [], pool: ['cr', 'cd', 'atkP', 'em'], minHit: 2,
+  },
+  {
+    id: 'goblet_em', name: '精通杯', builtin: true,
+    desc: '空之杯主词条为元素精通——草系反应队常用，同样稀有',
+    slot: 'goblet',
+    mains: ['em'],
+    required: [], pool: ['cr', 'cd', 'er', 'atkP'], minHit: 1,
+  },
 ];
 
 /* ---------- 圣遗物套装 ---------- */
@@ -1558,6 +1673,8 @@ function normalize(o) {
 
   // 用户对「哪些角色合并到哪个方案槽」的手动指定：{ 套装名: { 组指纹: 槽位下标 } }
   o.planAssign = (o.planAssign && typeof o.planAssign === 'object') ? o.planAssign : {};
+  // 散件 / 过渡 保留规则：enabled = 启用的规则 id 列表，custom = 用户自定义规则
+  o.keepRules = normalizeKeepRules(o.keepRules);
   o.characters = o.characters.map(c => ({
     id: c.id || ('c_' + Math.random().toString(36).slice(2)),
     name: c.name || '未命名',
@@ -1626,6 +1743,29 @@ function normalizeSubs(subs) {
       .map(([id, v]) => ({ id, req: +v >= 0.9, op: '>' }));
   }
   return toSubs(SUB_PRESETS.crit);
+}
+
+/* 散件 / 过渡 保留规则归一化：兼容旧存档（无此字段时按内置默认启用） */
+function normalizeKeepRules(raw) {
+  const r = (raw && typeof raw === 'object') ? raw : {};
+  const validSlot = id => !!MAIN_STATS[id];
+  const validSub = id => SUB_STATS.some(s => s.id === id);
+  return {
+    enabled: Array.isArray(r.enabled)
+      ? r.enabled.filter(x => typeof x === 'string')
+      : ['goblet_elem'],
+    custom: (Array.isArray(r.custom) ? r.custom : []).filter(x => x && x.id && validSlot(x.slot)).map(x => ({
+      id: String(x.id),
+      name: String(x.name || '自定义规则'),
+      desc: String(x.desc || ''),
+      builtin: false,
+      slot: x.slot,
+      mains: (Array.isArray(x.mains) ? x.mains : []).filter(m => (MAIN_STATS[x.slot] || []).some(s => s.id === m)),
+      required: (Array.isArray(x.required) ? x.required : []).filter(validSub),
+      pool: (Array.isArray(x.pool) ? x.pool : []).filter(validSub),
+      minHit: Number(x.minHit) > 0 ? Math.min(4, Number(x.minHit)) : 0,
+    })),
+  };
 }
 
 let saveTimer = null;
@@ -2254,14 +2394,81 @@ function buildGamePlans(charList, maxPlans, setName) {
   return buildGamePlanInfo(charList, maxPlans, setName).plans.filter(Boolean);
 }
 
+/* ============================================================
+ * 散件 / 过渡 保留规则
+ *   与具体角色无关，用于保留高价值散件（稀有主词条）或过渡 2 件套胚子。
+ *   启用后每个规则独占一个游戏内预设槽位，角色需求合并方案自动压缩让位，
+ *   保证「合并方案 + 规则」总数不超过官方上限（默认 3 个）。
+ * ============================================================ */
+function allKeepRules() {
+  const custom = (state && state.keepRules && Array.isArray(state.keepRules.custom))
+    ? state.keepRules.custom : [];
+  return [...KEEP_RULES, ...custom];
+}
+function keepRuleEnabled(id) {
+  return !!(state && state.keepRules && Array.isArray(state.keepRules.enabled)
+    && state.keepRules.enabled.includes(id));
+}
+/* 启用的规则，按给定预算截断（budget = 最多可占用几个槽位） */
+function activeKeepRules(budget) {
+  if (!state || !state.keepRules) return [];
+  return allKeepRules().filter(r => keepRuleEnabled(r.id))
+    .slice(0, Math.max(0, budget));
+}
+/* 规则 -> 方案对象（结构与 mergeGroups 一致，便于复用渲染 / 复制） */
+function ruleToPlan(rule) {
+  const slots = {};
+  SLOTS.forEach(sd => {
+    if (rule.slot === sd.id) {
+      slots[sd.id] = {
+        main: (rule.mains || []).slice(),
+        sub: {
+          required: (rule.required || []).slice(),
+          pool: (rule.pool || []).slice(),
+          minHit: rule.minHit || 0,
+        },
+      };
+    } else {
+      // 花 / 羽主词条固定；其余未涉及的部位对这条规则而言「不限」
+      slots[sd.id] = {
+        main: null,
+        sub: { required: [], pool: [], minHit: 0 },
+        free: !(sd.id === 'flower' || sd.id === 'plume'),
+      };
+    }
+  });
+  return {
+    chars: [], rule: true, ruleId: rule.id,
+    ruleName: rule.name, ruleDesc: rule.desc || '', slots,
+  };
+}
+/* 某套装的最终方案 = 角色需求合并方案 + 启用的散件规则（总数 ≤ maxPlans） */
+function buildSetPlans(chars, maxPlans, setName) {
+  // 有角色需求时给合并方案留 1 个槽位；该套装没人用时规则可用满
+  const reserve = chars.length ? 1 : 0;
+  const rules = activeKeepRules(maxPlans - reserve);
+  const mergeMax = maxPlans - rules.length;
+  let info = { plans: [], groups: [], assign: [], maxPlans: mergeMax };
+  let mergePlans = [];
+  if (mergeMax > 0 && chars.length) {
+    info = buildGamePlanInfo(chars, mergeMax, setName);
+    mergePlans = info.plans.filter(Boolean);
+  }
+  const rulePlans = rules.map(ruleToPlan);
+  return { plans: [...mergePlans, ...rulePlans], info, rules, mergeMax };
+}
+
 /* 单个方案转成游戏内操作步骤文本 */
 function planToGameText(setName, plan, idx) {
-  const L = [`  方案${idx + 1}（供 ${plan.chars.join('、')} 使用）`];
+  const who = plan.rule
+    ? `散件 / 过渡保留：${plan.ruleName}`
+    : `供 ${plan.chars.join('、')} 使用`;
+  const L = [`  方案${idx + 1}（${who}）`];
   SLOTS.forEach(sd => {
     const s = plan.slots[sd.id];
     const mainTxt = s.main && s.main.length
       ? s.main.map(id => mainStatName(sd.id, id)).join('、')
-      : '（固定）';
+      : (s.free ? '不限' : '（固定）');
     const stars = s.sub.required.map(id => '★' + subStatName(id)).join(' ');
     const rest = s.sub.pool.filter(id => !s.sub.required.includes(id))
       .map(id => subStatName(id)).join('、');
@@ -2963,6 +3170,7 @@ function renderPlan() {
 
   const setWeights = setSubRanking(includeAlt);
   const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
+  renderKeepRules();   // 槽位 / 启用条数变化会影响规则面板的计数与截断提示
 
   const html = blocks
     .filter(([name]) => setFilter === 'all' || name === setFilter)
@@ -2992,6 +3200,41 @@ function renderPlan() {
 
 const ELEM_DMG_STATS = ['pyro', 'hydro', 'cryo', 'electro', 'anemo', 'geo', 'dendro', 'phys'];
 
+/* 渲染「散件 / 过渡 保留规则」面板：开关内置 / 自定义规则，并提示槽位占用 */
+function renderKeepRules() {
+  const wrap = $('#keepRuleList');
+  if (!wrap || !state || !state.keepRules) return;
+  const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
+  const active = activeKeepRules(Math.max(0, maxPlans - 1));
+  const activeIds = new Set(active.map(r => r.id));
+
+  wrap.innerHTML = allKeepRules().map(r => {
+    const on = keepRuleEnabled(r.id);
+    const truncated = on && !activeIds.has(r.id);   // 启用但槽位不够，被截断
+    const slotName = (SLOTS.find(s => s.id === r.slot) || {}).name || '';
+    const mainsTxt = (r.mains || []).map(id => mainStatName(r.slot, id)).join(' / ') || '不限';
+    const poolTxt = (r.pool || []).map(id => subStatName(id)).join('、');
+    return `
+      <label class="kr-item${on ? ' on' : ''}${truncated ? ' truncated' : ''}">
+        <input type="checkbox" data-kr-toggle="${esc(r.id)}"${on ? ' checked' : ''}>
+        <span class="kr-name">${esc(r.name)}</span>
+        <span class="kr-slot">${esc(slotName)}</span>
+        <span class="kr-cond">主词条：${esc(mainsTxt)}${poolTxt ? `　·　候选：${esc(poolTxt)}` : ''}${r.minHit ? `　·　任意 ${r.minHit} 条` : ''}</span>
+        ${r.desc ? `<span class="kr-desc">${esc(r.desc)}</span>` : ''}
+        ${r.builtin ? '' : `<button type="button" class="kr-del" data-kr-del="${esc(r.id)}" title="删除该自定义规则">删除</button>`}
+        ${truncated ? '<span class="kr-warn">槽位不足，本条暂未生效</span>' : ''}
+      </label>`;
+  }).join('');
+
+  const cnt = $('#krCount');
+  if (cnt) {
+    const left = Math.max(0, maxPlans - active.length);
+    cnt.textContent = active.length
+      ? `已启用 ${active.length} 条 · 占 ${active.length} 个槽位，角色方案剩 ${left} 个`
+      : '未启用';
+  }
+}
+
 function renderSetBlock(name, b, slotFilter, setWeights, maxPlans = 3) {
   const bonus = allSetBonus()[name] || '';
   const users = Array.from(b.users.entries());
@@ -2999,9 +3242,10 @@ function renderSetBlock(name, b, slotFilter, setWeights, maxPlans = 3) {
 
   // 游戏内锁定方案：把该套装下的角色需求聚类合并成 ≤ maxPlans 组
   const charsForPlan = state.characters.filter(c => c.enabled && b.users.has(c.name));
-  const info = unused ? { plans: [], groups: [], assign: [] }
-                      : buildGamePlanInfo(charsForPlan, maxPlans, name);
-  const gpHtml = info.plans.some(Boolean)
+  // 最终方案 = 角色需求合并方案（自动压缩槽位）+ 启用的散件 / 过渡保留规则
+  const combo = buildSetPlans(charsForPlan, maxPlans, name);
+  const info = { ...combo.info, plans: combo.plans, mergeMax: combo.mergeMax };
+  const gpHtml = combo.plans.length
     ? renderGamePlans(name, info, maxPlans, slotFilter) : '';
 
   // 该套装的副词条需求排序（用于花/羽行提示）
@@ -3154,7 +3398,7 @@ function renderGamePlans(setName, info, maxPlans, slotFilter = 'all') {
       const s = p.slots[sd.id];
       const mainTxt = s.main && s.main.length
         ? s.main.map(id => `<span class="gp-main">${esc(mainStatName(sd.id, id))}</span>`).join('')
-        : '<span class="gp-fixed">主词条固定</span>';
+        : (s.free ? '<span class="gp-fixed">不限</span>' : '<span class="gp-fixed">主词条固定</span>');
       const stars = s.sub.required
         .map(id => `<span class="gp-star">★${esc(subStatName(id))}</span>`).join('');
       const rest = s.sub.pool.filter(id => !s.sub.required.includes(id))
@@ -3172,13 +3416,20 @@ function renderGamePlans(setName, info, maxPlans, slotFilter = 'all') {
         </tr>`;
     }).join('');
 
+    const isRule = !!p.rule;
+    const forTxt = isRule
+      ? `<span class="gp-for gp-rule-for">🧩 散件 / 过渡保留：${esc(p.ruleName)}</span>`
+      : `<span class="gp-for">供 ${p.chars.map(n => esc(n)).join('、')} 使用</span>`;
+    const descHtml = (isRule && p.ruleDesc)
+      ? `<div class="gp-rule-desc">${esc(p.ruleDesc)}</div>` : '';
     return `
-    <div class="gp-card">
+    <div class="gp-card${isRule ? ' gp-card-rule' : ''}">
       <div class="gp-ctitle">
         <span class="gp-idx">方案${i + 1}</span>
-        <span class="gp-for">供 ${p.chars.map(n => esc(n)).join('、')} 使用</span>
+        ${forTxt}
         <button class="btn sm gp-copy" data-gp-copy="${esc(setName)}|${i}">复制</button>
       </div>
+      ${descHtml}
       <table class="gp-tbl">
         <thead><tr><th>部位</th><th>主要属性</th><th>追加属性</th><th>包含（★计入）</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -3187,7 +3438,8 @@ function renderGamePlans(setName, info, maxPlans, slotFilter = 'all') {
   }).join('');
 
   const used = plans.filter(Boolean).length;
-  const mergeHtml = (info.groups && info.groups.length > maxPlans)
+  const mergeBudget = (info.mergeMax != null) ? info.mergeMax : maxPlans;
+  const mergeHtml = (info.groups && info.groups.length > mergeBudget)
     ? renderMergePanel(setName, info) : '';
 
   return `
@@ -3222,13 +3474,14 @@ function gamePlansToText() {
     .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
     .forEach(([name, b]) => {
       const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
-      const info = buildGamePlanInfo(chars, maxPlans, name);
-      const used = info.plans.filter(Boolean).length;
+      // 与页面显示保持一致：角色合并方案 + 散件 / 过渡保留规则
+      const combo = buildSetPlans(chars, maxPlans, name);
+      const used = combo.plans.length;
       if (!used) return;
       setCount++;
       L.push('━━━━━━━━━━━━━━━━━━━━━━━━');
       L.push(`【${name}】${used} 个预设`);
-      info.plans.forEach((p, i) => { if (p) L.push(planToGameText(name, p, i)); });
+      combo.plans.forEach((p, i) => L.push(planToGameText(name, p, i)));
       L.push('');
       total += used;
     });
@@ -3651,6 +3904,66 @@ function bind() {
   $('#planDetail').onchange = renderPlan;
   $('#planAltBuild').onchange = () => { renderPlan(); if ($('#tab-subs').classList.contains('active')) renderSubs(); };
   $('#planSlots').onchange = renderPlan;
+
+  /* ---- 散件 / 过渡 保留规则面板 ---- */
+  function renderKrMains() {
+    const slot = $('#krSlot') ? $('#krSlot').value : 'goblet';
+    const w = $('#krMains');
+    if (!w) return;
+    w.innerHTML = (MAIN_STATS[slot] || []).map(s =>
+      `<label class="kr-chk-item"><input type="checkbox" value="${esc(s.id)}"> ${esc(s.name)}</label>`).join('');
+  }
+  function renderKrPool() {
+    const w = $('#krPool');
+    if (!w) return;
+    w.innerHTML = SUB_STATS.map(s =>
+      `<label class="kr-chk-item"><input type="checkbox" value="${esc(s.id)}"> ${esc(s.name)}</label>`).join('');
+  }
+  renderKrMains(); renderKrPool();
+  if ($('#krSlot')) $('#krSlot').onchange = renderKrMains;
+
+  const krList = $('#keepRuleList');
+  if (krList) {
+    krList.addEventListener('change', e => {
+      const cb = e.target.closest('[data-kr-toggle]');
+      if (!cb) return;
+      const set = new Set(state.keepRules.enabled);
+      if (cb.checked) set.add(cb.dataset.krToggle); else set.delete(cb.dataset.krToggle);
+      state.keepRules.enabled = [...set];
+      save(); renderKeepRules(); renderPlan();
+    });
+    krList.addEventListener('click', e => {
+      const del = e.target.closest('[data-kr-del]');
+      if (!del) return;
+      const id = del.dataset.krDel;
+      const rule = allKeepRules().find(r => r.id === id);
+      if (!confirm(`删除自定义规则「${rule ? rule.name : id}」？`)) return;
+      state.keepRules.custom = state.keepRules.custom.filter(r => r.id !== id);
+      state.keepRules.enabled = state.keepRules.enabled.filter(x => x !== id);
+      save(); renderKeepRules(); renderPlan();
+      toast('已删除规则');
+    });
+  }
+  if ($('#btnKrAdd')) $('#btnKrAdd').onclick = () => {
+    const name = ($('#krName').value || '').trim();
+    const slot = $('#krSlot').value;
+    const mains = [...document.querySelectorAll('#krMains input:checked')].map(i => i.value);
+    const pool = [...document.querySelectorAll('#krPool input:checked')].map(i => i.value);
+    const minHit = Math.max(0, Math.min(4, +$('#krMinHit').value || 0));
+    if (!name) return toast('请填写规则名称');
+    if (!mains.length) return toast('请至少勾选一个要留的主词条');
+    const id = 'custom_' + Date.now().toString(36);
+    state.keepRules.custom.push({
+      id, name, desc: '自定义保留规则', builtin: false,
+      slot, mains, required: [], pool, minHit,
+    });
+    state.keepRules.enabled.push(id);
+    $('#krName').value = '';
+    save(); renderKeepRules(); renderPlan();
+    toast('已添加规则：' + name);
+  };
+  renderKeepRules();
+
   $('#btnCopyGame').onclick = async () => {
     const txt = gamePlansToText();
     try { await navigator.clipboard.writeText(txt); toast('游戏内方案已复制'); }
@@ -3677,7 +3990,7 @@ function bind() {
     if (!b) return;
     const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
     const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
-    const info = buildGamePlanInfo(chars, maxPlans, setName);
+    const info = buildSetPlans(chars, maxPlans, setName).info;
     const g = info.groups[+idxStr];
     if (!g) return;
     if (!state.planAssign[setName]) state.planAssign[setName] = {};
@@ -3692,7 +4005,7 @@ function bind() {
     if (!b) return;
     const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
     const maxPlans = +($('#planSlots') ? $('#planSlots').value : 3) || 3;
-    const plans = buildGamePlanInfo(chars, maxPlans, setName).plans;
+    const plans = buildSetPlans(chars, maxPlans, setName).plans;
     const p = plans[+idxStr];
     if (!p) return;
     const txt = `【${setName}】\n` + planToGameText(setName, p, +idxStr);
