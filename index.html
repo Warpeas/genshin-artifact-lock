@@ -904,7 +904,8 @@ const REGIONS = [
   { id: 'sumeru',    name: '须弥',      color: '#a5d66a' },
   { id: 'fontaine',  name: '枫丹',      color: '#5fc9d8' },
   { id: 'natlan',    name: '纳塔',      color: '#ff8a5c' },
-  { id: 'snezhnaya', name: '至冬 / 其他', color: '#9fb3c8' },
+  { id: 'snezhnaya', name: '至冬',      color: '#9fb3c8' },
+  { id: 'other',     name: '其他',      color: '#7d8a99' },
 ];
 const REGION_NAME  = Object.fromEntries(REGIONS.map(r => [r.id, r.name]));
 const REGION_COLOR = Object.fromEntries(REGIONS.map(r => [r.id, r.color]));
@@ -1179,16 +1180,27 @@ const CH_META = {
   '伊安珊': ['natlan', ['support']],
   '伊法': ['natlan', ['support']],
 
-  /* 至冬 / 其他 */
+  /* 至冬（愚人众 / 挪德卡莱） */
   '达达利亚': ['snezhnaya', ['maindps']],
   '阿蕾奇诺': ['snezhnaya', ['maindps']],
-  '丝柯克': ['snezhnaya', ['maindps']],
+  '伊涅芙': ['snezhnaya', ['subdps']],
+  '菈乌玛': ['snezhnaya', ['support']],
+  '菲林斯': ['snezhnaya', ['maindps']],
+  '爱诺': ['snezhnaya', ['support']],
+  '奈芙尔': ['snezhnaya', ['maindps']],
+  '哥伦比娅': ['snezhnaya', ['support']],
+  '桑多涅': ['snezhnaya', ['maindps']],
+  '奥黛塔': ['snezhnaya', ['support']],
+  '阿罗夏': ['snezhnaya', ['support']],
+
+  /* 其他（非提瓦特国度 / 联动角色） */
+  '丝柯克': ['other', ['maindps']],
+  '埃洛伊': ['other', ['maindps']],
 
   /* 补遗：初始库遗漏的 2.x–4.x 老角色 */
   '安柏': ['mondstadt', ['support']],
   '丽莎': ['mondstadt', ['subdps']],
   '凯亚': ['mondstadt', ['subdps']],
-  '埃洛伊': ['snezhnaya', ['maindps']],
   '北斗': ['liyue', ['subdps']],
   '神里绫人': ['liyue', ['maindps']],
   '千织': ['inazuma', ['subdps']],
@@ -1198,18 +1210,9 @@ const CH_META = {
   '蓝砚': ['liyue', ['support']],
   '茜特菈莉': ['natlan', ['support']],
 
-  /* 补遗：5.8 伊涅芙 + 6.0–7.0 挪德卡莱 / 至冬 */
-  '伊涅芙': ['snezhnaya', ['subdps']],
-  '菈乌玛': ['snezhnaya', ['support']],
-  '菲林斯': ['snezhnaya', ['maindps']],
-  '爱诺': ['snezhnaya', ['support']],
-  '奈芙尔': ['snezhnaya', ['maindps']],
+  /* 补遗：5.8 伊涅芙 + 6.0–7.0 挪德卡莱（具体归属见上方「至冬」分组） */
   '杜林': ['mondstadt', ['subdps']],
-  '哥伦比娅': ['snezhnaya', ['support']],
   '兹白': ['liyue', ['maindps']],
-  '桑多涅': ['snezhnaya', ['maindps']],
-  '奥黛塔': ['snezhnaya', ['support']],
-  '阿罗夏': ['snezhnaya', ['support']],
   '法尔伽': ['mondstadt', ['maindps']],
 };
 
@@ -1385,7 +1388,7 @@ function normSrcList(list) {
 
 function buildDefaultCharacters() {
   return RAW_CHARS.map(([name, element, subPreset, builds, sands, goblet, circlet, src], i) => {
-    const meta = CH_META[name] || ['snezhnaya', ['maindps']];
+    const meta = CH_META[name] || ['other', ['maindps']];
     const need = makeStatNeeds(sands, goblet, circlet, subPreset);
     return {
     id: 'c' + i + '_' + name,
@@ -1547,7 +1550,7 @@ function normalize(o) {
     id: c.id || ('c_' + Math.random().toString(36).slice(2)),
     name: c.name || '未命名',
     element: ELEMENTS[c.element] ? c.element : 'pyro',
-    region: REGION_NAME[c.region] ? c.region : 'snezhnaya',
+    region: REGION_NAME[c.region] ? c.region : 'other',
     roles: (Array.isArray(c.roles) && c.roles.length)
       ? c.roles.filter(r => ROLE_NAME[r]) : ['maindps'],
     enabled: !!c.enabled,

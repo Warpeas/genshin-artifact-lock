@@ -128,7 +128,7 @@ function normalize(o) {
     id: c.id || ('c_' + Math.random().toString(36).slice(2)),
     name: c.name || '未命名',
     element: ELEMENTS[c.element] ? c.element : 'pyro',
-    region: REGION_NAME[c.region] ? c.region : 'snezhnaya',
+    region: REGION_NAME[c.region] ? c.region : 'other',
     roles: (Array.isArray(c.roles) && c.roles.length)
       ? c.roles.filter(r => ROLE_NAME[r]) : ['maindps'],
     enabled: !!c.enabled,
