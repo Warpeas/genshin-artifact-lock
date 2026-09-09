@@ -529,11 +529,13 @@ function buildDefaultCharacters() {
 
 /* ---------- 工具：取主词条名称 ---------- */
 function mainStatName(slot, id) {
+  if (id && typeof id === 'object') id = (id.stat != null ? id.stat : id.id);
   const list = MAIN_STATS[slot] || [];
   const hit = list.find(s => s.id === id);
-  return hit ? hit.name : id;
+  return hit ? hit.name : (typeof id === 'string' ? id : '');
 }
 function subStatName(id) {
+  if (id && typeof id === 'object') id = (id.id != null ? id.id : id.stat);
   const hit = SUB_STATS.find(s => s.id === id);
-  return hit ? hit.name : id;
+  return hit ? hit.name : (typeof id === 'string' ? id : '');
 }

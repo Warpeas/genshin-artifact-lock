@@ -21,6 +21,15 @@ let state = null;
 let pendingMigrate = null;   // load() 若从旧存档回填了数据，init 里据此回写本地存储
 const SUB_EPOCH = 1;         // 副词条预设重要度版本；递增即把精炼后的预设同步给旧存档
 let ui = { elem: 'all', search: '', onlyEnabled: false, planSet: 'all', planSlot: 'all', buildIdx: 0 };
+
+/* 把「副词条 / 主词条」项统一归一为 id 字符串：
+ *   对象 {id} / {stat} / {id,w} → 取 id 或 stat；其余原样返回。
+ *   防止旧存档 / 异常数据把对象当 id 传入，渲染出 [object Object]。 */
+function statIdOf(x) {
+  if (x == null) return '';
+  if (typeof x === 'object') return x.id != null ? x.id : (x.stat != null ? x.stat : '');
+  return x;
+}
 let editing = null;      // 正在编辑的角色副本
 let editingIsNew = false;
 
@@ -713,8 +722,9 @@ function mergeSubSlot(group, slot, mainIds) {
 
   /* ② ★必须：全员共有的「必选」标记 */
   const reqCnt = new Map();
-  group.forEach(r => new Set(r.req).forEach(id => {
-    if (banned.has(id)) return;
+  group.forEach(r => new Set(r.req || []).forEach(raw => {
+    const id = statIdOf(raw);
+    if (!id || banned.has(id)) return;
     reqCnt.set(id, (reqCnt.get(id) || 0) + 1);
   }));
   const required = [...reqCnt.entries()]
@@ -726,8 +736,10 @@ function mergeSubSlot(group, slot, mainIds) {
   /* ③ 候选池：按「出现人数 × 算子权重」累加 */
   const poolScore = new Map();
   group.forEach(r => (r.pool || []).forEach(p => {
-    if (banned.has(p.id)) return;
-    poolScore.set(p.id, (poolScore.get(p.id) || 0) + p.w);
+    const id = statIdOf(p);
+    const w = (p && typeof p === 'object' && typeof p.w === 'number') ? p.w : 0;
+    if (!id || banned.has(id)) return;
+    poolScore.set(id, (poolScore.get(id) || 0) + w);
   }));
   let pool = [...poolScore.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
   // ★必须一定得在候选池里（可能排名在 SUB_POOL_TOP 之外）
@@ -1650,12 +1662,17 @@ function groupBrief(g) {
 function groupSubBrief(g) {
   const n = g.length;
   const reqCnt = new Map();
-  g.forEach(r => (r.req || []).forEach(id => reqCnt.set(id, (reqCnt.get(id) || 0) + 1)));
+  g.forEach(r => (r.req || []).forEach(raw => {
+    const id = statIdOf(raw);
+    if (id) reqCnt.set(id, (reqCnt.get(id) || 0) + 1);
+  }));
   const must = [...reqCnt.entries()].filter(([, c]) => c === n).map(([id]) => id);
 
   const score = new Map();
   g.forEach(r => (r.pool || []).forEach(p => {
-    score.set(p.id, (score.get(p.id) || 0) + p.w);
+    const id = statIdOf(p);
+    const w = (p && typeof p === 'object' && typeof p.w === 'number') ? p.w : 0;
+    if (id) score.set(id, (score.get(id) || 0) + w);
   }));
   const rest = [...score.entries()]
     .filter(([id]) => !must.includes(id))
