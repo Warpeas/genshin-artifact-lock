@@ -1694,7 +1694,7 @@ function renderMergePanel(setName, info) {
       <div class="gp-mrow">
         <span class="gp-mname">${g.map(r => esc(r.name)).join('、')}</span>
         <span class="gp-minfo">${esc(groupBrief(g))}</span>
-        <span class="gp-msubs">${esc(groupSubBrief(g))}</span>
+        <span class="gp-msubs">${groupSubBrief(g)}</span>
         <select class="gp-msel" data-gp-assign="${esc(setName)}|${i}">${opts}</select>
       </div>`;
   }).join('');
@@ -2315,15 +2315,10 @@ function bind() {
     toast('已清空启用状态');
   };
   $('#btnReset').onclick = () => {
-    if (!confirm('恢复内置默认角色库与套装列表？你的自定义修改会丢失。')) return;
+    if (!confirm('恢复内置默认角色库与套装列表、清除你的全部自定义修改（相当于硬刷新）？\n\n提示：浏览器普通「刷新」不会清本地存档，所以旧数据 / 乱码会一直留着；这个按钮能彻底重置。')) return;
     state = normalize({ characters: buildDefaultCharacters(), sets: defaultSets(), planAssign: {} });
     save(); renderChars(); renderPlan(); renderSubs(); renderSets();
     toast('已恢复默认库');
-  };
-  $('#btnHardReset').onclick = () => {
-    if (!confirm('清空本机浏览器保存的全部配置（角色 / 套装 / 方案）并重新加载？\n\n提示：浏览器普通「刷新」只重载页面、不会清本地存档，所以旧数据或乱码会一直留着；这个按钮才是真正的硬刷新。')) return;
-    try { localStorage.removeItem(STORE_KEY); } catch (e) { /* ignore */ }
-    location.reload();
   };
   $('#btnAddSet').onclick = () => {
     const n = $('#newSetName').value.trim();
