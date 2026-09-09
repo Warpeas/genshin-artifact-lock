@@ -1117,7 +1117,7 @@ function drawDrawer() {
     <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
   </div>
   <div class="fgroup">
-    <label>攻略来源 <span class="hint">链接触摸完整 URL 可直接跳转；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源；编辑时「作者/标题」选填，不填则按域名显示来源平台；工具不作解析，仅存档你认可的配装攻略。留空表示暂无来源</span></label>
+    <label>攻略来源 <span class="hint">文章 URL 可直接点击跳转；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源；工具不作解析，仅存档你认可的配装攻略。留空表示暂无来源</span></label>
     <div id="edSrcList" class="src-list"></div>
     <button type="button" class="btn sm" id="edAddSrc">+ 添加链接</button>
   </div>`;
@@ -1156,12 +1156,10 @@ function drawDrawer() {
   function commitSrc(i) {   // 确认：把输入框当前值写回并退出编辑态
     const wrap = body.querySelector('#edSrcList');
     const uInp = wrap.querySelector(`.src-url[data-i="${i}"]`);
-    const tInp = wrap.querySelector(`.src-title-in[data-i="${i}"]`);
     const url = uInp ? uInp.value.trim() : '';
-    const title = tInp ? tInp.value.trim() : '';
     const list = (editing.src = editing.src || []);
     if (!url) list.splice(i, 1);            // 清空 URL = 删除该行
-    else list[i] = { url, title };
+    else list[i] = { url, title: '' };
     srcEditIdx = null;
     renderSrcRows();
   }
@@ -1169,18 +1167,15 @@ function drawDrawer() {
     const wrap = body.querySelector('#edSrcList');
     const arr = (editing.src || []).map(normSrcItem).filter(Boolean);
     wrap.innerHTML = arr.length ? arr.map((it, i) => {
-      const u = it.url, title = it.title || '';
+      const u = it.url;
       const on = srcEditIdx === i;
-      const prefix = esc(title || srcPlatformName(u));   // 有标题显示标题，否则显示来源平台
       return `
       <div class="src-row" data-i="${i}">
         ${on
           ? `<input type="text" class="src-url" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
-             <input type="text" class="src-title-in" data-i="${i}" value="${esc(title)}" placeholder="作者/标题(选填)" spellcheck="false">
              <button type="button" class="src-ok" data-i="${i}" title="确认修改">✓</button>
              <button type="button" class="src-cancel" data-i="${i}" title="取消">×</button>`
-          : `<span class="src-title">${prefix}</span>
-             <a class="src-go" href="${esc(u)}" target="_blank" rel="noopener" title="点击打开：${esc(u)}">${esc(u)}</a>
+          : `<a class="src-go" href="${esc(u)}" target="_blank" rel="noopener" title="点击打开：${esc(u)}">${esc(u)}</a>
              <button type="button" class="src-edit" data-i="${i}" title="编辑链接">✎</button>`}
         <button type="button" class="src-del" data-i="${i}" title="删除该链接">−</button>
       </div>`;
@@ -1204,11 +1199,11 @@ function drawDrawer() {
       btn.onmousedown = e => e.preventDefault();
       btn.onclick = () => { srcEditIdx = null; renderSrcRows(); };
     });
-    // 编辑态：输入框失焦（焦点离开编辑区）= 确认；编辑态内部切换焦点不提交；回车确认、Esc 取消
-    wrap.querySelectorAll('.src-url, .src-title-in').forEach(inp => {
+    // 编辑态：输入框失焦（焦点离开编辑区）= 确认；回车确认、Esc 取消
+    wrap.querySelectorAll('.src-url').forEach(inp => {
       inp.onblur = e => {
         const rt = e.relatedTarget;
-        if (rt && rt.classList && (rt.classList.contains('src-url') || rt.classList.contains('src-title-in'))) return;
+        if (rt && rt.classList && rt.classList.contains('src-url')) return;
         if (srcEditIdx === +inp.dataset.i) commitSrc(+inp.dataset.i);
       };
       inp.onkeydown = e => {
