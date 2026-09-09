@@ -781,13 +781,15 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     </div>
     <div class="card">
       <h3>备份与恢复</h3>
-      <p class="muted small">配置保存在浏览器 localStorage，换设备或清缓存前请先导出。</p>
+      <p class="muted small">配置保存在浏览器 localStorage，换设备或清缓存前请先导出。<br>
+        <b>「清空本地数据并刷新」</b>＝删除本机存档键后重载（真正的硬刷新）；<b>「恢复内置默认库」</b>＝用内置默认库覆盖存档。二者对本工具而言效果一致，都会回到干净数据。注意：浏览器普通「刷新」<b>不会</b>清本地存档，所以旧数据/乱码会一直留着。</p>
       <div class="btn-row">
         <button id="btnExportJson" class="btn primary">导出配置 JSON</button>
         <button id="btnImportJson" class="btn">导入配置 JSON</button>
         <input type="file" id="fileImport" accept=".json" hidden>
         <button id="btnClearEnabled" class="btn">清空启用状态</button>
-        <button id="btnReset" class="btn danger">恢复内置默认库</button>
+        <button id="btnHardReset" class="btn danger">清空本地数据并刷新</button>
+        <button id="btnReset" class="btn">恢复内置默认库</button>
       </div>
     </div>
 
@@ -3743,6 +3745,11 @@ function bind() {
     state = normalize({ characters: buildDefaultCharacters(), sets: defaultSets(), planAssign: {} });
     save(); renderChars(); renderPlan(); renderSubs(); renderSets();
     toast('已恢复默认库');
+  };
+  $('#btnHardReset').onclick = () => {
+    if (!confirm('清空本机浏览器保存的全部配置（角色 / 套装 / 方案）并重新加载？\n\n提示：浏览器普通「刷新」只重载页面、不会清本地存档，所以旧数据或乱码会一直留着；这个按钮才是真正的硬刷新。')) return;
+    try { localStorage.removeItem(STORE_KEY); } catch (e) { /* ignore */ }
+    location.reload();
   };
   $('#btnAddSet').onclick = () => {
     const n = $('#newSetName').value.trim();

@@ -2320,6 +2320,11 @@ function bind() {
     save(); renderChars(); renderPlan(); renderSubs(); renderSets();
     toast('已恢复默认库');
   };
+  $('#btnHardReset').onclick = () => {
+    if (!confirm('清空本机浏览器保存的全部配置（角色 / 套装 / 方案）并重新加载？\n\n提示：浏览器普通「刷新」只重载页面、不会清本地存档，所以旧数据或乱码会一直留着；这个按钮才是真正的硬刷新。')) return;
+    try { localStorage.removeItem(STORE_KEY); } catch (e) { /* ignore */ }
+    location.reload();
+  };
   $('#btnAddSet').onclick = () => {
     const n = $('#newSetName').value.trim();
     const b = $('#newSetBonus').value.trim();
