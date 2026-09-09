@@ -12,17 +12,17 @@ const TIER_KEEP    = 0.8;                        // ≥ 视为必留
 const TIER_TRANS   = 0.4;                        // ≥ 视为过渡
 const KEEP_MAX     = 4;
 
-/* 可互换主词条组：同一角色在这些词条里只需 1 件（掉到哪个用哪个） */
+/* 可互换主要属性组：同一角色在这些词条里只需 1 件（掉到哪个用哪个） */
 const SWAP_GROUPS = {
   circlet: [{ a: 'cr', b: 'cd' }],
 };
 
 let state = null;
 let pendingMigrate = null;   // load() 若从旧存档回填了数据，init 里据此回写本地存储
-const SUB_EPOCH = 1;         // 副词条预设重要度版本；递增即把精炼后的预设同步给旧存档
+const SUB_EPOCH = 1;         // 追加属性预设重要度版本；递增即把精炼后的预设同步给旧存档
 let ui = { elem: 'all', search: '', onlyEnabled: false, planSet: 'all', planSlot: 'all', buildIdx: 0 };
 
-/* 把「副词条 / 主词条」项统一归一为 id 字符串：
+/* 把「追加属性 / 主要属性」项统一归一为 id 字符串：
  *   对象 {id} / {stat} / {id,w} → 取 id 或 stat；其余原样返回。
  *   防止旧存档 / 异常数据把对象当 id 传入，渲染出 [object Object]。 */
 function statIdOf(x) {
@@ -57,7 +57,7 @@ function migrateFromDefaults(o) {
     });
     o._srcMigrated = true;
   }
-  // 同步精炼后的副词条预设重要度（epoch 防循环）：仅刷新「词条集合未改」的内置角色，
+  // 同步精炼后的追加属性预设重要度（epoch 防循环）：仅刷新「词条集合未改」的内置角色，
   // 不覆盖用户自定义增删过的词条；双暴等真正同等重要的词条在此标为 '=' 同权
   const subBy = {};
   RAW_CHARS.forEach(([name, , sp]) => { subBy[name] = sp; });
@@ -183,7 +183,7 @@ function normalize(o) {
   return o;
 }
 
-/* 配装组归一化：把主/副词条需求从角色级迁移到配装组级
+/* 配装组归一化：把主/追加属性需求从角色级迁移到配装组级
  *   旧结构：角色一个 subs（数值权重对象）+ 一个 main
  *   新结构：每组配装各自带 main + subs（有序数组 + 必选标记）
  */
@@ -192,14 +192,14 @@ function normalizeBuild(b, c) {
     sets: Array.isArray(b.sets) ? b.sets.filter(Boolean) : [],
     priority: b.priority === 'alt' ? 'alt' : 'main',
   };
-  // 主词条：优先用组内的，缺失则回落到角色级旧数据
+  // 主要属性：优先用组内的，缺失则回落到角色级旧数据
   const srcMain = b.main || c.main;
   out.main = {
     sands:   normalizeMains(srcMain && srcMain.sands, 'sands'),
     goblet:  normalizeMains(srcMain && srcMain.goblet, 'goblet'),
     circlet: normalizeMains(srcMain && srcMain.circlet, 'circlet'),
   };
-  // 副词条：优先用组内的，缺失则把角色级旧权重转成「排序 + 必选」
+  // 追加属性：优先用组内的，缺失则把角色级旧权重转成「排序 + 必选」
   out.subs = normalizeSubs(b.subs || c.subs);
   return out;
 }
@@ -213,7 +213,7 @@ function normalizeMains(list, slot) {
   return arr;
 }
 
-/* 副词条归一化：
+/* 追加属性归一化：
  *   新：[{ id, req }] 有序数组
  *   旧：{ cr: 1, cd: 0.7... } 数值权重对象 → 按值降序排序，≥0.9 视为必选
  */
@@ -323,14 +323,14 @@ function isBuiltinSet(name) {
 }
 
 /* ============================================================
- * 副词条「排序 + 必选」模型
- *   一份副词条需求 = 有序数组 [{ id, req }]，越靠前越想要，req=true 表示 ★必须
+ * 追加属性「排序 + 必选」模型
+ *   一份追加属性需求 = 有序数组 [{ id, req }]，越靠前越想要，req=true 表示 ★必须
  *   名次权重用于「相似度 / 评分 / 排序」等需要数值的场合（界面上不暴露给用户的内部量）
  * ============================================================ */
 const SUB_RANK_DECAY = 0.72;  // 名次权重衰减：第 1 名 1.0，之后 ×0.72
 const SUB_CORE_TOP   = 3;     // 前 N 名算「核心需求」（参与「包含任意 N 条」的基准）
-const SUB_POOL_TOP   = 5;     // 每人最多贡献 N 条候选副词条，避免候选池过宽
-const SUB_POOL_MAX   = 5;     // 合并后的候选池上限（再宽就等同于「不限」，失去筛选意义）
+const SUB_POOL_TOP   = 5;     // 每人最多贡献 N 条追加属性，避免追加属性池过宽
+const SUB_POOL_MAX   = 5;     // 合并后的追加属性池上限（再宽就等同于「不限」，失去筛选意义）
 
 /* 重要度链：把「= / >」算子展开成每条词条的权重
  *   第 1 条最顶（权重 1.0）；其后每条：
@@ -351,7 +351,7 @@ function opWeights(list, decay) {
   return out;
 }
 
-/* 有序副词条 → { id: 权重 }，★必选额外加权，保证它一定算核心需求 */
+/* 有序追加属性 → { id: 权重 }，★必选额外加权，保证它一定算核心需求 */
 function subWeights(list) {
   const w = {};
   SUB_STATS.forEach(s => { w[s.id] = 0; });
@@ -373,7 +373,7 @@ function coreSubs(list) {
 function reqSubs(list) {
   return (list || []).filter(s => s.req).map(s => s.id);
 }
-/* 候选池：取前 SUB_POOL_TOP 名，并带上各自的算子权重（供合并时按重要度累加） */
+/* 追加属性池：取前 SUB_POOL_TOP 名，并带上各自的算子权重（供合并时按重要度累加） */
 function poolSubs(list) {
   const ws = opWeights(list);
   return (list || []).slice(0, SUB_POOL_TOP).map((s, i) => ({ id: s.id, w: ws[i] }));
@@ -413,7 +413,7 @@ function computePlan(includeAlt = true) {
         const prev = bucket.users.get(c.name);
         if (!prev || (prev.alt && !isAlt)) bucket.users.set(c.name, { alt: isAlt });
 
-        // 花 / 羽：主词条固定
+        // 花 / 羽：主要属性固定
         ['flower', 'plume'].forEach(slot => {
           const key = '_fixed';
           const m = bucket.slots[slot];
@@ -471,7 +471,7 @@ function computePlan(includeAlt = true) {
   return out;
 }
 
-/* 合并可互换主词条（如暴击率 / 暴击伤害冠） */
+/* 合并可互换主要属性（如暴击率 / 暴击伤害冠） */
 function mergeSwapGroup(slot, rows) {
   const groups = SWAP_GROUPS[slot] || [];
   if (!groups.length) return rows;
@@ -508,7 +508,7 @@ function mergeSwapGroup(slot, rows) {
   return rows;
 }
 
-/* 主词条显示名（含可互换标注） */
+/* 主要属性显示名（含可互换标注） */
 function statLabel(slot, r) {
   if (r.swap) return mainStatName(slot, r.stat) + ' / ' + mainStatName(slot, r.swap);
   if (r.stat === '_fixed') return slot === 'flower' ? '生命值（固定）' : '攻击力（固定）';
@@ -527,7 +527,7 @@ function walkEnabledBuilds(includeAlt, fn) {
   });
 }
 
-/* 各套装的副词条权重（按【配装组】平均，名次权重制） */
+/* 各套装的追加属性权重（按【配装组】平均，名次权重制） */
 function computeSetWeights(includeAlt = true) {
   const acc = new Map(); // set -> { sum:{}, n:0 }
   walkEnabledBuilds(includeAlt, (c, b) => {
@@ -548,7 +548,7 @@ function computeSetWeights(includeAlt = true) {
   return out;
 }
 
-/* 各套装的副词条【需求排序】：按「名次权重」平均降序，并统计有多少角色标了★必选
+/* 各套装的追加属性【需求排序】：按「名次权重」平均降序，并统计有多少角色标了★必选
  * 返回 Map: 套装 -> { n, list: [{ id, name, score, reqRatio, must }] }
  */
 function setSubRanking(includeAlt = true) {
@@ -578,7 +578,7 @@ function setSubRanking(includeAlt = true) {
   return out;
 }
 
-/* 全部启用角色的平均副词条权重（兜底） */
+/* 全部启用角色的平均追加属性权重（兜底） */
 function globalWeights() {
   const w = {};
   SUB_STATS.forEach(s => { w[s.id] = 0; });
@@ -608,23 +608,23 @@ function globalWeights() {
  *      超出槽位时出现「手动合并」面板，默认按相似度自动归入，可手动调整
  *   ② 主属性：花/羽固定；沙/杯/冠按「票数 × 优先级」降序，
  *      取到累计覆盖 ≥ MAIN_COVER 为止，上限 MAIN_MAX
- *   ③ ★必须：组内全体角色都标了「必选」的副词条，按平均名次权重降序，上限 2
- *   ④ 候选池：组内任一角色前 SUB_POOL_TOP 条需求（剔除与唯一主词条冲突项）
+ *   ③ ★必须：组内全体角色都标了「必选」的追加属性，按平均名次权重降序，上限 2
+ *   ④ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求（剔除与唯一主要属性冲突项）
  *   ⑤ 至少命中 N：round(组内平均核心词条数 × 部位严格度系数)，
- *      下限 = ★必须数量（否则★之外的候选形同虚设），上限 = min(4, 候选池-1)
+ *      下限 = ★必须数量（否则★之外的候选形同虚设），上限 = min(4, 追加属性池-1)
  * ============================================================ */
 const MERGE_FIT    = 0.72; // 默认「贴合度下限」：合并后方案的贴合度低于它就停手（界面可调）
-const SUB_SIM_W     = 0.75; // 相似度里「副词条倾向」的权重，其余给主属性（以副词条聚类）
+const SUB_SIM_W     = 0.75; // 相似度里「追加属性倾向」的权重，其余给主属性（以追加属性聚类）
 const FIT_COV_W    = 0.8;  // 贴合度里「成员需求被代表程度」的权重
-const FIT_WIDTH_W  = 0.2;  // 贴合度里「候选池宽度」的权重（候选池越宽越不贴合）
+const FIT_WIDTH_W  = 0.2;  // 贴合度里「追加属性池宽度」的权重（追加属性池越宽越不贴合）
 const CAND_SOFT_CAP = 24;   // 候选数保护上限（防止极端数据下列表过长，正常不会触发）
 const GAME_MAX_PRESET = 3;  // 游戏内每种套装至多 3 个自定义预设（仅作提示，工具侧不再硬限制）
 const MAIN_MAX    = 3;     // 单部位主属性上限（条件过宽会「存伪」）
 const MAIN_COVER  = 0.7;   // 主属性取到累计覆盖该比例为止
 
 /* 部位严格度系数：影响各部位「至少命中 N 条」的取值
- *   花 / 羽：主词条固定，副词条是唯一变量 → 要求最严（×1.2）
- *   沙 / 冠：主词条与副词条互补          → 标准（×1.0）
+ *   花 / 羽：主要属性固定，追加属性是唯一变量 → 要求最严（×1.2）
+ *   沙 / 冠：主要属性与追加属性互补          → 标准（×1.0）
  *   杯    ：元素伤害杯本就稀有            → 放宽（×0.8）
  */
 const SLOT_STRICT = { flower: 1.0, plume: 1.0, sands: 1.0, circlet: 0.95, goblet: 0.8 };
@@ -648,8 +648,8 @@ function cosSim(a, b) {
   return d ? dot / d : 0;
 }
 
-/* 角色需求相似度：副词条倾向为主，主属性为辅
- *   本次改为「按副词条需求聚类」，所以副词条权重占大头（SUB_SIM_W） */
+/* 角色需求相似度：追加属性倾向为主，主属性为辅
+ *   本次改为「按追加属性需求聚类」，所以追加属性权重占大头（SUB_SIM_W） */
 function roleSimilarity(a, b) {
   let ms = 0;
   ['sands', 'goblet', 'circlet'].forEach(slot => { ms += jaccard(a.mains[slot], b.mains[slot]); });
@@ -663,9 +663,9 @@ function groupSim(g1, g2) {
 }
 
 /* 方案贴合度（0–1，越高越贴合）：用来判断「还能不能再合一次」
- *   ① 覆盖率：拿合并后的候选池对照每个成员自己的【有序】需求表，按名次加权计算
+ *   ① 覆盖率：拿合并后的追加属性池对照每个成员自己的【有序】需求表，按名次加权计算
  *      「还剩下多少被代表」——最看重的第 1 名没进池，扣得最多
- *   ② 宽度：候选池越宽越接近「不限」，筛选意义越弱
+ *   ② 宽度：追加属性池越宽越接近「不限」，筛选意义越弱
  *
  *   为什么不用「相似度阈值」直接卡：真实数据里大量角色共用同一套预设，
  *   相似度非 1 即 0.75 左右，是台阶式分布，阈值滑块会变成几档跳变（实测
@@ -691,8 +691,8 @@ function planFit(group) {
 }
 
 /* ①-a 自然分组（本次改造的核心）
- *   【按副词条需求合并】：每一步都在「当前最相似的两组」里挑，保证并起来的
- *   一定是副词条需求最接近的；但【停不停手】改由「合并后贴合度」决定——
+ *   【按追加属性需求合并】：每一步都在「当前最相似的两组」里挑，保证并起来的
+ *   一定是追加属性需求最接近的；但【停不停手】改由「合并后贴合度」决定——
  *   贴合度仍在下限以上才允许并，否则保留为独立候选。
  *   下限越高 → 分得越细、候选越多越贴合；越低 → 并得越狠、候选越少越宽松。
  *   不再有 3 个槽位的硬限制，每组日后即成为一份「候选方案」。
@@ -763,21 +763,21 @@ function mergeMain(group, slot) {
   return out;
 }
 
-/* 花/羽的主词条（固定值），该词条不可能作为同部位的副词条出现 */
+/* 花/羽的主要属性（固定值），该词条不可能作为同部位的追加属性出现 */
 const FIXED_MAIN = { flower: 'hp', plume: 'atk' };
 
 /* ③④⑤ 合并一组角色的追加属性条件 —— 【全方案唯一一份，五个部位共用】
- *   ① 冲突剔除：副词条不可能与同部位主词条相同。改为方案级统一后，只能剔除
- *      花 / 羽的固定主词条（hp / atk，这两部位主词条恒定）；其余部位的主词条随
- *      方案而变，无法再逐部位剔除——这是「统一副词条」换取一致性的固有取舍。
+ *   ① 冲突剔除：追加属性不可能与同部位主要属性相同。改为方案级统一后，只能剔除
+ *      花 / 羽的固定主要属性（hp / atk，这两部位主要属性恒定）；其余部位的主要属性随
+ *      方案而变，无法再逐部位剔除——这是「统一追加属性」换取一致性的固有取舍。
  *   ② ★必须：组内「所有」角色都标了必选的词条（交集），按平均名次权重降序，最多 2 个
- *   ③ 候选池：组内任一角色前 SUB_POOL_TOP 条需求，按「广度 × 名次」累加降序
+ *   ③ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求，按「广度 × 名次」累加降序
  *   ④ 包含任意 N 条：以组内平均核心词条数为基准 × 最宽松部位系数（宁可锁松也不漏）
  */
 function mergeSubUniform(group) {
   const n = group.length;
   if (!n) return { required: [], pool: [], minHit: 0 };
-  const banned = new Set([FIXED_MAIN.flower, FIXED_MAIN.plume]);  // 花/羽主词条固定，恒冲突
+  const banned = new Set([FIXED_MAIN.flower, FIXED_MAIN.plume]);  // 花/羽主要属性固定，恒冲突
 
   const rawCores = group.map(r => r.core);
   const avgW = id => group.reduce((s, r) => s + (r.subs[id] || 0), 0) / n;
@@ -795,7 +795,7 @@ function mergeSubUniform(group) {
     .sort((a, b) => avgW(b) - avgW(a))   // 名次靠前的优先
     .slice(0, 2);                        // 最多 2 个，避免条件过严
 
-  /* ③ 候选池：按「出现人数 × 算子权重」累加 */
+  /* ③ 追加属性池：按「出现人数 × 算子权重」累加 */
   const poolScore = new Map();
   group.forEach(r => (r.pool || []).forEach(p => {
     const id = statIdOf(p);
@@ -804,11 +804,11 @@ function mergeSubUniform(group) {
     poolScore.set(id, (poolScore.get(id) || 0) + w);
   }));
   let pool = [...poolScore.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
-  // ★必须一定得在候选池里（可能排名在 SUB_POOL_TOP 之外）
+  // ★必须一定得在追加属性池里（可能排名在 SUB_POOL_TOP 之外）
   required.forEach(id => { if (!pool.includes(id)) pool.push(id); });
-  // 候选池收口：太宽就等于「不限」，失去筛选意义
+  // 追加属性池收口：太宽就等于「不限」，失去筛选意义
   if (pool.length > SUB_POOL_MAX) pool = pool.slice(0, SUB_POOL_MAX);
-  if (!pool.length) return { required: [], pool: [], minHit: 0 };  // 只挑主词条，副词条不限
+  if (!pool.length) return { required: [], pool: [], minHit: 0 };  // 只挑主要属性，追加属性不限
 
   const rawCore = rawCores.reduce((s, l) => s + l.length, 0) / n;
   // 统一取值：沿用最宽松部位的系数（空之杯 0.8），宁可锁松也不漏
@@ -818,8 +818,8 @@ function mergeSubUniform(group) {
   return { required, pool, minHit };
 }
 
-/* 融合两份副词条条件（手动合并方案时用）：
- *   ★必须取交集（两边都要才算必须）、候选池取并集、包含条数取小值（更宽松） */
+/* 融合两份追加属性条件（手动合并方案时用）：
+ *   ★必须取交集（两边都要才算必须）、追加属性池取并集、包含条数取小值（更宽松） */
 function fuseSub(a, b) {
   if (!a) return b;
   if (!b) return a;
@@ -833,11 +833,11 @@ function fuseSub(a, b) {
   };
 }
 
-/* 一组角色 -> 候选方案（副词条条件全方案统一） */
+/* 一组角色 -> 候选方案（追加属性条件全方案统一） */
 function planFromGroup(group) {
   const mains = {};
   SLOTS.forEach(sd => {
-    // 花 / 羽主词条固定，游戏内只能设追加属性
+    // 花 / 羽主要属性固定，游戏内只能设追加属性
     mains[sd.id] = (sd.id === 'flower' || sd.id === 'plume') ? null : mergeMain(group, sd.id);
   });
   const names = group.map(r => r.name);
@@ -913,17 +913,17 @@ function toRoles(charList, setName) {
           circlet: (b.main.circlet || []).map(m => ({ stat: m.stat, op: m.op || '>' })),
         },
         subs: subWeights(b.subs),   // 名次权重向量（用于相似度 / 评分）
-        subList: b.subs || [],      // 原始词条（含 op），供候选池按重要度打分
+        subList: b.subs || [],      // 原始词条（含 op），供追加属性池按重要度打分
         core: coreSubs(b.subs),     // 核心需求，决定「包含任意 N 条」
         req:  reqSubs(b.subs),      // ★必选标记
-        pool: poolSubs(b.subs),     // 候选池
+        pool: poolSubs(b.subs),     // 追加属性池
       };
     });
 }
 
 /* ============================================================
  * 候选方案生成（本次改造的核心管道）
- *   不再有「几个槽位」的概念：按副词条需求把角色聚成若干候选，
+ *   不再有「几个槽位」的概念：按追加属性需求把角色聚成若干候选，
  *   散件 / 过渡规则也作为候选同权参与，之后由用户合并 / 挑选。
  * ============================================================ */
 
@@ -967,7 +967,7 @@ function applyPlanOverlay(setName, cands) {
 
 /* ============================================================
  * 散件 / 过渡 保留规则
- *   与具体角色无关，用于保留高价值散件（稀有主词条）或过渡 2 件套胚子。
+ *   与具体角色无关，用于保留高价值散件（稀有主要属性）或过渡 2 件套胚子。
  *   每条启用的规则会转成一份候选方案，与角色聚类结果【同权】参与后续合并 / 采纳。
  * ============================================================ */
 function allKeepRules() {
@@ -984,14 +984,14 @@ function activeKeepRules() {
   if (!state || !state.keepRules) return [];
   return allKeepRules().filter(r => keepRuleEnabled(r.id));
 }
-/* 规则 -> 候选方案（规则本就是单份副词条条件，天然符合「全方案统一」） */
+/* 规则 -> 候选方案（规则本就是单份追加属性条件，天然符合「全方案统一」） */
 function ruleToPlan(rule) {
-  const banned = new Set([FIXED_MAIN.flower, FIXED_MAIN.plume]);  // 花/羽主词条固定，恒冲突
+  const banned = new Set([FIXED_MAIN.flower, FIXED_MAIN.plume]);  // 花/羽主要属性固定，恒冲突
   const mains = {};
   SLOTS.forEach(sd => {
-    // 花 / 羽主词条固定，游戏内只能设追加属性
+    // 花 / 羽主要属性固定，游戏内只能设追加属性
     if (sd.id === 'flower' || sd.id === 'plume') { mains[sd.id] = null; return; }
-    // 命中的部位取规则指定的主词条，其余部位为「不限」（[]）
+    // 命中的部位取规则指定的主要属性，其余部位为「不限」（[]）
     mains[sd.id] = (rule.slot === sd.id) ? (rule.mains || []).slice() : [];
   });
   return {
@@ -1059,9 +1059,9 @@ function subCondText(sub) {
 function subHitText(sub) {
   return sub.minHit ? `包含任意 <b>${sub.minHit}</b> 条` : '<span class="gp-fixed">不限</span>';
 }
-/* 单部位主词条：null = 固定（花 / 羽），[] = 不限 */
+/* 单部位主要属性：null = 固定（花 / 羽），[] = 不限 */
 function mainCondText(slotId, list) {
-  if (list === null || list === undefined) return '<span class="gp-fixed">主词条固定</span>';
+  if (list === null || list === undefined) return '<span class="gp-fixed">主要属性固定</span>';
   return list.length
     ? list.map(id => `<span class="gp-main">${esc(mainStatName(slotId, id))}</span>`).join('')
     : '<span class="gp-fixed">不限</span>';
@@ -1072,14 +1072,14 @@ function planCopyText(setName, plan, idx) {
     ? `散件 / 过渡保留：${plan.ruleName}`
     : `供 ${plan.chars.join('、')} 使用`;
   const L = [`  方案${idx + 1}（${who}）`];
-  // 追加属性是全方案统一的一份，先说一遍，五个部位再各自列主词条
+  // 追加属性是全方案统一的一份，先说一遍，五个部位再各自列主要属性
   const subAll = [...plan.sub.required.map(id => '★' + subStatName(id)),
     ...plan.sub.pool.filter(id => !plan.sub.required.includes(id)).map(id => subStatName(id))].join('、');
   L.push(`  追加属性（五个部位相同）：${subAll || '不限'}${plan.sub.minHit ? `　·　包含任意 ${plan.sub.minHit} 条` : ''}`);
   SLOTS.forEach(sd => {
     const list = plan.mains[sd.id];
     const mainTxt = list === null || list === undefined
-      ? '主词条固定'
+      ? '主要属性固定'
       : (list.length ? list.map(id => mainStatName(sd.id, id)).join('、') : '不限');
     L.push(`  ${sd.name}：主要属性 ${mainTxt}`);
   });
@@ -1332,32 +1332,32 @@ function drawDrawer() {
   </div>
 
   <div class="fgroup">
-    <span class="glabel">词条需求归属 <span class="hint">主词条 / 副词条按配装组分别设置</span></span>
+    <span class="glabel">词条需求归属 <span class="hint">主要属性 / 追加属性按配装组分别设置</span></span>
     <div class="seg" id="edBuildTabs">
       ${c.builds.map((b, i) => `<button type="button" class="seg-btn ${i === ui.buildIdx ? 'active' : ''}" data-bt="${i}">配装${i + 1}${b.priority === 'main' ? '·主推' : ''}</button>`).join('')}
     </div>
     <div class="copy-row">
       <select id="edCopyFrom">
-        <option value="">📋 从…一键复制词条（主词条 + 副词条）</option>
+        <option value="">📋 从…一键复制词条（主要属性 + 追加属性）</option>
         ${c.builds.map((b, i) => i === ui.buildIdx ? '' :
           `<option value="b${i}">配装${i + 1}（${esc((b.sets || []).join('+') || '未选套装')}）</option>`).join('')}
-        ${Object.keys(SUB_PRESETS).map(k => `<option value="p${k}">预设 · ${SUB_PRESET_NAMES[k]}（仅副词条）</option>`).join('')}
+        ${Object.keys(SUB_PRESETS).map(k => `<option value="p${k}">预设 · ${SUB_PRESET_NAMES[k]}（仅追加属性）</option>`).join('')}
       </select>
     </div>
   </div>
 
   ${['sands', 'goblet', 'circlet'].map(slot => `
     <div class="fgroup">
-      <span class="glabel">${SLOTS.find(s => s.id === slot).name}主词条 <span class="hint">越靠前优先级越高</span></span>
+      <span class="glabel">${SLOTS.find(s => s.id === slot).name}主要属性 <span class="hint">越靠前优先级越高</span></span>
       <div class="ms-list" id="edMain_${slot}"></div>
-      <button type="button" class="btn sm" id="edAdd_${slot}">+ 添加主词条</button>
+      <button type="button" class="btn sm" id="edAdd_${slot}">+ 添加主要属性</button>
     </div>`).join('')}
 
   <div class="fgroup">
-    <span class="glabel">副词条需求 <span class="hint">越靠前越想要；★ = 游戏内锁定方案的「必须」</span></span>
+    <span class="glabel">追加属性需求 <span class="hint">越靠前越想要；★ = 游戏内锁定方案的「必须」</span></span>
     <div class="ms-list" id="edSubs"></div>
     <select id="edAddSub">
-      <option value="">+ 添加副词条…</option>
+      <option value="">+ 添加追加属性…</option>
       ${SUB_STATS.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
     </select>
   </div>
@@ -1518,23 +1518,23 @@ function drawDrawer() {
     }
     drawDrawer();
   };
-  // 主词条
+  // 主要属性
   ['sands', 'goblet', 'circlet'].forEach(slot => {
     body.querySelector('#edAdd_' + slot).onclick = () => {
       const arr = curBuild().main[slot];
       const used = new Set(arr.map(m => m.stat));
       const next = MAIN_STATS[slot].find(s => !used.has(s.id));
-      if (!next) return toast('该部位主词条已全部添加');
+      if (!next) return toast('该部位主要属性已全部添加');
       arr.push({ stat: next.id, rank: arr.length + 1, op: '>' });
       drawMains();
     };
   });
-  // 副词条
+  // 追加属性
   body.querySelector('#edAddSub').onchange = e => {
     const id = e.target.value;
     if (!id) return;
     const subs = curBuild().subs;
-    if (subs.some(s => s.id === id)) return toast('该副词条已在列表中');
+    if (subs.some(s => s.id === id)) return toast('该追加属性已在列表中');
     subs.push({ id, req: false, op: '>' });
     drawSubs();
   };
@@ -1653,7 +1653,7 @@ function drawMains() {
 }
 function renank(slot) { curBuild().main[slot].forEach((m, i) => { m.rank = i + 1; }); }
 
-/* 副词条：与主词条一致的「排序」编辑器，外加 ★必选 开关 */
+/* 追加属性：与主要属性一致的「排序」编辑器，外加 ★必选 开关 */
 function drawSubs() {
   const box = $('#edSubs');
   if (!box) return;
@@ -1834,7 +1834,7 @@ function renderKeepRules() {
         <input type="checkbox" data-kr-toggle="${esc(r.id)}"${on ? ' checked' : ''}>
         <span class="kr-name">${esc(r.name)}</span>
         <span class="kr-slot">${esc(slotName)}</span>
-        <span class="kr-cond">主词条：${esc(mainsTxt)}${poolTxt ? `　·　候选：${esc(poolTxt)}` : ''}${r.minHit ? `　·　任意 ${r.minHit} 条` : ''}</span>
+        <span class="kr-cond">主要属性：${esc(mainsTxt)}${poolTxt ? `　·　追加属性：${esc(poolTxt)}` : ''}${r.minHit ? `　·　任意 ${r.minHit} 条` : ''}</span>
         ${r.desc ? `<span class="kr-desc">${esc(r.desc)}</span>` : ''}
         ${r.builtin ? '' : `<button type="button" class="kr-del" data-kr-del="${esc(r.id)}" title="删除该自定义规则">删除</button>`}
         ${truncated ? '<span class="kr-warn">槽位不足，本条暂未生效</span>' : ''}
@@ -1854,14 +1854,14 @@ function renderSetBlock(name, b, slotFilter, setWeights, threshold) {
   const users = Array.from(b.users.entries());
   const unused = users.length === 0;
 
-  // 游戏内锁定方案：先把该套装下的角色按副词条需求聚成若干候选，
+  // 游戏内锁定方案：先把该套装下的角色按追加属性需求聚成若干候选，
   // 散件 / 过渡规则也作为候选加入，再由用户手动合并 / 勾选采纳
   const charsForPlan = state.characters.filter(c => c.enabled && b.users.has(c.name));
   const cands = charsForPlan.length
     ? setCandidates(charsForPlan, name, threshold) : [];
   const gpHtml = cands.length ? renderGamePlans(name, cands, slotFilter) : '';
 
-  // 该套装的副词条需求排序（用于花/羽行提示）
+  // 该套装的追加属性需求排序（用于花/羽行提示）
   const rank = setWeights ? (setWeights.get(name) || {}).list : null;
   const topSubs = rank
     ? rank.slice(0, 3).map(x => x.name + (x.must ? '★' : '')).join(' > ')
@@ -1880,7 +1880,7 @@ function renderSetBlock(name, b, slotFilter, setWeights, threshold) {
             <span class="keep-n">建议保留 <b>${r.keep}</b> 件</span>
             <span class="tier-tag ${tierClass(r.tier)}">${tierLabel(r.tier)}</span>
           </div>
-          ${topSubs ? `<div class="sub-hint-row">副词条优先：<b>${esc(topSubs)}</b></div>` : ''}
+          ${topSubs ? `<div class="sub-hint-row">追加属性优先：<b>${esc(topSubs)}</b></div>` : ''}
           <div class="req-from">${r.charsArr.map(x => `<span class="fn ${x.alt ? 'alt' : ''}">${esc(x.name)}${x.alt ? '·备选' : ''}</span>`).join('')}</div>`;
         return slotRow(sd, inner);
       }
@@ -2078,7 +2078,7 @@ function planToText() {
         const rows = b.slots[sd.id] || [];
         if (!rows.length) { lines.push('  ' + sd.name + '：无需求，可全喂'); return; }
         if (sd.id === 'flower' || sd.id === 'plume') {
-          lines.push(`  ${sd.name}：主词条固定，建议保留 ${rows[0].keep} 件（${rows[0].charsArr.map(x => x.name).join('、')}）`);
+          lines.push(`  ${sd.name}：主要属性固定，建议保留 ${rows[0].keep} 件（${rows[0].charsArr.map(x => x.name).join('、')}）`);
           return;
         }
         const parts = rows.map(r =>
@@ -2095,7 +2095,7 @@ function planToText() {
 function planToCsv() {
   const includeAlt = $('#planAltBuild').checked;
   const plan = computePlan(includeAlt);
-  const rows = [['套装', '部位', '主词条', '分级', '建议保留件数', '需求角色']];
+  const rows = [['套装', '部位', '主要属性', '分级', '建议保留件数', '需求角色']];
   Array.from(plan.entries())
     .filter(([, b]) => b.users.size > 0)
     .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
@@ -2124,7 +2124,7 @@ function download(filename, content, mime) {
 }
 
 /* ============================================================
- * 页面 ③：副词条规则
+ * 页面 ③：追加属性规则
  * ============================================================ */
 function renderSubs() {
   const n = state.characters.filter(c => c.enabled).length;
@@ -2133,21 +2133,21 @@ function renderSubs() {
   rules.innerHTML = `
     <div class="rule-block s">
       <h4>S 级 · 必锁</h4>
-      <p>主词条命中「必留」列表，且副词条<b>同时含暴击率与暴击伤害</b>（或你方角色所需的核心双词条）。<br>操作：直接锁定，喂到 20 级。</p>
+      <p>主要属性命中「必留」列表，且追加属性<b>同时含暴击率与暴击伤害</b>（或你方角色所需的核心双词条）。<br>操作：直接锁定，喂到 20 级。</p>
     </div>
     <div class="rule-block a">
       <h4>A 级 · 升级观察</h4>
-      <p>主词条命中需求，副词条含<b>单个暴击词条 + 1 条有效词条</b>。<br>操作：升到 4 级看第 4 词条，出双暴继续喂，否则停手留作过渡。</p>
+      <p>主要属性命中需求，追加属性含<b>单个暴击词条 + 1 条有效词条</b>。<br>操作：升到 4 级看第 4 词条，出双暴继续喂，否则停手留作过渡。</p>
     </div>
     <div class="rule-block b">
       <h4>B 级 · 过渡件</h4>
-      <p>主词条命中需求但副词条平庸。<br>操作：先用着，毕业胚子到位后当狗粮喂掉。</p>
+      <p>主要属性命中需求但追加属性平庸。<br>操作：先用着，毕业胚子到位后当狗粮喂掉。</p>
     </div>
     <div class="rule-block c">
       <h4>C 级 · 狗粮</h4>
-      <p>主词条不在任何已启用角色的需求列表中。<br>操作：直接喂。<span class="hint">例外：同套装的对应元素伤害杯极难出货，建议无脑保留。</span></p>
+      <p>主要属性不在任何已启用角色的需求列表中。<br>操作：直接喂。<span class="hint">例外：同套装的对应元素伤害杯极难出货，建议无脑保留。</span></p>
     </div>
-    <p class="muted small" style="margin-top:14px">${n ? '当前已启用 ' + n + ' 个角色，下方评分器按这些角色的副词条<b>需求排序</b>打分（按配装组统计）。' : '尚未启用角色，评分器暂用「双暴输出」默认排序。'}</p>`;
+    <p class="muted small" style="margin-top:14px">${n ? '当前已启用 ' + n + ' 个角色，下方评分器按这些角色的追加属性<b>需求排序</b>打分（按配装组统计）。' : '尚未启用角色，评分器暂用「双暴输出」默认排序。'}</p>`;
 
   // 评分器：初始化
   const sS = $('#scoreSet'), sL = $('#scoreSlot');
@@ -2200,7 +2200,7 @@ function runScore() {
   const includeAlt = $('#planAltBuild') ? $('#planAltBuild').checked : true;
   const plan = computePlan(includeAlt);
 
-  // 主词条需求判定
+  // 主要属性需求判定
   let tier = null, keep = 0, who = [];
   if (setName && plan.has(setName)) {
     const rows = plan.get(setName).slots[slot] || [];
@@ -2252,9 +2252,9 @@ function runScore() {
   }
 
   const tierTxt = setName
-    ? (tier ? `<span class="tier-tag ${tierClass(tier)}">主词条：${tierLabel(tier)}</span> 建议保留 ${keep} 件${who.length ? '（' + esc(who.join('、')) + '）' : ''}`
-            : '<span class="tier-tag fodder">主词条：无角色需要</span> 当前配装用不上')
-    : '<span class="muted small">未选择套装，只做副词条评分</span>';
+    ? (tier ? `<span class="tier-tag ${tierClass(tier)}">主要属性：${tierLabel(tier)}</span> 建议保留 ${keep} 件${who.length ? '（' + esc(who.join('、')) + '）' : ''}`
+            : '<span class="tier-tag fodder">主要属性：无角色需要</span> 当前配装用不上')
+    : '<span class="muted small">未选择套装，只做追加属性评分</span>';
 
   const top = detail.slice(0, 4).map(d =>
     `<span class="set-tag" style="margin-right:4px">${esc(d.name)} ${d.rolls.toFixed(1)}roll ×${d.w.toFixed(2)}</span>`).join('');
@@ -2265,8 +2265,8 @@ function runScore() {
       <span class="muted small">有效权重 ${eff.toFixed(2)} / 约 ${maxRolls} 次词条 = ${(pct * 100).toFixed(0)}%</span>
     </div>
     <div style="margin:8px 0">${tierTxt}</div>
-    <div style="margin-bottom:6px">${top || '<span class="muted small">尚未填写副词条</span>'}</div>
-    <div class="muted small">建议：${advice}${tier === null && setName ? '　（若主词条无人需要，副词条再好也只能当狗粮）' : ''}</div>`;
+    <div style="margin-bottom:6px">${top || '<span class="muted small">尚未填写追加属性</span>'}</div>
+    <div class="muted small">建议：${advice}${tier === null && setName ? '　（若主要属性无人需要，追加属性再好也只能当狗粮）' : ''}</div>`;
 }
 
 function renderSetSubTable() {
@@ -2289,8 +2289,8 @@ function renderSetSubTable() {
     }).join('');
 
   $('#setSubTable').innerHTML = rows
-    ? `<table class="tbl"><thead><tr><th>套装</th><th>副词条需求排序 Top5（★= 多数角色标为必选）</th><th>相对强度</th></tr></thead><tbody>${rows}</tbody></table>`
-    : '<p class="muted small">启用角色后这里会显示每个套装的副词条需求排序。</p>';
+    ? `<table class="tbl"><thead><tr><th>套装</th><th>追加属性需求排序 Top5（★= 多数角色标为必选）</th><th>相对强度</th></tr></thead><tbody>${rows}</tbody></table>`
+    : '<p class="muted small">启用角色后这里会显示每个套装的追加属性需求排序。</p>';
 }
 
 /* ============================================================
@@ -2523,7 +2523,7 @@ function bind() {
     const pool = [...document.querySelectorAll('#krPool input:checked')].map(i => i.value);
     const minHit = Math.max(0, Math.min(4, +$('#krMinHit').value || 0));
     if (!name) return toast('请填写规则名称');
-    if (!mains.length) return toast('请至少勾选一个要留的主词条');
+    if (!mains.length) return toast('请至少勾选一个要留的主要属性');
     const id = 'custom_' + Date.now().toString(36);
     state.keepRules.custom.push({
       id, name, desc: '自定义保留规则', builtin: false,

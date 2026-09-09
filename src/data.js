@@ -46,7 +46,7 @@ const SLOTS = [
   { id: 'circlet', name: '理之冠', short: '冠' },
 ];
 
-/* ---------- 主词条库 ---------- */
+/* ---------- 主要属性库 ---------- */
 const MAIN_STATS = {
   flower:  [{ id: 'hp',  name: '生命值', fixed: true }],
   plume:   [{ id: 'atk', name: '攻击力', fixed: true }],
@@ -82,7 +82,7 @@ const MAIN_STATS = {
   ],
 };
 
-/* ---------- 副词条库 ---------- */
+/* ---------- 追加属性库 ---------- */
 const SUB_STATS = [
   { id: 'cr',   name: '暴击率',     max: 3.9  },
   { id: 'cd',   name: '暴击伤害',   max: 7.8  },
@@ -98,40 +98,40 @@ const SUB_STATS = [
 
 /* ---------- 散件 / 过渡 保留规则（内置预置） ----------
  * 与具体角色无关，用于「无条件保留」的高价值散件或过渡 2 件套胚子。
- * 这类圣遗物的价值来自主词条本身稀有（如元素伤害杯），或能当 2+2 过渡件，
+ * 这类圣遗物的价值来自主要属性本身稀有（如元素伤害杯），或能当 2+2 过渡件，
  * 因此即便当前没有角色需要，也值得单独占一个锁定预设把它留住。
  *
- *   slot     —— 生效部位（sands / goblet / circlet；花 / 羽主词条固定，不参与）
- *   mains    —— 要留的主词条 id 列表（多个 = 任一即可）
- *   required —— ★必须副词条（金标）
- *   pool     —— 候选副词条池
- *   minHit   —— 候选池里命中任意 N 条即锁定（0 = 不限）
+ *   slot     —— 生效部位（sands / goblet / circlet；花 / 羽主要属性固定，不参与）
+ *   mains    —— 要留的主要属性 id 列表（多个 = 任一即可）
+ *   required —— ★必须追加属性（金标）
+ *   pool     —— 追加属性池
+ *   minHit   —— 追加属性池里命中任意 N 条即锁定（0 = 不限）
  */
 const KEEP_RULES = [
   {
     id: 'goblet_elem', name: '元素伤害杯', builtin: true,
-    desc: '空之杯主词条为任意元素 / 物理伤害加成——掉率极低，是公认必留的稀有胚子',
+    desc: '空之杯主要属性为任意元素 / 物理伤害加成——掉率极低，是公认必留的稀有胚子',
     slot: 'goblet',
     mains: ['pyro', 'hydro', 'cryo', 'electro', 'anemo', 'geo', 'dendro', 'phys'],
     required: [], pool: ['cr', 'cd', 'atkP', 'em', 'er'], minHit: 1,
   },
   {
     id: 'circlet_crit', name: '双暴头', builtin: true,
-    desc: '理之冠主词条为暴击率 / 暴击伤害，副词条带双暴等好词条即留',
+    desc: '理之冠主要属性为暴击率 / 暴击伤害，追加属性带双暴等好词条即留',
     slot: 'circlet',
     mains: ['cr', 'cd'],
     required: [], pool: ['cr', 'cd', 'atkP', 'em', 'er'], minHit: 2,
   },
   {
     id: 'sands_er', name: '充能沙', builtin: true,
-    desc: '时之沙主词条为元素充能效率，副词条带双暴 / 攻击等即留',
+    desc: '时之沙主要属性为元素充能效率，追加属性带双暴 / 攻击等即留',
     slot: 'sands',
     mains: ['er'],
     required: [], pool: ['cr', 'cd', 'atkP', 'em'], minHit: 2,
   },
   {
     id: 'goblet_em', name: '精通杯', builtin: true,
-    desc: '空之杯主词条为元素精通——草系反应队常用，同样稀有',
+    desc: '空之杯主要属性为元素精通——草系反应队常用，同样稀有',
     slot: 'goblet',
     mains: ['em'],
     required: [], pool: ['cr', 'cd', 'er', 'atkP'], minHit: 1,
@@ -197,7 +197,7 @@ const SETS = [
 const SET_NAMES = SETS.map(s => s.name);
 const SET_BONUS = Object.fromEntries(SETS.map(s => [s.name, s.bonus]));
 
-/* ---------- 副词条需求预设 ----------
+/* ---------- 追加属性需求预设 ----------
  * 用【排序 + 必选 + 重要度算子】表达，不再使用数值权重：
  *   数组顺序 = 想要程度（越靠前越想要）
  *   第 2 项为 true = 「必选」，对应游戏内锁定方案的 ★必须
@@ -379,10 +379,10 @@ const CH_META = {
 
 /* ============================================================
  * 内置角色库
- * 紧凑格式：[ 名称, 元素, 副词条预设, builds, 沙, 杯, 冠, src ]
+ * 紧凑格式：[ 名称, 元素, 追加属性预设, builds, 沙, 杯, 冠, src ]
  *   builds: 数组，第 1 项为主推（4件套或2+2），其余为备选
  *           单项含 1 个套装名 = 4件套；含 2 个 = 2+2
- *   主词条数组按优先级从高到低排列（第1项=最优）
+ *   主要属性数组按优先级从高到低排列（第1项=最优）
  *   src: 攻略来源数组（不限定来源，米游社/Game8/KQM/B站等均可，取置信度高、更新新、不重复的链接）
  *        每项为 {url, title}；title 为「作者/标题」标注（选填，留空时按链接域名显示来源平台），可列多个
  *        旧版纯字符串链接会在加载时自动补成 {url, title:''}
@@ -522,7 +522,7 @@ const RAW_CHARS = [
 ];
 
 /* ---------- 展开为完整结构 ---------- */
-/* 生成一份「主词条 + 副词条」需求（按配装组独立） */
+/* 生成一份「主要属性 + 追加属性」需求（按配装组独立） */
 function makeStatNeeds(sands, goblet, circlet, subPreset) {
   return {
     main: {
@@ -561,7 +561,7 @@ function buildDefaultCharacters() {
     note: '',
     src: normSrcList(src),
     custom: false,
-    // 主 / 副词条需求按【配装组】区分：一组配装 = 一套词条需求
+    // 主 / 追加属性需求按【配装组】区分：一组配装 = 一套词条需求
     builds: builds.map((sets, idx) => Object.assign({
       sets,
       priority: idx === 0 ? 'main' : 'alt',
@@ -569,7 +569,7 @@ function buildDefaultCharacters() {
   };});
 }
 
-/* ---------- 工具：取主词条名称 ---------- */
+/* ---------- 工具：取主要属性名称 ---------- */
 function mainStatName(slot, id) {
   if (id && typeof id === 'object') id = (id.stat != null ? id.stat : id.id);
   const list = MAIN_STATS[slot] || [];
