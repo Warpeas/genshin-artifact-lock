@@ -32,7 +32,7 @@
 <main>
   <!-- ============ 角色配置 ============ -->
   <section id="tab-chars" class="tabpane active">
-    <div class="toolbar">
+    <div class="toolbar wrap">
       <input id="charSearch" type="search" placeholder="搜索角色 / 套装 / 国度 / 定位…">
       <div class="seg" id="elemFilter">
         <button class="seg-btn active" data-elem="all">全部</button>
@@ -44,8 +44,18 @@
         <button class="seg-btn" data-elem="geo">岩</button>
         <button class="seg-btn" data-elem="dendro">草</button>
       </div>
+      <label class="fld">国度
+        <select id="regionFilter"><option value="all">全部国度</option></select>
+      </label>
+      <div class="seg" id="roleFilter">
+        <button class="seg-btn active" data-role="all">全部</button>
+        <button class="seg-btn" data-role="maindps">主C</button>
+        <button class="seg-btn" data-role="subdps">副C</button>
+        <button class="seg-btn" data-role="support">辅助</button>
+      </div>
       <label class="chk"><input type="checkbox" id="onlyEnabled"> 只看已启用</label>
       <span class="spacer"></span>
+      <span id="filterCount" class="count-badge hidden">筛出 <b>0</b> / 0 个</span>
       <span class="count-badge">已启用 <b id="enabledCount">0</b> 个角色</span>
       <button id="btnAddChar" class="btn primary">+ 新增角色</button>
     </div>
@@ -298,7 +308,8 @@
   <div class="modal-body">
     <h4>三步走</h4>
     <ol>
-      <li><b>① 角色配置</b>：勾选你实际要养的角色。点卡片打开<b>编辑浮窗</b>：上面是角色基本信息，下面是配装卡片——
+      <li><b>① 角色配置</b>：顶部可按<b>元素 / 国度 / 定位</b>筛选（三者可叠加，还能配合搜索框与「只看已启用」），
+        有筛选时右上角显示「筛出 N / 总数」。勾选你实际要养的角色。点卡片打开<b>编辑浮窗</b>：上面是角色基本信息，下面是配装卡片——
         每张卡片一眼看全套装、三部位主要属性、追加属性，点卡片上的<b>「✎ 编辑」</b>会再弹出一个<b>配装编辑浮窗</b>。
         词条改完点<b>「保存」</b>才生效；点取消 / 关闭 / 浮窗外，会提示「有未保存的修改」再放弃。
         一个角色可以有多组配装（4件套 / 2+2），<b>每组的词条需求分开保存</b>；新增时可以选「空白」或复制现有组，
@@ -315,6 +326,8 @@
         <b>没有槽位上限</b>：候选可以有很多，用「并入…」手动合并、取消勾选「采纳」挑掉不要的，收敛到游戏内每套至多 3 个预设再照抄。
         页面顶部还有<b>「🧩 散件 / 过渡 保留规则」</b>：与角色无关、只因主要属性稀有（如元素伤害杯）就值得留的圣遗物，
         可单独开关；启用后每条规则会生成一份候选方案，与角色聚类结果<b>同权</b>参与合并与采纳。</li>
+      <li><b>旅行者</b>按元素形态拆成 6 个独立条目（旅行者·风 / 岩 / 雷 / 草 / 水 / 火）：各形态元素不同、配装不同，可分别启用、分别编辑。
+        同理，国度已细分出<b>挪德卡莱</b>（与至冬分开）；若你的存档是旧版，打开时会自动把角色的国度 / 定位纠正一次，之后你自己改的不再覆盖。</li>
       <li><b>③ 追加属性规则</b>：给出分档判定 + 胚子评分器，解决「主要属性对了但追加属性能不能留」。</li>
       <li><b>④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
       <li><b>④ 数据管理 → 更新日志</b>：内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。

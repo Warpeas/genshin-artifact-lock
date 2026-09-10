@@ -9,8 +9,20 @@
  * CHANGELOG：新在前，CHANGELOG[0].v 必须等于 APP_VERSION。items 为纯文本（渲染时会 esc）。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.11';
+const APP_VERSION = '2026.09.12';
 const CHANGELOG = [
+  {
+    v: '2026.09.12', date: '2026-09-12',
+    title: '角色库补全到 124 条 + 国度 / 定位筛选 + 旅行者按形态拆分',
+    items: [
+      '按《原神全角色列表（按国度）》逐条核对：修正烟绯、神里绫人、流浪者、千织、埃洛伊的国度归属（原来分别被放错到蒙德 / 璃月 / 稻妻 / 稻妻 / 其他）。',
+      '新增「挪德卡莱」国度，与至冬分开；把伊涅芙、菈乌玛、菲林斯、爱诺、奈芙尔、哥伦比娅归回挪德卡莱。',
+      '补上缺了的角色：洛恩、尼可、布伦妮（蒙德）、莉奈娅、叶洛亚、雅珂达（挪德卡莱），角色库从 112 条增至 124 条。',
+      '旅行者按元素形态拆成 6 个独立条目（旅行者·风 / 岩 / 雷 / 草 / 水 / 火），各形态可分别启用、分别配装。',
+      '角色配置页新增「国度」下拉筛选和「定位」筛选（主C / 副C / 辅助），可与元素筛选、搜索、只看已启用叠加；筛选时右上角显示「筛出 N / 总数」。',
+      '新补角色暂无稳定攻略来源，配装是按元素 / 武器的通用推荐，备注里已标注，请按实际玩法调整。',
+    ],
+  },
   {
     v: '2026.09.11', date: '2026-09-11',
     title: '属性改用选择浮窗、还原拆分主推 / 整组、内置数据自动跟随更新',
@@ -99,6 +111,7 @@ const REGIONS = [
   { id: 'sumeru',    name: '须弥',      color: '#a5d66a' },
   { id: 'fontaine',  name: '枫丹',      color: '#5fc9d8' },
   { id: 'natlan',    name: '纳塔',      color: '#ff8a5c' },
+  { id: 'nodkrai',   name: '挪德卡莱',  color: '#c9a0dc' },
   { id: 'snezhnaya', name: '至冬',      color: '#9fb3c8' },
   { id: 'other',     name: '其他',      color: '#7d8a99' },
 ];
@@ -322,7 +335,7 @@ function toSubs(list) {
  * 定位第一个为主定位，用于卡片显示；批量筛选时任一命中即选中
  * ============================================================ */
 const CH_META = {
-  /* 蒙德 */
+  /* ---------- 蒙德 Mondstadt（26） ---------- */
   '琴': ['mondstadt', ['support']],
   '迪卢克': ['mondstadt', ['maindps']],
   '可莉': ['mondstadt', ['maindps']],
@@ -338,11 +351,19 @@ const CH_META = {
   '莫娜': ['mondstadt', ['support', 'subdps']],
   '阿贝多': ['mondstadt', ['subdps']],
   '优菈': ['mondstadt', ['maindps']],
-  '烟绯': ['mondstadt', ['maindps']],
-  '塔利雅': ['mondstadt', ['support']],
   '米卡': ['mondstadt', ['support']],
+  '安柏': ['mondstadt', ['support']],
+  '丽莎': ['mondstadt', ['subdps']],
+  '凯亚': ['mondstadt', ['subdps']],
+  '埃洛伊': ['mondstadt', ['maindps']],   // 2.1 联动角色，归属蒙德
+  '法尔伽': ['mondstadt', ['maindps']],
+  '塔利雅': ['mondstadt', ['support']],
+  '杜林': ['mondstadt', ['subdps']],
+  '洛恩': ['mondstadt', ['maindps']],
+  '尼可': ['mondstadt', ['maindps']],
+  '布伦妮': ['mondstadt', ['support']],
 
-  /* 璃月 */
+  /* ---------- 璃月 Liyue（22） ---------- */
   '刻晴': ['liyue', ['maindps']],
   '凝光': ['liyue', ['maindps']],
   '香菱': ['liyue', ['subdps']],
@@ -361,8 +382,12 @@ const CH_META = {
   '嘉明': ['liyue', ['maindps']],
   '重云': ['liyue', ['subdps']],
   '辛焱': ['liyue', ['support']],
+  '北斗': ['liyue', ['subdps']],
+  '烟绯': ['liyue', ['maindps']],
+  '兹白': ['liyue', ['maindps']],
+  '蓝砚': ['liyue', ['support']],
 
-  /* 稻妻 */
+  /* ---------- 稻妻 Inazuma（16） ---------- */
   '雷电将军': ['inazuma', ['maindps']],
   '八重神子': ['inazuma', ['subdps']],
   '神里绫华': ['inazuma', ['maindps']],
@@ -375,12 +400,12 @@ const CH_META = {
   '托马': ['inazuma', ['support']],
   '早柚': ['inazuma', ['support']],
   '久岐忍': ['inazuma', ['support', 'subdps']],
-  '流浪者': ['inazuma', ['maindps']],
-  '梦见月瑞希': ['inazuma', ['support']],
-  '绮良良': ['inazuma', ['support']],
+  '神里绫人': ['inazuma', ['maindps']],
   '鹿野院平藏': ['inazuma', ['maindps']],
+  '绮良良': ['inazuma', ['support']],
+  '梦见月瑞希': ['inazuma', ['support']],
 
-  /* 须弥 */
+  /* ---------- 须弥 Sumeru（14） ---------- */
   '提纳里': ['sumeru', ['maindps']],
   '柯莱': ['sumeru', ['subdps']],
   '多莉': ['sumeru', ['support']],
@@ -391,8 +416,12 @@ const CH_META = {
   '卡维': ['sumeru', ['maindps', 'support']],
   '妮露': ['sumeru', ['support']],
   '坎蒂丝': ['sumeru', ['support']],
+  '流浪者': ['sumeru', ['maindps']],
+  '珐露珊': ['sumeru', ['support']],
+  '莱依拉': ['sumeru', ['support']],
+  '赛索斯': ['sumeru', ['maindps']],
 
-  /* 枫丹 */
+  /* ---------- 枫丹 Fontaine（14） ---------- */
   '林尼': ['fontaine', ['maindps']],
   '琳妮特': ['fontaine', ['subdps', 'support']],
   '那维莱特': ['fontaine', ['maindps']],
@@ -406,8 +435,9 @@ const CH_META = {
   '菲米尼': ['fontaine', ['maindps']],
   '希格雯': ['fontaine', ['support']],
   '夏洛蒂': ['fontaine', ['support']],
+  '千织': ['fontaine', ['subdps']],
 
-  /* 纳塔 */
+  /* ---------- 纳塔 Natlan（11） ---------- */
   '玛拉妮': ['natlan', ['maindps']],
   '基尼奇': ['natlan', ['maindps']],
   '卡齐娜': ['natlan', ['subdps']],
@@ -418,41 +448,35 @@ const CH_META = {
   '瓦雷莎': ['natlan', ['maindps']],
   '伊安珊': ['natlan', ['support']],
   '伊法': ['natlan', ['support']],
+  '茜特菈莉': ['natlan', ['support']],
 
-  /* 至冬（愚人众 / 挪德卡莱） */
+  /* ---------- 挪德卡莱 Nod-Krai（9） ---------- */
+  '莉奈娅': ['nodkrai', ['subdps']],
+  '叶洛亚': ['nodkrai', ['maindps']],
+  '哥伦比娅': ['nodkrai', ['support']],
+  '雅珂达': ['nodkrai', ['support']],
+  '奈芙尔': ['nodkrai', ['maindps']],
+  '菲林斯': ['nodkrai', ['maindps']],
+  '菈乌玛': ['nodkrai', ['support']],
+  '爱诺': ['nodkrai', ['support']],
+  '伊涅芙': ['nodkrai', ['subdps']],
+
+  /* ---------- 至冬 Snezhnaya（5） ---------- */
   '达达利亚': ['snezhnaya', ['maindps']],
   '阿蕾奇诺': ['snezhnaya', ['maindps']],
-  '伊涅芙': ['snezhnaya', ['subdps']],
-  '菈乌玛': ['snezhnaya', ['support']],
-  '菲林斯': ['snezhnaya', ['maindps']],
-  '爱诺': ['snezhnaya', ['support']],
-  '奈芙尔': ['snezhnaya', ['maindps']],
-  '哥伦比娅': ['snezhnaya', ['support']],
   '桑多涅': ['snezhnaya', ['maindps']],
   '奥黛塔': ['snezhnaya', ['support']],
   '阿罗夏': ['snezhnaya', ['support']],
 
-  /* 其他（非提瓦特国度 / 联动角色） */
+  /* ---------- 其他 / 旅行者（1 + 6 形态） ----------
+   * 旅行者按「国度-属性」各设一个条目：每个形态都能单独启用、单独配装。 */
   '丝柯克': ['other', ['maindps']],
-  '埃洛伊': ['other', ['maindps']],
-
-  /* 补遗：初始库遗漏的 2.x–4.x 老角色 */
-  '安柏': ['mondstadt', ['support']],
-  '丽莎': ['mondstadt', ['subdps']],
-  '凯亚': ['mondstadt', ['subdps']],
-  '北斗': ['liyue', ['subdps']],
-  '神里绫人': ['liyue', ['maindps']],
-  '千织': ['inazuma', ['subdps']],
-  '珐露珊': ['sumeru', ['support']],
-  '莱依拉': ['sumeru', ['support']],
-  '赛索斯': ['sumeru', ['maindps']],
-  '蓝砚': ['liyue', ['support']],
-  '茜特菈莉': ['natlan', ['support']],
-
-  /* 补遗：5.8 伊涅芙 + 6.0–7.0 挪德卡莱（具体归属见上方「至冬」分组） */
-  '杜林': ['mondstadt', ['subdps']],
-  '兹白': ['liyue', ['maindps']],
-  '法尔伽': ['mondstadt', ['maindps']],
+  '旅行者·风': ['other', ['support']],
+  '旅行者·岩': ['other', ['subdps']],
+  '旅行者·雷': ['other', ['support']],
+  '旅行者·草': ['other', ['subdps']],
+  '旅行者·水': ['other', ['subdps']],
+  '旅行者·火': ['other', ['maindps']],
 };
 
 /* ============================================================
@@ -481,6 +505,7 @@ const RAW_CHARS = [
   ['迪希雅', 'pyro', 'hp', [['千岩牢固'], ['烬城勇者绘卷']], ['hpP'], ['pyro', 'hpP'], ['cr', 'cd', 'hpP'], ['https://www.miyoushe.com/ys/article/36342244', 'https://www.miyoushe.com/ys/article/68183574', 'https://www.miyoushe.com/ys/article/36343279']],
   ['嘉明', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/48532329', 'https://www.miyoushe.com/ys/article/71813629', 'https://www.miyoushe.com/ys/article/54223358']],
   ['辛焱', 'pyro', 'def', [['千岩牢固'], ['逆飞的流星']], ['defP'], ['phys', 'defP'], ['cr', 'defP'], ['https://bbs.mihoyo.com/ys/article/25075001', 'https://bbs.mihoyo.com/ys/article/21741667', 'https://bbs.mihoyo.com/ys/article/18634883']],
+  ['夏沃蕾', 'pyro', 'hp', [['昔日宗室之仪'], ['昔时之歌'], ['烬城勇者绘卷']], ['hpP', 'er'], ['hpP'], ['hpP', 'heal'], ['https://www.miyoushe.com/ys/article/47759303', 'https://www.miyoushe.com/ys/article/71769196', 'https://www.miyoushe.com/ys/article/47762991']],
 
   /* ---------- 水 ---------- */
   ['行秋', 'hydro', 'crit', [['绝缘之旗印'], ['沉沦之心']], ['atkP', 'er'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/75141780', 'https://www.miyoushe.com/ys/article/70022906', 'https://bbs.mihoyo.com/ys/article/25075041']],
@@ -493,7 +518,6 @@ const RAW_CHARS = [
   ['那维莱特', 'hydro', 'critHp', [['水仙十字之圣遗物'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/72892872', 'https://www.miyoushe.com/ys/article/51019831', 'https://www.miyoushe.com/ys/article/43799619']],
   ['芭芭拉', 'hydro', 'heal', [['被怜爱的少女'], ['海染砗磲']], ['hpP'], ['hpP'], ['heal'], ['https://www.miyoushe.com/ys/article/68736041', 'https://bbs.mihoyo.com/ys/article/25074129', 'https://bbs.mihoyo.com/ys/article/23419183']],
   ['玛拉妮', 'hydro', 'critHp', [['黑曜秘典'], ['沉沦之心']], ['hpP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/67605282', 'https://www.miyoushe.com/ys/article/56901714', 'https://www.miyoushe.com/ys/article/67669637']],
-  ['梦见月瑞希', 'anemo', 'em', [['翠绿之影'], ['饰金之梦', '流浪大地的乐团']], ['em', 'er'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/61944028', 'https://www.miyoushe.com/ys/article/61942278', 'https://www.miyoushe.com/ys/article/77540856']],
   ['塔利雅', 'hydro', 'atk', [['昔日宗室之仪'], ['绝缘之旗印']], ['atkP', 'er'], ['hydro', 'atkP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/65679835', 'https://www.miyoushe.com/ys/article/65404405', 'https://www.miyoushe.com/ys/article/65404256']],
   ['希格雯', 'hydro', 'heal', [['昔时之歌'], ['海染砗磲']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP'], ['https://www.miyoushe.com/ys/article/54243679', 'https://www.miyoushe.com/ys/article/54229003', 'https://www.miyoushe.com/ys/article/61942374']],
   ['坎蒂丝', 'hydro', 'hp', [['千岩牢固'], ['绝缘之旗印']], ['hpP', 'er'], ['hpP'], ['hpP'], ['https://bbs.mihoyo.com/ys/article/29482398', 'https://www.miyoushe.com/ys/article/74049148', 'https://bbs.mihoyo.com/ys/article/29611709']],
@@ -509,7 +533,6 @@ const RAW_CHARS = [
   ['七七', 'cryo', 'heal', [['被怜爱的少女'], ['千岩牢固']], ['atkP', 'er'], ['atkP'], ['heal'], ['https://www.miyoushe.com/ys/article/76326299', 'https://www.miyoushe.com/sr/article/61091178', 'https://bbs.mihoyo.com/ys/article/21881008']],
   ['爱可菲', 'cryo', 'atk', [['黄金剧团'], ['冰风迷途的勇士']], ['atkP'], ['cryo', 'atkP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/73995271', 'https://www.miyoushe.com/ys/article/64215753', 'https://www.miyoushe.com/ys/article/64193368']],
   ['丝柯克', 'cryo', 'crit', [['深廊终曲'], ['冰风迷途的勇士']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/73991725', 'https://www.miyoushe.com/ys/article/65478404', 'https://www.miyoushe.com/ys/article/65404377']],
-  ['夏沃蕾', 'pyro', 'hp', [['昔日宗室之仪'], ['昔时之歌'], ['烬城勇者绘卷']], ['hpP', 'er'], ['hpP'], ['hpP', 'heal'], ['https://www.miyoushe.com/ys/article/47759303', 'https://www.miyoushe.com/ys/article/71769196', 'https://www.miyoushe.com/ys/article/47762991']],
   ['重云', 'cryo', 'crit', [['冰风迷途的勇士'], ['昔日宗室之仪']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/11361211', 'https://bbs.mihoyo.com/ys/article/25075185', 'https://bbs.mihoyo.com/ys/article/24476281']],
   ['菲米尼', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo', 'phys'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/43154250', 'https://www.miyoushe.com/ys/article/76548802', 'https://www.miyoushe.com/ys/article/43066421']],
   ['夏洛蒂', 'cryo', 'heal', [['千岩牢固'], ['被怜爱的少女']], ['atkP', 'er'], ['atkP'], ['heal', 'atkP'], ['https://www.miyoushe.com/ys/article/45238643', 'https://www.miyoushe.com/ys/article/74068739', 'https://www.miyoushe.com/ys/article/45186920']],
@@ -543,6 +566,7 @@ const RAW_CHARS = [
   ['恰斯卡', 'anemo', 'crit', [['黑曜秘典'], ['翠绿之影']], ['atkP'], ['anemo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/67613530', 'https://www.miyoushe.com/ys/article/67504158', 'https://www.miyoushe.com/ys/article/59513958']],
   ['琳妮特', 'anemo', 'crit', [['翠绿之影'], ['沙上楼阁史话']], ['atkP'], ['anemo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64763434', 'https://www.miyoushe.com/ys/article/42420011', 'https://www.miyoushe.com/ys/article/77532016']],
   ['伊法', 'anemo', 'em', [['翠绿之影'], ['烬城勇者绘卷']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr'], ['https://www.miyoushe.com/ys/article/64215763', 'https://www.miyoushe.com/ys/article/64193378', 'https://www.miyoushe.com/ys/article/64215506']],
+  ['梦见月瑞希', 'anemo', 'em', [['翠绿之影'], ['饰金之梦', '流浪大地的乐团']], ['em', 'er'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/61944028', 'https://www.miyoushe.com/ys/article/61942278', 'https://www.miyoushe.com/ys/article/77540856']],
 
   /* ---------- 岩 ---------- */
   ['钟离', 'geo', 'hp', [['千岩牢固'], ['悠古的磐岩']], ['hpP'], ['geo', 'hpP'], ['hpP', 'cr'], ['https://www.miyoushe.com/ys/article/70478147', 'https://www.miyoushe.com/ys/article/43113435', 'https://bbs.mihoyo.com/ys/article/15008953']],
@@ -597,6 +621,24 @@ const RAW_CHARS = [
   ['奥黛塔', 'cryo', 'crit', [['炉火融炼之心'], ['昔日宗室之仪', '辰砂往生录']], ['atkP'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/77385286', 'https://www.miyoushe.com/ys/article/77367319', 'https://www.miyoushe.com/ys/article/77319627']],
   ['阿罗夏', 'electro', 'er', [['昔日宗室之仪'], ['昔日宗室之仪', '辰砂往生录']], ['er'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/77397277', 'https://www.miyoushe.com/ys/article/77367254', 'https://www.miyoushe.com/ys/article/77259762']],
   ['法尔伽', 'anemo', 'crit', [['风起之日'], ['沙上楼阁史话', '辰砂往生录']], ['atkP'], ['anemo'], ['cr'], ['https://bbs.mihoyo.com/ys/article/73525902', 'https://www.miyoushe.com/ys/article/73567276', 'https://www.miyoushe.com/ys/article/73524547']],
+
+  /* ---------- 补遗：蒙德 5.x 群角色（洛恩 / 尼可 / 布伦妮） ---------- */
+  ['洛恩', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo'], ['cr', 'cd'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
+  ['尼可', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
+  ['布伦妮', 'anemo', 'em', [['翠绿之影'], ['昔日宗室之仪']], ['er', 'em'], ['anemo', 'em'], ['em'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
+
+  /* ---------- 补遗：挪德卡莱（莉奈娅 / 叶洛亚 / 雅珂达） ---------- */
+  ['莉奈娅', 'geo', 'crit', [['悠古的磐岩'], ['华馆梦醒形骸记']], ['atkP'], ['geo'], ['cr', 'cd'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
+  ['叶洛亚', 'geo', 'critDef', [['华馆梦醒形骸记'], ['悠古的磐岩']], ['defP', 'atkP'], ['geo'], ['cr', 'cd'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
+  ['雅珂达', 'anemo', 'em', [['翠绿之影'], ['纺月的夜歌']], ['er', 'em'], ['em'], ['em'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
+
+  /* ---------- 旅行者：按「元素形态」各设一个条目，各自独立配装 ---------- */
+  ['旅行者·风', 'anemo', 'em', [['翠绿之影']], ['er', 'em'], ['anemo', 'em'], ['em'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·岩', 'geo', 'crit', [['悠古的磐岩'], ['华馆梦醒形骸记']], ['atkP', 'defP'], ['geo'], ['cr', 'cd'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·雷', 'electro', 'er', [['绝缘之旗印'], ['昔日宗室之仪']], ['er', 'atkP'], ['electro', 'atkP'], ['cr', 'cd'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·草', 'dendro', 'em', [['深林的记忆'], ['饰金之梦']], ['er', 'em'], ['dendro', 'em'], ['em', 'cr'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·水', 'hydro', 'crit', [['沉沦之心'], ['绝缘之旗印']], ['atkP', 'er'], ['hydro'], ['cr', 'cd'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·火', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
 ];
 
 /* ---------- 展开为完整结构 ---------- */
@@ -626,7 +668,7 @@ function normSrcList(list) {
 }
 
 function buildDefaultCharacters() {
-  return RAW_CHARS.map(([name, element, subPreset, builds, sands, goblet, circlet, src], i) => {
+  return RAW_CHARS.map(([name, element, subPreset, builds, sands, goblet, circlet, src, note], i) => {
     const meta = CH_META[name] || ['other', ['maindps']];
     const need = makeStatNeeds(sands, goblet, circlet, subPreset);
     return {
@@ -637,7 +679,7 @@ function buildDefaultCharacters() {
     region: meta[0],
     roles: meta[1].slice(),
     enabled: false,
-    note: '',
+    note: note || '',
     src: normSrcList(src),
     custom: false,
     // 主 / 追加属性需求按【配装组】区分：一组配装 = 一套词条需求

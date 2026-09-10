@@ -20,7 +20,17 @@ const SWAP_GROUPS = {
 let state = null;
 let pendingMigrate = null;   // load() 若从旧存档回填了数据，init 里据此回写本地存储
 const SUB_EPOCH = 1;         // 追加属性预设重要度版本；递增即把精炼后的预设同步给旧存档
-let ui = { elem: 'all', search: '', onlyEnabled: false, planSet: 'all', planSlot: 'all', buildIdx: 0 };
+const META_EPOCH = 1;        // 国度 / 定位版本；递增即把修正后的归属同步给旧存档（只做一次，之后用户改的不动）
+let ui = {
+  elem: 'all', region: 'all', role: 'all',
+  search: '', onlyEnabled: false,
+  planSet: 'all', planSlot: 'all', buildIdx: 0,
+};
+/* 当前是否有任一筛选条件生效（用于「批量」作用域提示与筛选计数显示） */
+function charsFiltering() {
+  return !!(ui.search.trim() || ui.elem !== 'all' || ui.region !== 'all' ||
+            ui.role !== 'all' || ui.onlyEnabled);
+}
 
 /* 把「追加属性 / 主要属性」项统一归一为 id 字符串：
  *   对象 {id} / {stat} / {id,w} → 取 id 或 stat；其余原样返回。
@@ -296,6 +306,19 @@ function migrateFromDefaults(o) {
     });
     o._subEpoch = SUB_EPOCH;
   }
+  // 国度 / 定位在旧版里可能填错了（如烟绯被归到蒙德、绫人被归到璃月）：
+  // 升级到新版时把出厂角色的归属一次性同步过来，避免老存档一直带着错误数据、
+  // 还被误判成「已修改」。只同步一次，之后用户自己改的归属不再覆盖。
+  if (o._metaEpoch !== META_EPOCH) {
+    (o.characters || []).forEach(c => {
+      if (c.custom) return;
+      const d = byName[c.name];
+      if (!d) return;
+      c.region = d.region;
+      c.roles = d.roles.slice();
+    });
+    o._metaEpoch = META_EPOCH;
+  }
   // 补齐存档缺失的内置新角色（天然幂等：已存在则不重复添加）
   defs.forEach(d => {
     if (!o.characters.some(c => c.name === d.name)) {
@@ -320,7 +343,7 @@ function load() {
   // 全新出厂：直接把 epoch 打上。否则存档里没有 _subEpoch，
   // 下次加载会被当成「旧存档」触发预设刷新，把用户只调了顺序的改动冲掉
   return normalize({ characters: freshDefaultCharacters(), sets: defaultSets(), planCfg: {},
-                     _subEpoch: SUB_EPOCH, _srcMigrated: true });
+                     _subEpoch: SUB_EPOCH, _metaEpoch: META_EPOCH, _srcMigrated: true });
 }
 
 /* 默认套装列表（内置套装 + 空自定义列表） */
@@ -1548,6 +1571,8 @@ function filteredChars() {
   const kw = ui.search.trim().toLowerCase();
   return state.characters.filter(c => {
     if (ui.elem !== 'all' && c.element !== ui.elem) return false;
+    if (ui.region !== 'all' && c.region !== ui.region) return false;
+    if (ui.role !== 'all' && !(c.roles || []).includes(ui.role)) return false;
     if (ui.onlyEnabled && !c.enabled) return false;
     if (kw) {
       const hay = [
@@ -1607,6 +1632,15 @@ function renderChars() {
 
   $('#enabledCount').textContent = state.characters.filter(c => c.enabled).length;
   $('#statCharCount').textContent = state.characters.length;
+  const fc = $('#filterCount');
+  if (fc) {
+    if (charsFiltering()) {
+      fc.classList.remove('hidden');
+      fc.innerHTML = `筛出 <b>${list.length}</b> / ${state.characters.length} 个`;
+    } else {
+      fc.classList.add('hidden');
+    }
+  }
   updateBatchState();
 
   grid.querySelectorAll('.char-card').forEach(card => {
@@ -1677,7 +1711,7 @@ function applyBatch(mode) {
   if (mode === 'all')    list.forEach(c => { c.enabled = true; });
   if (mode === 'none')   list.forEach(c => { c.enabled = false; });
   if (mode === 'invert') list.forEach(c => { c.enabled = !c.enabled; });
-  const scope = (ui.search.trim() || ui.elem !== 'all' || ui.onlyEnabled) ? '当前筛选结果' : '全部角色';
+  const scope = charsFiltering() ? '当前筛选结果' : '全部角色';
   afterBatch(scope + '：' + ({ all: '已全选', none: '已全不选', invert: '已反选' }[mode]));
 }
 
@@ -3169,6 +3203,29 @@ function renderDataChangelog() {
 /* ============================================================
  * 事件绑定
  * ============================================================ */
+/* 分段筛选按钮通用绑定：点谁谁高亮，值写进 ui[key] 并重绘 */
+function bindSegFilter(sel, key, attr) {
+  const box = $(sel);
+  if (!box) return;
+  box.querySelectorAll('.seg-btn').forEach(b => {
+    b.onclick = () => {
+      box.querySelectorAll('.seg-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      ui[key] = b.dataset[camelOf(attr)];
+      renderChars();
+    };
+  });
+}
+function camelOf(attr) { return attr.replace(/^data-/, '').replace(/-([a-z])/g, (m, s) => s.toUpperCase()); }
+
+/* 国度下拉：按 REGIONS 顺序填充（含「全部国度」） */
+function fillRegionFilter() {
+  const sel = $('#regionFilter');
+  if (!sel) return;
+  sel.innerHTML = '<option value="all">全部国度</option>' +
+    REGIONS.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
+}
+
 function bind() {
   // Tab
   $$('.tab').forEach(t => t.onclick = () => {
@@ -3181,14 +3238,9 @@ function bind() {
   // 角色页筛选
   $('#charSearch').oninput = e => { ui.search = e.target.value; renderChars(); };
   $('#onlyEnabled').onchange = e => { ui.onlyEnabled = e.target.checked; renderChars(); };
-  $('#elemFilter').querySelectorAll('.seg-btn').forEach(b => {
-    b.onclick = () => {
-      $('#elemFilter').querySelectorAll('.seg-btn').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      ui.elem = b.dataset.elem;
-      renderChars();
-    };
-  });
+  $('#regionFilter').onchange = e => { ui.region = e.target.value; renderChars(); };
+  bindSegFilter('#elemFilter', 'elem', 'data-elem');
+  bindSegFilter('#roleFilter', 'role', 'data-role');
   $('#btnAddChar').onclick = openNewChar;
 
   // 角色编辑浮窗
@@ -3520,7 +3572,7 @@ function bind() {
   $('#btnReset').onclick = () => {
     if (!confirm('恢复内置默认角色库与套装列表、清除你的全部自定义修改（相当于硬刷新）？\n\n提示：浏览器普通「刷新」不会清本地存档，所以旧数据 / 乱码会一直留着；这个按钮能彻底重置。')) return;
     state = normalize({ characters: freshDefaultCharacters(), sets: defaultSets(), planCfg: {},
-                         _subEpoch: SUB_EPOCH, _srcMigrated: true });
+                         _subEpoch: SUB_EPOCH, _metaEpoch: META_EPOCH, _srcMigrated: true });
     save(); renderChars(); renderPlan(); renderSubs(); renderSets();
     toast('已恢复默认库');
   };
@@ -3610,6 +3662,7 @@ function syncTopbarHeight() {
   const syN = syncFactoryUpdates();   // 后台更新了内置数据 → 没动过的组自动跟上
   if (bfN || syN) save();
   renderBatchBar();
+  fillRegionFilter();
   renderChars();
   renderPlan();
   renderSubs();
