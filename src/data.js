@@ -106,7 +106,8 @@ const SUB_STATS = [
  *   required —— ★必须追加属性（金标）
  *   pool     —— 追加属性池
  *
- * 命中条数不再由规则自带：所有方案统一固定为「至少两条」（见 app.js SUB_MIN_HIT）。
+ * 命中条数不再由规则自带：所有方案统一预设「至少两条」，并可在每个方案卡片上单独调到 1–4
+ *（见 app.js 的 SUB_MIN_HIT_DEFAULT / planCfg.minHit）。
  */
 const KEEP_RULES = [
   {

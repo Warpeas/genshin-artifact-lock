@@ -438,10 +438,22 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-adopt input{width:15px;height:15px;accent-color:#7fbf6a;cursor:pointer;}
 .gp-for{font-size:11.5px;color:#8a94a6;flex:1;min-width:110px;line-height:1.5;}
 .gp-more{color:#6f7b8c;}
+/* 按「最想要的次要属性」给需求角色上色：颜色用 --tc 注入（与 .tag-btn 同一套范式） */
+.gp-for-groups{display:flex;flex-wrap:wrap;gap:2px 0;align-items:center;}
+.gp-char-tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:20px;margin:1px 3px 1px 0;
+  background:#1a2330;color:var(--tc,#bcd8f5);border:1px solid var(--tc,#33506e);white-space:nowrap;}
+.gp-legend{font-size:10.5px;color:#6f7b8c;margin-top:4px;display:flex;flex-wrap:wrap;
+  gap:2px 10px;align-items:center;line-height:1.6;}
+.gp-legend .lg{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:var(--tc,#8a94a6);}
+.gp-legend .dot{width:8px;height:8px;border-radius:50%;background:var(--tc,#8a94a6);flex:none;}
 .gp-badge{font-size:10.5px;color:#a9d69b;background:#22301f;border:1px solid #3d4a3a;padding:1px 6px;border-radius:3px;white-space:nowrap;}
 .gp-acts{display:inline-flex;align-items:center;gap:6px;margin-left:auto;}
 .gp-mergesel{font-size:11px;background:#131a24;color:#cfe3ff;border:1px solid #33506e;border-radius:4px;padding:2px 6px;max-width:190px;}
 .gp-mergesel:focus{outline:none;border-color:var(--gold,#e8c88a);}
+/* 命中条数下拉：与「并入…」同款但更窄，放在卡片的条件行里 */
+.gp-hitsel{font-size:11px;background:#131a24;color:#cfe3ff;border:1px solid #33506e;border-radius:4px;padding:2px 6px;max-width:110px;}
+.gp-hitsel:focus{outline:none;border-color:var(--gold,#e8c88a);}
+.gp-fixed{font-size:11px;color:#6f7b8c;}
 .gp-split{font-size:11px;padding:2px 8px;}
 .gp-copy{font-size:11px;padding:2px 8px;}
 
@@ -470,7 +482,16 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 
 /* ---------- 散件 / 过渡 保留规则面板 ---------- */
 .kr-card{margin-bottom:12px;}
-.kr-count{font-size:11.5px;font-weight:600;color:var(--gold,#e8c88a);margin-left:6px;}
+/* 整块模块可收起：收起后只剩标题一行（展开/收起只是显示层，规则照常生效） */
+.kr-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer;user-select:none;}
+.kr-fold{background:none;border:1px solid #2f4356;color:#9fd0f5;font-size:11px;line-height:1;
+  width:20px;height:20px;border-radius:5px;cursor:pointer;padding:0;flex:none;}
+.kr-fold:hover{border-color:var(--gold,#e8c88a);color:var(--gold2);}
+.kr-head-txt{font-size:15px;color:var(--gold2);}
+.kr-card.folded{padding:12px 18px;}
+.kr-card.folded .kr-head{margin-bottom:0;}
+.kr-bar{margin:8px 0 0;}
+.kr-count{font-size:11.5px;font-weight:600;color:var(--gold,#e8c88a);margin-left:2px;}
 .kr-list{display:flex;flex-direction:column;gap:6px;margin:8px 0 4px;}
 .kr-item{display:grid;grid-template-columns:auto auto auto 1fr auto;align-items:center;gap:4px 8px;
   padding:7px 9px;border:1px solid #2a3546;border-radius:7px;background:#141c26;cursor:pointer;line-height:1.5;}
@@ -488,11 +509,10 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .kr-cond{grid-column:3 / -1;font-size:11px;color:#9fb0c6;}
 .kr-desc{grid-column:3 / -1;font-size:11px;color:#6f7b8c;}
 .kr-warn{grid-column:3 / -1;font-size:11px;color:#ffb86c;}
-.kr-add{margin-top:8px;}
-.kr-add>summary{cursor:pointer;font-size:12px;color:#5fc4f0;padding:4px 0;user-select:none;}
-.kr-form{display:flex;flex-direction:column;gap:10px;padding:8px 0 2px;}
+.kr-form{display:flex;flex-direction:column;gap:12px;padding:2px 0 2px;}
 .kr-form .fld{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:#9fb0c6;}
-.kr-form .fld input,.kr-form .fld select{padding:6px 8px;font-size:12px;color:var(--txt,#e6edf5);
+/* 不写 font-size：交给通用 .fld 规则（13px），窄屏下的 16px 防缩放规则才能生效 */
+.kr-form .fld input,.kr-form .fld select{width:100%;box-sizing:border-box;color:var(--txt,#e6edf5);
   background:#0f1922;border:1px solid #2c3a47;border-radius:6px;}
 .kr-pick{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .kr-pick b{display:block;font-size:11.5px;color:#9fb0c6;margin-bottom:5px;}

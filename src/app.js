@@ -105,7 +105,14 @@ function defaultSets() {
   return SETS.map(s => ({ name: s.name, bonus: s.bonus, builtin: true, hidden: false }));
 }
 
-/* planCfg 归一化：{ 套装名: { merge: [[key...]], hide: [key...] } }
+/* 命中条数钳位：只接受 1–SUB_MIN_HIT_MAX 的整数，其余回落到预设值 */
+function clampHit(n) {
+  const v = Math.round(Number(n));
+  if (!Number.isFinite(v)) return SUB_MIN_HIT_DEFAULT;
+  return Math.min(SUB_MIN_HIT_MAX, Math.max(1, v));
+}
+
+/* planCfg 归一化：{ 套装名: { merge: [[key...]], hide: [key...], minHit: { key: 1-4 } } }
  *   只保留结构合法的条目；成员不足 2 个的 merge 组视为无效（已无意义） */
 function normalizePlanCfg(raw) {
   const out = {};
@@ -116,9 +123,17 @@ function normalizePlanCfg(raw) {
       .map(g => (Array.isArray(g) ? g.filter(k => typeof k === 'string') : []))
       .filter(g => g.length >= 2);
     const hide = (Array.isArray(cfg.hide) ? cfg.hide : []).filter(k => typeof k === 'string');
+    // 命中条数覆盖：{ 方案 key: N }，只留 1–4 的整数
+    const minHit = {};
+    if (cfg.minHit && typeof cfg.minHit === 'object') {
+      Object.entries(cfg.minHit).forEach(([k, v]) => {
+        const n = Math.round(Number(v));
+        if (Number.isFinite(n) && n >= 1 && n <= SUB_MIN_HIT_MAX) minHit[k] = n;
+      });
+    }
     // 已并入某组的候选，不要再单独躺在 hide 里
     const mergedFlat = new Set(merge.flat());
-    out[setName] = { merge, hide: hide.filter(k => !mergedFlat.has(k)) };
+    out[setName] = { merge, hide: hide.filter(k => !mergedFlat.has(k)), minHit };
   });
   return out;
 }
@@ -126,10 +141,11 @@ function normalizePlanCfg(raw) {
 /* 取某套装的 planCfg（不存在则返回空结构，调用方可安全读写后存回） */
 function planCfgOf(setName) {
   if (!state.planCfg) state.planCfg = {};
-  if (!state.planCfg[setName]) state.planCfg[setName] = { merge: [], hide: [] };
+  if (!state.planCfg[setName]) state.planCfg[setName] = { merge: [], hide: [], minHit: {} };
   const c = state.planCfg[setName];
   if (!Array.isArray(c.merge)) c.merge = [];
   if (!Array.isArray(c.hide)) c.hide = [];
+  if (!c.minHit || typeof c.minHit !== 'object') c.minHit = {};
   return c;
 }
 
@@ -286,7 +302,30 @@ function normalizeKeepRules(raw) {
         name: (typeof x.name === 'string' && x.name.trim()) ? x.name.trim() : '自定义规则',
       })),
     overrides,
+    // 模块整体收起（只是不显示，enabled 里的规则照常生成候选方案）
+    collapsed: !!r.collapsed,
   };
+}
+
+/* 「散件 / 过渡 保留规则」模块的收起 / 展开：只影响显示，不影响是否启用 */
+function applyKrFold() {
+  const on = !!(state && state.keepRules && state.keepRules.collapsed);
+  const body = $('#krBody');
+  if (body) body.classList.toggle('hidden', on);
+  const btn = $('#krFold');
+  if (btn) {
+    btn.textContent = on ? '▸' : '▾';
+    btn.setAttribute('aria-expanded', on ? 'false' : 'true');
+    btn.title = on ? '展开这一模块' : '收起这一模块（只是不显示，启用的规则照常生效）';
+  }
+  const card = $('#krCard');
+  if (card) card.classList.toggle('folded', on);
+}
+function setKrCollapsed(on) {
+  if (!state || !state.keepRules) return;
+  state.keepRules.collapsed = !!on;
+  applyKrFold();
+  save();
 }
 
 let saveTimer = null;
@@ -623,30 +662,30 @@ function globalWeights() {
  * 规则依据（社区攻略实测 + 游戏内界面）：
  *   - 每种圣遗物套装至多预设 3 个自定义方案，多个方案在锁定时共同生效
  *   - 每个部位（含花 / 羽）都可分别设定主要属性与追加属性
- *   - 追加属性支持「★必须」，命中条数固定为「至少两条」
+ *   - 追加属性支持「★必须」；命中条数预设「至少两条」，可逐方案调到 1–4
  *   - 仅有 3 条追加属性的圣遗物，所需数量相应减 1
- *   - 需求差异大的角色不宜合并到同一方案，否则会「存伪」（锁进无用件）
+ *   - 重要属性相同但次要属性不同的角色可以合并（次要属性再按实际圣遗物适配到某个角色），
+ *     此时需求角色会按次要属性【颜色分组】显示，便于照搬时区分
  *
  * 固定算法（结果可复现）：
- *   ① 角色分组：按【追加属性需求相似度】凝聚聚类——最相似的两组相似度 ≥ MERGE_SUB_SIM
- *      才合并，否则保留为独立候选。追加属性需求相近的角色（主C / 副C 都要
- *      双暴 + 攻击）会自然并成一套；辅助（充能 / 生命 / 精通）则被拆开
+ *   ① 角色分组：按【重要属性】凝聚聚类——两组的重要属性重合度够高才合并，
+ *      次要属性不同无所谓。追加属性需求相近的角色（主C / 副C 都要双暴）会自然
+ *      并成一套；辅助（充能 / 生命 / 精通）的重要属性不同，自动被拆开
  *   ② 主属性：花/羽固定；沙/杯/冠【逐部位独立合并】——按「票数 × 优先级」
  *      降序，取到累计覆盖 ≥ MAIN_COVER 为止，上限 MAIN_MAX
  *   ③ ★必须：组内全体角色都标了「必选」的追加属性，按平均名次权重降序，上限 2
  *   ④ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求（剔除与唯一主要属性冲突项）
- *   ⑤ 命中条数：固定「至少两条」——圣遗物最终 4 条追加属性，至少 2 条符合要求
- *      才值得留下强化，契合得越多越好
+ *   ⑤ 命中条数：预设「至少两条」——圣遗物最终 4 条追加属性，至少 2 条符合要求
+ *      才值得留下强化；用户可在该方案卡片上把它单独调到 1–4：
+ *      调到 3 / 4 即重做更细的筛选，把次要属性也对上的圣遗物挑出来
  * ============================================================ */
-/* 追加属性相似度下限：≥ 该值才合并（实测标定，见 README「合并标定」）
- *   0.875 → 绝缘套「香菱/行秋/雷电将军」与「夜兰」分开；0.87 → 被并到一起。
- *   取 0.88 留出余量：主 C / 副 C（双暴 + 攻击）合并，辅助（充能 / 生命 / 精通）拆开。 */
-const MERGE_SUB_SIM  = 0.88;
 const CAND_SOFT_CAP  = 24;   // 候选数保护上限（防止极端数据下列表过长，正常不会触发）
 const GAME_MAX_PRESET = 3;   // 游戏内每种套装至多 3 个自定义预设（仅作提示，工具侧不再硬限制）
 const MAIN_MAX    = 3;       // 单部位主属性上限（条件过宽会「存伪」）
 const MAIN_COVER  = 0.7;     // 主属性取到累计覆盖该比例为止
-const SUB_MIN_HIT = 2;       // 追加属性命中条数：固定「至少两条」
+const SUB_MIN_HIT_DEFAULT = 2; // 追加属性命中条数【预设】「至少两个」；圣遗物最终 4 条追加属性，
+                               // 至少 2 条符合要求才值得留下强化；可在方案卡片上手动调到 1–4
+const SUB_MIN_HIT_MAX = 4;     // 命中条数上限（游戏内 N 取 1–4；仅有 3 条追加属性时自动减 1）
 
 function cosSim(a, b) {
   let dot = 0, na = 0, nb = 0;
@@ -676,49 +715,92 @@ function groupSim(g1, g2) {
   return n ? sum / n : 0;
 }
 
-/* ①-a 自然分组：按【追加属性需求相似度】凝聚聚类
- *   每次挑「当前追加属性需求最相似的两组」；只有相似度 ≥ MERGE_SUB_SIM 才合并，
- *   否则停手，各组保持独立候选。
- *
- *   为什么用相似度阈值而不是「贴合度」：贴合度是自造的抽象量，说法不直观，也解释
- *   不清「为什么这两组不能合」。改用追加属性相似度后，判据就是一句能直接理解的话——
- *   「追加属性需求差不多就合，差得多就分开」。
- *   阈值不再暴露成滑块（全自动），所以也不存在「一档跳到底」的手感问题。
- *
- *   threshold 参数仅用于离线标定与回归测试，界面不传值。
+/* ---------- 重要属性 / 次要属性 ----------
+ * 角色的追加属性需求是【有序】数组，且用 op 显式表达了「与上一条是否同等重要」：
+ *   op === '=' → 与上一条同重要（数据里双暴就是这样并列的）
+ *   其余        → 比上一条更低
+ * 所以「重要属性块」可以直接从数据里读出来，不需要另设阈值：
+ *   从第 1 条起沿 op='=' 一直延伸的前缀块，再并入所有 ★必选。
+ * 例：crit / critHp / critDef 三种预设的重要块都是 {暴击率, 暴击伤害}，
+ *     次要属性则分别是 攻击力% / 生命值% / 防御力%。
  */
-function naturalClusters(roles, threshold) {
-  const th = (typeof threshold === 'number') ? threshold : MERGE_SUB_SIM;
-  const groups = roles.map(r => [r]);
+function coreSetOf(role) {
+  const list = role.subList || [];
+  const out = new Set();
+  for (let i = 0; i < list.length; i++) {
+    out.add(statIdOf(list[i]));
+    if (i + 1 >= list.length || list[i + 1].op !== '=') break;
+  }
+  (role.req || []).forEach(id => { const s = statIdOf(id); if (s) out.add(s); });
+  return out;
+}
+function coreIntersect(a, b) {
+  const s = new Set();
+  a.forEach(id => { if (b.has(id)) s.add(id); });
+  return s;
+}
 
-  /* 当前最相似的一对（平均连接：两组间所有角色对的相似度取平均） */
-  const bestPair = () => {
+/* 两组能否合并 —— 【只看重要属性】：
+ *   重要属性重合度够高就合，次要属性（攻击力% / 生命值% / 防御力% 等）不同没关系：
+ *   反正「至少两条」的重要属性已经满足了，具体次要属性再按实际圣遗物给到适配的角色；
+ *   想更细筛就把该方案的命中条数手动调大到 3 或 4。
+ *   判据：交集 ≥ min(2, 较小的核心大小)（核心只有 1 条时要求相同），
+ *         且交集各自占本组核心 ≥ 一半。
+ *   {暴击,暴击伤害} vs {暴击,暴击伤害} → 合并；{暴击,暴击伤害,攻击%} vs {暴击,暴击伤害,生命%} → 合并；
+ *   {精通} vs {精通} → 合并；{精通} vs {充能} → 分开；{暴击,暴击伤害} vs {充能} → 分开。
+ */
+function coreCanMerge(A, B) {
+  if (!A.size || !B.size) return false;
+  let inter = 0;
+  A.forEach(id => { if (B.has(id)) inter++; });
+  if (!inter) return false;
+  const need = Math.min(2, Math.min(A.size, B.size));
+  return inter >= need && (inter / A.size) >= 0.5 && (inter / B.size) >= 0.5;
+}
+
+/* ①-a 自然分组：按【重要属性】凝聚聚类
+ *   每轮在「重要属性重合度达标」的组合里，挑追加属性需求【全量余弦相似度】最高的一对
+ *   合并——判据管「能不能合」，相似度管「先合谁」，保留「按追加属性需求合并」的语义。
+ *   合并后的组核心 = 两边核心的交集（保证组里每个人都认这些是重要属性）。
+ *   全自动，不暴露任何阈值给界面。
+ */
+function naturalClusters(roles) {
+  const groups = roles.map(r => ({ roles: [r], core: coreSetOf(r) }));
+
+  /* 当前最值得合并的一对：先看重要属性能不能合，再按全量相似度排序 */
+  const bestPair = (requireCore) => {
     let best = null;
     for (let i = 0; i < groups.length; i++) {
       for (let j = i + 1; j < groups.length; j++) {
-        const s = groupSim(groups[i], groups[j]);
+        if (requireCore && !coreCanMerge(groups[i].core, groups[j].core)) continue;
+        const s = groupSim(groups[i].roles, groups[j].roles);
         if (!best || s > best.s) best = { s, i, j };
       }
     }
     return best;
   };
 
-  // 追加属性需求够像才并：最相似的一对都不够像 → 停手
   while (groups.length > 1) {
-    const best = bestPair();
-    if (!best || best.s < th) break;
-    groups[best.i] = groups[best.i].concat(groups[best.j]);
+    const best = bestPair(true);
+    if (!best) break;
+    groups[best.i] = {
+      roles: groups[best.i].roles.concat(groups[best.j].roles),
+      core: coreIntersect(groups[best.i].core, groups[best.j].core),
+    };
     groups.splice(best.j, 1);
   }
 
-  // 保护上限：极端数据下防止候选列表过长（正常不会触发）
+  // 保护上限：极端数据下防止候选列表过长（此时不再要求重要属性重合，纯贪心兜底）
   while (groups.length > CAND_SOFT_CAP) {
-    const best = bestPair();
+    const best = bestPair(false);
     if (!best) break;
-    groups[best.i] = groups[best.i].concat(groups[best.j]);
+    groups[best.i] = {
+      roles: groups[best.i].roles.concat(groups[best.j].roles),
+      core: coreIntersect(groups[best.i].core, groups[best.j].core),
+    };
     groups.splice(best.j, 1);
   }
-  return groups;
+  return groups.map(g => g.roles);
 }
 
 /* ② 合并一组角色在某部位的主属性需求
@@ -753,8 +835,9 @@ const FIXED_MAIN = { flower: 'hp', plume: 'atk' };
  *      方案而变，无法再逐部位剔除——这是「统一追加属性」换取一致性的固有取舍。
  *   ② ★必须：组内「所有」角色都标了必选的词条（交集），按平均名次权重降序，最多 2 个
  *   ③ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求，按「广度 × 名次」累加降序
- *   ④ 命中条数：固定「至少两条」（SUB_MIN_HIT）。圣遗物最终 4 条追加属性，
- *      至少 2 条符合要求才值得留下强化——契合得越多越好，不足 2 条直接喂掉
+ *   ④ 命中条数：预设「至少两个」（SUB_MIN_HIT_DEFAULT）。圣遗物最终 4 条追加属性，
+ *      至少 2 条符合要求才值得留下强化——契合得越多越好；用户可在方案卡片上
+ *      单独调到 1–4（重要属性相同、次要属性不同的大组，调大即可做更细的筛选）
  */
 function mergeSubUniform(group) {
   const n = group.length;
@@ -791,13 +874,13 @@ function mergeSubUniform(group) {
   if (pool.length > SUB_POOL_MAX) pool = pool.slice(0, SUB_POOL_MAX);
   if (!pool.length) return { required: [], pool: [], minHit: 0 };  // 只挑主要属性，追加属性不限
 
-  // 固定「至少两条」；池里不足 2 条时退化为池的长度（池为空已在上面返回「不限」）
-  return { required, pool, minHit: Math.min(SUB_MIN_HIT, pool.length) };
+  // 预设「至少两个」，可在方案卡片上手动调整；池不足 N 条时退化为池长度
+  return { required, pool, minHit: Math.min(SUB_MIN_HIT_DEFAULT, pool.length) };
 }
 
 /* 融合两份追加属性条件（手动合并方案时用）：
  *   ★必须取交集（两边都要才算必须）、追加属性池取并集；
- *   命中条数固定「至少两条」，不再取两者的较小值 */
+ *   命中条数回到预设值（手动合并等于重新起一套，原先的细筛不再适用） */
 function fuseSub(a, b) {
   if (!a) return b;
   if (!b) return a;
@@ -805,7 +888,7 @@ function fuseSub(a, b) {
   const pool = [...new Set([...a.pool, ...b.pool])];
   required.forEach(id => { if (!pool.includes(id)) pool.unshift(id); });
   const p = pool.slice(0, SUB_POOL_MAX);
-  return { required, pool: p, minHit: Math.min(SUB_MIN_HIT, p.length) };
+  return { required, pool: p, minHit: Math.min(SUB_MIN_HIT_DEFAULT, p.length) };
 }
 
 /* 一组角色 -> 候选方案（追加属性条件全方案统一） */
@@ -905,9 +988,9 @@ function toRoles(charList, setName) {
  * ============================================================ */
 
 /* 生成某套装的全部候选方案 = 角色自然分组 + 启用的散件 / 过渡规则 */
-function buildPlanCandidates(charList, setName, threshold) {
+function buildPlanCandidates(charList, setName) {
   const roles = toRoles(charList, setName);
-  const cands = roles.length ? naturalClusters(roles, threshold).map(planFromGroup) : [];
+  const cands = roles.length ? naturalClusters(roles).map(planFromGroup) : [];
   activeKeepRules().forEach(r => cands.push(ruleToPlan(r)));
   return cands;
 }
@@ -999,22 +1082,38 @@ function ruleToPlan(rule) {
     sub: (() => {
       const required = (rule.required || []).filter(id => !banned.has(id));
       const pool = (rule.pool || []).filter(id => !banned.has(id));
-      // 与角色方案一致：固定「至少两条」，不再读规则自带的命中条数
-      return { required, pool, minHit: Math.min(SUB_MIN_HIT, pool.length) };
+      // 与角色方案一致：预设「至少两个」，可在方案卡片上单独调整
+      return { required, pool, minHit: Math.min(SUB_MIN_HIT_DEFAULT, pool.length) };
     })(),
     mains,
     _group: null,
   };
 }
 
-/* 取 / 算某套装：候选方案 →（套用手工合并）→ 采纳中的方案，渲染与导出共用同一结果 */
-function setCandidates(chars, setName, threshold) {
-  return applyPlanOverlay(setName, buildPlanCandidates(chars, setName, threshold));
+/* 套用用户对「命中条数」的手动调整：{ 方案 key: N }
+ *   挂在候选管道的出口，所以渲染 / 导出 / 事件三条路径拿到的都是同一份结果。
+ *   实际生效值还要被该方案的追加属性池宽度钳住——池里只有 3 条时不可能要求命中 4 条。 */
+function applyMinHit(setName, list) {
+  const cfg = (state.planCfg && state.planCfg[setName]) || null;
+  const map = (cfg && cfg.minHit) || null;
+  list.forEach(p => {
+    const pool = (p.sub && p.sub.pool) || [];
+    if (!pool.length) { if (p.sub) p.sub.minHit = 0; return; }   // 只挑主要属性 → 追加属性不限
+    const want = map && Object.prototype.hasOwnProperty.call(map, p.key) ? clampHit(map[p.key]) : SUB_MIN_HIT_DEFAULT;
+    // 深拷贝一份再改，避免污染 buildPlanCandidates 缓存出来的同一对象
+    p.sub = { ...p.sub, minHit: Math.min(want, pool.length) };
+  });
+  return list;
 }
-function adoptedPlans(chars, setName, threshold) {
+
+/* 取 / 算某套装：候选方案 →（套用手工合并）→（套用命中条数调整），渲染与导出共用同一结果 */
+function setCandidates(chars, setName) {
+  return applyMinHit(setName, applyPlanOverlay(setName, buildPlanCandidates(chars, setName)));
+}
+function adoptedPlans(chars, setName) {
   const cfg = (state.planCfg && state.planCfg[setName]) || null;
   const hide = new Set((cfg && cfg.hide) || []);
-  return setCandidates(chars, setName, threshold).filter(p => !hide.has(p.key));
+  return setCandidates(chars, setName).filter(p => !hide.has(p.key));
 }
 /* 便捷入口：按套装名 + 当前界面参数重算候选（界面事件与导出共用，保证与页面一致） */
 function candsOfSet(setName) {
@@ -1022,26 +1121,71 @@ function candsOfSet(setName) {
   const b = computePlan(el ? el.checked : true).get(setName);
   if (!b) return [];
   const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
-  return setCandidates(chars, setName, clusterThreshold());
+  return setCandidates(chars, setName);
 }
 
-/* 合并阈值：界面不再提供滑块（「方案贴合度」的说法不直观，已移除），
- * 统一使用常量 MERGE_SUB_SIM——追加属性需求差不多就合并，全自动。 */
-function clusterThreshold() {
-  return MERGE_SUB_SIM;
+/* 次要属性分组的配色（深色背景上可读的柔和色，按顺序稳定分配） */
+const GROUP_COLORS = ['#5fa8e8', '#5fd39a', '#ff9f5a', '#b98cff',
+                      '#f5dfa6', '#7fd6cf', '#ff8a9c', '#a5d66a'];
+
+/* 把一个方案的需求角色按「最想要的次要属性」分组，用于颜色区分
+ *   背景：合并放宽后，重要属性（如双暴）相同、次要属性（攻击% / 生命% / 防御%）
+ *   不同的角色会并进同一套方案——他们的圣遗物要按实际次要属性分别给到适配的角色，
+ *   所以用颜色把「次要属性不同」的角色区分开，方便照抄时一眼看清。
+ *   次要属性完全一致时不分组（返回 null），避免无意义的色块。
+ *   _group 经 mergePlans 继续传递，所以手工合并后的方案同样能分组；
+ *   散件规则方案 _group 为 null，自然不分组。
+ */
+function charColorGroups(p) {
+  const g = p._group;
+  if (!g || g.length < 2) return null;
+  // 方案的核心重要属性 = 组内所有角色重要块的交集
+  const core = g.map(coreSetOf).reduce((acc, c) => coreIntersect(acc, c));
+  const bySig = new Map();
+  g.forEach(r => {
+    // 次要属性取「不属于重要块的最靠前 2 条」作为分组签名
+    const sig = (r.subList || []).map(statIdOf).filter(id => id && !core.has(id))
+      .slice(0, 2).join(',');
+    if (!bySig.has(sig)) bySig.set(sig, []);
+    bySig.get(sig).push(r.name);
+  });
+  if (bySig.size < 2) return null;
+  return [...bySig.keys()].sort().map((sig, i) => ({
+    color: GROUP_COLORS[i % GROUP_COLORS.length],
+    names: bySig.get(sig),
+    minor: sig ? sig.split(',').map(subStatName).join('、') : '无次要需求',
+  }));
 }
 
-/* 方案的「适用对象」标题：角色组 / 散件规则 / 手动合并后的混合 */
+/* 方案的「适用对象」标题：角色组 / 散件规则 / 手动合并后的混合
+ *   次要属性不一致时，角色名按次要属性分组上色，并给出颜色图例 */
 function planForText(p) {
   if (p.kind === 'rule') {
     return `<span class="gp-for gp-rule-for">🧩 散件 / 过渡保留：${esc(p.ruleName)}</span>`;
   }
   if (p.chars && p.chars.length) {
+    const groups = charColorGroups(p);
+    if (groups) {
+      const chips = groups.map(g => g.names.map(n =>
+        `<span class="gp-char-tag" style="--tc:${g.color}" title="最想要的次要属性：${esc(g.minor)}">${esc(n)}</span>`
+      ).join('')).join('');
+      const legend = groups.map(g =>
+        `<span class="lg" style="--tc:${g.color}"><i class="dot"></i>${esc(g.minor)}</span>`).join('');
+      return `<span class="gp-for gp-for-groups">${chips}</span>` +
+        `<div class="gp-legend">颜色＝最想要的次要属性：${legend}</div>`;
+    }
     const more = p.chars.length > 6 ? ` <span class="gp-more">等 ${p.chars.length} 人</span>`
       : (p.chars.length > 4 ? ` <span class="gp-more">共 ${p.chars.length} 人</span>` : '');
     return `<span class="gp-for">供 ${p.chars.slice(0, 6).map(n => esc(n)).join('、')}${more} 使用</span>`;
   }
   return '<span class="gp-for">（未指定角色）</span>';
+}
+
+/* 纯文本版的角色分组（导出 / 复制用，无法上色就写在括号里） */
+function planCharsPlain(p) {
+  const groups = charColorGroups(p);
+  if (!groups) return (p.chars || []).join('、');
+  return groups.map(g => `${g.names.join('、')}（${g.minor}）`).join(' / ');
 }
 
 /* 方案级追加属性条件的统一渲染 —— 【五个部位共用这一份】 */
@@ -1052,11 +1196,11 @@ function subCondText(sub) {
     .map(id => `<span class="gp-sub">${esc(subStatName(id))}</span>`).join('');
   return (star || rest) ? star + rest : '<span class="gp-fixed">不限</span>';
 }
-/* 命中条数：固定「至少两条」（池不足 2 条时退化；池为空 = 不限，返回空串） */
+/* 命中条数文案：预设「至少两条」，用户可调 1–4；池为空 = 不限（返回空串） */
 function subHitPlain(sub) {
   const n = sub.minHit || 0;
   if (!n) return '';
-  return n >= SUB_MIN_HIT ? '至少两条' : '至少一条';
+  return `至少${'一二三四'[n - 1]}条`;
 }
 function subHitText(sub) {
   const t = subHitPlain(sub);
@@ -1073,7 +1217,7 @@ function mainCondText(slotId, list) {
 function planCopyText(setName, plan, idx) {
   const who = plan.kind === 'rule'
     ? `散件 / 过渡保留：${plan.ruleName}`
-    : `供 ${plan.chars.join('、')} 使用`;
+    : `供 ${planCharsPlain(plan)} 使用`;
   const L = [`  方案${idx + 1}（${who}）`];
   // 追加属性是全方案统一的一份，先说一遍，五个部位再各自列主要属性
   const subAll = [...plan.sub.required.map(id => '★' + subStatName(id)),
@@ -1780,20 +1924,19 @@ function renderPlan() {
   });
 
   const setWeights = setSubRanking(includeAlt);
-  const threshold = clusterThreshold();
   renderKeepRules();   // 规则面板：启用状态 + 计数
 
   const html = blocks
     .filter(([name]) => setFilter === 'all' || name === setFilter)
     .filter(([name, b]) => !hideUnused || b.users.size > 0)
     .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
-    .map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights, threshold))
+    .map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights))
     .join('');
 
   blocks.forEach(([name, b]) => {
     if (!b.users.size) return;
     const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
-    const res = adoptedPlans(chars, name, threshold);
+    const res = adoptedPlans(chars, name);
     planCount += res.length;
     if (res.length > GAME_MAX_PRESET) overSets++;
   });
@@ -1858,7 +2001,7 @@ function renderKeepRules() {
   }
 }
 
-function renderSetBlock(name, b, slotFilter, setWeights, threshold) {
+function renderSetBlock(name, b, slotFilter, setWeights) {
   const bonus = allSetBonus()[name] || '';
   const users = Array.from(b.users.entries());
   const unused = users.length === 0;
@@ -1867,7 +2010,7 @@ function renderSetBlock(name, b, slotFilter, setWeights, threshold) {
   // 散件 / 过渡规则也作为候选加入，再由用户手动合并 / 勾选采纳
   const charsForPlan = state.characters.filter(c => c.enabled && b.users.has(c.name));
   const cands = charsForPlan.length
-    ? setCandidates(charsForPlan, name, threshold) : [];
+    ? setCandidates(charsForPlan, name) : [];
   const gpHtml = cands.length ? renderGamePlans(name, cands, slotFilter) : '';
 
   // 该套装的追加属性需求排序（用于花/羽行提示）
@@ -1946,7 +2089,7 @@ function showDetail() {
  *   ④ 采纳数 > 游戏上限（3）时提示用户自行收敛
  */
 function renderGamePlans(setName, cands, slotFilter = 'all') {
-  const cfg = (state.planCfg && state.planCfg[setName]) || { merge: [], hide: [] };
+  const cfg = (state.planCfg && state.planCfg[setName]) || { merge: [], hide: [], minHit: {} };
   const hidden = new Set(cfg.hide || []);
   const slotsTodo = SLOTS.filter(sd => slotFilter === 'all' || sd.id === slotFilter);
 
@@ -1963,7 +2106,20 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
       </div>`).join('');
 
     const subTxt = subCondText(p.sub);
-    const hitTxt = subHitText(p.sub);
+    // 命中条数：池有多宽就能调到几（上限 SUB_MIN_HIT_MAX）；池为空 = 追加属性不限，不给下拉
+    const poolN = (p.sub && p.sub.pool) || [];
+    const hitSel = poolN.length
+      ? (() => {
+          const max = Math.min(SUB_MIN_HIT_MAX, poolN.length);
+          const cur = Math.min(p.sub.minHit || SUB_MIN_HIT_DEFAULT, max);
+          let opts = '';
+          for (let n = 1; n <= max; n++) {
+            opts += `<option value="${n}"${n === cur ? ' selected' : ''}>至少${'一二三四'[n - 1]}条</option>`;
+          }
+          return `<select class="gp-hitsel" data-gp-minhit="${esc(setName)}|${esc(p.key)}"` +
+                 ` title="追加属性池里命中任意 N 条就锁定（★计入）。默认「至少两条」；调大可做更细的筛选">${opts}</select>`;
+        })()
+      : '<span class="gp-fixed">不限</span>';
 
     return `
     <div class="gp-card${p.kind === 'rule' ? ' gp-card-rule' : ''}${off ? ' gp-card-off' : ''}">
@@ -1992,7 +2148,7 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
         <span class="gp-lab">追加属性（五部位相同）</span>
         <span class="gp-val">${subTxt}</span>
         <span class="gp-lab">包含（★计入）</span>
-        <span class="gp-val">${hitTxt}</span>
+        <span class="gp-val">${hitSel}</span>
       </div>
       <div class="gp-mains">${rows}</div>
     </div>`;
@@ -2012,8 +2168,9 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
         已采纳 <b>${picked}</b> / 游戏上限 ${GAME_MAX_PRESET}${over ? ' ⚠️' : ''}
       </span>
     </div>
-    <p class="gp-lead">候选按「角色的<b>追加属性需求</b>」自动合并：主 C / 副 C（双暴 + 攻击）会并成一套，辅助（充能 / 生命 / 精通）自动拆开，<b>全自动、无需调参</b>。
-      每个方案的<b>五个部位共用同一份追加属性条件</b>（命中条数固定「至少两条」），主要属性逐部位独立合并；觉得多了就用「并入…」合并、或取消勾选「采纳」。</p>
+    <p class="gp-lead">候选按角色的<b>重要属性</b>（如双暴）自动合并——重要属性相同就并为一套，次要属性（攻击% / 生命% / 防御%）不同的角色用<b>颜色</b>区分标注；
+      辅助（充能 / 生命 / 精通）重要属性不同，会自动拆开，<b>全自动、无需调参</b>。
+      每个方案的<b>五个部位共用同一份追加属性条件</b>，主要属性逐部位独立合并；命中条数<b>默认「至少两条」</b>，可在下方单独调到 1–4 做更细的筛选；觉得候选多了就用「并入…」合并、或取消勾选「采纳」。</p>
     <div class="gp-cards">${cards}</div>
     <p class="gp-tip">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上方逐套设置；
       每种套装游戏内<b>至多 ${GAME_MAX_PRESET} 个自定义预设</b>，请自行收敛。仅有 3 条追加属性的圣遗物，所需数量会自动减 1。</p>
@@ -2038,7 +2195,6 @@ function slotRow(sd, inner) {
 /* 导出：游戏内锁定方案（可照搬进游戏） */
 function gamePlansToText() {
   const includeAlt = $('#planAltBuild').checked;
-  const threshold = clusterThreshold();
   const plan = computePlan(includeAlt);
   const L = ['原神 · 圣遗物套装锁定方案（游戏内照此设置）',
     '说明：每个方案的【五个部位共用同一份追加属性条件】，照下方逐套设置即可。', ''];
@@ -2050,7 +2206,7 @@ function gamePlansToText() {
     .forEach(([name, b]) => {
       const chars = state.characters.filter(c => c.enabled && b.users.has(c.name));
       // 与页面完全一致：角色聚类候选 + 散件 / 过渡规则，套用手工合并，只导出「已采纳」的
-      const plans = adoptedPlans(chars, name, threshold);
+      const plans = adoptedPlans(chars, name);
       if (!plans.length) return;
       setCount++;
       if (plans.length > GAME_MAX_PRESET) over++;
@@ -2431,6 +2587,16 @@ function closeSetMgr() {
   $('#setMgrMask').classList.add('hidden');
 }
 
+/* 散件 / 过渡规则的新增 / 编辑浮窗开关（表单 DOM 一次性建好，只切换显示） */
+function openKrForm() {
+  $('#krBox').classList.remove('hidden');
+  $('#krMask').classList.remove('hidden');
+}
+function closeKrForm() {
+  $('#krBox').classList.add('hidden');
+  $('#krMask').classList.add('hidden');
+}
+
 /* ============================================================
  * 页面 ④：数据管理
  * ============================================================ */
@@ -2495,7 +2661,7 @@ function bind() {
   function renderKrPool(checked) { krChk($('#krPool'), SUB_STATS, checked); }
   function renderKrRequired(checked) { krChk($('#krRequired'), SUB_STATS, checked); }
 
-  /* 进入「编辑某条规则」模式：表单回填该规则当前值（内置规则同样可编辑） */
+  /* 进入「编辑某条规则」模式：弹出浮窗并回填该规则当前值（内置规则同样可编辑） */
   function editKeepRule(id) {
     const r = allKeepRules().find(x => x.id === id);
     if (!r) return;
@@ -2507,9 +2673,11 @@ function bind() {
     $('#krFormTitle').textContent = `✏️ 正在编辑：${r.name}`;
     $('#btnKrAdd').textContent = '保存修改';
     $('#btnKrCancel').hidden = false;
-    if ($('#krForm')) $('#krForm').open = true;
+    openKrForm();
+    const nm = $('#krName');
+    if (nm) nm.focus();
   }
-  /* 退出编辑态，回到新建 */
+  /* 退出编辑态，回到新建（不动浮窗本身的开合，由调用方决定） */
   function resetKrForm() {
     $('#krEditing').value = '';
     $('#krName').value = '';
@@ -2523,6 +2691,14 @@ function bind() {
   renderKrMains(); renderKrPool(); renderKrRequired();
   // 换部位要重渲染「主要属性」候选（各部位可选主要属性不同），此时清空已选
   if ($('#krSlot')) $('#krSlot').onchange = () => renderKrMains();
+  // 模块整体的收起 / 展开
+  if ($('#krFold')) $('#krFold').onclick = () => setKrCollapsed(!state.keepRules.collapsed);
+  // 「＋ 新增自定义规则」→ 先清干净再开浮窗
+  if ($('#btnKrNew')) $('#btnKrNew').onclick = () => { resetKrForm(); openKrForm(); $('#krName').focus(); };
+  // 浮窗右上角 × 与点遮罩关闭时，同时把表单退回新建态，避免下次打开留着上一次的草稿
+  const cancelKr = () => { resetKrForm(); closeKrForm(); };
+  if ($('#btnKrX')) $('#btnKrX').onclick = cancelKr;
+  if ($('#krMask')) $('#krMask').onclick = cancelKr;
 
   const krList = $('#keepRuleList');
   if (krList) {
@@ -2542,7 +2718,7 @@ function bind() {
         if (!confirm(`删除自定义规则「${rule ? rule.name : id}」？`)) return;
         state.keepRules.custom = state.keepRules.custom.filter(r => r.id !== id);
         state.keepRules.enabled = state.keepRules.enabled.filter(x => x !== id);
-        if ($('#krEditing').value === id) resetKrForm();
+        if ($('#krEditing').value === id) cancelKr();
         save(); renderKeepRules(); renderPlan();
         toast('已删除规则');
         return;
@@ -2553,13 +2729,13 @@ function bind() {
       if (rs) {
         const id = rs.dataset.krReset;
         delete krOverrides()[id];            // 删掉覆盖层 = 恢复出厂设置
-        if ($('#krEditing').value === id) resetKrForm();
+        if ($('#krEditing').value === id) cancelKr();
         save(); renderKeepRules(); renderPlan();
         toast('已恢复默认设置');
       }
     });
   }
-  if ($('#btnKrCancel')) $('#btnKrCancel').onclick = resetKrForm;
+  if ($('#btnKrCancel')) $('#btnKrCancel').onclick = cancelKr;
 
   if ($('#btnKrAdd')) $('#btnKrAdd').onclick = () => {
     const name = ($('#krName').value || '').trim();
@@ -2591,17 +2767,20 @@ function bind() {
         if (r) Object.assign(r, fields);
         toast(`已保存规则：${name}`);
       }
-      resetKrForm();
+      cancelKr();
     } else {
       const id = 'custom_' + Date.now().toString(36);
       state.keepRules.custom.push({ id, builtin: false, ...fields });
       state.keepRules.enabled.push(id);
-      $('#krName').value = '';
+      resetKrForm();               // 浮窗不关，方便连着加下一条
       toast('已添加规则：' + name);
     }
+    // 新加的规则可能落在收起的模块里，这里顺手展开，别让主人以为没生效
+    if (state.keepRules.collapsed) setKrCollapsed(false);
     save(); renderKeepRules(); renderPlan();
   };
   renderKeepRules();
+  applyKrFold();
 
   $('#btnCopyGame').onclick = async () => {
     const txt = gamePlansToText();
@@ -2646,8 +2825,23 @@ function bind() {
         !dropKeys.has(mergeResultKey(g)) && !g.some(k => dropKeys.has(k)));
       cfg.merge.push([...baseKeysOf(src), ...baseKeysOf(dst)]);
       cfg.hide = cfg.hide.filter(k => k !== key && k !== targetKey);
+      // 两边都成了新方案的成员，各自的命中条数调整随之作废
+      cfg.minHit = Object.fromEntries(
+        Object.entries(cfg.minHit).filter(([k]) => !dropKeys.has(k)));
       save(); renderPlan();
       toast('已合并为一个方案');
+      return;
+    }
+    // ③ 命中条数（包含任意 N 条）
+    const hs = e.target.closest('[data-gp-minhit]');
+    if (hs) {
+      const raw = hs.dataset.gpMinhit;
+      const setName = raw.split('|')[0];
+      const key = raw.slice(setName.length + 1);
+      const cfg = planCfgOf(setName);
+      cfg.minHit[key] = clampHit(hs.value);
+      save(); renderPlan();
+      toast(`命中条数已设为「至少${'一二三四'[clampHit(hs.value) - 1]}条」`);
     }
   });
 
@@ -2663,6 +2857,7 @@ function bind() {
       const cfg = planCfgOf(setName);
       // key 是「合并产物」的 key，而 cfg.merge 里存的是成员 → 用复算的产物 key 去匹配
       cfg.merge = cfg.merge.filter(g => mergeResultKey(g) !== key);
+      delete cfg.minHit[key];   // 产物已不存在，它的命中条数调整随之作废
       save(); renderPlan();
       toast('已拆回为合并前的候选');
       return;
@@ -2760,7 +2955,7 @@ function bind() {
   $('#helpMask').onclick = closeHelp;
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { showDrawer(false); closeHelp(); closeSetMgr(); }
+    if (e.key === 'Escape') { showDrawer(false); closeHelp(); closeSetMgr(); cancelKr(); }
   });
 }
 

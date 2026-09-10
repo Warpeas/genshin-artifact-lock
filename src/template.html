@@ -97,42 +97,23 @@
 
     <div id="pickInfo" class="pick-info"></div>
 
-    <div class="card kr-card">
-      <h3>🧩 散件 / 过渡 保留规则 <span id="krCount" class="kr-count"></span></h3>
-      <p class="muted small">与具体角色无关、只因「主要属性本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
-        每条启用的规则会生成一份<b>候选方案</b>，与角色聚类结果<b>同权</b>出现在下面的候选区；
-        你可以「并入」到某个角色方案里、或单独采纳。<b>游戏内每种套装至多 3 个自定义预设</b>，请自行控制在 3 套以内。
-        <br><b>内置规则也能改</b>：点「编辑」即可修改（名称 / 描述 / 部位 / 主要属性 / 追加属性 / ★必须），改过的会标记「已修改」，可一键「恢复默认」。</p>
-      <div id="keepRuleList" class="kr-list"></div>
-      <details class="kr-add" id="krForm">
-        <summary id="krFormTitle">＋ 新增自定义规则</summary>
-        <div class="kr-form">
-          <input type="hidden" id="krEditing" value="">
-          <label class="fld">名称
-            <input type="text" id="krName" placeholder="如：防御杯" spellcheck="false">
-          </label>
-          <label class="fld">描述（可选）
-            <input type="text" id="krDesc" placeholder="说明这条规则为什么该留" spellcheck="false">
-          </label>
-          <label class="fld">部位
-            <select id="krSlot">
-              <option value="sands">时之沙</option>
-              <option value="goblet" selected>空之杯</option>
-              <option value="circlet">理之冠</option>
-            </select>
-          </label>
-          <div class="kr-pick">
-            <div><b>要留的主要属性</b><div id="krMains" class="kr-chk"></div></div>
-            <div><b>追加属性</b><div id="krPool" class="kr-chk"></div></div>
-            <div><b>★必须追加属性</b><div id="krRequired" class="kr-chk"></div></div>
-          </div>
-          <p class="muted small">命中条数固定为<b>「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条符合要求才值得留下强化，契合得越多越好。</p>
-          <div class="btn-row">
-            <button id="btnKrAdd" class="btn primary">添加规则</button>
-            <button id="btnKrCancel" class="btn" hidden>取消编辑</button>
-          </div>
+    <div class="card kr-card" id="krCard">
+      <h3 class="kr-head">
+        <button id="krFold" class="kr-fold" type="button" aria-expanded="true" title="收起这一模块（只是不显示，启用的规则照常生效）">▾</button>
+        <span class="kr-head-txt">🧩 散件 / 过渡 保留规则</span>
+        <span id="krCount" class="kr-count"></span>
+      </h3>
+      <div id="krBody" class="kr-body">
+        <p class="muted small">与具体角色无关、只因「主要属性本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
+          每条启用的规则会生成一份<b>候选方案</b>，与角色聚类结果<b>同权</b>出现在下面的候选区；
+          你可以「并入」到某个角色方案里、或单独采纳。<b>游戏内每种套装至多 3 个自定义预设</b>，请自行控制在 3 套以内。
+          <br><b>内置规则也能改</b>：点「编辑」即弹出浮窗修改（名称 / 描述 / 部位 / 主要属性 / 追加属性 / ★必须），改过的会标记「已修改」，可一键「恢复默认」。
+          <br>点标题左侧的箭头可<b>收起整个模块</b>——只是不再显示，已启用的规则照常生成候选方案。</p>
+        <div class="toolbar wrap kr-bar">
+          <button id="btnKrNew" class="btn primary">＋ 新增自定义规则</button>
         </div>
-      </details>
+        <div id="keepRuleList" class="kr-list"></div>
+      </div>
     </div>
 
     <div id="planSummary" class="summary-strip"></div>
@@ -253,11 +234,13 @@
       <li><b>方案 N</b>：由追加属性需求相近的角色合并而来，标题写明「供谁使用」。同一套装的多个方案在锁定界面<b>共同生效</b>（彼此是「或」的关系）。</li>
       <li><b>采纳 / 并入… / 拆回</b>：每个候选默认「已采纳」；「并入…」把两个候选并成一套，「拆回」还原。改动会保存；
         采纳数超过游戏内上限（每套 3 个）时，页面顶部会给出橙色提醒。</li>
-      <li><b>自动合并</b>：方案按角色的<b>追加属性需求相似度</b>自动聚类——需求差不多（如主C / 副C 都要双暴 + 攻击）就并为一套，
-        差得多（辅助要充能 / 生命 / 精通）就分开；主要属性则<b>逐部位独立合并</b>。无需手动调参。</li>
+      <li><b>自动合并</b>：方案按角色的<b>重要属性</b>（第 1 条起同等重要的那一截 + ★必选，通常就是双暴）自动聚类——
+        重要属性撞上就并为一套；次要属性（攻击力% / 生命值% 之类）不同不影响合并，会按角色<b>分组上色</b>显示，实际给谁再按手上的圣遗物定。
+        主要属性则<b>逐部位独立合并</b>。无需手动调参。</li>
       <li><b>★必须</b>：金色词条，这件圣遗物<b>必须</b>有它，否则不锁定。来自组内<b>全体角色都勾选了「必选」</b>的追加属性（在角色抽屉里点 ☆ 设置），最多 2 个。</li>
-      <li><b>至少两条</b>：命中条数固定为「至少两条」——圣遗物最终 4 条追加属性，至少 2 条落在追加属性池里才锁定，
-        ★必须的词条也计入这两条。契合得越多越好，不足两条直接喂掉。</li>
+      <li><b>至少两条</b>：命中条数<b>预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条落在追加属性池里才锁定，
+        ★必须的词条也计入这两条。需要更严就在该方案的卡片上把下拉<b>改到 3 / 4 条</b>（也可放松到 1 条），每个方案单独记。</li>
+      <li><b>收起</b>：点「🧩 散件 / 过渡 保留规则」标题左侧的箭头可把整块收成一行标题——只是不再显示，已启用的规则照常生成候选方案。</li>
       <li>勾选工具栏「<b>显示详细件数</b>」可展开每套的建议保留件数与需求来源；不勾选时页面只显示可直接照搬的锁定方案。</li>
     </ul>
     <h4>注意</h4>
@@ -288,6 +271,45 @@
       <button id="btnRestoreSets" class="btn">恢复全部内置套装</button>
     </div>
     <div id="setManager"></div>
+  </div>
+</div>
+
+<!-- ========== 散件 / 过渡规则：新增 / 编辑 浮窗 ========== -->
+<div id="krMask" class="modal-mask hidden"></div>
+<div id="krBox" class="modal hidden">
+  <div class="drawer-head">
+    <h2 id="krFormTitle">＋ 新增自定义规则</h2>
+    <button id="btnKrX" class="icon-btn" title="关闭">×</button>
+  </div>
+  <div class="modal-body">
+    <input type="hidden" id="krEditing" value="">
+    <div class="kr-form">
+      <label class="fld">名称
+        <input type="text" id="krName" placeholder="如：防御杯" spellcheck="false">
+      </label>
+      <label class="fld">描述（可选）
+        <input type="text" id="krDesc" placeholder="说明这条规则为什么该留" spellcheck="false">
+      </label>
+      <label class="fld">部位
+        <select id="krSlot">
+          <option value="sands">时之沙</option>
+          <option value="goblet" selected>空之杯</option>
+          <option value="circlet">理之冠</option>
+        </select>
+      </label>
+      <div class="kr-pick">
+        <div><b>要留的主要属性</b><div id="krMains" class="kr-chk"></div></div>
+        <div><b>追加属性</b><div id="krPool" class="kr-chk"></div></div>
+        <div><b>★必须追加属性</b><div id="krRequired" class="kr-chk"></div></div>
+      </div>
+      <p class="muted small">命中条数<b>预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条符合要求才值得留下强化；
+        启用后可在下方每个方案卡片上<b>单独调到 1–4 条</b>，数字越大筛选越严。</p>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button id="btnKrCancel" class="btn" hidden>取消编辑</button>
+    <span class="spacer"></span>
+    <button id="btnKrAdd" class="btn primary">添加规则</button>
   </div>
 </div>
 
