@@ -427,6 +427,9 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-main{display:inline-block;background:#233447;color:#bcd8f5;border:1px solid #33506e;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
 .gp-star{display:inline-block;background:#3d2f18;color:#f0c674;border:1px solid #6b5326;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;font-weight:600;}
 .gp-sub{display:inline-block;background:#232a33;color:#93a1b3;border:1px solid #333d4a;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
+/* 分组专属的追加属性：与需要它的角色同色，一眼看出这条该给谁 */
+.gp-sub-g{background:color-mix(in srgb,var(--tc,#33506e) 16%,#232a33);color:var(--tc,#93a1b3);
+  border-color:var(--tc,#333d4a);cursor:help;}
 .gp-fixed{color:#6f7b8c;font-size:11px;font-style:italic;}
 .gp-tip{margin:9px 0 0;font-size:11px;color:#6f7b8c;line-height:1.65;}
 
@@ -445,14 +448,10 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-adopt input{width:15px;height:15px;accent-color:#7fbf6a;cursor:pointer;}
 .gp-for{font-size:11.5px;color:#8a94a6;flex:1;min-width:110px;line-height:1.5;}
 .gp-more{color:#6f7b8c;}
-/* 按「最想要的次要属性」给需求角色上色：颜色用 --tc 注入（与 .tag-btn 同一套范式） */
+/* 角色名与「只有部分角色要的追加属性」同色对应（颜色用 --tc 注入，取消额外图例） */
 .gp-for-groups{display:flex;flex-wrap:wrap;gap:2px 0;align-items:center;}
 .gp-char-tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:20px;margin:1px 3px 1px 0;
   background:#1a2330;color:var(--tc,#bcd8f5);border:1px solid var(--tc,#33506e);white-space:nowrap;}
-.gp-legend{font-size:10.5px;color:#6f7b8c;margin-top:4px;display:flex;flex-wrap:wrap;
-  gap:2px 10px;align-items:center;line-height:1.6;}
-.gp-legend .lg{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:var(--tc,#8a94a6);}
-.gp-legend .dot{width:8px;height:8px;border-radius:50%;background:var(--tc,#8a94a6);flex:none;}
 .gp-badge{font-size:10.5px;color:#a9d69b;background:#22301f;border:1px solid #3d4a3a;padding:1px 6px;border-radius:3px;white-space:nowrap;}
 .gp-acts{display:inline-flex;align-items:center;gap:6px;margin-left:auto;}
 .gp-mergesel{font-size:11px;background:#131a24;color:#cfe3ff;border:1px solid #33506e;border-radius:4px;padding:2px 6px;max-width:190px;}
@@ -2331,6 +2330,29 @@ function coreIntersect(a, b) {
   return s;
 }
 
+/* 一组角色里可以分出几种「次要属性偏好」：返回 [{ sig, roles, minor }]，少于 2 种返回 null
+ *   —— 重要属性之外的前 2 条追加属性就是这位角色的次要偏好；偏好不同意味着合到同一套之后，
+ *   圣遗物还要按实际次要属性二次分配（给最适配的那个人）。
+ *   「把一组角色拆成偏好小队」这件事在池保底（mergeSubUniform）与上色（planColorGroups）
+ *   两处都要用，所以抽出来共用，避免两处口径漂移。 */
+function minorPreferenceGroups(group) {
+  if (!group || group.length < 2) return null;
+  const core = group.map(coreSetOf).reduce((acc, c) => coreIntersect(acc, c));
+  const bySig = new Map();
+  group.forEach(r => {
+    const sig = (r.subList || []).map(statIdOf).filter(id => id && !core.has(id))
+      .slice(0, 2).join(',');
+    if (!bySig.has(sig)) bySig.set(sig, []);
+    bySig.get(sig).push(r);
+  });
+  if (bySig.size < 2) return null;
+  return [...bySig.keys()].sort().map(sig => ({
+    sig,
+    roles: bySig.get(sig),
+    minor: sig.split(',').filter(Boolean),
+  }));
+}
+
 /* 两组能否合并 —— 【只看重要属性】：
  *   重要属性重合度够高就合，次要属性（攻击力% / 生命值% / 防御力% 等）不同没关系：
  *   反正「至少两条」的重要属性已经满足了，具体次要属性再按实际圣遗物给到适配的角色；
@@ -2461,8 +2483,29 @@ function mergeSubUniform(group) {
   let pool = [...poolScore.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
   // ★必须一定得在追加属性池里（可能排名在 SUB_POOL_TOP 之外）
   required.forEach(id => { if (!pool.includes(id)) pool.push(id); });
+
   // 追加属性池收口：太宽就等于「不限」，失去筛选意义
   if (pool.length > SUB_POOL_MAX) pool = pool.slice(0, SUB_POOL_MAX);
+
+  /* 池的「次要偏好保底」——【必须排在收口之后】：合并放宽后，一组里可能同时有
+   * 攻击% / 生命% / 防御% 好几种次要偏好，只按总分收口到 SUB_POOL_MAX 会把某条偏好
+   * 赖以成型的追加属性挤掉（例：绝缘套 4 人的池收到双暴+攻击%+充能+精通，把夜兰的
+   * 生命值% 挤在第 6 名砍掉），那样合并看着漂亮、实际没照顾到那位角色。
+   * 所以这里给每种次要偏好补回 1 条代表词条（该组最想要、又还没进池的那条），
+   * 池上限也随之多开一档——每多一种次要偏好 +1；嫌松就把命中条数调大到 3 / 4。 */
+  const prefs = minorPreferenceGroups(group);
+  if (prefs) {
+    const extra = [];
+    prefs.forEach(g => {
+      const id = g.minor.find(x =>
+        x && !banned.has(x) && !pool.includes(x) && !extra.includes(x) &&
+        g.roles.some(r => (r.pool || []).some(y => statIdOf(y) === x)));
+      if (id) extra.push(id);
+    });
+    const cap = SUB_POOL_MAX + prefs.length - 1;
+    extra.forEach(id => { if (pool.length < cap && !pool.includes(id)) pool.push(id); });
+  }
+
   if (!pool.length) return { required: [], pool: [], minHit: 0 };  // 只挑主要属性，追加属性不限
 
   // 预设「至少两个」，可在方案卡片上手动调整；池不足 N 条时退化为池长度
@@ -2719,51 +2762,78 @@ function candsOfSet(setName) {
 const GROUP_COLORS = ['#5fa8e8', '#5fd39a', '#ff9f5a', '#b98cff',
                       '#f5dfa6', '#7fd6cf', '#ff8a9c', '#a5d66a'];
 
-/* 把一个方案的需求角色按「最想要的次要属性」分组，用于颜色区分
+/* 把一个方案的需求角色按「次要属性偏好」分组，给每组分配一个稳定颜色
  *   背景：合并放宽后，重要属性（如双暴）相同、次要属性（攻击% / 生命% / 防御%）
- *   不同的角色会并进同一套方案——他们的圣遗物要按实际次要属性分别给到适配的角色，
- *   所以用颜色把「次要属性不同」的角色区分开，方便照抄时一眼看清。
+ *   不同的角色会并进同一套方案——他们的圣遗物要按实际次要属性分别给到适配的角色。
+ *   颜色同时用在【角色名】和【追加属性】上，两处同色即可对应，不需要额外图例。
  *   次要属性完全一致时不分组（返回 null），避免无意义的色块。
  *   _group 经 mergePlans 继续传递，所以手工合并后的方案同样能分组；
  *   散件规则方案 _group 为 null，自然不分组。
  */
-function charColorGroups(p) {
+function planColorGroups(p) {
   const g = p._group;
-  if (!g || g.length < 2) return null;
-  // 方案的核心重要属性 = 组内所有角色重要块的交集
-  const core = g.map(coreSetOf).reduce((acc, c) => coreIntersect(acc, c));
-  const bySig = new Map();
-  g.forEach(r => {
-    // 次要属性取「不属于重要块的最靠前 2 条」作为分组签名
-    const sig = (r.subList || []).map(statIdOf).filter(id => id && !core.has(id))
-      .slice(0, 2).join(',');
-    if (!bySig.has(sig)) bySig.set(sig, []);
-    bySig.get(sig).push(r.name);
-  });
-  if (bySig.size < 2) return null;
-  return [...bySig.keys()].sort().map((sig, i) => ({
+  const prefs = g ? minorPreferenceGroups(g) : null;
+  if (!prefs) return null;
+  return prefs.map((x, i) => ({
     color: GROUP_COLORS[i % GROUP_COLORS.length],
-    names: bySig.get(sig),
-    minor: sig ? sig.split(',').map(subStatName).join('、') : '无次要需求',
+    roles: x.roles,
+    names: x.roles.map(r => r.name),
+    minor: x.minor.map(subStatName).join('、') || '无次要需求',
   }));
 }
 
+/* 追加属性的【展示顺序 + 着色】——颜色不再单独占一块图例，直接打在属性上。
+ *   排序：① ★必须 → ② 全组共有（不着色）→ ③ 各组独占（着该组颜色）
+ *   同一档内部按「相关角色对该属性的平均名次权重」降序，最想要的排最前。
+ *   例：暴击率★ 暴击伤害★ 元素充能效率 | <蓝>攻击力%</蓝> <绿>生命值%</绿>
+ *   —— 前面是全组都要的，后面才是只有部分角色要的，照搬时按颜色给到对应的人。 */
+function planSubOrder(p) {
+  const sub = (p && p.sub) || { required: [], pool: [] };
+  const req = new Set(sub.required || []);
+  const ids = (sub.pool || []).map(statIdOf).filter(Boolean);
+  const groups = planColorGroups(p);
+  if (!groups) return ids.map(id => ({ id, req: req.has(id), color: null, owners: null, shared: true }));
+
+  const everyone = groups.flatMap(g => g.roles);
+  const avgW = (roles, id) => roles.reduce((s, r) => s + (r.subs[id] || 0), 0) / (roles.length || 1);
+  const items = ids.map(id => {
+    const owners = [];
+    groups.forEach((g, i) => {
+      if (g.roles.some(r => (r.pool || []).some(x => statIdOf(x) === id))) owners.push(i);
+    });
+    // 没人「明确」要（例如并入散件规则带来的词条）时按共有处理，不给颜色
+    const shared = owners.length === 0 || owners.length >= groups.length;
+    return {
+      id, req: req.has(id), shared,
+      color: shared ? null : groups[owners[0]].color,
+      owners: shared ? null : owners,
+    };
+  });
+  // ★0 → 共有1 → 第 k 组独占 2+k
+  const bucket = o => o.req ? 0 : (o.shared ? 1 : 2 + o.owners[0]);
+  items.sort((a, b) => {
+    const d = bucket(a) - bucket(b);
+    if (d) return d;
+    const ra = (a.shared || !a.owners) ? everyone : groups[a.owners[0]].roles;
+    const rb = (b.shared || !b.owners) ? everyone : groups[b.owners[0]].roles;
+    return avgW(rb, b.id) - avgW(ra, a.id);
+  });
+  return items;
+}
+
 /* 方案的「适用对象」标题：角色组 / 散件规则 / 手动合并后的混合
- *   次要属性不一致时，角色名按次要属性分组上色，并给出颜色图例 */
+ *   次要属性不一致时角色名带上分组颜色，与下方追加属性的颜色一一对应 */
 function planForText(p) {
   if (p.kind === 'rule') {
     return `<span class="gp-for gp-rule-for">🧩 散件 / 过渡保留：${esc(p.ruleName)}</span>`;
   }
   if (p.chars && p.chars.length) {
-    const groups = charColorGroups(p);
+    const groups = planColorGroups(p);
     if (groups) {
       const chips = groups.map(g => g.names.map(n =>
-        `<span class="gp-char-tag" style="--tc:${g.color}" title="最想要的次要属性：${esc(g.minor)}">${esc(n)}</span>`
+        `<span class="gp-char-tag" style="--tc:${g.color}" title="次要属性偏好：${esc(g.minor)}（下方同色的追加属性优先给到这位角色）">${esc(n)}</span>`
       ).join('')).join('');
-      const legend = groups.map(g =>
-        `<span class="lg" style="--tc:${g.color}"><i class="dot"></i>${esc(g.minor)}</span>`).join('');
-      return `<span class="gp-for gp-for-groups">${chips}</span>` +
-        `<div class="gp-legend">颜色＝最想要的次要属性：${legend}</div>`;
+      return `<span class="gp-for gp-for-groups">${chips}</span>`;
     }
     const more = p.chars.length > 6 ? ` <span class="gp-more">等 ${p.chars.length} 人</span>`
       : (p.chars.length > 4 ? ` <span class="gp-more">共 ${p.chars.length} 人</span>` : '');
@@ -2774,18 +2844,27 @@ function planForText(p) {
 
 /* 纯文本版的角色分组（导出 / 复制用，无法上色就写在括号里） */
 function planCharsPlain(p) {
-  const groups = charColorGroups(p);
+  const groups = planColorGroups(p);
   if (!groups) return (p.chars || []).join('、');
   return groups.map(g => `${g.names.join('、')}（${g.minor}）`).join(' / ');
 }
 
-/* 方案级追加属性条件的统一渲染 —— 【五个部位共用这一份】 */
-function subCondText(sub) {
-  const req = sub.required || [];
-  const star = req.map(id => `<span class="gp-star">★${esc(subStatName(id))}</span>`).join('');
-  const rest = (sub.pool || []).filter(id => !req.includes(id))
-    .map(id => `<span class="gp-sub">${esc(subStatName(id))}</span>`).join('');
-  return (star || rest) ? star + rest : '<span class="gp-fixed">不限</span>';
+/* 追加属性 chip 渲染：★必须 / 共有 / 分组专属（同色于对应角色，鼠标悬停看给谁） */
+function planSubText(p) {
+  const items = planSubOrder(p);
+  if (!items.length) return '<span class="gp-fixed">不限</span>';
+  const groups = planColorGroups(p) || [];
+  return items.map(it => {
+    const nm = esc(subStatName(it.id));
+    if (it.req) return `<span class="gp-star">★${nm}</span>`;
+    if (!it.color) return `<span class="gp-sub">${nm}</span>`;
+    const who = it.owners.map(i => groups[i] && groups[i].names.join('、')).filter(Boolean).join('、');
+    return `<span class="gp-sub gp-sub-g" style="--tc:${it.color}" title="只有 ${esc(who)} 需要，优先给到他">${nm}</span>`;
+  }).join('');
+}
+/* 导出文本用的追加属性顺序：与页面一致（共有在前、分组在后），无法上色所以保持纯文本 */
+function planSubPlain(p) {
+  return planSubOrder(p).map(it => (it.req ? '★' : '') + subStatName(it.id)).join('、');
 }
 /* 命中条数文案：预设「至少两条」，用户可调 1–4；池为空 = 不限（返回空串） */
 function subHitPlain(sub) {
@@ -2811,8 +2890,7 @@ function planCopyText(setName, plan, idx) {
     : `供 ${planCharsPlain(plan)} 使用`;
   const L = [`  方案${idx + 1}（${who}）`];
   // 追加属性是全方案统一的一份，先说一遍，五个部位再各自列主要属性
-  const subAll = [...plan.sub.required.map(id => '★' + subStatName(id)),
-    ...plan.sub.pool.filter(id => !plan.sub.required.includes(id)).map(id => subStatName(id))].join('、');
+  const subAll = planSubPlain(plan);
   const hitTxt = subHitPlain(plan.sub);
   L.push(`  追加属性（五个部位相同）：${subAll || '不限'}${hitTxt ? `　·　${hitTxt}` : ''}`);
   SLOTS.forEach(sd => {
@@ -3696,7 +3774,7 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
         <span class="gp-cell">${mainCondText(sd.id, p.mains[sd.id])}</span>
       </div>`).join('');
 
-    const subTxt = subCondText(p.sub);
+    const subTxt = planSubText(p);
     // 命中条数：池有多宽就能调到几（上限 SUB_MIN_HIT_MAX）；池为空 = 追加属性不限，不给下拉
     const poolN = (p.sub && p.sub.pool) || [];
     const hitSel = poolN.length

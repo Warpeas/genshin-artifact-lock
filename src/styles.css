@@ -420,6 +420,9 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-main{display:inline-block;background:#233447;color:#bcd8f5;border:1px solid #33506e;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
 .gp-star{display:inline-block;background:#3d2f18;color:#f0c674;border:1px solid #6b5326;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;font-weight:600;}
 .gp-sub{display:inline-block;background:#232a33;color:#93a1b3;border:1px solid #333d4a;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
+/* 分组专属的追加属性：与需要它的角色同色，一眼看出这条该给谁 */
+.gp-sub-g{background:color-mix(in srgb,var(--tc,#33506e) 16%,#232a33);color:var(--tc,#93a1b3);
+  border-color:var(--tc,#333d4a);cursor:help;}
 .gp-fixed{color:#6f7b8c;font-size:11px;font-style:italic;}
 .gp-tip{margin:9px 0 0;font-size:11px;color:#6f7b8c;line-height:1.65;}
 
@@ -438,14 +441,10 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-adopt input{width:15px;height:15px;accent-color:#7fbf6a;cursor:pointer;}
 .gp-for{font-size:11.5px;color:#8a94a6;flex:1;min-width:110px;line-height:1.5;}
 .gp-more{color:#6f7b8c;}
-/* 按「最想要的次要属性」给需求角色上色：颜色用 --tc 注入（与 .tag-btn 同一套范式） */
+/* 角色名与「只有部分角色要的追加属性」同色对应（颜色用 --tc 注入，取消额外图例） */
 .gp-for-groups{display:flex;flex-wrap:wrap;gap:2px 0;align-items:center;}
 .gp-char-tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:20px;margin:1px 3px 1px 0;
   background:#1a2330;color:var(--tc,#bcd8f5);border:1px solid var(--tc,#33506e);white-space:nowrap;}
-.gp-legend{font-size:10.5px;color:#6f7b8c;margin-top:4px;display:flex;flex-wrap:wrap;
-  gap:2px 10px;align-items:center;line-height:1.6;}
-.gp-legend .lg{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;color:var(--tc,#8a94a6);}
-.gp-legend .dot{width:8px;height:8px;border-radius:50%;background:var(--tc,#8a94a6);flex:none;}
 .gp-badge{font-size:10.5px;color:#a9d69b;background:#22301f;border:1px solid #3d4a3a;padding:1px 6px;border-radius:3px;white-space:nowrap;}
 .gp-acts{display:inline-flex;align-items:center;gap:6px;margin-left:auto;}
 .gp-mergesel{font-size:11px;background:#131a24;color:#cfe3ff;border:1px solid #33506e;border-radius:4px;padding:2px 6px;max-width:190px;}
