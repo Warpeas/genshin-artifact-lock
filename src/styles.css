@@ -282,7 +282,11 @@ table.tbl tr:hover td{background:#1d242e;}
 .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);}
 .drawer-head h2{font-size:16px;color:var(--gold2);}
 .drawer-body{flex:1;overflow-y:auto;padding:18px 20px;}
-.drawer-foot{display:flex;align-items:center;gap:10px;padding:14px 20px;border-top:1px solid var(--line);background:var(--panel);}
+.drawer-foot{display:flex;align-items:center;gap:10px;padding:14px 20px;border-top:1px solid var(--line);background:var(--panel);flex-wrap:wrap;row-gap:8px;}
+/* 窄屏：底部可能同时有 删除 / 还原内置 / 取消 / 保存 四个按钮，去掉撑开的空白让它自然换行 */
+@media (max-width:560px){
+  .drawer-foot .spacer{display:none;}
+}
 .modal{
   position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100;
   width:min(620px,94vw);max-height:82vh;background:var(--bg2);
@@ -309,6 +313,18 @@ table.tbl tr:hover td{background:#1d242e;}
 /* 二层浮窗：盖在一层之上；遮罩不叠 blur，否则背景会死黑 */
 .mask-l2{z-index:110;background:rgba(0,0,0,.45);backdrop-filter:none;}
 .modal-l2{z-index:120;}
+/* 三层浮窗：属性选择，盖在配装编辑之上 */
+.mask-l3{z-index:130;background:rgba(0,0,0,.45);backdrop-filter:none;}
+.modal-l3{z-index:140;width:min(420px,94vw);}
+/* 属性选择列表：块状按钮，手机上也好点 */
+.pick-list{display:flex;flex-direction:column;gap:6px;}
+.pick-opt{
+  width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);
+  border-radius:8px;padding:10px 12px;font-size:14px;color:var(--txt);
+  font-family:inherit;cursor:pointer;
+}
+.pick-opt:hover{border-color:var(--gold);color:var(--gold2);background:var(--panel2);}
+.pick-empty{padding:14px 0;text-align:center;}
 .modal-body{padding:16px 22px 22px;overflow-y:auto;font-size:13.5px;color:var(--txt2);}
 
 /* ---------- 更新日志 ---------- */
@@ -336,6 +352,8 @@ table.tbl tr:hover td{background:#1d242e;}
 .bm-sum{font-size:12.5px;color:var(--txt2);line-height:1.7;}
 .bm-sum .k{color:var(--txt3);margin-right:4px;}
 .bm-ops{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.bm-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+.bm-bar .btn{white-space:normal;}   /* 窄屏下允许折行，避免把浮窗撑出横向滚动 */
 .cc-mod,.bm-mod{font-size:11px;color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:0 5px;line-height:16px;}
 @media (max-width:560px){
   .bm-sets select{flex:1 1 100%;}

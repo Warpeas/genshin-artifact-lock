@@ -212,7 +212,7 @@
   <div id="drawerBody" class="drawer-body"></div>
   <div class="drawer-foot">
     <button id="btnDeleteChar" class="btn danger hidden">删除角色</button>
-    <button id="btnRestoreChar" class="btn hidden">还原为内置数据</button>
+    <button id="btnRestoreChar" class="btn hidden" title="把名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原成内置数据">还原内置</button>
     <span class="spacer"></span>
     <button id="btnCancelEdit" class="btn ghost">取消</button>
     <button id="btnSaveChar" class="btn primary">保存</button>
@@ -245,9 +245,7 @@
     <div class="fgroup">
       <span class="glabel">追加属性需求 <span class="hint">越靠前越想要；★ = 游戏内锁定方案的「必须」</span></span>
       <div class="ms-list" id="bmSubs"></div>
-      <select id="bmAddSub">
-        <option value="">+ 添加追加属性…</option>
-      </select>
+      <button type="button" class="btn sm" id="bmAddSub">+ 添加追加属性…</button>
     </div>
     <p class="muted small">改完请点右下角<b>「保存」</b>才生效；点「取消」或关掉窗口，改动会全部丢弃。</p>
   </div>
@@ -256,6 +254,23 @@
     <span class="spacer"></span>
     <button id="bmCancel" class="btn">取消</button>
     <button id="bmSave" class="btn primary">保存</button>
+  </div>
+</div>
+
+<!-- ========== 属性选择（三层浮窗，盖在配装浮窗之上） ========== -->
+<div id="pickMask" class="modal-mask mask-l3 hidden"></div>
+<div id="pickBox" class="modal modal-l3 hidden">
+  <div class="drawer-head">
+    <h2 id="pickTitle">选择属性</h2>
+    <button id="pickX" class="icon-btn" title="关闭">×</button>
+  </div>
+  <div class="modal-body">
+    <p class="muted small" id="pickHint"></p>
+    <div id="pickList" class="pick-list"></div>
+  </div>
+  <div class="drawer-foot">
+    <span class="spacer"></span>
+    <button id="pickCancel" class="btn">取消</button>
   </div>
 </div>
 
@@ -289,7 +304,12 @@
         一个角色可以有多组配装（4件套 / 2+2），<b>每组的词条需求分开保存</b>；新增时可以选「空白」或复制现有组，
         删掉的<b>内置预置组</b>还能从「＋ 从预置添加」里选回来。</li>
       <li><b>改错了怎么办</b>：配装卡片与角色卡片上都可能出现<b>「已修改」</b>徽标——说明这一项已经和内置数据不一样了。
-        单组改坏 → 卡片上「还原这一组」；整个角色改乱 → 编辑浮窗左下角「还原为内置数据」（名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原）。</li>
+        单组改坏 → 卡片上<b>「整组还原」</b>（套装 + 词条 + 主推一起回到内置原样）；
+        只是把谁设成主推搞乱了 → 配装区上方会多出<b>「↩ 还原主推」</b>（只动主推，不碰词条）；
+        整个角色改乱 → 编辑浮窗左下角<b>「还原内置」</b>（名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原）。
+        删掉的内置配装组可以在「＋ 从预置添加」里选回来。</li>
+      <li><b>内置数据会随版本更新</b>：你<b>没动过</b>的配装组会自动跟着仓库里的新数据走；
+        你<b>自己改过</b>的组一律保留不动（卡片上标「已修改」），想用新版就再点一次还原。</li>
       <li><b>② 锁定方案</b>：每个套装给出「游戏内锁定方案<b>候选</b>」——按角色的<b>追加属性需求</b>自动聚类，每个方案的
         <b>五个部位共用同一份追加属性条件</b>，主要属性逐部位列出，照着填进游戏即可。
         <b>没有槽位上限</b>：候选可以有很多，用「并入…」手动合并、取消勾选「采纳」挑掉不要的，收敛到游戏内每套至多 3 个预设再照抄。

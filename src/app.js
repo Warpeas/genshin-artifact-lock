@@ -60,8 +60,9 @@ function factoryCharOf(c) {
   return defaultCharByName(c.skey || c.name);
 }
 
-/* 配装组指纹：固定字段顺序的数组，规避 key 顺序差异
- * 排除 rank（由下标派生，改内容必然改下标，重复计入没意义）与 bkey（标识而非内容） */
+/* 配装组「内容」指纹：固定字段顺序的数组，规避 key 顺序差异
+ * 排除 rank（由下标派生，改内容必然改下标，重复计入没意义）、bkey（标识而非内容）
+ * 以及 priority（主推单独判定 —— 只改主推不该让「整组还原」按钮冒出来） */
 function canonBuild(b) {
   if (!b) return '[]';
   const mains = ['sands', 'goblet', 'circlet'].map(slot =>
@@ -74,29 +75,30 @@ function canonBuild(b) {
   });
   return JSON.stringify({
     sets: (b.sets || []).filter(Boolean),
-    priority: b.priority === 'alt' ? 'alt' : 'main',
     mains, subs,
   });
 }
+/* 内容指纹 + 主推：整体比较（角色级「已修改」与草稿脏检查用这个） */
+function canonBuildPrio(b) {
+  return JSON.stringify([canonBuild(b), b && b.priority === 'alt' ? 'alt' : 'main']);
+}
 /* 角色指纹：排除 enabled / id / custom（用户启用与否、id 漂移都不算改了出厂数据） */
-function canonChar(c) {
+function canonCharWith(c, builds) {
   return JSON.stringify({
     name: c.name, element: c.element, region: c.region,
     roles: (c.roles || []).slice(),
     note: c.note || '', src: (c.src || []).map(s => [s.url, s.title || '']),
-    builds: (c.builds || []).map(canonBuild),
+    builds: (builds || []).map(canonBuildPrio),
   });
 }
+function canonChar(c) { return canonCharWith(c, (c.builds || [])); }
 
-/* 出厂配装组在缓存里的 canon 集合（预计算，判定从 O(n) 降为 O(1)） */
-const _factoryCanonCache = new WeakMap();
+/* 出厂配装组「内容 canon → 该组」的索引。
+ * 只在「老存档缺 bkey 且套装组合有歧义」时用（罕见路径），所以不缓存 ——
+ * 缓存会让出厂数据一旦变动就留下陈旧索引。 */
 function factoryCanon(d) {
-  let m = _factoryCanonCache.get(d);
-  if (!m) {
-    m = new Map();
-    (d.builds || []).forEach(b => { if (b.bkey) m.set(canonBuild(b), b); });
-    _factoryCanonCache.set(d, m);
-  }
+  const m = new Map();
+  (d.builds || []).forEach(b => { if (b.bkey) m.set(canonBuild(b), b); });
   return m;
 }
 
@@ -119,17 +121,51 @@ function factoryBuildOf(c, b) {
   // 再退一步：按内容精确匹配（内容仍是出厂原样时才能命中）
   return factoryCanon(d).get(canonBuild(b)) || null;
 }
-/* 这一组是否和出厂不一样（无出厂对应 → 视为自定义组，不算「已修改」） */
+/* 这一组的「内容」是否和出厂不一样（无出厂对应 → 视为自定义组，不算「已修改」）
+ * 只看套装 + 词条，主推单独由 priorityModified 判定 */
 function buildModified(c, b) {
   const f = factoryBuildOf(c, b);
   if (!f) return false;
   return canonBuild(f) !== canonBuild(b);
 }
-/* 整个角色是否和出厂不一样 */
+/* 角色内「主推排布」是否和出厂不一样（谁主推、谁备选） */
+function priorityModified(c) {
+  const d = factoryCharOf(c);
+  if (!d || !d.builds || !d.builds.length) return false;
+  const cur = (c.builds || []).map(b => b.priority === 'alt' ? 'alt' : 'main');
+  const fac = d.builds.slice(0, cur.length).map(b => b.priority === 'alt' ? 'alt' : 'main');
+  return cur.join(',') !== fac.join(',');
+}
+/* 只还原主推排布（不动任何内容） */
+function restorePriority(c) {
+  const d = factoryCharOf(c);
+  if (!d || !d.builds || !d.builds.length) return false;
+  (c.builds || []).forEach((b, i) => {
+    b.priority = (d.builds[i] ? d.builds[i].priority : 'alt') === 'main' ? 'main' : 'alt';
+  });
+  // 兜底：出厂第 1 组可能因删组而不在当前列表里，保证有且仅有一个主推
+  if (!c.builds.some(b => b.priority === 'main')) c.builds[0].priority = 'main';
+  let seen = false;
+  c.builds.forEach(b => {
+    if (b.priority === 'main') { if (seen) b.priority = 'alt'; else seen = true; }
+  });
+  return true;
+}
+/* 整个角色是否和出厂不一样。
+ * 只比「当前拥有的这几组」—— 后台给角色新增了配装组时，不该把用户没动过的角色标成已修改 */
 function charModified(c) {
   const d = factoryCharOf(c);
   if (!d) return false;
-  return canonChar(d) !== canonChar(c);
+  const n = (c.builds || []).length;
+  return canonChar(c) !== canonCharWith(d, (d.builds || []).slice(0, n));
+}
+/* 有没有值得还原的东西：用户改过，或者出厂里有这一角色还没用上的配装组 */
+function charCanRestore(c) {
+  const d = factoryCharOf(c);
+  if (!d) return false;
+  if (charModified(c)) return true;
+  const used = new Set((c.builds || []).map(b => b.bkey).filter(Boolean));
+  return (d.builds || []).some(b => b.bkey && !used.has(b.bkey));
 }
 /* 出厂里、当前角色没有用到的配装组（「从预置添加」的下拉项） */
 function factoryPresetOptions(c) {
@@ -144,18 +180,22 @@ function factoryBuildCopy(f, c) {
   if (!f) return null;
   const b = normalizeBuild(JSON.parse(JSON.stringify(f)), c || {});
   b.bkey = f.bkey;
+  b.fcanon = canonBuild(b);   // 记下锚点：之后内容一旦被改，就不再自动跟随出厂
   return b;
 }
 
-/* 单组还原：保留 bkey，priority 沿用当前（避免把主推标记洗掉） */
+/* 整组还原：套装 + 词条 + 主推全部回到出厂原样，再修正「有且仅有一个主推」 */
 function restoreBuild(c, i) {
   const b = c.builds[i];
   const f = factoryBuildOf(c, b);
   if (!f) return false;
   const copy = factoryBuildCopy(f, c);
-  if (b) copy.priority = b.priority;
+  copy.priority = f.priority === 'main' ? 'main' : 'alt';
   c.builds[i] = copy;
-  if (copy.priority === 'main') c.builds.forEach((x, j) => { if (j !== i) x.priority = 'alt'; });
+  // 主推唯一：优先保留这一组的主推身份，否则取下标最小的
+  let mainIdx = c.builds.findIndex(x => x.priority === 'main');
+  if (mainIdx < 0) mainIdx = 0;
+  c.builds.forEach((x, j) => { x.priority = j === mainIdx ? 'main' : 'alt'; });
   return true;
 }
 /* 整角色还原：名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装，再补回 skey */
@@ -171,6 +211,30 @@ function restoreChar(c) {
   Object.keys(c).forEach(k => { delete c[k]; });
   Object.assign(c, copy);
   return true;
+}
+
+/* 后台（仓库）更新内置数据后，让「用户没动过」的配装组自动跟上新版出厂。
+ * 判定：内容指纹 == 上次同步时的指纹（fcanon）→ 用户确实没改过 → 用新出厂覆盖。
+ * 主推是用户偏好，即使内容跟随也保留不动（主推归「还原主推」管）。
+ * 老存档没有 fcanon 时，若内容恰好等于出厂就补上锚点，从这一版开始具备跟随能力。 */
+function syncFactoryUpdates() {
+  let n = 0;
+  state.characters.forEach(c => {
+    if (c.custom) return;
+    (c.builds || []).forEach(b => {
+      const f = factoryBuildOf(c, b);
+      if (!f) return;
+      const cur = canonBuild(b), fac = canonBuild(f);
+      if (b.fcanon == null) { if (cur === fac) b.fcanon = cur; return; }
+      if (cur !== b.fcanon) return;      // 用户改过 → 一律不动
+      if (cur === fac) return;           // 已经是最新出厂
+      const copy = factoryBuildCopy(f, c);
+      b.sets = copy.sets; b.main = copy.main; b.subs = copy.subs;
+      b.fcanon = canonBuild(b);
+      n++;
+    });
+  });
+  return n;
 }
 
 /* 老存档兜底：给缺 bkey 的出厂组补上指纹。
@@ -253,7 +317,10 @@ function load() {
       }
     }
   } catch (e) { console.warn('读取本地数据失败', e); }
-  return normalize({ characters: freshDefaultCharacters(), sets: defaultSets(), planCfg: {} });
+  // 全新出厂：直接把 epoch 打上。否则存档里没有 _subEpoch，
+  // 下次加载会被当成「旧存档」触发预设刷新，把用户只调了顺序的改动冲掉
+  return normalize({ characters: freshDefaultCharacters(), sets: defaultSets(), planCfg: {},
+                     _subEpoch: SUB_EPOCH, _srcMigrated: true });
 }
 
 /* 默认套装列表（内置套装 + 空自定义列表） */
@@ -364,6 +431,8 @@ function normalizeBuild(b, c) {
   const out = {
     sets: Array.isArray(b.sets) ? b.sets.filter(Boolean) : [],
     bkey: typeof b.bkey === 'string' ? b.bkey : '',   // 出厂指纹（「角色名#序号」），用来判断这一组是否还是内置原样
+    // fcanon = 上次与出厂同步时的内容指纹；内容还等于它 → 说明用户没动过，可以自动跟随出厂更新
+    fcanon: (b.fcanon == null ? null : String(b.fcanon)),
     priority: b.priority === 'alt' ? 'alt' : 'main',
   };
   // 主要属性：优先用组内的，缺失则回落到角色级旧数据
@@ -1644,8 +1713,7 @@ function openDrawer(id) {
   $('#drawerTitle').textContent = '编辑 ' + src.name;
   $('#btnDeleteChar').classList.remove('hidden');
   // 自定义角色没有出厂数据，不给「还原为内置数据」
-  const canRestore = !!factoryCharOf(editing) && charModified(editing);
-  $('#btnRestoreChar').classList.toggle('hidden', !canRestore);
+  $('#btnRestoreChar').classList.toggle('hidden', !charCanRestore(editing));
   drawDrawer();
   showDrawer(true);
 }
@@ -1919,7 +1987,14 @@ function buildSubBrief(b) {
 function drawBuildCards() {
   const box = $('#edBuilds');
   if (!box) return;
-  box.innerHTML = editing.builds.map((b, i) => {
+  // 主推排布与出厂不同时，给一个「只还原主推」的入口（不动任何词条内容）
+  const prioMod = priorityModified(editing);
+  box.innerHTML =
+    (prioMod ? `<div class="bm-bar">
+        <button type="button" class="btn sm" id="edRestorePrio">↩ 还原主推</button>
+        <span class="muted small">当前「主推 / 备选」的排布与内置不同（词条内容没变）</span>
+      </div>` : '') +
+    editing.builds.map((b, i) => {
     const sets = (b.sets || []).filter(Boolean);
     const mod = buildModified(editing, b);
     const canRestore = !!factoryBuildOf(editing, b);
@@ -1938,12 +2013,18 @@ function drawBuildCards() {
       <div class="bm-ops">
         <button type="button" class="btn sm primary" data-bed="${i}">✎ 编辑</button>
         ${b.priority === 'main' ? '' : `<button type="button" class="btn sm" data-bmain="${i}">设为主推</button>`}
-        ${canRestore && mod ? `<button type="button" class="btn sm" data-bres="${i}">还原这一组</button>` : ''}
+        ${canRestore && mod ? `<button type="button" class="btn sm" data-bres="${i}" title="套装 + 词条 + 主推全部回到内置原样">整组还原</button>` : ''}
         ${editing.builds.length > 1 ? `<button type="button" class="btn sm danger" data-bdel="${i}">删除</button>` : ''}
       </div>
     </div>`;
   }).join('');
 
+  const rp = $('#edRestorePrio');
+  if (rp) rp.onclick = () => {
+    restorePriority(editing);
+    drawBuildCards();
+    toast('已还原主推排布，点「保存」后生效');
+  };
   box.querySelectorAll('[data-bed]').forEach(btn => {
     btn.onclick = () => openBuildModal(+btn.dataset.bed);
   });
@@ -1975,6 +2056,34 @@ function drawBuildCards() {
 }
 
 /* ============================================================
+ * 属性选择：三层浮窗（添加主要属性 / 追加属性共用）
+ * 只列出「还没被用上」的项，从源头杜绝重复
+ * ============================================================ */
+let pickHandler = null;
+function openPicker(title, opts, hint, onPick) {
+  pickHandler = onPick;
+  $('#pickTitle').textContent = title;
+  $('#pickHint').textContent = hint || '';
+  const list = $('#pickList');
+  if (!opts.length) {
+    list.innerHTML = '<p class="muted small pick-empty">可选的都已经在列表里了。</p>';
+  } else {
+    list.innerHTML = opts.map(o =>
+      `<button type="button" class="pick-opt" data-pk="${esc(o.value)}">${esc(o.label)}</button>`).join('');
+    list.querySelectorAll('[data-pk]').forEach(b => {
+      b.onclick = () => { const v = b.dataset.pk; closePicker(); if (pickHandler) pickHandler(v); };
+    });
+  }
+  $('#pickMask').classList.remove('hidden');
+  $('#pickBox').classList.remove('hidden');
+}
+function closePicker() {
+  $('#pickMask').classList.add('hidden');
+  $('#pickBox').classList.add('hidden');
+  pickHandler = null;
+}
+
+/* ============================================================
  * 配装编辑：二层浮窗（草稿机制，点「保存」才写回 editing）
  * ============================================================ */
 let bmDraft = null;      // 当前草稿（深拷贝）
@@ -1987,7 +2096,7 @@ function openBuildModal(i, isNew) {
   bmIndex = i;
   bmIsNew = !!isNew;
   bmDraft = JSON.parse(JSON.stringify(editing.builds[i] || freshBuild('alt')));
-  bmOrig = canonBuild(bmDraft);
+  bmOrig = canonBuildPrio(bmDraft);
   $('#bmTitle').textContent = '编辑配装 ' + (i + 1) + (bmDraft.priority === 'main' ? '（主推）' : '（备选）');
   const btnRes = $('#bmRestore');
   // 新增的空组没有出厂对应，不给「还原这一组」
@@ -1996,7 +2105,7 @@ function openBuildModal(i, isNew) {
   $('#buildMask').classList.remove('hidden');
   $('#buildBox').classList.remove('hidden');
 }
-function bmDirty() { return canonBuild(bmDraft) !== bmOrig; }
+function bmDirty() { return canonBuildPrio(bmDraft) !== bmOrig; }
 
 function drawBuildForm() {
   const B = bmDraft;
@@ -2072,25 +2181,26 @@ function drawBuildForm() {
     </div>`).join('');
   ['sands', 'goblet', 'circlet'].forEach(slot => {
     $('#bmAdd_' + slot).onclick = () => {
-      const arr = B.main[slot];
-      const used = new Set(arr.map(m => m.stat));
-      const next = MAIN_STATS[slot].find(s => !used.has(s.id));
-      if (!next) return toast('该部位主要属性已全部添加');
-      arr.push({ stat: next.id, rank: arr.length + 1, op: '>' });
-      renank(B, slot); drawMains(B, 'bm');
+      const used = new Set(B.main[slot].map(m => m.stat));
+      const slotName = SLOTS.find(s => s.id === slot).name;
+      openPicker('添加' + slotName + '主要属性',
+        MAIN_STATS[slot].filter(s => !used.has(s.id)).map(s => ({ value: s.id, label: s.name })),
+        '只列出还没添加过的属性；点一个即可加入。',
+        id => {
+          B.main[slot].push({ stat: id, rank: B.main[slot].length + 1, op: '>' });
+          renank(B, slot); drawMains(B, 'bm');
+        });
     };
   });
   drawMains(B, 'bm');
-  // 追加属性
+  // 追加属性：弹窗里挑一个还没加过的
   const add = $('#bmAddSub');
-  add.innerHTML = '<option value="">+ 添加追加属性…</option>' +
-    SUB_STATS.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  add.onchange = () => {
-    const id = add.value;
-    if (!id) return;
-    if (B.subs.some(s => s.id === id)) return toast('该追加属性已在列表中');
-    B.subs.push({ id, req: false, op: '>' });
-    drawSubs(B, 'bm');
+  add.onclick = () => {
+    const used = new Set(B.subs.map(s => s.id));
+    openPicker('添加追加属性',
+      SUB_STATS.filter(s => !used.has(s.id)).map(s => ({ value: s.id, label: s.name })),
+      '只列出还没添加过的属性；点一个即可加入。',
+      id => { B.subs.push({ id, req: false, op: '>' }); drawSubs(B, 'bm'); });
   };
   drawSubs(B, 'bm');
 }
@@ -2106,12 +2216,21 @@ function saveBuildModal() {
   drawBuildCards();
   toast('已保存配装' + (bmIndex + 1));
 }
-/* 关闭：force=false 且有未保存改动时弹确认 */
+/* 关闭：force=false 且有未保存改动时弹确认
+ * 关键：如果这一组是刚「新增」出来的，放弃时必须把它撤掉 ——
+ * 否则点取消后列表里会凭空多一组（之前就漏了这一步） */
 function closeBuildModal(force) {
   if (!force && bmDirty() && !confirm('有未保存的修改，确定放弃吗？')) return;
   $('#buildMask').classList.add('hidden');
   $('#buildBox').classList.add('hidden');
+  const wasNew = bmIsNew, idx = bmIndex;
   bmDraft = null; bmOrig = ''; bmIndex = -1; bmIsNew = false;
+  if (wasNew && !force && editing && editing.builds.length > 1) {
+    editing.builds.splice(idx, 1);
+    if (!editing.builds.some(b => b.priority === 'main')) editing.builds[0].priority = 'main';
+    if (ui.buildIdx >= editing.builds.length) ui.buildIdx = 0;
+  }
+  if (wasNew && !force) drawBuildCards();
 }
 /* ESC / 点遮罩走这里（不 force，保留确认提示） */
 function cancelBuildModal() { closeBuildModal(false); }
@@ -2130,16 +2249,22 @@ function drawMains(B, prefix) {
         ${i === 0
           ? '<span class="ord">最优</span>'
           : `<button type="button" class="op-btn ${m.op === '=' ? 'eq' : ''}" data-mop="${i}" title="与上一条的重要度关系：= 同为最想要，> 较次之">${m.op === '=' ? '=' : '>'}</button>`}
-        <select>${MAIN_STATS[slot].map(s =>
+        <select data-msel="${i}">${MAIN_STATS[slot].map(s =>
           `<option value="${s.id}"${s.id === m.stat ? ' selected' : ''}>${s.name}</option>`).join('')}</select>
         <button type="button" class="up" data-up="${i}">↑</button>
         <button type="button" class="down" data-down="${i}">↓</button>
         <button type="button" class="rm" data-rmm="${i}">×</button>
       </div>`).join('') || '<p class="muted small">未设置</p>';
 
-    box.querySelectorAll('select').forEach(sel => {
+    box.querySelectorAll('[data-msel]').forEach(sel => {
       sel.onchange = () => {
-        const i = +sel.closest('.ms-item').dataset.mi;
+        const i = +sel.dataset.msel;
+        // 换到已存在的另一条会造成重复，直接回滚并提示
+        if (arr.some((x, j) => j !== i && x.stat === sel.value)) {
+          toast('该主要属性已在列表中');
+          drawMains(B, prefix);
+          return;
+        }
         B.main[slot][i].stat = sel.value;
       };
     });
@@ -2182,13 +2307,27 @@ function drawSubs(B, prefix) {
       ${i === 0
         ? '<span class="ord">最优</span>'
         : `<button type="button" class="op-btn ${s.op === '=' ? 'eq' : ''}" data-op="${i}" title="与上一条的重要度关系：= 同为最想要，> 较次之">${s.op === '=' ? '=' : '>'}</button>`}
-      <span class="ss-name">${esc(subStatName(s.id))}</span>
+      <select data-ssel="${i}">${SUB_STATS.map(t =>
+        `<option value="${t.id}"${t.id === s.id ? ' selected' : ''}>${t.name}</option>`).join('')}</select>
       <button type="button" class="star-btn ${s.req ? 'on' : ''}" data-st="${i}" title="★必须（游戏内锁定方案的「必须」）">${s.req ? '★' : '☆'}</button>
       <button type="button" class="up" data-su="${i}">↑</button>
       <button type="button" class="down" data-sd="${i}">↓</button>
       <button type="button" class="rm" data-sr="${i}">×</button>
     </div>`).join('') || '<p class="muted small">未设置，可在下方添加</p>';
 
+  // 已选的追加属性也能直接换（与主要属性一致），换到重复项会回滚提示
+  box.querySelectorAll('[data-ssel]').forEach(sel => {
+    sel.onchange = () => {
+      const i = +sel.dataset.ssel;
+      if (subs.some((x, j) => j !== i && x.id === sel.value)) {
+        toast('该追加属性已在列表中');
+        drawSubs(B, prefix);
+        return;
+      }
+      subs[i].id = sel.value;
+      drawSubs(B, prefix);
+    };
+  });
   box.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     const i = +b.dataset.st;
     subs[i].req = !subs[i].req;
@@ -3082,6 +3221,11 @@ function bind() {
     toast('已还原为内置原样，点「保存」后生效');
   };
 
+  /* 属性选择（三层浮窗） */
+  $('#pickX').onclick = closePicker;
+  $('#pickCancel').onclick = closePicker;
+  $('#pickMask').onclick = closePicker;
+
   /* 更新公告 */
   $('#btnCloseNotice').onclick = closeNotice;
   $('#btnNoticeOk').onclick = closeNotice;
@@ -3375,7 +3519,8 @@ function bind() {
   };
   $('#btnReset').onclick = () => {
     if (!confirm('恢复内置默认角色库与套装列表、清除你的全部自定义修改（相当于硬刷新）？\n\n提示：浏览器普通「刷新」不会清本地存档，所以旧数据 / 乱码会一直留着；这个按钮能彻底重置。')) return;
-    state = normalize({ characters: freshDefaultCharacters(), sets: defaultSets(), planCfg: {} });
+    state = normalize({ characters: freshDefaultCharacters(), sets: defaultSets(), planCfg: {},
+                         _subEpoch: SUB_EPOCH, _srcMigrated: true });
     save(); renderChars(); renderPlan(); renderSubs(); renderSets();
     toast('已恢复默认库');
   };
@@ -3422,6 +3567,7 @@ function bind() {
 
 let cancelKrHook = null;   // 由 bind() 赋值：散件规则浮窗的「取消并复位」回调
 const MODAL_LAYERS = [
+  { box: '#pickBox',    close: () => closePicker() },
   { box: '#buildBox',   close: () => cancelBuildModal() },
   { box: '#charDrawer', close: () => showDrawer(false) },
   { box: '#noticeBox',  close: () => closeNotice() },
@@ -3460,7 +3606,9 @@ function syncTopbarHeight() {
   if (pendingMigrate) { save(); pendingMigrate = null; }   // 固化从默认数据的回填
   bind();
   // 老存档补 bkey：没有指纹就没法判定「这一组还是不是内置原样」，也就没法单组还原
-  if (backfillBkeys()) save();
+  const bfN = backfillBkeys();
+  const syN = syncFactoryUpdates();   // 后台更新了内置数据 → 没动过的组自动跟上
+  if (bfN || syN) save();
   renderBatchBar();
   renderChars();
   renderPlan();
