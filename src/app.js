@@ -34,6 +34,162 @@ let editing = null;      // 正在编辑的角色副本
 let editingIsNew = false;
 
 /* ============================================================
+ * 出厂（内置）数据缓存与「是否改动过」判定
+ * ------------------------------------------------------------
+ * 出厂缓存只算一次（112 个角色深拷贝不便宜），且**取用方必须自己深拷贝**，
+ * 绝不能直接把缓存里的对象挂到 state 上，否则改的就是缓存。
+ * ============================================================ */
+let _defaultCharsCache = null;
+function defaultCharacters() {
+  if (!_defaultCharsCache) _defaultCharsCache = buildDefaultCharacters();
+  return _defaultCharsCache;
+}
+/* 原始数据（可写）：调用方拿到的是副本，改它不会影响缓存 */
+function freshDefaultCharacters() {
+  return defaultCharacters().map(c => JSON.parse(JSON.stringify(c)));
+}
+/* 按出厂名取（出厂名唯一，实测 112 个无重复） */
+function defaultCharByName(name) {
+  if (!name) return null;
+  return defaultCharacters().find(c => c.name === name) || null;
+}
+
+/* 一个角色的出厂版本：优先用 skey（改名后仍准），否则退回当前名字 */
+function factoryCharOf(c) {
+  if (!c || c.custom) return null;
+  return defaultCharByName(c.skey || c.name);
+}
+
+/* 配装组指纹：固定字段顺序的数组，规避 key 顺序差异
+ * 排除 rank（由下标派生，改内容必然改下标，重复计入没意义）与 bkey（标识而非内容） */
+function canonBuild(b) {
+  if (!b) return '[]';
+  const mains = ['sands', 'goblet', 'circlet'].map(slot =>
+    ((b.main && b.main[slot]) || []).map(m => [statIdOf(m && m.stat), m && m.op === '=' ? '=' : '>']));
+  const subs = (b.subs || []).map(s => {
+    const id = typeof s === 'object' ? (s.id != null ? s.id : s.stat) : s;
+    const req = (s && s.req) ? '1' : '0';
+    const op = (s && s.op === '=') ? '=' : '>';
+    return [id, req, op];
+  });
+  return JSON.stringify({
+    sets: (b.sets || []).filter(Boolean),
+    priority: b.priority === 'alt' ? 'alt' : 'main',
+    mains, subs,
+  });
+}
+/* 角色指纹：排除 enabled / id / custom（用户启用与否、id 漂移都不算改了出厂数据） */
+function canonChar(c) {
+  return JSON.stringify({
+    name: c.name, element: c.element, region: c.region,
+    roles: (c.roles || []).slice(),
+    note: c.note || '', src: (c.src || []).map(s => [s.url, s.title || '']),
+    builds: (c.builds || []).map(canonBuild),
+  });
+}
+
+/* 出厂配装组在缓存里的 canon 集合（预计算，判定从 O(n) 降为 O(1)） */
+const _factoryCanonCache = new WeakMap();
+function factoryCanon(d) {
+  let m = _factoryCanonCache.get(d);
+  if (!m) {
+    m = new Map();
+    (d.builds || []).forEach(b => { if (b.bkey) m.set(canonBuild(b), b); });
+    _factoryCanonCache.set(d, m);
+  }
+  return m;
+}
+
+/* 某一组配装对应的出厂版本：
+ * 1) 先按 bkey 命中（改名、改内容都还能命中）；
+ * 2) 没有 bkey（老存档）时，用「角色内 sets 组合唯一命中」兜底。 */
+function factoryBuildOf(c, b) {
+  const d = factoryCharOf(c);
+  if (!d) return null;
+  if (b && b.bkey) {
+    const hit = (d.builds || []).find(x => x.bkey === b.bkey);
+    return hit || null;
+  }
+  if (!b) return null;
+  const sig = (b.sets || []).filter(Boolean).join('+');
+  if (sig) {
+    const hits = (d.builds || []).filter(x => (x.sets || []).filter(Boolean).join('+') === sig);
+    if (hits.length === 1) return hits[0];
+  }
+  // 再退一步：按内容精确匹配（内容仍是出厂原样时才能命中）
+  return factoryCanon(d).get(canonBuild(b)) || null;
+}
+/* 这一组是否和出厂不一样（无出厂对应 → 视为自定义组，不算「已修改」） */
+function buildModified(c, b) {
+  const f = factoryBuildOf(c, b);
+  if (!f) return false;
+  return canonBuild(f) !== canonBuild(b);
+}
+/* 整个角色是否和出厂不一样 */
+function charModified(c) {
+  const d = factoryCharOf(c);
+  if (!d) return false;
+  return canonChar(d) !== canonChar(c);
+}
+/* 出厂里、当前角色没有用到的配装组（「从预置添加」的下拉项） */
+function factoryPresetOptions(c) {
+  const d = factoryCharOf(c);
+  if (!d) return [];
+  const used = new Set((c.builds || []).map(b => b.bkey).filter(Boolean));
+  return (d.builds || []).filter(b => b.bkey && !used.has(b.bkey));
+}
+/* 出厂配装组的可用副本：深拷贝 + 过一遍归一化（出厂 main 项不带 op 等字段，
+ * 不归一化的话还原出来的组与「全新安装」的存档长不一致） */
+function factoryBuildCopy(f, c) {
+  if (!f) return null;
+  const b = normalizeBuild(JSON.parse(JSON.stringify(f)), c || {});
+  b.bkey = f.bkey;
+  return b;
+}
+
+/* 单组还原：保留 bkey，priority 沿用当前（避免把主推标记洗掉） */
+function restoreBuild(c, i) {
+  const b = c.builds[i];
+  const f = factoryBuildOf(c, b);
+  if (!f) return false;
+  const copy = factoryBuildCopy(f, c);
+  if (b) copy.priority = b.priority;
+  c.builds[i] = copy;
+  if (copy.priority === 'main') c.builds.forEach((x, j) => { if (j !== i) x.priority = 'alt'; });
+  return true;
+}
+/* 整角色还原：名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装，再补回 skey */
+function restoreChar(c) {
+  const d = factoryCharOf(c);
+  if (!d) return false;
+  const skey = c.skey || d.name;
+  const keepEnabled = c.enabled;
+  const copy = JSON.parse(JSON.stringify(d));
+  copy.builds = (d.builds || []).map(b => factoryBuildCopy(b, copy));
+  copy.skey = skey;
+  copy.enabled = keepEnabled;
+  Object.keys(c).forEach(k => { delete c[k]; });
+  Object.assign(c, copy);
+  return true;
+}
+
+/* 老存档兜底：给缺 bkey 的出厂组补上指纹。
+ * 只写 bkey、不要求内容相同 —— 否则「改过内容 → 还原这一组」就没落点了。
+ * 匹配不上（多义 / 空套装）的不写，降级为自定义组。 */
+function backfillBkeys() {
+  let n = 0;
+  state.characters.forEach(c => {
+    if (c.custom) return;
+    (c.builds || []).forEach(b => {
+      if (b.bkey) return;
+      const f = factoryBuildOf(c, b);
+      if (f) { b.bkey = f.bkey; n++; }
+    });
+  });
+  return n;
+}
+
+/* ============================================================
  * 存储
  * ============================================================ */
 /* 把旧存档与内置默认对齐，解决「旧版本存档覆盖了带 src 的新默认数据，
@@ -42,7 +198,7 @@ let editingIsNew = false;
    2) 把内置默认里、存档没有的新角色补进来（按名字去重）。
    回填仅在首次迁移时执行（用 _srcMigrated 标记），不覆盖用户之后手动清空/自定义。 */
 function migrateFromDefaults(o) {
-  const defs = buildDefaultCharacters();
+  const defs = defaultCharacters();
   const byName = {};
   defs.forEach(d => { byName[d.name] = d; });
   if (!o._srcMigrated) {
@@ -97,7 +253,7 @@ function load() {
       }
     }
   } catch (e) { console.warn('读取本地数据失败', e); }
-  return normalize({ characters: buildDefaultCharacters(), sets: defaultSets(), planCfg: {} });
+  return normalize({ characters: freshDefaultCharacters(), sets: defaultSets(), planCfg: {} });
 }
 
 /* 默认套装列表（内置套装 + 空自定义列表） */
@@ -184,6 +340,7 @@ function normalize(o) {
   o.characters = o.characters.map(c => ({
     id: c.id || ('c_' + Math.random().toString(36).slice(2)),
     name: c.name || '未命名',
+    skey: typeof c.skey === 'string' ? c.skey : '',   // 出厂角色名：改名后保持不变，是「还能还原」的唯一锚点
     element: ELEMENTS[c.element] ? c.element : 'pyro',
     region: REGION_NAME[c.region] ? c.region : 'other',
     roles: (Array.isArray(c.roles) && c.roles.length)
@@ -206,6 +363,7 @@ function normalize(o) {
 function normalizeBuild(b, c) {
   const out = {
     sets: Array.isArray(b.sets) ? b.sets.filter(Boolean) : [],
+    bkey: typeof b.bkey === 'string' ? b.bkey : '',   // 出厂指纹（「角色名#序号」），用来判断这一组是否还是内置原样
     priority: b.priority === 'alt' ? 'alt' : 'main',
   };
   // 主要属性：优先用组内的，缺失则回落到角色级旧数据
@@ -1358,6 +1516,7 @@ function renderChars() {
       <div class="cc-top">
         <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
         <span class="cc-name">${esc(c.name)}</span>
+        ${charModified(c) ? '<span class="cc-mod" title="与内置数据不同；可在角色编辑里「还原为内置数据」">已修改</span>' : ''}
         <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
       </div>
       <div class="cc-meta">
@@ -1484,6 +1643,9 @@ function openDrawer(id) {
   ui.buildIdx = 0;
   $('#drawerTitle').textContent = '编辑 ' + src.name;
   $('#btnDeleteChar').classList.remove('hidden');
+  // 自定义角色没有出厂数据，不给「还原为内置数据」
+  const canRestore = !!factoryCharOf(editing) && charModified(editing);
+  $('#btnRestoreChar').classList.toggle('hidden', !canRestore);
   drawDrawer();
   showDrawer(true);
 }
@@ -1499,6 +1661,7 @@ function openNewChar() {
   ui.buildIdx = 0;
   $('#drawerTitle').textContent = '新增角色';
   $('#btnDeleteChar').classList.add('hidden');
+  $('#btnRestoreChar').classList.add('hidden');
   drawDrawer();
   showDrawer(true);
 }
@@ -1554,39 +1717,23 @@ function drawDrawer() {
 
   <div class="fgroup">
     <span class="glabel">圣遗物配装 <span class="hint">第 1 组为主推，其余为备选；单套=4件套，双套=2+2</span></span>
+    <p class="muted small" style="margin:-2px 0 10px">下面每组是一张<b>只读卡片</b>：要看 / 改词条（三部位主要属性与追加属性）请点「✎ 编辑」，在弹出窗口里点「保存」才生效。</p>
     <div id="edBuilds"></div>
-    <button type="button" class="btn sm" id="edAddBuild">+ 添加一组配装</button>
-  </div>
-
-  <div class="fgroup">
-    <span class="glabel">词条需求归属 <span class="hint">主要属性 / 追加属性按配装组分别设置</span></span>
-    <div class="seg" id="edBuildTabs">
-      ${c.builds.map((b, i) => `<button type="button" class="seg-btn ${i === ui.buildIdx ? 'active' : ''}" data-bt="${i}">配装${i + 1}${b.priority === 'main' ? '·主推' : ''}</button>`).join('')}
+    <div class="bm-row">
+      <button type="button" class="btn sm primary" id="edAddBuild">+ 添加一组配装</button>
+      <label class="fld">📋 新增时套用…
+        <select id="edAddFrom">
+          <option value="blank">空白（双暴默认词条）</option>
+          ${editing.builds.map((b, i) => `<option value="b${i}">复制配装${i + 1}（${esc((b.sets || []).filter(Boolean).join(' + ') || '未选套装')}）</option>`).join('')}
+        </select>
+      </label>
+      ${factoryPresetOptions(editing).length ? `<label class="fld">＋ 从预置添加
+        <select id="edAddPreset">
+          <option value="">（选择一个已删除的预置组）</option>
+          ${factoryPresetOptions(editing).map(b => `<option value="${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).join(' + '))}</option>`).join('')}
+        </select>
+      </label>` : ''}
     </div>
-    <div class="copy-row">
-      <select id="edCopyFrom">
-        <option value="">📋 从…一键复制词条（主要属性 + 追加属性）</option>
-        ${c.builds.map((b, i) => i === ui.buildIdx ? '' :
-          `<option value="b${i}">配装${i + 1}（${esc((b.sets || []).join('+') || '未选套装')}）</option>`).join('')}
-        ${Object.keys(SUB_PRESETS).map(k => `<option value="p${k}">预设 · ${SUB_PRESET_NAMES[k]}（仅追加属性）</option>`).join('')}
-      </select>
-    </div>
-  </div>
-
-  ${['sands', 'goblet', 'circlet'].map(slot => `
-    <div class="fgroup">
-      <span class="glabel">${SLOTS.find(s => s.id === slot).name}主要属性 <span class="hint">越靠前优先级越高</span></span>
-      <div class="ms-list" id="edMain_${slot}"></div>
-      <button type="button" class="btn sm" id="edAdd_${slot}">+ 添加主要属性</button>
-    </div>`).join('')}
-
-  <div class="fgroup">
-    <span class="glabel">追加属性需求 <span class="hint">越靠前越想要；★ = 游戏内锁定方案的「必须」</span></span>
-    <div class="ms-list" id="edSubs"></div>
-    <select id="edAddSub">
-      <option value="">+ 添加追加属性…</option>
-      ${SUB_STATS.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
-    </select>
   </div>
 
   <div class="fgroup">
@@ -1685,7 +1832,11 @@ function drawDrawer() {
       };
       inp.onkeydown = e => {
         if (e.key === 'Enter') { e.preventDefault(); commitSrc(+inp.dataset.i); }
-        else if (e.key === 'Escape') { e.preventDefault(); srcEditIdx = null; renderSrcRows(); }
+        else if (e.key === 'Escape') {
+          // 输入框里按 Esc 只取消这一行的编辑，别让冒泡去关掉整个角色浮窗
+          e.preventDefault(); e.stopPropagation();
+          srcEditIdx = null; renderSrcRows();
+        }
       };
     });
     // 删除（两种状态都可用）
@@ -1706,69 +1857,39 @@ function drawDrawer() {
     if (inp) inp.focus();
   };
 
-  // 配装：新增一组时默认复制当前组的词条需求（也可稍后用下拉从别的组一键复制）
+  // 新增配装组：空白 / 复制现有组；新增后立刻打开编辑浮窗（避免留下空套装组）
   body.querySelector('#edAddBuild').onclick = () => {
-    const srcIdx = ui.buildIdx;
-    const src = curBuild();
-    editing.builds.push({
-      sets: [],
-      priority: 'alt',
-      main: JSON.parse(JSON.stringify(src.main || {})),
-      subs: JSON.parse(JSON.stringify(src.subs || [])),
-    });
-    const from = srcIdx + 1;
-    ui.buildIdx = editing.builds.length - 1;
-    drawDrawer();
-    toast(`已新增配装${ui.buildIdx + 1}，词条需求复制自配装${from}`);
-  };
-  // 词条需求归属哪一组配装
-  body.querySelectorAll('#edBuildTabs [data-bt]').forEach(b => {
-    b.onclick = () => {
-      ui.buildIdx = +b.dataset.bt;
-      drawDrawer();
-    };
-  });
-  // 一键复制词条
-  body.querySelector('#edCopyFrom').onchange = e => {
-    const v = e.target.value;
-    if (!v) return;
-    const cur = curBuild();
-    if (v[0] === 'b') {
+    const sel = body.querySelector('#edAddFrom');
+    const v = sel ? sel.value : 'blank';
+    const nb = freshBuild('alt');
+    if (v && v[0] === 'b') {
       const src = editing.builds[+v.slice(1)];
-      if (!src) return;
-      cur.main = JSON.parse(JSON.stringify(src.main || {}));
-      cur.subs = JSON.parse(JSON.stringify(src.subs || []));
-      toast('已复制配装' + (+v.slice(1) + 1) + '的词条需求');
-    } else {
-      cur.subs = toSubs(SUB_PRESETS[v.slice(1)] || SUB_PRESETS.crit);
-      toast('已套用预设：' + SUB_PRESET_NAMES[v.slice(1)]);
+      if (src) {
+        nb.main = JSON.parse(JSON.stringify(src.main || {}));
+        nb.subs = JSON.parse(JSON.stringify(src.subs || []));
+      }
     }
-    drawDrawer();
+    editing.builds.push(nb);
+    ui.buildIdx = editing.builds.length - 1;
+    drawBuildCards();
+    openBuildModal(ui.buildIdx, true);
   };
-  // 主要属性
-  ['sands', 'goblet', 'circlet'].forEach(slot => {
-    body.querySelector('#edAdd_' + slot).onclick = () => {
-      const arr = curBuild().main[slot];
-      const used = new Set(arr.map(m => m.stat));
-      const next = MAIN_STATS[slot].find(s => !used.has(s.id));
-      if (!next) return toast('该部位主要属性已全部添加');
-      arr.push({ stat: next.id, rank: arr.length + 1, op: '>' });
-      drawMains();
-    };
-  });
-  // 追加属性
-  body.querySelector('#edAddSub').onchange = e => {
-    const id = e.target.value;
-    if (!id) return;
-    const subs = curBuild().subs;
-    if (subs.some(s => s.id === id)) return toast('该追加属性已在列表中');
-    subs.push({ id, req: false, op: '>' });
-    drawSubs();
+  // 从出厂预置添加：把删掉的内置组找回来
+  const presetSel = body.querySelector('#edAddPreset');
+  if (presetSel) presetSel.onchange = () => {
+    const key = presetSel.value;
+    if (!key) return;
+    const fc = factoryCharOf(editing);
+    const f = fc && (fc.builds || []).find(x => x.bkey === key);
+    if (!f) return;
+    editing.builds.push(factoryBuildCopy(f, editing));
+    ui.buildIdx = editing.builds.length - 1;
+    drawBuildCards();
+    openBuildModal(ui.buildIdx, true);
+    toast('已添加预置：' + (f.sets || []).filter(Boolean).join(' + '));
   };
 
-  drawBuilds();
-  drawMains();
-  drawSubs();
+  drawBuildCards();
 }
 
 /* 抽屉里正在编辑的配装组 */
@@ -1778,61 +1899,230 @@ function curBuild() {
   return editing.builds[ui.buildIdx];
 }
 
-function drawBuilds() {
+/* 卡片上「三部位主要属性」的一行摘要：只列前 2 条，多的用 +N 收尾 */
+function buildMainBrief(b) {
+  return ['sands', 'goblet', 'circlet'].map(slot => {
+    const arr = (b.main && b.main[slot]) || [];
+    if (!arr.length) return null;
+    const names = arr.slice(0, 2).map(m => mainStatName(slot, m.stat));
+    if (arr.length > 2) names.push('+' + (arr.length - 2));
+    return { slot, name: SLOTS.find(s => s.id === slot).name, txt: names.join(' / ') };
+  }).filter(Boolean);
+}
+/* 卡片上「追加属性」的一行摘要：★ 前缀表示必选 */
+function buildSubBrief(b) {
+  return (b.subs || []).map(s => (s.req ? '★' : '') + subStatName(s.id)).join('　');
+}
+
+/* 配装卡片（只读）：套装 + 三部位主要属性 + 追加属性 + 操作按钮
+ * 改词条一律走二层浮窗（openBuildModal），卡片本身不直接改数据。 */
+function drawBuildCards() {
   const box = $('#edBuilds');
   if (!box) return;
-  box.innerHTML = editing.builds.map((b, i) => `
-    <div class="build-item ${i === ui.buildIdx ? 'editing' : ''}" data-bi="${i}">
-      <div class="bi-head">
+  box.innerHTML = editing.builds.map((b, i) => {
+    const sets = (b.sets || []).filter(Boolean);
+    const mod = buildModified(editing, b);
+    const canRestore = !!factoryBuildOf(editing, b);
+    return `
+    <div class="bm-card" data-bi="${i}">
+      <div class="bm-t">
         <span class="prio-tag ${b.priority}">${b.priority === 'main' ? '主推' : '备选'}</span>
-        <select data-set="0">${setOptions(b.sets[0])}<option value=""${!b.sets[0] ? ' selected' : ''}>（选择套装）</option></select>
-        <span class="muted small">${b.sets.length > 1 ? '+' : '　'}</span>
-        <select data-set="1">${setOptions(b.sets[1])}<option value=""${!b.sets[1] ? ' selected' : ''}>${b.sets.length > 1 ? '（第二套）' : '（2+2 可选）'}</option></select>
-        <button type="button" class="rm" data-rmb="${i}" title="删除">×</button>
+        <span class="bm-name">配装 ${i + 1}　${esc(sets.join(' + ') || '未选套装')}</span>
+        <span class="bm-kind">${sets.length === 2 ? '2+2 组合' : (sets.length === 1 ? '4 件套' : '未选择套装')}</span>
+        ${mod ? '<span class="bm-mod">已修改</span>' : ''}
       </div>
-      <div class="bi-head" style="margin:0">
-        <label class="chk"><input type="checkbox" data-main="${i}" ${b.priority === 'main' ? 'checked' : ''}> 设为主推</label>
-        <button type="button" class="btn sm ${i === ui.buildIdx ? 'primary' : ''}" data-ed="${i}">${i === ui.buildIdx ? '✎ 正在编辑词条' : '✎ 编辑该组词条'}</button>
-        <span class="muted small">${b.sets.filter(Boolean).length === 2 ? '2+2 组合' : (b.sets.filter(Boolean).length === 1 ? '4 件套' : '未选择套装')}</span>
+      <div class="bm-sum">
+        ${buildMainBrief(b).map(m => `<div><span class="k">${m.name}</span>${esc(m.txt)}</div>`).join('')}
+        <div><span class="k">追加属性</span>${esc(buildSubBrief(b) || '未设置')}</div>
       </div>
-    </div>`).join('');
+      <div class="bm-ops">
+        <button type="button" class="btn sm primary" data-bed="${i}">✎ 编辑</button>
+        ${b.priority === 'main' ? '' : `<button type="button" class="btn sm" data-bmain="${i}">设为主推</button>`}
+        ${canRestore && mod ? `<button type="button" class="btn sm" data-bres="${i}">还原这一组</button>` : ''}
+        ${editing.builds.length > 1 ? `<button type="button" class="btn sm danger" data-bdel="${i}">删除</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
 
-  box.querySelectorAll('[data-ed]').forEach(btn => {
-    btn.onclick = () => { ui.buildIdx = +btn.dataset.ed; drawDrawer(); };
+  box.querySelectorAll('[data-bed]').forEach(btn => {
+    btn.onclick = () => openBuildModal(+btn.dataset.bed);
   });
-
-  box.querySelectorAll('select[data-set]').forEach(sel => {
-    sel.onchange = () => {
-      const i = +sel.closest('.build-item').dataset.bi;
-      const k = +sel.dataset.set;
-      editing.builds[i].sets[k] = sel.value || null;
-      editing.builds[i].sets = editing.builds[i].sets.filter(Boolean);
-      drawBuilds();
-    };
-  });
-  box.querySelectorAll('[data-main]').forEach(cb => {
-    cb.onchange = () => {
-      const i = +cb.dataset.main;
-      if (cb.checked) editing.builds.forEach((b, j) => { b.priority = (j === i) ? 'main' : 'alt'; });
-      else editing.builds.forEach((b, j) => { b.priority = j === 0 ? 'main' : 'alt'; });
-      drawBuilds();
-    };
-  });
-  box.querySelectorAll('[data-rmb]').forEach(btn => {
+  box.querySelectorAll('[data-bmain]').forEach(btn => {
     btn.onclick = () => {
-      const i = +btn.dataset.rmb;
+      const i = +btn.dataset.bmain;
+      editing.builds.forEach((b, j) => { b.priority = j === i ? 'main' : 'alt'; });
+      drawBuildCards();
+    };
+  });
+  box.querySelectorAll('[data-bres]').forEach(btn => {
+    btn.onclick = () => {
+      const i = +btn.dataset.bres;
+      if (!restoreBuild(editing, i)) return toast('这一组没有内置原样可还原');
+      drawBuildCards();
+      toast('已还原配装' + (i + 1) + '为内置数据');
+    };
+  });
+  box.querySelectorAll('[data-bdel]').forEach(btn => {
+    btn.onclick = () => {
+      const i = +btn.dataset.bdel;
       if (editing.builds.length <= 1) return toast('至少保留一组配装');
       editing.builds.splice(i, 1);
-      editing.builds[0].priority = 'main';
-      drawBuilds();
+      if (!editing.builds.some(b => b.priority === 'main')) editing.builds[0].priority = 'main';
+      if (ui.buildIdx >= editing.builds.length) ui.buildIdx = 0;
+      drawBuildCards();
     };
   });
 }
 
-function drawMains() {
-  const B = curBuild();
+/* ============================================================
+ * 配装编辑：二层浮窗（草稿机制，点「保存」才写回 editing）
+ * ============================================================ */
+let bmDraft = null;      // 当前草稿（深拷贝）
+let bmOrig = '';         // 打开时的 canon 快照，用于脏检查
+let bmIndex = -1;
+let bmIsNew = false;
+
+function openBuildModal(i, isNew) {
+  if (!editing) return;
+  bmIndex = i;
+  bmIsNew = !!isNew;
+  bmDraft = JSON.parse(JSON.stringify(editing.builds[i] || freshBuild('alt')));
+  bmOrig = canonBuild(bmDraft);
+  $('#bmTitle').textContent = '编辑配装 ' + (i + 1) + (bmDraft.priority === 'main' ? '（主推）' : '（备选）');
+  const btnRes = $('#bmRestore');
+  // 新增的空组没有出厂对应，不给「还原这一组」
+  btnRes.classList.toggle('hidden', !(bmDraft.bkey && factoryBuildOf(editing, bmDraft)));
+  drawBuildForm();
+  $('#buildMask').classList.remove('hidden');
+  $('#buildBox').classList.remove('hidden');
+}
+function bmDirty() { return canonBuild(bmDraft) !== bmOrig; }
+
+function drawBuildForm() {
+  const B = bmDraft;
+  const sets = (B.sets || []).filter(Boolean);
+  // 套装双下拉
+  ['bmSet0', 'bmSet1'].forEach((id, k) => {
+    const sel = $('#' + id);
+    sel.innerHTML = '<option value="">' + (k === 0 ? '（选择套装）' : '（2+2 可选）') + '</option>' + setOptions(sets[k]);
+    sel.value = sets[k] || '';
+    sel.onchange = () => {
+      const arr = (B.sets || []).filter(Boolean);
+      arr[k] = sel.value || null;
+      B.sets = arr.filter(Boolean);
+      drawBuildForm();
+    };
+  });
+  $('#bmKind').textContent = (B.sets || []).filter(Boolean).length === 2 ? '2+2 组合'
+    : ((B.sets || []).filter(Boolean).length === 1 ? '4 件套' : '未选择套装');
+  // 主推
+  const prio = $('#bmPrio');
+  prio.checked = B.priority === 'main';
+  prio.onchange = () => { B.priority = prio.checked ? 'main' : 'alt'; };
+  // 📋 套用：其他配装组 / 出厂预置 / 追加属性预设
+  const cf = $('#bmCopyFrom');
+  const presets = factoryPresetOptions(editing);
+  cf.innerHTML =
+    '<option value="">（不改，保持当前）</option>' +
+    '<optgroup label="复制其他配装组">' +
+      editing.builds.map((b, j) => j === bmIndex ? '' :
+        `<option value="b${j}">配装${j + 1}（${esc((b.sets || []).filter(Boolean).join(' + ') || '未选套装')}）</option>`).join('') +
+    '</optgroup>' +
+    (presets.length ? '<optgroup label="出厂预置">' +
+      presets.map(b => `<option value="f${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).join(' + '))}</option>`).join('') +
+    '</optgroup>' : '') +
+    '<optgroup label="追加属性预设（仅追加属性）">' +
+      Object.keys(SUB_PRESETS).map(k => `<option value="p${k}">${esc(SUB_PRESET_NAMES[k])}</option>`).join('') +
+    '</optgroup>';
+  cf.onchange = () => {
+    const v = cf.value;
+    if (!v) return;
+    if (v[0] === 'b') {
+      const src = editing.builds[+v.slice(1)];
+      if (!src) return;
+      B.sets = (src.sets || []).filter(Boolean).slice();
+      B.main = JSON.parse(JSON.stringify(src.main || {}));
+      B.subs = JSON.parse(JSON.stringify(src.subs || []));
+      toast('已复制配装' + (+v.slice(1) + 1) + '的套装与词条');
+    } else if (v[0] === 'f') {
+      const key = v.slice(1);
+      const fc = factoryCharOf(editing);
+      const f = fc && (fc.builds || []).find(x => x.bkey === key);
+      if (!f) return;
+      const fb = factoryBuildCopy(f, editing);
+      B.sets = fb.sets;
+      B.bkey = fb.bkey;
+      B.main = fb.main;
+      B.subs = fb.subs;
+      toast('已套用出厂预置：' + B.sets.join(' + '));
+      $('#bmRestore').classList.remove('hidden');
+    } else {
+      B.subs = toSubs(SUB_PRESETS[v.slice(1)] || SUB_PRESETS.crit);
+      toast('已套用预设：' + SUB_PRESET_NAMES[v.slice(1)]);
+    }
+    drawBuildForm();
+  };
+  // 三部位主要属性：复用 drawMains，控件 id 前缀 bm
+  const mbox = $('#bmMainBox');
+  mbox.innerHTML = ['sands', 'goblet', 'circlet'].map(slot => `
+    <div class="fgroup">
+      <span class="glabel">${SLOTS.find(s => s.id === slot).name}主要属性 <span class="hint">越靠前优先级越高</span></span>
+      <div class="ms-list" id="bmMain_${slot}"></div>
+      <button type="button" class="btn sm" id="bmAdd_${slot}">+ 添加主要属性</button>
+    </div>`).join('');
   ['sands', 'goblet', 'circlet'].forEach(slot => {
-    const box = $('#edMain_' + slot);
+    $('#bmAdd_' + slot).onclick = () => {
+      const arr = B.main[slot];
+      const used = new Set(arr.map(m => m.stat));
+      const next = MAIN_STATS[slot].find(s => !used.has(s.id));
+      if (!next) return toast('该部位主要属性已全部添加');
+      arr.push({ stat: next.id, rank: arr.length + 1, op: '>' });
+      renank(B, slot); drawMains(B, 'bm');
+    };
+  });
+  drawMains(B, 'bm');
+  // 追加属性
+  const add = $('#bmAddSub');
+  add.innerHTML = '<option value="">+ 添加追加属性…</option>' +
+    SUB_STATS.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  add.onchange = () => {
+    const id = add.value;
+    if (!id) return;
+    if (B.subs.some(s => s.id === id)) return toast('该追加属性已在列表中');
+    B.subs.push({ id, req: false, op: '>' });
+    drawSubs(B, 'bm');
+  };
+  drawSubs(B, 'bm');
+}
+
+/* 保存：写回 editing.builds，主推唯一，关浮窗并重绘卡片 */
+function saveBuildModal() {
+  const B = bmDraft;
+  if (!(B.sets || []).filter(Boolean).length) return toast('请至少选择一个套装');
+  editing.builds[bmIndex] = JSON.parse(JSON.stringify(B));
+  if (B.priority === 'main') editing.builds.forEach((b, j) => { if (j !== bmIndex) b.priority = 'alt'; });
+  else if (!editing.builds.some(b => b.priority === 'main')) editing.builds[0].priority = 'main';
+  closeBuildModal(true);
+  drawBuildCards();
+  toast('已保存配装' + (bmIndex + 1));
+}
+/* 关闭：force=false 且有未保存改动时弹确认 */
+function closeBuildModal(force) {
+  if (!force && bmDirty() && !confirm('有未保存的修改，确定放弃吗？')) return;
+  $('#buildMask').classList.add('hidden');
+  $('#buildBox').classList.add('hidden');
+  bmDraft = null; bmOrig = ''; bmIndex = -1; bmIsNew = false;
+}
+/* ESC / 点遮罩走这里（不 force，保留确认提示） */
+function cancelBuildModal() { closeBuildModal(false); }
+
+/* 三部位主要属性编辑器：B = 要渲染的配装组，prefix = 控件 id 前缀（'ed' 或 'bm'）
+ * 无参调用时回落到抽屉里的当前组，供老调用点兼容。 */
+function drawMains(B, prefix) {
+  if (!B) B = curBuild();
+  prefix = prefix || 'ed';
+  ['sands', 'goblet', 'circlet'].forEach(slot => {
+    const box = $('#' + prefix + 'Main_' + slot);
     if (!box) return;
     const arr = B.main[slot];
     box.innerHTML = arr.map((m, i) => `
@@ -1856,35 +2146,37 @@ function drawMains() {
     box.querySelectorAll('[data-mop]').forEach(b => b.onclick = () => {
       const slot = b.closest('.ms-item').dataset.slot;
       const i = +b.dataset.mop;
-      const it = curBuild().main[slot][i];
+      const it = B.main[slot][i];
       it.op = it.op === '=' ? '>' : '=';
-      drawMains();
+      drawMains(B, prefix);
     });
     box.querySelectorAll('[data-up]').forEach(b => b.onclick = () => {
       const i = +b.dataset.up;
       if (i === 0) return;
       [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
-      renank(slot); drawMains();
+      renank(B, slot); drawMains(B, prefix);
     });
     box.querySelectorAll('[data-down]').forEach(b => b.onclick = () => {
       const i = +b.dataset.down;
       if (i === arr.length - 1) return;
       [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
-      renank(slot); drawMains();
+      renank(B, slot); drawMains(B, prefix);
     });
     box.querySelectorAll('[data-rmm]').forEach(b => b.onclick = () => {
       B.main[slot].splice(+b.dataset.rmm, 1);
-      renank(slot); drawMains();
+      renank(B, slot); drawMains(B, prefix);
     });
   });
 }
-function renank(slot) { curBuild().main[slot].forEach((m, i) => { m.rank = i + 1; }); }
+function renank(B, slot) { (B || curBuild()).main[slot].forEach((m, i) => { m.rank = i + 1; }); }
 
 /* 追加属性：与主要属性一致的「排序」编辑器，外加 ★必选 开关 */
-function drawSubs() {
-  const box = $('#edSubs');
+function drawSubs(B, prefix) {
+  if (!B) B = curBuild();
+  prefix = prefix || 'ed';
+  const box = $('#' + prefix + 'Subs');
   if (!box) return;
-  const subs = curBuild().subs;
+  const subs = B.subs;
   box.innerHTML = subs.map((s, i) => `
     <div class="ms-item" data-si="${i}">
       ${i === 0
@@ -1900,30 +2192,30 @@ function drawSubs() {
   box.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     const i = +b.dataset.st;
     subs[i].req = !subs[i].req;
-    drawSubs();
+    drawSubs(B, prefix);
   });
   box.querySelectorAll('[data-op]').forEach(b => b.onclick = () => {
     const i = +b.dataset.op;
     subs[i].op = subs[i].op === '=' ? '>' : '=';
-    drawSubs();
+    drawSubs(B, prefix);
   });
   box.querySelectorAll('[data-su]').forEach(b => b.onclick = () => {
     const i = +b.dataset.su;
     if (i === 0) return;
     [subs[i - 1], subs[i]] = [subs[i], subs[i - 1]];
-    drawSubs();
+    drawSubs(B, prefix);
   });
   box.querySelectorAll('[data-sd]').forEach(b => b.onclick = () => {
     const i = +b.dataset.sd;
     if (i === subs.length - 1) return;
     [subs[i + 1], subs[i]] = [subs[i], subs[i + 1]];
-    drawSubs();
+    drawSubs(B, prefix);
   });
   box.querySelectorAll('[data-sr]').forEach(b => b.onclick = () => {
     subs.splice(+b.dataset.sr, 1);
-    drawSubs();
+    drawSubs(B, prefix);
   });
-  const add = $('#edAddSub');
+  const add = $('#' + prefix + 'AddSub');
   if (add) add.value = '';
 }
 
@@ -1941,10 +2233,18 @@ function saveChar() {
   const c = editing;
   if (!c.name.trim()) return toast('请填写角色名称');
   c.name = c.name.trim();
+  const before = c.builds.length;
   c.builds = c.builds
     .filter(b => b.sets && b.sets.length)
     .map(b => normalizeBuild(b, c));
-  if (!c.builds.length) c.builds = [freshBuild()];
+  if (before !== c.builds.length) toast(`已忽略 ${before - c.builds.length} 组未选套装的配装`);
+  if (!c.builds.length) {
+    // 兜底：优先用出厂第 1 组（带 bkey，之后还能「还原这一组」），没有就用空白组
+    const fc = factoryCharOf(c);
+    c.builds = fc && fc.builds && fc.builds.length
+      ? [factoryBuildCopy(fc.builds[0], c)]
+      : [freshBuild()];
+  }
   if (!c.builds.some(b => b.priority === 'main')) c.builds[0].priority = 'main';
   c.src = (c.src || []).map(normSrcItem).filter(x => x && x.url)   // 去空 + 转对象
     .filter((v, i, a) => a.findIndex(z => z.url === v.url) === i);  // 按 url 去重
@@ -2677,6 +2977,53 @@ function closeKrForm() {
 }
 
 /* ============================================================
+ * 更新公告与更新日志
+ * ------------------------------------------------------------
+ * 已读标记用独立的 localStorage key：点「恢复内置默认库」会整个重建
+ * state，把标记存在 state 里会被一起清掉，导致公告反复弹。
+ * ============================================================ */
+const NOTICE_KEY = 'genshin_artifact_lock_notice';
+function noticeRead() {
+  try { return localStorage.getItem(NOTICE_KEY) || ''; } catch (e) { return ''; }
+}
+function markNoticeRead(v) {
+  try { localStorage.setItem(NOTICE_KEY, v); } catch (e) { /* 隐私模式下写不进就算了 */ }
+}
+/* 只在版本变化后弹一次；手动「查看更新公告」不清除已读标记 */
+function maybeShowNotice() {
+  if (noticeRead() === APP_VERSION) return;
+  showNotice();
+}
+function showNotice() {
+  renderChangelog($('#noticeBody'), [CHANGELOG[0]]);
+  $('#noticeMask').classList.remove('hidden');
+  $('#noticeBox').classList.remove('hidden');
+  markNoticeRead(APP_VERSION);   // 打开即写：就算后面出异常也不会反复弹
+}
+function closeNotice() {
+  $('#noticeMask').classList.add('hidden');
+  $('#noticeBox').classList.add('hidden');
+}
+
+/* 渲染更新日志：不传 list 就渲染全部 */
+function renderChangelog(box, list) {
+  if (!box) return;
+  const items = list || CHANGELOG;
+  box.innerHTML = items.map(it => `
+    <div class="chg-item">
+      <div><span class="chg-v">${esc(it.v)}</span><span class="chg-date">${esc(it.date)}</span>
+        <span class="chg-title">${esc(it.title)}</span></div>
+      <ul>${(it.items || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+    </div>`).join('');
+}
+/* 数据管理页：版本号 + 全部日志 */
+function renderDataChangelog() {
+  const v = $('#appVersion');
+  if (v) v.textContent = '当前版本 ' + APP_VERSION;
+  renderChangelog($('#chgLog'));
+}
+
+/* ============================================================
  * 页面 ④：数据管理
  * ============================================================ */
 
@@ -2705,11 +3052,42 @@ function bind() {
   });
   $('#btnAddChar').onclick = openNewChar;
 
-  // 抽屉
+  // 角色编辑浮窗
   $('#btnCloseDrawer').onclick = () => showDrawer(false);
   $('#btnCancelEdit').onclick = () => showDrawer(false);
   $('#modalMask').onclick = () => showDrawer(false);
   $('#btnSaveChar').onclick = saveChar;
+  $('#btnRestoreChar').onclick = () => {
+    if (!editing) return;
+    if (!confirm('确定把这个角色（名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装）还原成内置数据吗？')) return;
+    if (!restoreChar(editing)) return toast('这个角色没有内置数据可还原');
+    drawDrawer();
+    $('#btnRestoreChar').classList.add('hidden');
+    toast('已还原为内置数据，点「保存」后生效');
+  };
+
+  /* 配装编辑：二层浮窗 */
+  $('#bmX').onclick = cancelBuildModal;
+  $('#bmCancel').onclick = cancelBuildModal;
+  $('#buildMask').onclick = cancelBuildModal;
+  $('#bmSave').onclick = saveBuildModal;
+  $('#bmRestore').onclick = () => {
+    if (!bmDraft) return;
+    const f = factoryBuildOf(editing, bmDraft);
+    if (!f) return toast('这一组没有内置原样可还原');
+    const copy = factoryBuildCopy(f, editing);
+    copy.priority = bmDraft.priority;
+    bmDraft = copy;
+    drawBuildForm();
+    toast('已还原为内置原样，点「保存」后生效');
+  };
+
+  /* 更新公告 */
+  $('#btnCloseNotice').onclick = closeNotice;
+  $('#btnNoticeOk').onclick = closeNotice;
+  $('#noticeMask').onclick = closeNotice;
+  $('#btnShowNotice').onclick = showNotice;
+  renderDataChangelog();
   $('#btnDeleteChar').onclick = () => {
     if (!editing || editingIsNew) return;
     if (!confirm('确定删除角色「' + editing.name + '」？')) return;
@@ -2776,6 +3154,7 @@ function bind() {
   if ($('#btnKrNew')) $('#btnKrNew').onclick = () => { resetKrForm(); openKrForm(); $('#krName').focus(); };
   // 浮窗右上角 × 与点遮罩关闭时，同时把表单退回新建态，避免下次打开留着上一次的草稿
   const cancelKr = () => { resetKrForm(); closeKrForm(); };
+  cancelKrHook = cancelKr;   // 供 ESC 分层表调用（分层表在模块作用域）
   if ($('#btnKrX')) $('#btnKrX').onclick = cancelKr;
   if ($('#krMask')) $('#krMask').onclick = cancelKr;
 
@@ -2996,7 +3375,7 @@ function bind() {
   };
   $('#btnReset').onclick = () => {
     if (!confirm('恢复内置默认角色库与套装列表、清除你的全部自定义修改（相当于硬刷新）？\n\n提示：浏览器普通「刷新」不会清本地存档，所以旧数据 / 乱码会一直留着；这个按钮能彻底重置。')) return;
-    state = normalize({ characters: buildDefaultCharacters(), sets: defaultSets(), planCfg: {} });
+    state = normalize({ characters: freshDefaultCharacters(), sets: defaultSets(), planCfg: {} });
     save(); renderChars(); renderPlan(); renderSubs(); renderSets();
     toast('已恢复默认库');
   };
@@ -3027,16 +3406,32 @@ function bind() {
   $('#setMgrMask').onclick = closeSetMgr;
 
   // 帮助
-  const openHelp = () => { $('#helpBox').classList.remove('hidden'); $('#helpMask').classList.remove('hidden'); };
-  const closeHelp = () => { $('#helpBox').classList.add('hidden'); $('#helpMask').classList.add('hidden'); };
   $('#btnHelp').onclick = openHelp;
   $('#btnCloseHelp').onclick = closeHelp;
   $('#helpMask').onclick = closeHelp;
 
+  /* ESC 分层：从最上层往下找，一次只关一层（连按可逐层退出） */
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { showDrawer(false); closeHelp(); closeSetMgr(); cancelKr(); }
+    if (e.key !== 'Escape') return;
+    const layer = MODAL_LAYERS.find(l => !$(l.box).classList.contains('hidden'));
+    if (!layer) return;
+    e.preventDefault();
+    layer.close();
   });
 }
+
+let cancelKrHook = null;   // 由 bind() 赋值：散件规则浮窗的「取消并复位」回调
+const MODAL_LAYERS = [
+  { box: '#buildBox',   close: () => cancelBuildModal() },
+  { box: '#charDrawer', close: () => showDrawer(false) },
+  { box: '#noticeBox',  close: () => closeNotice() },
+  { box: '#helpBox',    close: () => closeHelp() },
+  { box: '#setMgrBox',  close: () => closeSetMgr() },
+  { box: '#krBox',      close: () => { if (cancelKrHook) cancelKrHook(); } },
+];
+
+function openHelp() { $('#helpBox').classList.remove('hidden'); $('#helpMask').classList.remove('hidden'); }
+function closeHelp() { $('#helpBox').classList.add('hidden'); $('#helpMask').classList.add('hidden'); }
 
 function fallbackCopy(txt) {
   const ta = document.createElement('textarea');
@@ -3064,11 +3459,15 @@ function syncTopbarHeight() {
   state = load();
   if (pendingMigrate) { save(); pendingMigrate = null; }   // 固化从默认数据的回填
   bind();
+  // 老存档补 bkey：没有指纹就没法判定「这一组还是不是内置原样」，也就没法单组还原
+  if (backfillBkeys()) save();
   renderBatchBar();
   renderChars();
   renderPlan();
   renderSubs();
   renderSets();
+  renderDataChangelog();
+  maybeShowNotice();
   syncTopbarHeight();
   window.addEventListener('resize', syncTopbarHeight);
   window.addEventListener('orientationchange', () => setTimeout(syncTopbarHeight, 120));

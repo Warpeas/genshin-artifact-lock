@@ -181,6 +181,15 @@
     </div>
 
     <div class="card">
+      <h3>更新日志 <span id="appVersion" class="muted small"></span></h3>
+      <p class="muted small">内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。大版本更新后首次打开会自动弹一次公告。</p>
+      <div id="chgLog" class="chg-log"></div>
+      <div class="btn-row">
+        <button id="btnShowNotice" class="btn">查看更新公告</button>
+      </div>
+    </div>
+
+    <div class="card">
       <h3>关于数据</h3>
       <ul class="muted small notes">
         <li>内置 <b id="statCharCount">0</b> 个角色、<b id="statSetCount">0</b> 个套装，整理自社区常见推荐，随版本变动请自行校正。</li>
@@ -193,9 +202,9 @@
   </section>
 </main>
 
-<!-- ========== 角色编辑抽屉 ========== -->
+<!-- ========== 角色编辑浮窗 ========== -->
 <div id="modalMask" class="modal-mask hidden"></div>
-<aside id="charDrawer" class="drawer hidden">
+<div id="charDrawer" class="modal modal-lg hidden">
   <div class="drawer-head">
     <h2 id="drawerTitle">编辑角色</h2>
     <button id="btnCloseDrawer" class="icon-btn">×</button>
@@ -203,11 +212,66 @@
   <div id="drawerBody" class="drawer-body"></div>
   <div class="drawer-foot">
     <button id="btnDeleteChar" class="btn danger hidden">删除角色</button>
+    <button id="btnRestoreChar" class="btn hidden">还原为内置数据</button>
     <span class="spacer"></span>
     <button id="btnCancelEdit" class="btn ghost">取消</button>
     <button id="btnSaveChar" class="btn primary">保存</button>
   </div>
-</aside>
+</div>
+
+<!-- ========== 配装编辑（二层浮窗，盖在角色浮窗之上） ========== -->
+<div id="buildMask" class="modal-mask mask-l2 hidden"></div>
+<div id="buildBox" class="modal modal-lg modal-l2 hidden">
+  <div class="drawer-head">
+    <h2 id="bmTitle">编辑配装</h2>
+    <button id="bmX" class="icon-btn" title="关闭">×</button>
+  </div>
+  <div class="modal-body">
+    <div class="bm-sets">
+      <select id="bmSet0" class="bm-set"></select>
+      <span class="bm-plus">+</span>
+      <select id="bmSet1" class="bm-set"></select>
+      <span id="bmKind" class="bm-kind"></span>
+    </div>
+    <div class="bm-row">
+      <label class="chk"><input type="checkbox" id="bmPrio"> 设为主推（第 1 组默认主推，同一角色只可有一组主推）</label>
+      <label class="fld">📋 套用…
+        <select id="bmCopyFrom">
+          <option value="">（不改，保持当前）</option>
+        </select>
+      </label>
+    </div>
+    <div id="bmMainBox"></div>
+    <div class="fgroup">
+      <span class="glabel">追加属性需求 <span class="hint">越靠前越想要；★ = 游戏内锁定方案的「必须」</span></span>
+      <div class="ms-list" id="bmSubs"></div>
+      <select id="bmAddSub">
+        <option value="">+ 添加追加属性…</option>
+      </select>
+    </div>
+    <p class="muted small">改完请点右下角<b>「保存」</b>才生效；点「取消」或关掉窗口，改动会全部丢弃。</p>
+  </div>
+  <div class="drawer-foot">
+    <button id="bmRestore" class="btn hidden">还原这一组</button>
+    <span class="spacer"></span>
+    <button id="bmCancel" class="btn">取消</button>
+    <button id="bmSave" class="btn primary">保存</button>
+  </div>
+</div>
+
+<!-- ========== 更新公告 ========== -->
+<div id="noticeMask" class="modal-mask hidden"></div>
+<div id="noticeBox" class="modal hidden">
+  <div class="drawer-head">
+    <h2>更新公告</h2>
+    <button id="btnCloseNotice" class="icon-btn">×</button>
+  </div>
+  <div class="modal-body" id="noticeBody"></div>
+  <div class="drawer-foot">
+    <span class="spacer"></span>
+    <button id="btnNoticeOk" class="btn primary">知道了</button>
+  </div>
+</div>
 
 <!-- ========== 使用说明 ========== -->
 <div id="helpMask" class="modal-mask hidden"></div>
@@ -219,8 +283,13 @@
   <div class="modal-body">
     <h4>三步走</h4>
     <ol>
-      <li><b>① 角色配置</b>：勾选你实际要养的角色。点卡片可改套装、主要属性优先级和追加属性排序；主要属性 / 追加属性都<b>越靠前优先级越高</b>，追加属性还能点 ☆ 标成 ★必须。
-        一个角色可以有多组配装（4件套 / 2+2），<b>每组的词条需求分开保存</b>；新增配装组时会默认复制当前组的词条，也可以从别组一键复制。</li>
+      <li><b>① 角色配置</b>：勾选你实际要养的角色。点卡片打开<b>编辑浮窗</b>：上面是角色基本信息，下面是配装卡片——
+        每张卡片一眼看全套装、三部位主要属性、追加属性，点卡片上的<b>「✎ 编辑」</b>会再弹出一个<b>配装编辑浮窗</b>。
+        词条改完点<b>「保存」</b>才生效；点取消 / 关闭 / 浮窗外，会提示「有未保存的修改」再放弃。
+        一个角色可以有多组配装（4件套 / 2+2），<b>每组的词条需求分开保存</b>；新增时可以选「空白」或复制现有组，
+        删掉的<b>内置预置组</b>还能从「＋ 从预置添加」里选回来。</li>
+      <li><b>改错了怎么办</b>：配装卡片与角色卡片上都可能出现<b>「已修改」</b>徽标——说明这一项已经和内置数据不一样了。
+        单组改坏 → 卡片上「还原这一组」；整个角色改乱 → 编辑浮窗左下角「还原为内置数据」（名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原）。</li>
       <li><b>② 锁定方案</b>：每个套装给出「游戏内锁定方案<b>候选</b>」——按角色的<b>追加属性需求</b>自动聚类，每个方案的
         <b>五个部位共用同一份追加属性条件</b>，主要属性逐部位列出，照着填进游戏即可。
         <b>没有槽位上限</b>：候选可以有很多，用「并入…」手动合并、取消勾选「采纳」挑掉不要的，收敛到游戏内每套至多 3 个预设再照抄。
@@ -228,6 +297,8 @@
         可单独开关；启用后每条规则会生成一份候选方案，与角色聚类结果<b>同权</b>参与合并与采纳。</li>
       <li><b>③ 追加属性规则</b>：给出分档判定 + 胚子评分器，解决「主要属性对了但追加属性能不能留」。</li>
       <li><b>④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
+      <li><b>④ 数据管理 → 更新日志</b>：内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。
+        大版本更新后首次打开会自动弹一次<b>更新公告</b>（读过了就不再弹）；想再看就点「查看更新公告」。</li>
     </ol>
     <h4>怎么看方案</h4>
     <ul>
