@@ -351,6 +351,41 @@ function defaultSets() {
   return SETS.map(s => ({ name: s.name, bonus: s.bonus, builtin: true, hidden: false }));
 }
 
+/* ---------- 列表排序：正序 / 倒序 ----------
+ * 正序 = 内置库顺序（角色按国度、套装按套装库），也就是米游社图鉴的排列；
+ * 倒序 = 把它整个反过来。只存「要不要反」，顺序本身永远跟着内置库走。
+ * key：char = 角色配置页卡片，plan = 锁定方案页套装，setSub = 追加属性规则页套装表格 */
+const SORT_KEYS = ['char', 'plan', 'setSub'];
+const SORT_NOTE = '排序顺序来自米游社图鉴';
+function normalizeSortPref(raw) {
+  const out = {};
+  SORT_KEYS.forEach(k => { out[k] = (raw && raw[k] === 'desc') ? 'desc' : 'asc'; });
+  return out;
+}
+function isDesc(key) { return !!(state && state.sortPref && state.sortPref[key] === 'desc'); }
+function toggleSort(key) {
+  if (!SORT_KEYS.includes(key)) return;
+  state.sortPref[key] = isDesc(key) ? 'asc' : 'desc';
+  save();
+  if (key === 'char') renderChars();
+  if (key === 'plan') renderPlan();
+  if (key === 'setSub') renderSetSubTable();
+  toast((key === 'char' ? '角色' : '套装') + '已切换为' + (isDesc(key) ? '倒序' : '正序') + '（' + SORT_NOTE + '）');
+}
+/* 统一的「正序 / 倒序」切换按钮（点一下换一个方向） */
+function sortBtnHtml(key) {
+  const desc = isDesc(key);
+  return `<button type="button" class="btn sm sort-btn" data-sort="${key}"` +
+    ` title="${SORT_NOTE}：当前为${desc ? '倒序' : '正序'}，点击切换为${desc ? '正序' : '倒序'}">` +
+    `${desc ? '↑ 倒序' : '↓ 正序'}</button>` +
+    `<span class="sort-note">${SORT_NOTE}</span>`;
+}
+/* 按「内置库顺序」排好，再按偏好决定要不要反过来 */
+function applySort(arr, key, cmp) {
+  const out = arr.slice().sort(cmp);
+  return isDesc(key) ? out.reverse() : out;
+}
+
 /* 命中条数钳位：只接受 1–SUB_MIN_HIT_MAX 的整数，其余回落到预设值 */
 function clampHit(n) {
   const v = Math.round(Number(n));
@@ -421,6 +456,8 @@ function normalize(o) {
   });
   delete o.customSets;
 
+  // 各列表的正序 / 倒序偏好（排序顺序本身来自米游社图鉴，这里只记要不要反过来）
+  o.sortPref = normalizeSortPref(o.sortPref);
   // 用户对候选方案的手动整理结果：{ 套装名: { merge: [[key,key,...]], hide: [key] } }
   //   merge = 若干个「并入同一套」的候选组合；hide = 弃用的候选（不采纳，也不参与导出）
   o.planCfg = normalizePlanCfg(o.planCfg);
@@ -1569,7 +1606,7 @@ function planCopyText(setName, plan, idx) {
 /* 当前筛选后的角色列表（批量操作与渲染共用） */
 function filteredChars() {
   const kw = ui.search.trim().toLowerCase();
-  return state.characters.filter(c => {
+  const list = state.characters.filter(c => {
     if (ui.elem !== 'all' && c.element !== ui.elem) return false;
     if (ui.region !== 'all' && c.region !== ui.region) return false;
     if (ui.role !== 'all' && !(c.roles || []).includes(ui.role)) return false;
@@ -1585,12 +1622,30 @@ function filteredChars() {
     }
     return true;
   });
+  return sortedCharList(list);
+}
+
+/* 角色列表的「正序」= 按国度（蒙德→璃月→…→其他），国度内沿用内置库顺序；
+ * 倒序 = 整个反过来。切换只影响展示，不影响启用状态与批量结果。 */
+function sortedCharList(list) {
+  const base = new Map();
+  state.characters.forEach((c, i) => base.set(c.id, i));
+  const ri = {};
+  REGIONS.forEach((r, i) => { ri[r.id] = i; });
+  return applySort(list, 'char', (a, b) => {
+    const ra = ri[a.region] == null ? 99 : ri[a.region];
+    const rb = ri[b.region] == null ? 99 : ri[b.region];
+    return (ra - rb) ||
+      ((base.get(a.id) == null ? 1e9 : base.get(a.id)) - (base.get(b.id) == null ? 1e9 : base.get(b.id)));
+  });
 }
 
 /* 把 src（攻略链接数组）渲染成可点击来源；空数组不显示 */
 function renderChars() {
   const grid = $('#charGrid');
   const list = filteredChars();
+  const csb = $('#charSortBar');
+  if (csb) csb.innerHTML = sortBtnHtml('char');
 
   grid.innerHTML = list.map(c => {
     const el = ELEMENTS[c.element];
@@ -2459,6 +2514,8 @@ function renderPlan() {
   sel.value = cur || 'all';
 
   const enabled = state.characters.filter(c => c.enabled).length;
+  const psb = $('#planSortBar');
+  if (psb) psb.innerHTML = sortBtnHtml('plan');
 
   if (!enabled) {
     $('#planBody').innerHTML = '<div class="card"><p class="muted">请先在「① 角色配置」页勾选你要养的角色，这里会自动生成锁定方案。</p></div>';
@@ -2478,12 +2535,19 @@ function renderPlan() {
   const setWeights = setSubRanking(includeAlt);
   renderKeepRules();   // 规则面板：启用状态 + 计数
 
-  const html = blocks
-    .filter(([name]) => setFilter === 'all' || name === setFilter)
-    .filter(([name, b]) => !hideUnused || b.users.size > 0)
-    .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
-    .map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights))
-    .join('');
+  // 套装块顺序：正序 = 套装库顺序（米游社图鉴），倒序 = 反过来
+  const setIdx = new Map();
+  state.sets.forEach((s, i) => setIdx.set(s.name, i));
+  const ordered = applySort(
+    blocks.filter(([name]) => setFilter === 'all' || name === setFilter)
+          .filter(([name, b]) => !hideUnused || b.users.size > 0),
+    'plan',
+    (a, b) => {
+      const ia = setIdx.has(a[0]) ? setIdx.get(a[0]) : 1e9;
+      const ib = setIdx.has(b[0]) ? setIdx.get(b[0]) : 1e9;
+      return (ia - ib) || a[0].localeCompare(b[0], 'zh');
+    });
+  const html = ordered.map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights)).join('');
 
   blocks.forEach(([name, b]) => {
     if (!b.users.size) return;
@@ -2988,8 +3052,13 @@ function runScore() {
 
 function renderSetSubTable() {
   const rank = setSubRanking($('#planAltBuild') ? $('#planAltBuild').checked : true);
-  const rows = Array.from(rank.entries())
-    .sort((a, b) => a[0].localeCompare(b[0], 'zh'))
+  const setIdx = new Map();
+  state.sets.forEach((s, i) => setIdx.set(s.name, i));
+  const rows = applySort(Array.from(rank.entries()), 'setSub', (a, b) => {
+    const ia = setIdx.has(a[0]) ? setIdx.get(a[0]) : 1e9;
+    const ib = setIdx.has(b[0]) ? setIdx.get(b[0]) : 1e9;
+    return (ia - ib) || a[0].localeCompare(b[0], 'zh');
+  })
     .map(([setName, o]) => {
       const top = o.list.slice(0, 5);
       if (!top.length) return '';
@@ -3005,9 +3074,11 @@ function renderSetSubTable() {
       </tr>`;
     }).join('');
 
-  $('#setSubTable').innerHTML = rows
-    ? `<table class="tbl"><thead><tr><th>套装</th><th>追加属性需求排序 Top5（★= 多数角色标为必选）</th><th>相对强度</th></tr></thead><tbody>${rows}</tbody></table>`
-    : '<p class="muted small">启用角色后这里会显示每个套装的追加属性需求排序。</p>';
+  $('#setSubTable').innerHTML =
+    `<div class="sort-bar">${sortBtnHtml('setSub')}</div>` +
+    (rows
+      ? `<table class="tbl"><thead><tr><th>套装</th><th>追加属性需求排序 Top5（★= 多数角色标为必选）</th><th>相对强度</th></tr></thead><tbody>${rows}</tbody></table>`
+      : '<p class="muted small">启用角色后这里会显示每个套装的追加属性需求排序。</p>');
 }
 
 /* ============================================================
@@ -3233,6 +3304,12 @@ function bind() {
     $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + t.dataset.tab));
     if (t.dataset.tab === 'plan') renderPlan();
     if (t.dataset.tab === 'subs') renderSubs();
+  });
+
+  // 列表「正序 / 倒序」切换：三处共用一套按钮（角色页 / 方案页 / 追加属性表格）
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-sort]');
+    if (b) toggleSort(b.dataset.sort);
   });
 
   // 角色页筛选

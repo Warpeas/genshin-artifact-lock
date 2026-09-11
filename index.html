@@ -108,6 +108,11 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .count-badge{font-size:13px;color:var(--txt2);}
 .count-badge b{color:var(--gold);font-size:16px;}
 
+/* ---------- 正序 / 倒序 切换 ---------- */
+.sort-bar{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
+.sort-btn{white-space:nowrap;}
+.sort-note{font-size:12px;color:var(--txt3);white-space:nowrap;}
+
 /* ---------- batch bar ---------- */
 .batch-bar{
   background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
@@ -635,6 +640,8 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .toolbar .fld{flex:1 1 calc(50% - 4px);}
   .toolbar .btn{flex:1 1 auto;}
   .count-badge{margin-left:auto;}
+  .sort-bar{gap:6px;}
+  .sort-note{display:none;}   /* 窄屏只留切换按钮，说明移到按钮 title 里 */
   .fld select,.fld input{min-width:0;width:100%;}
   .seg{overflow-x:auto;max-width:100%;scrollbar-width:none;}
   .seg::-webkit-scrollbar{display:none;}
@@ -791,6 +798,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
         <button class="seg-btn" data-role="support">辅助</button>
       </div>
       <label class="chk"><input type="checkbox" id="onlyEnabled"> 只看已启用</label>
+      <span class="sort-bar" id="charSortBar"></span>
       <span class="spacer"></span>
       <span id="filterCount" class="count-badge hidden">筛出 <b>0</b> / 0 个</span>
       <span class="count-badge">已启用 <b id="enabledCount">0</b> 个角色</span>
@@ -835,6 +843,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
       <label class="chk"><input type="checkbox" id="planHideUnused" checked> 隐藏无人需要的套装</label>
       <label class="chk"><input type="checkbox" id="planAltBuild" checked> 计入备选配装</label>
       <label class="chk"><input type="checkbox" id="planDetail"> 显示详细件数</label>
+      <span class="sort-bar" id="planSortBar"></span>
       <span class="spacer"></span>
       <button id="btnCopyGame" class="btn primary">复制游戏内方案</button>
       <button id="btnCopyPlan" class="btn">复制清单</button>
@@ -1046,7 +1055,8 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     <h4>三步走</h4>
     <ol>
       <li><b>① 角色配置</b>：顶部可按<b>元素 / 国度 / 定位</b>筛选（三者可叠加，还能配合搜索框与「只看已启用」），
-        有筛选时右上角显示「筛出 N / 总数」。勾选你实际要养的角色。点卡片打开<b>编辑浮窗</b>：上面是角色基本信息，下面是配装卡片——
+        有筛选时右上角显示「筛出 N / 总数」；旁边「<b>↓ 正序 / ↑ 倒序</b>」可把整个列表反过来（会记住你的选择）。
+        勾选你实际要养的角色。点卡片打开<b>编辑浮窗</b>：上面是角色基本信息，下面是配装卡片——
         每张卡片一眼看全套装、三部位主要属性、追加属性，点卡片上的<b>「✎ 编辑」</b>会再弹出一个<b>配装编辑浮窗</b>。
         词条改完点<b>「保存」</b>才生效；点取消 / 关闭 / 浮窗外，会提示「有未保存的修改」再放弃。
         一个角色可以有多组配装（4件套 / 2+2），<b>每组的词条需求分开保存</b>；新增时可以选「空白」或复制现有组，
@@ -1065,6 +1075,9 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
         可单独开关；启用后每条规则会生成一份候选方案，与角色聚类结果<b>同权</b>参与合并与采纳。</li>
       <li><b>旅行者</b>按元素形态拆成 6 个独立条目（旅行者·风 / 岩 / 雷 / 草 / 水 / 火）：各形态元素不同、配装不同，可分别启用、分别编辑。
         同理，国度已细分出<b>挪德卡莱</b>（与至冬分开）；若你的存档是旧版，打开时会自动把角色的国度 / 定位纠正一次，之后你自己改的不再覆盖。</li>
+      <li><b>列表排序</b>：① 角色卡、② 方案页的套装块、③ 底部的「各套装推荐追加属性」表格，旁边都有
+        <b>「↓ 正序 / ↑ 倒序」</b>按钮——点一下换方向，选择会记在本机。<b>排序顺序来自米游社图鉴</b>：
+        角色按国度排列（蒙德 → 璃月 → … → 其他·旅行者），套装按套装库排列，所以顺序稳定、不会因为你勾了谁就跳来跳去。</li>
       <li><b>③ 追加属性规则</b>：给出分档判定 + 胚子评分器，解决「主要属性对了但追加属性能不能留」。</li>
       <li><b>④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
       <li><b>④ 数据管理 → 更新日志</b>：内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。
@@ -1168,8 +1181,18 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
  * CHANGELOG：新在前，CHANGELOG[0].v 必须等于 APP_VERSION。items 为纯文本（渲染时会 esc）。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.12';
+const APP_VERSION = '2026.09.13';
 const CHANGELOG = [
+  {
+    v: '2026.09.13', date: '2026-09-13',
+    title: '列表可切正序 / 倒序，排序顺序来自米游社图鉴',
+    items: [
+      '角色配置页、② 锁定方案页、③ 追加属性规则页都加了「↓ 正序 / ↑ 倒序」切换按钮，点一下换方向，选择会记住。',
+      '角色卡默认顺序改为按国度排列（蒙德 → 璃月 → 稻妻 → 须弥 → 枫丹 → 纳塔 → 挪德卡莱 → 至冬 → 其他·旅行者）。',
+      '② 方案页的套装顺序改为按套装库排列，不再随你勾选的角色多少来回跳动，翻找更稳。',
+      '每处排序按钮旁都标注了「排序顺序来自米游社图鉴」，说明这套顺序的出处。',
+    ],
+  },
   {
     v: '2026.09.12', date: '2026-09-12',
     title: '角色库补全到 124 条 + 国度 / 定位筛选 + 旅行者按形态拆分',
@@ -2218,6 +2241,41 @@ function defaultSets() {
   return SETS.map(s => ({ name: s.name, bonus: s.bonus, builtin: true, hidden: false }));
 }
 
+/* ---------- 列表排序：正序 / 倒序 ----------
+ * 正序 = 内置库顺序（角色按国度、套装按套装库），也就是米游社图鉴的排列；
+ * 倒序 = 把它整个反过来。只存「要不要反」，顺序本身永远跟着内置库走。
+ * key：char = 角色配置页卡片，plan = 锁定方案页套装，setSub = 追加属性规则页套装表格 */
+const SORT_KEYS = ['char', 'plan', 'setSub'];
+const SORT_NOTE = '排序顺序来自米游社图鉴';
+function normalizeSortPref(raw) {
+  const out = {};
+  SORT_KEYS.forEach(k => { out[k] = (raw && raw[k] === 'desc') ? 'desc' : 'asc'; });
+  return out;
+}
+function isDesc(key) { return !!(state && state.sortPref && state.sortPref[key] === 'desc'); }
+function toggleSort(key) {
+  if (!SORT_KEYS.includes(key)) return;
+  state.sortPref[key] = isDesc(key) ? 'asc' : 'desc';
+  save();
+  if (key === 'char') renderChars();
+  if (key === 'plan') renderPlan();
+  if (key === 'setSub') renderSetSubTable();
+  toast((key === 'char' ? '角色' : '套装') + '已切换为' + (isDesc(key) ? '倒序' : '正序') + '（' + SORT_NOTE + '）');
+}
+/* 统一的「正序 / 倒序」切换按钮（点一下换一个方向） */
+function sortBtnHtml(key) {
+  const desc = isDesc(key);
+  return `<button type="button" class="btn sm sort-btn" data-sort="${key}"` +
+    ` title="${SORT_NOTE}：当前为${desc ? '倒序' : '正序'}，点击切换为${desc ? '正序' : '倒序'}">` +
+    `${desc ? '↑ 倒序' : '↓ 正序'}</button>` +
+    `<span class="sort-note">${SORT_NOTE}</span>`;
+}
+/* 按「内置库顺序」排好，再按偏好决定要不要反过来 */
+function applySort(arr, key, cmp) {
+  const out = arr.slice().sort(cmp);
+  return isDesc(key) ? out.reverse() : out;
+}
+
 /* 命中条数钳位：只接受 1–SUB_MIN_HIT_MAX 的整数，其余回落到预设值 */
 function clampHit(n) {
   const v = Math.round(Number(n));
@@ -2288,6 +2346,8 @@ function normalize(o) {
   });
   delete o.customSets;
 
+  // 各列表的正序 / 倒序偏好（排序顺序本身来自米游社图鉴，这里只记要不要反过来）
+  o.sortPref = normalizeSortPref(o.sortPref);
   // 用户对候选方案的手动整理结果：{ 套装名: { merge: [[key,key,...]], hide: [key] } }
   //   merge = 若干个「并入同一套」的候选组合；hide = 弃用的候选（不采纳，也不参与导出）
   o.planCfg = normalizePlanCfg(o.planCfg);
@@ -3436,7 +3496,7 @@ function planCopyText(setName, plan, idx) {
 /* 当前筛选后的角色列表（批量操作与渲染共用） */
 function filteredChars() {
   const kw = ui.search.trim().toLowerCase();
-  return state.characters.filter(c => {
+  const list = state.characters.filter(c => {
     if (ui.elem !== 'all' && c.element !== ui.elem) return false;
     if (ui.region !== 'all' && c.region !== ui.region) return false;
     if (ui.role !== 'all' && !(c.roles || []).includes(ui.role)) return false;
@@ -3452,12 +3512,30 @@ function filteredChars() {
     }
     return true;
   });
+  return sortedCharList(list);
+}
+
+/* 角色列表的「正序」= 按国度（蒙德→璃月→…→其他），国度内沿用内置库顺序；
+ * 倒序 = 整个反过来。切换只影响展示，不影响启用状态与批量结果。 */
+function sortedCharList(list) {
+  const base = new Map();
+  state.characters.forEach((c, i) => base.set(c.id, i));
+  const ri = {};
+  REGIONS.forEach((r, i) => { ri[r.id] = i; });
+  return applySort(list, 'char', (a, b) => {
+    const ra = ri[a.region] == null ? 99 : ri[a.region];
+    const rb = ri[b.region] == null ? 99 : ri[b.region];
+    return (ra - rb) ||
+      ((base.get(a.id) == null ? 1e9 : base.get(a.id)) - (base.get(b.id) == null ? 1e9 : base.get(b.id)));
+  });
 }
 
 /* 把 src（攻略链接数组）渲染成可点击来源；空数组不显示 */
 function renderChars() {
   const grid = $('#charGrid');
   const list = filteredChars();
+  const csb = $('#charSortBar');
+  if (csb) csb.innerHTML = sortBtnHtml('char');
 
   grid.innerHTML = list.map(c => {
     const el = ELEMENTS[c.element];
@@ -4326,6 +4404,8 @@ function renderPlan() {
   sel.value = cur || 'all';
 
   const enabled = state.characters.filter(c => c.enabled).length;
+  const psb = $('#planSortBar');
+  if (psb) psb.innerHTML = sortBtnHtml('plan');
 
   if (!enabled) {
     $('#planBody').innerHTML = '<div class="card"><p class="muted">请先在「① 角色配置」页勾选你要养的角色，这里会自动生成锁定方案。</p></div>';
@@ -4345,12 +4425,19 @@ function renderPlan() {
   const setWeights = setSubRanking(includeAlt);
   renderKeepRules();   // 规则面板：启用状态 + 计数
 
-  const html = blocks
-    .filter(([name]) => setFilter === 'all' || name === setFilter)
-    .filter(([name, b]) => !hideUnused || b.users.size > 0)
-    .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
-    .map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights))
-    .join('');
+  // 套装块顺序：正序 = 套装库顺序（米游社图鉴），倒序 = 反过来
+  const setIdx = new Map();
+  state.sets.forEach((s, i) => setIdx.set(s.name, i));
+  const ordered = applySort(
+    blocks.filter(([name]) => setFilter === 'all' || name === setFilter)
+          .filter(([name, b]) => !hideUnused || b.users.size > 0),
+    'plan',
+    (a, b) => {
+      const ia = setIdx.has(a[0]) ? setIdx.get(a[0]) : 1e9;
+      const ib = setIdx.has(b[0]) ? setIdx.get(b[0]) : 1e9;
+      return (ia - ib) || a[0].localeCompare(b[0], 'zh');
+    });
+  const html = ordered.map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights)).join('');
 
   blocks.forEach(([name, b]) => {
     if (!b.users.size) return;
@@ -4855,8 +4942,13 @@ function runScore() {
 
 function renderSetSubTable() {
   const rank = setSubRanking($('#planAltBuild') ? $('#planAltBuild').checked : true);
-  const rows = Array.from(rank.entries())
-    .sort((a, b) => a[0].localeCompare(b[0], 'zh'))
+  const setIdx = new Map();
+  state.sets.forEach((s, i) => setIdx.set(s.name, i));
+  const rows = applySort(Array.from(rank.entries()), 'setSub', (a, b) => {
+    const ia = setIdx.has(a[0]) ? setIdx.get(a[0]) : 1e9;
+    const ib = setIdx.has(b[0]) ? setIdx.get(b[0]) : 1e9;
+    return (ia - ib) || a[0].localeCompare(b[0], 'zh');
+  })
     .map(([setName, o]) => {
       const top = o.list.slice(0, 5);
       if (!top.length) return '';
@@ -4872,9 +4964,11 @@ function renderSetSubTable() {
       </tr>`;
     }).join('');
 
-  $('#setSubTable').innerHTML = rows
-    ? `<table class="tbl"><thead><tr><th>套装</th><th>追加属性需求排序 Top5（★= 多数角色标为必选）</th><th>相对强度</th></tr></thead><tbody>${rows}</tbody></table>`
-    : '<p class="muted small">启用角色后这里会显示每个套装的追加属性需求排序。</p>';
+  $('#setSubTable').innerHTML =
+    `<div class="sort-bar">${sortBtnHtml('setSub')}</div>` +
+    (rows
+      ? `<table class="tbl"><thead><tr><th>套装</th><th>追加属性需求排序 Top5（★= 多数角色标为必选）</th><th>相对强度</th></tr></thead><tbody>${rows}</tbody></table>`
+      : '<p class="muted small">启用角色后这里会显示每个套装的追加属性需求排序。</p>');
 }
 
 /* ============================================================
@@ -5100,6 +5194,12 @@ function bind() {
     $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + t.dataset.tab));
     if (t.dataset.tab === 'plan') renderPlan();
     if (t.dataset.tab === 'subs') renderSubs();
+  });
+
+  // 列表「正序 / 倒序」切换：三处共用一套按钮（角色页 / 方案页 / 追加属性表格）
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-sort]');
+    if (b) toggleSort(b.dataset.sort);
   });
 
   // 角色页筛选

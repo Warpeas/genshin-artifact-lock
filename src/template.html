@@ -54,6 +54,7 @@
         <button class="seg-btn" data-role="support">辅助</button>
       </div>
       <label class="chk"><input type="checkbox" id="onlyEnabled"> 只看已启用</label>
+      <span class="sort-bar" id="charSortBar"></span>
       <span class="spacer"></span>
       <span id="filterCount" class="count-badge hidden">筛出 <b>0</b> / 0 个</span>
       <span class="count-badge">已启用 <b id="enabledCount">0</b> 个角色</span>
@@ -98,6 +99,7 @@
       <label class="chk"><input type="checkbox" id="planHideUnused" checked> 隐藏无人需要的套装</label>
       <label class="chk"><input type="checkbox" id="planAltBuild" checked> 计入备选配装</label>
       <label class="chk"><input type="checkbox" id="planDetail"> 显示详细件数</label>
+      <span class="sort-bar" id="planSortBar"></span>
       <span class="spacer"></span>
       <button id="btnCopyGame" class="btn primary">复制游戏内方案</button>
       <button id="btnCopyPlan" class="btn">复制清单</button>
@@ -309,7 +311,8 @@
     <h4>三步走</h4>
     <ol>
       <li><b>① 角色配置</b>：顶部可按<b>元素 / 国度 / 定位</b>筛选（三者可叠加，还能配合搜索框与「只看已启用」），
-        有筛选时右上角显示「筛出 N / 总数」。勾选你实际要养的角色。点卡片打开<b>编辑浮窗</b>：上面是角色基本信息，下面是配装卡片——
+        有筛选时右上角显示「筛出 N / 总数」；旁边「<b>↓ 正序 / ↑ 倒序</b>」可把整个列表反过来（会记住你的选择）。
+        勾选你实际要养的角色。点卡片打开<b>编辑浮窗</b>：上面是角色基本信息，下面是配装卡片——
         每张卡片一眼看全套装、三部位主要属性、追加属性，点卡片上的<b>「✎ 编辑」</b>会再弹出一个<b>配装编辑浮窗</b>。
         词条改完点<b>「保存」</b>才生效；点取消 / 关闭 / 浮窗外，会提示「有未保存的修改」再放弃。
         一个角色可以有多组配装（4件套 / 2+2），<b>每组的词条需求分开保存</b>；新增时可以选「空白」或复制现有组，
@@ -328,6 +331,9 @@
         可单独开关；启用后每条规则会生成一份候选方案，与角色聚类结果<b>同权</b>参与合并与采纳。</li>
       <li><b>旅行者</b>按元素形态拆成 6 个独立条目（旅行者·风 / 岩 / 雷 / 草 / 水 / 火）：各形态元素不同、配装不同，可分别启用、分别编辑。
         同理，国度已细分出<b>挪德卡莱</b>（与至冬分开）；若你的存档是旧版，打开时会自动把角色的国度 / 定位纠正一次，之后你自己改的不再覆盖。</li>
+      <li><b>列表排序</b>：① 角色卡、② 方案页的套装块、③ 底部的「各套装推荐追加属性」表格，旁边都有
+        <b>「↓ 正序 / ↑ 倒序」</b>按钮——点一下换方向，选择会记在本机。<b>排序顺序来自米游社图鉴</b>：
+        角色按国度排列（蒙德 → 璃月 → … → 其他·旅行者），套装按套装库排列，所以顺序稳定、不会因为你勾了谁就跳来跳去。</li>
       <li><b>③ 追加属性规则</b>：给出分档判定 + 胚子评分器，解决「主要属性对了但追加属性能不能留」。</li>
       <li><b>④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
       <li><b>④ 数据管理 → 更新日志</b>：内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。
