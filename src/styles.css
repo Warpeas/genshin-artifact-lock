@@ -46,6 +46,18 @@ button{font-family:inherit;}
 .topbar-right{display:flex;align-items:center;gap:10px;}
 .save-hint{font-size:12px;color:var(--txt3);}
 
+/* ---------- 语言切换（显示语言 / 数据语言，各自独立） ---------- */
+.lang-fld{
+  display:flex;align-items:center;gap:5px;
+  font-size:12px;color:var(--txt3);white-space:nowrap;
+}
+.lang-fld select{
+  font-size:12px;padding:4px 6px;border-radius:7px;
+  border:1px solid var(--line);background:var(--bg3);color:var(--txt);
+  cursor:pointer;max-width:104px;
+}
+.lang-fld select:hover{border-color:var(--gold);}
+
 /* ---------- tabs ---------- */
 .tabs{display:flex;gap:4px;padding:0 22px;background:var(--bg2);border-bottom:1px solid var(--line);position:sticky;top:var(--tbh,67px);z-index:49;}
 .tab{
@@ -91,7 +103,8 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
   background:var(--panel);color:var(--txt);width:220px;font-size:13px;
 }
 .toolbar input[type=search]:focus{outline:none;border-color:var(--gold);}
-.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;
+     max-width:100%;flex-wrap:wrap;}   /* 英文态文案更长，放不下时换行而不是撑破页面 */
 .seg-btn{padding:6px 12px;background:var(--panel);border:none;border-right:1px solid var(--line);color:var(--txt2);cursor:pointer;font-size:13px;}
 .seg-btn:last-child{border-right:none;}
 .seg-btn:hover{background:var(--panel2);color:var(--txt);}
@@ -112,13 +125,14 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .batch-bar{
   background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
   padding:10px 12px;margin-bottom:14px;
+  flex-wrap:wrap;   /* 英文态按钮更宽，允许整行换行 */
 }
 .bar-label{font-size:12px;color:var(--txt3);flex:none;}
 .bar-div{width:1px;height:20px;background:var(--line);flex:none;margin:0 2px;}
 .bar-hint{font-size:11.5px;color:var(--txt3);margin-left:auto;}
 .batch-hint{margin:-6px 2px 14px;font-size:11.5px;color:var(--txt3);}
 .batch-hint b{color:var(--txt2);}
-.btn-grp{display:flex;gap:4px;flex-wrap:wrap;}
+.btn-grp{display:flex;gap:4px;flex-wrap:wrap;min-width:0;}
 .btn.sm.on{
   background:linear-gradient(145deg,var(--gold2),var(--gold));color:#2a2113;
   border-color:transparent;font-weight:600;
@@ -144,7 +158,9 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .char-card:hover{border-color:#3f4d61;transform:translateY(-1px);}
 .char-card.on{border-color:var(--gold);background:linear-gradient(180deg,#232c1f,#1a2029);}
 .char-card .cc-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.cc-name{font-size:15px;font-weight:600;}
+.cc-name{font-size:15px;font-weight:600;
+  /* 英文名（如 Sangonomiya Kokomi）比中文长，放不下时省略而不是把 ☆ 挤出卡片 */
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cc-elem{
   font-size:11px;padding:1px 7px;border-radius:20px;font-weight:600;flex:none;
 }
@@ -278,6 +294,9 @@ table.tbl th,table.tbl td{padding:7px 9px;text-align:left;border-bottom:1px soli
 table.tbl th{color:var(--txt3);font-weight:500;font-size:12px;background:#171d26;position:sticky;top:0;}
 table.tbl tr:hover td{background:#1d242e;}
 .wbar{display:inline-block;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--gold),#8a7ad0);min-width:2px;}
+/* 表格自带横向滚动：英文长套装名不会把整页撑破 */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tbl-wrap table.tbl{min-width:100%;}
 
 /* ---------- drawer / modal ---------- */
 .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90;backdrop-filter:blur(2px);}
@@ -608,6 +627,11 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     padding-top:calc(9px + env(safe-area-inset-top));
   }
   .topbar .sub,.save-hint{display:none;}
+  /* 语言切换：窄屏只留下拉框，把前缀文字让出来 */
+  .lang-fld{font-size:0;gap:0;}
+  .lang-fld select{max-width:92px;font-size:11.5px;padding:3px 4px;}
+  /* 元素分段：英文（Pyro / Electro…）比中文宽，窄屏压缩内边距与字号 */
+  .seg-btn{padding:6px 8px;font-size:12px;}
   .logo{width:32px;height:32px;font-size:16px;border-radius:8px;}
   /* 标题不换行、超宽省略，保证顶栏在极窄屏也保持单行（sticky 高度才稳定） */
   .brand{min-width:0;}
@@ -681,6 +705,9 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .sub-inputs{grid-template-columns:1fr;}
   .sub-input label{width:84px;}
   table.tbl th,table.tbl td{padding:6px 5px;font-size:11.5px;}
+  /* 窄屏：让出宽度给「套装 + 追加属性排序」，强度条列隐藏、套装名可换行 */
+  table.tbl .col-str{display:none;}
+  table.tbl .col-set{white-space:normal !important;word-break:break-word;}
 
   /* --- 套装管理：表头隐藏，每行拆成两行块 --- */
   .sm-row{

@@ -17,6 +17,18 @@
     </div>
   </div>
   <div class="topbar-right">
+    <label class="lang-fld" title="界面按钮、说明文案用哪种语言">显示
+      <select id="uiLangSel" aria-label="显示语言">
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+      </select>
+    </label>
+    <label class="lang-fld" title="角色名 / 套装名 / 属性名等数据本身用哪种语言">数据
+      <select id="dataLangSel" aria-label="数据语言">
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+      </select>
+    </label>
     <span id="saveHint" class="save-hint">数据保存在本机浏览器</span>
     <button id="btnHelp" class="btn ghost">使用说明</button>
   </div>
@@ -76,7 +88,7 @@
       <span class="bar-label">按定位</span>
       <span class="btn-grp" id="roleBatch"></span>
     </div>
-    <p class="batch-hint">属性 / 国度 / 定位：点一次全选该类、再点一次取消，可叠加组合，对<b>全部角色</b>生效；「全选 / 反选」只对当前筛选结果生效</p>
+    <p class="batch-hint" data-en="Element / Region / Role: tap once to select the whole category, tap again to clear it. Categories stack and apply to <b>all characters</b>; &quot;Select all&quot; / &quot;Invert&quot; only affect the current filter result.">属性 / 国度 / 定位：点一次全选该类、再点一次取消，可叠加组合，对<b>全部角色</b>生效；「全选 / 反选」只对当前筛选结果生效</p>
 
     <div id="charGrid" class="char-grid"></div>
   </section>
@@ -116,7 +128,7 @@
         <span id="krCount" class="kr-count"></span>
       </h3>
       <div id="krBody" class="kr-body">
-        <p class="muted small">与具体角色无关、只因「主要属性本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
+        <p class="muted small" data-en="Artifacts worth keeping regardless of any character, either because the <b>main stat itself is rare</b> or because it works as a <b>transitional 2-piece</b> (an elemental DMG goblet, for example). Every enabled rule produces one <b>candidate plan</b> that shows up in the candidate area below with the <b>same weight</b> as character clusters; you can merge it into a character plan or adopt it on its own. <b>The game allows at most 3 custom presets per set</b> — keep it under 3 yourself. <br><b>Built-in rules are editable too</b>: hit &quot;Edit&quot; to change name / description / slot / main stats / substats / &#9733;required in a popup; edited ones are tagged &quot;Modified&quot; and can be reset with one tap. <br>Use the arrow on the left of the heading to <b>collapse the whole block</b> — that only hides it, enabled rules keep producing candidates.">与具体角色无关、只因「主要属性本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
           每条启用的规则会生成一份<b>候选方案</b>，与角色聚类结果<b>同权</b>出现在下面的候选区；
           你可以「并入」到某个角色方案里、或单独采纳。<b>游戏内每种套装至多 3 个自定义预设</b>，请自行控制在 3 套以内。
           <br><b>内置规则也能改</b>：点「编辑」即弹出浮窗修改（名称 / 描述 / 部位 / 主要属性 / 追加属性 / ★必须），改过的会标记「已修改」，可一键「恢复默认」。
@@ -139,13 +151,13 @@
     <div class="two-col">
       <div class="card">
         <h3>通用分档规则</h3>
-        <p class="muted small">根据你启用的角色，自动汇总出的主要属性白名单 + 追加属性判定逻辑。游戏内可照此执行锁定。</p>
+        <p class="muted small" data-en="Auto-summarised from the characters you enabled: a main-stat whitelist plus the substat rules to copy into the game.">根据你启用的角色，自动汇总出的主要属性白名单 + 追加属性判定逻辑。游戏内可照此执行锁定。</p>
         <div id="subRules"></div>
       </div>
 
       <div class="card">
         <h3>胚子评分器</h3>
-        <p class="muted small">输入一件圣遗物的信息，快速判断值不值得留。</p>
+        <p class="muted small" data-en="Enter an artifact to see at a glance whether it is worth keeping.">输入一件圣遗物的信息，快速判断值不值得留。</p>
         <div class="form-row">
           <label class="fld">套装
             <select id="scoreSet"><option value="">（不限）</option></select>
@@ -166,7 +178,7 @@
 
     <div class="card">
       <h3>各套装推荐追加属性</h3>
-      <p class="muted small">按该套装下所有需求角色的<b>排序</b>汇总：越靠前 = 越多人把它排在前面；
+      <p class="muted small" data-en="Aggregated from the <b>ordering</b> of every character that wants this set: earlier = more characters ranked it first. &#9733; means most characters marked it &quot;Required&quot; (the &#9733;Required flag in the lock plan). Main stat / substat needs are counted <b>per build</b>.">按该套装下所有需求角色的<b>排序</b>汇总：越靠前 = 越多人把它排在前面；
         ★ 表示多数角色把它标成了「必选」（对应锁定方案里的 ★必须）。主要属性 / 追加属性需求<b>按配装组</b>统计。</p>
       <div id="setSubTable"></div>
     </div>
@@ -176,12 +188,12 @@
   <section id="tab-data" class="tabpane">
     <div class="card">
       <h3>圣遗物套装管理</h3>
-      <p class="muted small">增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。点下面按钮在浮窗里操作。</p>
+      <p class="muted small" data-en="Add or remove sets, edit the 2-piece text, move entries up and down. Built-in sets are only &quot;hidden&quot; and can be restored any time. Hit the button below to work in a popup.">增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。点下面按钮在浮窗里操作。</p>
       <button id="btnOpenSetMgr" class="btn primary">打开套装管理</button>
     </div>
     <div class="card">
       <h3>备份与恢复</h3>
-      <p class="muted small">配置保存在浏览器 localStorage，换设备或清缓存前请先导出。<br>
+      <p class="muted small" data-en="Your config lives in the browser&#39;s localStorage — export it before switching devices or clearing the cache. <br><b>&quot;Restore built-in defaults&quot;</b> overwrites the local save with the built-in library and wipes every custom edit, i.e. a hard reset. A normal browser refresh only reloads the page and does <b>not</b> clear local storage, so stale or corrupted data would otherwise stick around.">配置保存在浏览器 localStorage，换设备或清缓存前请先导出。<br>
         <b>「恢复内置默认库」</b>＝用内置默认库覆盖本机存档、清除你的全部自定义修改，相当于一次硬刷新；浏览器普通「刷新」只重载页面、<b>不会</b>清本地存档，所以旧数据 / 乱码会一直留着。</p>
       <div class="btn-row">
         <button id="btnExportJson" class="btn primary">导出配置 JSON</button>
@@ -194,7 +206,7 @@
 
     <div class="card">
       <h3>更新日志 <span id="appVersion" class="muted small"></span></h3>
-      <p class="muted small">内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。大版本更新后首次打开会自动弹一次公告。</p>
+      <p class="muted small" data-en="The built-in character and artifact data is maintained by hand as the game updates; every change is logged here. A major update pops up the notice once the first time you open the app.">内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。大版本更新后首次打开会自动弹一次公告。</p>
       <div id="chgLog" class="chg-log"></div>
       <div class="btn-row">
         <button id="btnShowNotice" class="btn">查看更新公告</button>
@@ -277,7 +289,7 @@
     <button id="pickX" class="icon-btn" title="关闭">×</button>
   </div>
   <div class="modal-body">
-    <p class="muted small" id="pickHint"></p>
+    <p class="muted small" id="pickHint" data-en="Pick one; earlier entries are more wanted."></p>
     <div id="pickList" class="pick-list"></div>
   </div>
   <div class="drawer-foot">
@@ -307,7 +319,7 @@
     <h2>使用说明</h2>
     <button id="btnCloseHelp" class="icon-btn">×</button>
   </div>
-  <div class="modal-body">
+  <div class="modal-body" data-en-key="help">
     <h4>三步走</h4>
     <ol>
       <li><b>① 角色配置</b>：顶部可按<b>元素 / 国度 / 定位</b>筛选（三者可叠加，还能配合搜索框与「只看已启用」），
@@ -362,6 +374,14 @@
       <li>追加属性不可能与同部位主要属性相同。方案级统一追加属性后，已自动剔除与花 / 羽固定主要属性（生命值 / 攻击力）冲突的项；沙 / 杯 / 冠的主要属性随方案而变，无法逐部位剔除——照抄时请自行留意，跳过即可。</li>
       <li>数据存在本机浏览器，换设备用「数据管理 → 导出 JSON」迁移。</li>
     </ul>
+    <h4>中英文切换</h4>
+    <ul>
+      <li>顶栏右上角有两个<b>各自独立</b>的开关：<b>显示语言</b>管界面按钮与说明文案，<b>数据语言</b>管角色名 / 套装名 / 属性名这些数据本身。两者可以不一样，选择都会记住。</li>
+      <li>数据语言切成 English 后，角色与套装显示官方英文名（如 胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），属性、国度、定位、部位同样跟随。</li>
+      <li>搜索框<b>两种语言都认</b>：不管当前显示哪种，输入「胡桃」或「Hu Tao」、「逐影猎人」或「Marechaussee」都能搜到。</li>
+      <li>复制 / 导出的文本<b>始终保持中文</b>——游戏内的锁定界面是中文，照抄时才对得上。</li>
+      <li>「更新日志」里记录的是历史改动，保留原始中文不翻译。</li>
+    </ul>
   </div>
 </div>
 
@@ -373,7 +393,7 @@
     <button id="btnCloseSetMgr" class="icon-btn">×</button>
   </div>
   <div class="modal-body">
-    <p class="muted small">这里的<b>顺序</b>就是各处下拉与方案页的展示顺序；可改 2 件套效果说明。内置套装点「隐藏」只是不显示（角色配装里的引用会保留），点「恢复」即可放回；自定义套装点「删除」会真正移除，并同步清掉角色配装里的引用。</p>
+    <p class="muted small" data-en="The <b>order</b> here is the order used by every dropdown and by the plan page; you can also edit the 2-piece text. &quot;Hide&quot; on a built-in set only stops it from showing (references from character builds are kept) — &quot;Restore&quot; puts it back. &quot;Delete&quot; on a custom set really removes it and clears it from character builds too.">这里的<b>顺序</b>就是各处下拉与方案页的展示顺序；可改 2 件套效果说明。内置套装点「隐藏」只是不显示（角色配装里的引用会保留），点「恢复」即可放回；自定义套装点「删除」会真正移除，并同步清掉角色配装里的引用。</p>
     <div class="toolbar wrap">
       <input id="newSetName" placeholder="新套装名称，例：某某之梦">
       <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%">
@@ -414,7 +434,7 @@
         <div><b>追加属性</b><div id="krPool" class="kr-chk"></div></div>
         <div><b>★必须追加属性</b><div id="krRequired" class="kr-chk"></div></div>
       </div>
-      <p class="muted small">命中条数<b>预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条符合要求才值得留下强化；
+      <p class="muted small" data-en="The hit count <b>defaults to &quot;at least 2&quot;</b> — an artifact ends up with 4 substats, and at least 2 of them should match before it is worth investing in. Once enabled you can <b>set it to 1&ndash;4 per plan card</b> below; the higher the number, the stricter.">命中条数<b>预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条符合要求才值得留下强化；
         启用后可在下方每个方案卡片上<b>单独调到 1–4 条</b>，数字越大筛选越严。</p>
     </div>
   </div>

@@ -319,6 +319,27 @@ function migrateFromDefaults(o) {
     });
     o._metaEpoch = META_EPOCH;
   }
+  // 套装改名 / 订正（图鉴核对后内置库改了名，老存档的引用要跟着换）：
+  // 只改内置套装与其引用，天然幂等 —— 改完之后旧名已不存在，再跑一次也不会重复。
+  if (typeof SET_RENAME === 'object') {
+    const rn = n => (SET_RENAME[n] || n);
+    (o.sets || []).forEach(s => { s.name = rn(s.name); });
+    // 同一个新名可能既来自旧存档、又被自动补全，去重（保留第一条）
+    if (Array.isArray(o.sets)) {
+      const seen = new Set();
+      o.sets = o.sets.filter(s => (seen.has(s.name) ? false : (seen.add(s.name), true)));
+    }
+    (o.characters || []).forEach(c => {
+      (c.builds || []).forEach(b => {
+        if (Array.isArray(b.sets)) b.sets = b.sets.map(rn);
+      });
+    });
+    if (o.planCfg && typeof o.planCfg === 'object') {
+      Object.keys(o.planCfg).forEach(k => {
+        if (SET_RENAME[k]) { o.planCfg[SET_RENAME[k]] = o.planCfg[k]; delete o.planCfg[k]; }
+      });
+    }
+  }
   // 补齐存档缺失的内置新角色（天然幂等：已存在则不重复添加）
   defs.forEach(d => {
     if (!o.characters.some(c => c.name === d.name)) {
@@ -373,6 +394,142 @@ function normalizeSortPref(raw) {
     out[k + 'By'] = (raw && raw[k + 'By'] === 'recommend') ? 'recommend' : 'catalog';
   });
   return out;
+}
+
+/* ============================================================
+ * 语言：显示语言（界面文案）与数据语言（角色 / 套装 / 属性）各自独立
+ * ------------------------------------------------------------
+ * 两套开关存在 state.lang = { ui: 'zh'|'en', data: 'zh'|'en' }。
+ * 切换后：把开关同步给 data.js 的取值函数，再扫一遍 DOM 把已渲染的文案换掉。
+ * 界面文案不必逐个包函数 —— applyI18n() 统一按词典替换文本节点与
+ * placeholder / title 属性；没收录的条目自然保留中文，不会翻出半吊子英文。
+ * 导出 / 复制的文本（游戏内是中文界面）保持中文，不受数据语言影响。
+ * ============================================================ */
+function normalizeLang(raw) {
+  const o = (raw && typeof raw === 'object') ? raw : {};
+  return { ui: o.ui === 'en' ? 'en' : 'zh', data: o.data === 'en' ? 'en' : 'zh' };
+}
+function langOf(kind) { return (state && state.lang && state.lang[kind]) || 'zh'; }
+/* 把 state.lang 同步给 data.js（取值函数与词典都看那边的全局变量） */
+function pushLang() {
+  setUiLang(langOf('ui'));
+  setDataLang(langOf('data'));
+}
+/* 当前生效的词典（界面文案优先于数据名） */
+const I18N_ATTRS = ['placeholder', 'title', 'aria-label'];
+/* 原文缓存：切回中文时靠它还原（节点是 WeakMap 键，随节点回收自动释放） */
+const _i18nOrigText = new WeakMap();
+const _i18nOrigAttr = new WeakMap();
+const _i18nOrigHtml = new WeakMap();   // data-en 整段替换用的原文缓存
+/* 把一段原文按词典翻译（保留首尾空白，只替换 trim 后的主体） */
+function trText(zh, map) {
+  const s = String(zh).trim();
+  if (!s) return zh;
+  const hit = map[s];
+  if (hit != null) return String(zh).replace(s, hit);
+  /* 词典装不下的带数字句式（如「+1备选」「筛出 22 / 124 个」）走正则兜底 */
+  if (typeof trByRules === 'function') {
+    const r = trByRules(zh);
+    if (r != null) return r;
+  }
+  return zh;
+}
+/* 扫一遍 DOM 应用当前语言。root 缺省为整个 body。 */
+function applyI18n(root) {
+  const map = currentDict();
+  const on = Object.keys(map).length > 0;
+  const r = root || document.body;
+  if (!r) return;
+  /* 0) 整段替换：长说明文字被 <b> 切成好几个文本节点，逐句匹配不上，
+   *    所以这类元素直接给一份英文版（data-en 内联 / data-en-key 引用 I18N_HTML）。 */
+  const blocks = [];
+  if (r.nodeType === 1 && r.matches && r.matches('[data-en],[data-en-key]')) blocks.push(r);
+  (r.querySelectorAll ? r.querySelectorAll('[data-en],[data-en-key]') : []).forEach(el => blocks.push(el));
+  blocks.forEach(el => {
+    const key = el.getAttribute('data-en-key');
+    const en = key ? (typeof I18N_HTML !== 'undefined' ? I18N_HTML[key] : null)
+                   : el.getAttribute('data-en');
+    if (!en) return;
+    let cache = _i18nOrigHtml.get(el);
+    if (cache === undefined) { cache = el.innerHTML; _i18nOrigHtml.set(el, cache); }
+    /* 用状态标记判断是否要换，不能比较 innerHTML —— 浏览器会把赋值结果规范化，
+     * 读回来永远和写入的字符串不完全一样，每次都会被判成「有变化」而反复重写，
+     * 进而不断触发 MutationObserver，直接把页面卡死。 */
+    const want = (on && isUiEn()) ? 'en' : 'zh';
+    if (el.getAttribute('data-i18n-state') === want) return;
+    el.setAttribute('data-i18n-state', want);
+    el.innerHTML = (want === 'en') ? en : cache;
+  });
+  // 1) 文本节点
+  const walker = document.createTreeWalker(r, NodeFilter.SHOW_TEXT, null);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(n => {
+    const cached = _i18nOrigText.get(n);
+    const zh = (cached === undefined ? n.nodeValue : cached);
+    if (cached === undefined) _i18nOrigText.set(n, zh);
+    const next = on ? trText(zh, map) : zh;
+    if (n.nodeValue !== next) n.nodeValue = next;
+  });
+  // 2) 属性（placeholder / title / aria-label）
+  const attrTargets = [];
+  if (r.nodeType === 1 && r.hasAttribute && I18N_ATTRS.some(a => r.hasAttribute(a))) attrTargets.push(r);
+  (r.querySelectorAll ? r.querySelectorAll('[placeholder],[title],[aria-label]') : []).forEach(el => attrTargets.push(el));
+  attrTargets.forEach(el => {
+    let cache = _i18nOrigAttr.get(el);
+    if (!cache) { cache = {}; _i18nOrigAttr.set(el, cache); }
+    I18N_ATTRS.forEach(a => {
+      if (!el.hasAttribute(a)) return;
+      if (cache[a] === undefined) cache[a] = el.getAttribute(a);
+      const next = on ? trText(cache[a], map) : cache[a];
+      if (el.getAttribute(a) !== next) el.setAttribute(a, next);
+    });
+  });
+}
+/* 动态内容（浮窗 / 重渲染的列表）自动跟随当前语言：
+ * 只处理「新增节点」，忽略自己改写文本 / 属性引起的回调，避免来回触发死循环。 */
+let _i18nQueue = [];
+let _i18nPending = false;
+function startI18nObserver() {
+  if (typeof MutationObserver === 'undefined') return;
+  const flush = () => {
+    const targets = new Set(_i18nQueue);
+    _i18nQueue = [];
+    targets.forEach(t => { if (t && t.isConnected !== false) applyI18n(t); });
+    // applyI18n 自身改 DOM 又会排进来；上面跑完一轮后队列若非空就再排一次，
+    // 直到没有新变化为止（applyI18n 幂等，所以这个循环会自然收敛）
+    _i18nPending = _i18nQueue.length > 0;
+    if (_i18nPending) Promise.resolve().then(flush);
+  };
+  const obs = new MutationObserver(list => {
+    let hit = false;
+    list.forEach(m => {
+      if (m.type !== 'childList' || !m.addedNodes || !m.addedNodes.length) return;
+      hit = true;
+      _i18nQueue.push(m.target);
+    });
+    if (!hit || _i18nPending) return;
+    _i18nPending = true;
+    Promise.resolve().then(flush);
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+}
+
+/* 切换语言：同步开关 → 重渲染 → 扫 DOM → 存盘 */
+function setLang(kind, v) {
+  if (kind !== 'ui' && kind !== 'data') return;
+  const next = (v === 'en' ? 'en' : 'zh');
+  if (langOf(kind) === next) return;
+  state.lang = normalizeLang(Object.assign({}, state.lang, { [kind]: next }));
+  pushLang();
+  save();
+  renderChars(); renderPlan(); renderSubs(); renderSets(); renderKeepRules();
+  renderDataChangelog();
+  document.documentElement.lang = (langOf('ui') === 'en' ? 'en' : 'zh-CN');
+  applyI18n();
+  toast(kind === 'ui'
+    ? (next === 'en' ? '显示语言已切换为 English' : '显示语言已切换为中文')
+    : (next === 'en' ? '数据语言已切换为 English' : '数据语言已切换为中文'));
 }
 function isDesc(key) { return !!(state && state.sortPref && state.sortPref[key] === 'desc'); }
 function sortBy(key) { return (state && state.sortPref && state.sortPref[key + 'By']) || 'catalog'; }
@@ -518,6 +675,8 @@ function normalize(o) {
   });
   delete o.customSets;
 
+  // 语言：ui = 界面文案，data = 角色 / 套装 / 属性等数据内容，两者独立
+  o.lang = normalizeLang(o.lang);
   // 各列表的正序 / 倒序偏好（排序顺序本身来自米游社图鉴，这里只记要不要反过来）
   o.sortPref = normalizeSortPref(o.sortPref);
   // 用户对候选方案的手动整理结果：{ 套装名: { merge: [[key,key,...]], hide: [key] } }
@@ -979,7 +1138,7 @@ function setSubRanking(includeAlt = true) {
   acc.forEach((o, sn) => {
     const list = SUB_STATS.map(s => ({
       id: s.id,
-      name: s.name,
+      name: subStatName(s.id),
       score: (o.sum[s.id] || 0) / o.n,
       reqRatio: (o.req[s.id] || 0) / o.n,
     })).filter(x => x.score > 0.01)
@@ -1584,7 +1743,7 @@ function planSubOrder(p) {
  *   次要属性不一致时角色名带上分组颜色，与下方追加属性的颜色一一对应 */
 function planForText(p) {
   if (p.kind === 'rule') {
-    return `<span class="gp-for gp-rule-for">🧩 散件 / 过渡保留：${esc(p.ruleName)}</span>`;
+    return `<span class="gp-for gp-rule-for">🧩 ${t('散件 / 过渡保留：')}${esc(keepRuleName(p.ruleName))}</span>`;
   }
   if (p.chars && p.chars.length) {
     const groups = planColorGroups(p);
@@ -1594,11 +1753,12 @@ function planForText(p) {
       ).join('')).join('');
       return `<span class="gp-for gp-for-groups">${chips}</span>`;
     }
-    const more = p.chars.length > 6 ? ` <span class="gp-more">等 ${p.chars.length} 人</span>`
-      : (p.chars.length > 4 ? ` <span class="gp-more">共 ${p.chars.length} 人</span>` : '');
-    return `<span class="gp-for">供 ${p.chars.slice(0, 6).map(n => esc(n)).join('、')}${more} 使用</span>`;
+    const more = p.chars.length > 6 ? ` <span class="gp-more">${t('等 {n} 人').split('{n}').join(p.chars.length)}</span>`
+      : (p.chars.length > 4 ? ` <span class="gp-more">${t('共 {n} 人').split('{n}').join(p.chars.length)}</span>` : '');
+    const who = p.chars.slice(0, 6).map(n => esc(charName(n))).join('、') + more;
+    return `<span class="gp-for">${t('供 {x} 使用').split('{x}').join(who)}</span>`;
   }
-  return '<span class="gp-for">（未指定角色）</span>';
+  return `<span class="gp-for">${t('（未指定角色）')}</span>`;
 }
 
 /* 纯文本版的角色分组（导出 / 复制用，无法上色就写在括号里） */
@@ -1674,11 +1834,16 @@ function filteredChars() {
     if (ui.role !== 'all' && !(c.roles || []).includes(ui.role)) return false;
     if (ui.onlyEnabled && !c.enabled) return false;
     if (kw) {
+      /* 搜索同时吃中文与英文：角色英文名（CH_EN）、套装英文名（SET_EN）、
+         国度 / 定位的英文名都进检索池，数据语言切成英文后照样能搜到 */
       const hay = [
         c.name,
+        CH_EN[c.skey] || CH_EN[c.name] || '',
         c.builds.map(b => b.sets.join(' ')).join(' '),
-        REGION_NAME[c.region] || '',
+        c.builds.map(b => b.sets.map(s => SET_EN[s] || '').join(' ')).join(' '),
+        REGION_NAME[c.region] || '', REGION_EN[c.region] || '',
         c.roles.map(r => ROLE_NAME[r] || '').join(''),
+        c.roles.map(r => ROLE_EN[r] || '').join(''),
       ].join(' ').toLowerCase();
       if (!hay.includes(kw)) return false;
     }
@@ -1687,17 +1852,24 @@ function filteredChars() {
   return sortedCharList(list);
 }
 
-/* 角色列表的「正序」= 按国度（蒙德→璃月→…→其他），国度内沿用内置库顺序；
- * 倒序 = 整个反过来。切换只影响展示，不影响启用状态与批量结果。 */
+/* 角色列表的「正序」= 按国度（蒙德→璃月→…→其他），国度内按图鉴顺序
+ *（米游社观测枢索引：同国度内按版本登场先后，旧→新）；倒序 = 整个反过来。
+ * 切换只影响展示，不影响启用状态与批量结果。 */
 function sortedCharList(list) {
   const base = new Map();
   state.characters.forEach((c, i) => base.set(c.id, i));
   const ri = {};
   REGIONS.forEach((r, i) => { ri[r.id] = i; });
+  /* 图鉴位次：用出厂名（改名后仍准）或当前名查；不在图鉴里的自定义角色排最后 */
+  const catalogIdx = (c) => {
+    const n = CH_CATALOG_IDX[c.skey] != null ? c.skey : c.name;
+    const i = CH_CATALOG_IDX[n];
+    return i == null ? 1e8 : i;
+  };
   return applySort(list, 'char', (a, b) => {
     const ra = ri[a.region] == null ? 99 : ri[a.region];
     const rb = ri[b.region] == null ? 99 : ri[b.region];
-    return (ra - rb) ||
+    return (ra - rb) || (catalogIdx(a) - catalogIdx(b)) ||
       ((base.get(a.id) == null ? 1e9 : base.get(a.id)) - (base.get(b.id) == null ? 1e9 : base.get(b.id)));
   });
 }
@@ -1726,7 +1898,7 @@ function renderChars() {
     <div class="char-card ${c.enabled ? 'on' : ''}" data-id="${c.id}">
       <div class="cc-top">
         <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
-        <span class="cc-name">${esc(c.name)}</span>
+        <span class="cc-name" title="${esc(c.name)}">${esc(c.name)}</span>
         ${charModified(c) ? '<span class="cc-mod" title="与内置数据不同；可在角色编辑里「还原为内置数据」">已修改</span>' : ''}
         <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
       </div>
@@ -2213,14 +2385,15 @@ function drawBuildCards() {
 let pickHandler = null;
 function openPicker(title, opts, hint, onPick) {
   pickHandler = onPick;
-  $('#pickTitle').textContent = title;
-  $('#pickHint').textContent = hint || '';
+  /* 浮窗内容是动态写入的，写之前先过一遍词典 */
+  $('#pickTitle').textContent = t(title);
+  $('#pickHint').textContent = t(hint || '');
   const list = $('#pickList');
   if (!opts.length) {
     list.innerHTML = '<p class="muted small pick-empty">可选的都已经在列表里了。</p>';
   } else {
     list.innerHTML = opts.map(o =>
-      `<button type="button" class="pick-opt" data-pk="${esc(o.value)}">${esc(o.label)}</button>`).join('');
+      `<button type="button" class="pick-opt" data-pk="${esc(o.value)}">${esc(t(o.label))}</button>`).join('');
     list.querySelectorAll('[data-pk]').forEach(b => {
       b.onclick = () => { const v = b.dataset.pk; closePicker(); if (pickHandler) pickHandler(v); };
     });
@@ -2248,7 +2421,8 @@ function openBuildModal(i, isNew) {
   bmIsNew = !!isNew;
   bmDraft = JSON.parse(JSON.stringify(editing.builds[i] || freshBuild('alt')));
   bmOrig = canonBuildPrio(bmDraft);
-  $('#bmTitle').textContent = '编辑配装 ' + (i + 1) + (bmDraft.priority === 'main' ? '（主推）' : '（备选）');
+  $('#bmTitle').textContent = t('编辑配装') + ' ' + (i + 1) +
+    (bmDraft.priority === 'main' ? t('（主推）') : t('（备选）'));
   const btnRes = $('#bmRestore');
   // 新增的空组没有出厂对应，不给「还原这一组」
   btnRes.classList.toggle('hidden', !(bmDraft.bkey && factoryBuildOf(editing, bmDraft)));
@@ -2613,7 +2787,7 @@ function renderPlan() {
   });
 
   const overTip = overSets
-    ? `<div class="pick-warn">⚠️ 有 <b>${overSets}</b> 个套装采纳了超过 ${GAME_MAX_PRESET} 套方案（当前共 ${planCount} 套）。
+    ? `<div class="pick-warn" data-en="⚠️ <b>${overSets}</b> set(s) adopted more than ${GAME_MAX_PRESET} plans (${planCount} in total). A set holds <b>at most ${GAME_MAX_PRESET} custom presets</b> in game — untick some below or compress them with &quot;Merge into&hellip;&quot;.">⚠️ 有 <b>${overSets}</b> 个套装采纳了超过 ${GAME_MAX_PRESET} 套方案（当前共 ${planCount} 套）。
        游戏内每种套装<b>至多 ${GAME_MAX_PRESET} 个自定义预设</b>，请在下方取消勾选或用「并入…」压缩到 ${GAME_MAX_PRESET} 套以内。</div>`
     : '';
   $('#pickInfo').innerHTML = overTip;
@@ -2643,7 +2817,7 @@ function renderKeepRules() {
 
   wrap.innerHTML = allKeepRules().map(r => {
     const on = keepRuleEnabled(r.id);
-    const slotName = (SLOTS.find(s => s.id === r.slot) || {}).name || '';
+    const slotTxt = slotName(r.slot) || '';
     const mainsTxt = (r.mains || []).map(id => mainStatName(r.slot, id)).join(' / ') || '不限';
     const poolTxt = (r.pool || []).map(id => subStatName(id)).join('、');
     const reqTxt = (r.required || []).map(id => '★' + subStatName(id)).join('、');
@@ -2651,10 +2825,10 @@ function renderKeepRules() {
     return `
       <label class="kr-item${on ? ' on' : ''}">
         <input type="checkbox" data-kr-toggle="${esc(r.id)}"${on ? ' checked' : ''}>
-        <span class="kr-name">${esc(r.name)}</span>
-        <span class="kr-slot">${esc(slotName)}</span>
+        <span class="kr-name">${esc(keepRuleName(r.name))}</span>
+        <span class="kr-slot">${esc(slotTxt)}</span>
         ${modified ? '<span class="kr-mod" title="已改过，点「恢复默认」可还原">已修改</span>' : ''}
-        <span class="kr-cond">主要属性：${esc(mainsTxt)}${poolTxt ? `　·　追加属性：${esc(poolTxt)}` : ''}${reqTxt ? `　·　★必须：${esc(reqTxt)}` : ''}</span>
+        <span class="kr-cond">${t('主要属性：')}${esc(mainsTxt)}${poolTxt ? `　·　${t('追加属性：')}${esc(poolTxt)}` : ''}${reqTxt ? `　·　${t('★必须：')}${esc(reqTxt)}` : ''}</span>
         ${r.desc ? `<span class="kr-desc">${esc(r.desc)}</span>` : ''}
         <span class="kr-btns">
           <button type="button" class="kr-edit" data-kr-edit="${esc(r.id)}" title="修改这条规则">编辑</button>
@@ -2673,7 +2847,9 @@ function renderKeepRules() {
 }
 
 function renderSetBlock(name, b, slotFilter, setWeights) {
-  const bonus = allSetBonus()[name] || '';
+  const bonusRaw = allSetBonus()[name] || '';
+  // 内置 2 件套说明跟着数据语言走；你自己改过的那条原样显示
+  const bonus = (SET_BONUS[name] && SET_BONUS[name] === bonusRaw) ? setBonusText(name) : bonusRaw;
   const users = Array.from(b.users.entries());
   const unused = users.length === 0;
 
@@ -2704,7 +2880,7 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
             <span class="tier-tag ${tierClass(r.tier)}">${tierLabel(r.tier)}</span>
           </div>
           ${topSubs ? `<div class="sub-hint-row">追加属性优先：<b>${esc(topSubs)}</b></div>` : ''}
-          <div class="req-from">${r.charsArr.map(x => `<span class="fn ${x.alt ? 'alt' : ''}">${esc(x.name)}${x.alt ? '·备选' : ''}</span>`).join('')}</div>`;
+          <div class="req-from">${r.charsArr.map(x => `<span class="fn ${x.alt ? 'alt' : ''}">${esc(charName(x.name))}${x.alt ? '·' + t('备选') : ''}</span>`).join('')}</div>`;
         return slotRow(sd, inner);
       }
 
@@ -2720,7 +2896,7 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
           ${rare ? '<span class="rare-tag">稀有·建议多留</span>' : ''}
           <span class="keep-n">建议保留 <b>${r.keep}</b> 件</span>
         </div>
-        <div class="req-from">${r.charsArr.map(x => `<span class="fn ${x.alt ? 'alt' : ''}">${esc(x.name)}${x.rank > 1 ? '·次选' : ''}${x.alt ? '·备选' : ''}</span>`).join('')}</div>`;
+        <div class="req-from">${r.charsArr.map(x => `<span class="fn ${x.alt ? 'alt' : ''}">${esc(charName(x.name))}${x.rank > 1 ? '·' + t('次选') : ''}${x.alt ? '·' + t('备选') : ''}</span>`).join('')}</div>`;
       }).join('');
       return slotRow(sd, inner);
     }).join('');
@@ -2733,12 +2909,12 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
   return `
   <div class="set-block ${unused ? 'unused' : ''}">
     <div class="set-head">
-      <h3>${esc(name)}</h3>
+      <h3>${esc(setName(name))}</h3>
       <span class="set-bonus">${esc(bonus)}</span>
       <span class="set-users">
         ${unused
           ? '<span class="tier-tag fodder">无角色需要 · 可整套清理</span>'
-          : users.map(([n, i]) => `<span class="user-pill ${i.alt ? 'alt' : ''}">${esc(n)}${i.alt ? '·备选' : ''}</span>`).join('')}
+          : users.map(([n, i]) => `<span class="user-pill ${i.alt ? 'alt' : ''}">${esc(charName(n))}${i.alt ? '·' + t('备选') : ''}</span>`).join('')}
       </span>
     </div>
     ${gpHtml}
@@ -2830,27 +3006,32 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
   const ruleCnt = cands.filter(p => p.kind === 'rule').length;
   const charCnt = cands.length - ruleCnt;
 
+  const metaTxt = t('共 {n} 个候选（角色组 {c} · 散件规则 {r}）')
+    .split('{n}').join(String(cands.length))
+    .split('{c}').join(String(charCnt))
+    .split('{r}').join(String(ruleCnt));
+  const pickTxt = t('已采纳 {p} / 游戏上限 {m}')
+    .split('{p}').join('<b>' + picked + '</b>')
+    .split('{m}').join(String(GAME_MAX_PRESET));
+
   return `
   <div class="gp-wrap">
     <div class="gp-head">
-      <span class="gp-title">🎮 游戏内锁定方案候选</span>
-      <span class="gp-meta${over ? ' warn' : ''}">
-        共 ${cands.length} 个候选（角色组 ${charCnt} · 散件规则 ${ruleCnt}）　·
-        已采纳 <b>${picked}</b> / 游戏上限 ${GAME_MAX_PRESET}${over ? ' ⚠️' : ''}
-      </span>
+      <span class="gp-title">${t('🎮 游戏内锁定方案候选')}</span>
+      <span class="gp-meta${over ? ' warn' : ''}">${metaTxt}　· ${pickTxt}${over ? ' ⚠️' : ''}</span>
     </div>
-    <p class="gp-lead">候选按角色的<b>重要属性</b>（如双暴）自动合并——重要属性相同就并为一套，次要属性（攻击% / 生命% / 防御%）不同的角色用<b>颜色</b>区分标注；
+    <p class="gp-lead" data-en="Candidates are merged automatically by each character's <b>key stats</b> (CRIT, for example): same key stats merge into one plan; characters that differ only in <b>minor</b> stats (ATK% / HP% / DEF%) are told apart by <b>colour</b>. Supports (Energy Recharge / HP / Elemental Mastery) whose key stats differ are split automatically — <b>fully automatic, no tuning needed</b>. All five slots of a plan share <b>one substat condition</b>, while main stats are merged per slot; the hit count <b>defaults to &quot;at least 2&quot;</b> and can be set to 1&ndash;4 per plan below. Too many candidates? merge them with &quot;Merge into&hellip;&quot; or untick &quot;Adopt&quot;.">候选按角色的<b>重要属性</b>（如双暴）自动合并——重要属性相同就并为一套，次要属性（攻击% / 生命% / 防御%）不同的角色用<b>颜色</b>区分标注；
       辅助（充能 / 生命 / 精通）重要属性不同，会自动拆开，<b>全自动、无需调参</b>。
       每个方案的<b>五个部位共用同一份追加属性条件</b>，主要属性逐部位独立合并；命中条数<b>默认「至少两条」</b>，可在下方单独调到 1–4 做更细的筛选；觉得候选多了就用「并入…」合并、或取消勾选「采纳」。</p>
     <div class="gp-cards">${cards}</div>
-    <p class="gp-tip">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上方逐套设置；
+    <p class="gp-tip" data-en="In game: Inventory &rarr; Artifacts &rarr; Lock &rarr; pick this set &rarr; Edit, then set them up one by one as above. Each set takes <b>at most ${GAME_MAX_PRESET} custom presets</b> in game, so keep it tidy yourself. Artifacts with only 3 substats need one fewer.">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上方逐套设置；
       每种套装游戏内<b>至多 ${GAME_MAX_PRESET} 个自定义预设</b>，请自行收敛。仅有 3 条追加属性的圣遗物，所需数量会自动减 1。</p>
   </div>`;
 }
 
 /* 「并入…」下拉里的目标名：规则优先取规则名，角色组取前几个人名 */
 function mergeTargetLabel(q) {
-  if (q.kind === 'rule') return '🧩 ' + q.ruleName;
+  if (q.kind === 'rule') return '🧩 ' + keepRuleName(q.ruleName);
   const names = q.chars || [];
   const txt = names.length > 3 ? `${names.slice(0, 3).join('、')} 等 ${names.length} 人` : names.join('、');
   return (q.mergedCount ? `[合并${q.mergedCount}] ` : '') + (txt || '（空）');
@@ -2983,7 +3164,7 @@ function renderSubs() {
       <h4>C 级 · 狗粮</h4>
       <p>主要属性不在任何已启用角色的需求列表中。<br>操作：直接喂。<span class="hint">例外：同套装的对应元素伤害杯极难出货，建议无脑保留。</span></p>
     </div>
-    <p class="muted small" style="margin-top:14px">${n ? '当前已启用 ' + n + ' 个角色，下方评分器按这些角色的追加属性<b>需求排序</b>打分（按配装组统计）。' : '尚未启用角色，评分器暂用「双暴输出」默认排序。'}</p>`;
+    <p class="muted small" style="margin-top:14px" data-en="${n ? `The scorer below ranks substats by what these <b>${n}</b> enabled characters need (counted per build).` : 'No character enabled yet — the scorer falls back to the default &quot;CRIT&quot; ordering.'}">${n ? '当前已启用 ' + n + ' 个角色，下方评分器按这些角色的追加属性<b>需求排序</b>打分（按配装组统计）。' : '尚未启用角色，评分器暂用「双暴输出」默认排序。'}</p>`;
 
   // 评分器：初始化
   const sS = $('#scoreSet'), sL = $('#scoreSlot');
@@ -3088,8 +3269,8 @@ function runScore() {
   }
 
   const tierTxt = setName
-    ? (tier ? `<span class="tier-tag ${tierClass(tier)}">主要属性：${tierLabel(tier)}</span> 建议保留 ${keep} 件${who.length ? '（' + esc(who.join('、')) + '）' : ''}`
-            : '<span class="tier-tag fodder">主要属性：无角色需要</span> 当前配装用不上')
+    ? (tier ? `<span class="tier-tag ${tierClass(tier)}">${t('主要属性：')}${tierLabel(tier)}</span> ${t('建议保留')} ${keep} ${t('件')}${who.length ? '（' + esc(who.join('、')) + '）' : ''}`
+            : `<span class="tier-tag fodder">${t('主要属性：')}${t('无角色需要')}</span> ${t('当前配装用不上')}`)
     : '<span class="muted small">未选择套装，只做追加属性评分</span>';
 
   const top = detail.slice(0, 4).map(d =>
@@ -3117,16 +3298,16 @@ function renderSetSubTable() {
       const bars = top.map(t =>
         `<div style="display:flex;align-items:center;gap:5px;margin:2px 0"><span class="wbar" style="width:${Math.max(2, (t.score / max) * 90)}px"></span></div>`).join('');
       return `<tr>
-        <td style="white-space:nowrap">${esc(setName)}<span class="muted small"> ×${o.n}</span></td>
+        <td class="col-set" style="white-space:nowrap">${esc(setName)}<span class="muted small"> ×${o.n}</span></td>
         <td>${tags}</td>
-        <td style="width:130px">${bars}</td>
+        <td class="col-str" style="width:130px">${bars}</td>
       </tr>`;
     }).join('');
 
   $('#setSubTable').innerHTML =
     `<div class="sort-bar">${sortBtnHtml('setSub', true)}</div>` +
     (rows
-      ? `<table class="tbl"><thead><tr><th>套装</th><th>追加属性需求排序 Top5（★= 多数角色标为必选）</th><th>相对强度</th></tr></thead><tbody>${rows}</tbody></table>`
+      ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>套装</th><th>追加属性需求排序 Top5（★= 多数角色标为必选）</th><th class="col-str">相对强度</th></tr></thead><tbody>${rows}</tbody></table></div>`
       : '<p class="muted small">启用角色后这里会显示每个套装的追加属性需求排序。</p>');
 }
 
@@ -3365,6 +3546,11 @@ function bind() {
     if (b) toggleSort(b.dataset.sort);
   });
 
+  // 语言切换：显示语言（界面文案）/ 数据语言（角色 · 套装 · 属性）各自独立
+  const uiSel = $('#uiLangSel'), dataSel = $('#dataLangSel');
+  if (uiSel) { uiSel.value = langOf('ui'); uiSel.onchange = e => setLang('ui', e.target.value); }
+  if (dataSel) { dataSel.value = langOf('data'); dataSel.onchange = e => setLang('data', e.target.value); }
+
   // 角色页筛选
   $('#charSearch').oninput = e => { ui.search = e.target.value; renderChars(); };
   $('#onlyEnabled').onchange = e => { ui.onlyEnabled = e.target.checked; renderChars(); };
@@ -3566,8 +3752,10 @@ function bind() {
   renderKeepRules();
   applyKrFold();
 
+  /* 复制 / 导出一律走中文：游戏内的锁定界面是中文，照抄的清单得跟着游戏走，
+   * 不能因为界面切了 English 就变成一串英文。 */
   $('#btnCopyGame').onclick = async () => {
-    const txt = gamePlansToText();
+    const txt = withZh(() => gamePlansToText());
     try { await navigator.clipboard.writeText(txt); toast('游戏内方案已复制'); }
     catch (e) { fallbackCopy(txt); }
   };
@@ -3654,19 +3842,19 @@ function bind() {
     const list = candsOf(setName);
     const idx = list.findIndex(p => p.key === key);
     if (idx < 0) return;
-    const txt = `【${setName}】\n` + planCopyText(setName, list[idx], idx);
+    const txt = withZh(() => `【${setName}】\n` + planCopyText(setName, list[idx], idx));
     navigator.clipboard.writeText(txt)
       .then(() => toast(`已复制「${setName}」的该方案`))
       .catch(() => fallbackCopy(txt));
   }
 
   $('#btnCopyPlan').onclick = async () => {
-    const txt = planToText();
+    const txt = withZh(() => planToText());
     try { await navigator.clipboard.writeText(txt); toast('清单已复制到剪贴板'); }
     catch (e) { fallbackCopy(txt); }
   };
   $('#btnCsvPlan').onclick = () => {
-    download('圣遗物锁定方案.csv', planToCsv(), 'text/csv;charset=utf-8');
+    download('圣遗物锁定方案.csv', withZh(() => planToCsv()), 'text/csv;charset=utf-8');
     toast('CSV 已导出（Excel 可直接打开）');
   };
   $('#btnPrint').onclick = () => window.print();
@@ -3786,6 +3974,7 @@ function syncTopbarHeight() {
 (function init() {
   state = load();
   if (pendingMigrate) { save(); pendingMigrate = null; }   // 固化从默认数据的回填
+  pushLang();                     // 语言开关同步给 data.js 的取值函数
   bind();
   // 老存档补 bkey：没有指纹就没法判定「这一组还是不是内置原样」，也就没法单组还原
   const bfN = backfillBkeys();
@@ -3799,6 +3988,8 @@ function syncTopbarHeight() {
   renderSets();
   renderDataChangelog();
   maybeShowNotice();
+  applyI18n();                    // 按当前语言把整页文案过一遍
+  startI18nObserver();            // 之后动态插入的内容自动跟着走
   syncTopbarHeight();
   window.addEventListener('resize', syncTopbarHeight);
   window.addEventListener('orientationchange', () => setTimeout(syncTopbarHeight, 120));

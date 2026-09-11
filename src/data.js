@@ -9,8 +9,24 @@
  * CHANGELOG：新在前，CHANGELOG[0].v 必须等于 APP_VERSION。items 为纯文本（渲染时会 esc）。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.14';
+const APP_VERSION = '2026.09.15';
 const CHANGELOG = [
+  {
+    v: '2026.09.15', date: '2026-09-15',
+    title: '中英文切换（显示语言 / 数据语言）+ 角色与圣遗物按图鉴核对',
+    items: [
+      '顶栏右上角新增两个独立开关：显示语言管界面文案，数据语言管角色 / 套装 / 属性等数据本身，两者可分别设置并记住。',
+      '数据语言切 English 后显示官方英文名（胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），元素 / 国度 / 定位 / 部位 / 词条 / 预设同步跟随。',
+      '搜索框中英文都认：不管当前显示哪种，输入「胡桃」或「Hu Tao」、「Marechaussee」都能搜到。',
+      '复制 / 导出的文本始终保持中文，与游戏内锁定界面一致；更新日志是历史记录，保留中文不翻译。',
+      '按米游社图鉴核对圣遗物：五星套装由 45 套订正为 46 套，顺序改为网页顺序（最新版本在前，血红之证 → … → 冰风迷途的勇士）。',
+      '订正两个套装名：「水仙十字之圣遗物」→ 逐影猎人（2 件套同为普攻/重击+15%），「戍卫之誓」→ 角斗士的终幕礼（开服套装，攻击力+18%），并新增图鉴里的「水仙之梦」。',
+      '老存档里配装引用到的旧套装名会自动改成新名，你自己改过的配装不受影响。',
+      '按《原神全角色列表（按国度）》核对 124 条角色：数量一致，顺序改为图鉴顺序（国度 → 版本登场先后），兹白按实装版本 6.3 排到蓝砚之后；全部角色补录官方英文名。',
+      '② 方案页里混着数字 / 角色名的动态文案也跟着走英文：候选计数、「供 X 使用」、散件规则名（元素伤害杯 → Elemental DMG Goblet）、2 件套说明（攻击力+18% → ATK +18%）。',
+      '英文态窄屏不再被长套装名撑出横向滚动条：③ 表格自带横向滚动，手机宽度下还会自动让出「相对强度」那列。',
+    ],
+  },
   {
     v: '2026.09.14', date: '2026-09-14',
     title: '套装列表可切换「图鉴 / 推荐」两种排序依据',
@@ -248,64 +264,95 @@ const KEEP_RULES = [
   },
 ];
 
-/* ---------- 圣遗物套装 ---------- */
-// bonus: 2件套效果简述（用于 2+2 搭配参考）
+/* 内置散件 / 过渡规则的英文名（自定义规则原样显示） */
+const KEEP_RULE_EN = {
+  '元素伤害杯': 'Elemental DMG Goblet',
+  '双暴头': 'CRIT Circlet',
+  '充能沙': 'Energy Recharge Sands',
+  '精通杯': 'Elemental Mastery Goblet',
+};
+
+/* ---------- 圣遗物套装 ----------
+ * 共 46 套（五星 / 金色），顺序 = 米游社观测枢「圣遗物图鉴」筛选五星后的网页顺序，
+ * 即收录时间倒序：最新版本在最前（至冬 7.0 血红之证）→ 开服老套装在最后（冰风迷途的勇士）。
+ *   name  中文名（官方）
+ *   en    英文名（官方英文本地化）
+ *   bonus 2件套效果简述（用于 2+2 搭配参考）
+ */
 const SETS = [
-  { name: '翠绿之影',             bonus: '风元素伤害+15%' },
-  { name: '炽烈的炎之魔女',       bonus: '火元素伤害+15%' },
-  { name: '如雷的盛怒',           bonus: '雷元素伤害+15%' },
-  { name: '平息鸣雷的尊者',       bonus: '受到的雷元素伤害-40%' },
-  { name: '渡过烈火的贤人',       bonus: '受到的火元素伤害-40%' },
-  { name: '冰风迷途的勇士',       bonus: '冰元素伤害+15%' },
-  { name: '被怜爱的少女',         bonus: '治疗加成+15%' },
-  { name: '昔日宗室之仪',         bonus: '元素爆发伤害+20%' },
-  { name: '流浪大地的乐团',       bonus: '元素精通+80' },
-  { name: '沉沦之心',             bonus: '水元素伤害+15%' },
-  { name: '苍白之火',             bonus: '物理伤害+25%' },
-  { name: '染血的骑士道',         bonus: '物理伤害+25%' },
-  { name: '千岩牢固',             bonus: '生命值+20%' },
-  { name: '逆飞的流星',           bonus: '护盾强效+35%' },
-  { name: '悠古的磐岩',           bonus: '岩元素伤害+15%' },
-  { name: '绝缘之旗印',           bonus: '元素充能效率+20%' },
-  { name: '追忆之注连',           bonus: '攻击力+18%' },
-  { name: '华馆梦醒形骸记',       bonus: '防御力+30%' },
-  { name: '海染砗磲',             bonus: '治疗加成+15%' },
-  { name: '辰砂往生录',           bonus: '攻击力+18%' },
-  { name: '来歆余响',             bonus: '攻击力+18%' },
-  { name: '深林的记忆',           bonus: '草元素伤害+15%' },
-  { name: '饰金之梦',             bonus: '元素精通+80' },
-  { name: '乐园遗落之花',         bonus: '元素精通+80' },
-  { name: '沙上楼阁史话',         bonus: '风元素伤害+15%' },
-  { name: '水仙十字之圣遗物',     bonus: '普通攻击/重击伤害+15%' },
-  { name: '花海甘露之光',         bonus: '生命值+20%' },
-  { name: '昔时之歌',             bonus: '治疗加成+15%' },
-  { name: '回声之林夜话',         bonus: '攻击力+18%' },
-  { name: '谐律异想断章',         bonus: '攻击力+18%' },
-  { name: '未竟的遐思',           bonus: '攻击力+18%' },
-  { name: '黄金剧团',             bonus: '元素战技伤害+20%' },
-  { name: '黑曜秘典',             bonus: '夜魂加持下伤害+15%' },
-  { name: '烬城勇者绘卷',         bonus: '元素战技/爆发伤害+15%' },
-  { name: '长夜之誓',             bonus: '下落攻击伤害+25%' },
-  { name: '深廊终曲',             bonus: '冰元素伤害+15%' },
-  { name: '戍卫之誓',             bonus: '攻击力+18%' },
-  /* ---- 6.0 挪德卡莱 ---- */
-  { name: '纺月的夜歌',           bonus: '元素充能效率+20%' },
-  { name: '穹境示现之夜',         bonus: '元素精通+80' },
-  /* ---- 6.3 月之四 ---- */
-  { name: '晨星与月的晓歌',       bonus: '元素精通+80' },
-  /* ---- 6.3/6.4 风起之日 ---- */
-  { name: '风起之日',             bonus: '攻击力+18%' },
-  /* ---- 6.6 天之美赐 ---- */
-  { name: '天之美赐',             bonus: '元素充能效率+20%' },
-  /* ---- 6.6 影中沉凝的幻灭 ---- */
-  { name: '影中沉凝的幻灭',       bonus: '攻击力+18%' },
-  /* ---- 7.0 炉火融炼之心 ---- */
-  { name: '炉火融炼之心',         bonus: '攻击力+18%' },
-  /* ---- 7.0 血红之证（备用） ---- */
-  { name: '血红之证',             bonus: '攻击力+18%' },
+  /* ---- 至冬 7.0「无神怜爱的雪国」 ---- */
+  { name: '血红之证',           en: 'Scarlet Proof',                        bonus: '攻击力+18%' },
+  { name: '炉火融炼之心',       en: 'Heart of the Furnace',                 bonus: '攻击力+18%' },
+  /* ---- 6.6「虚空劫灰往世书」 ---- */
+  { name: '影中沉凝的幻灭',     en: 'Disenchantment in Deep Shadow',        bonus: '攻击力+18%' },
+  { name: '天之美赐',           en: 'Celestial Gift',                       bonus: '元素充能效率+20%' },
+  /* ---- 6.3「月之四」 ---- */
+  { name: '晨星与月的晓歌',     en: 'Aubade of Morningstar and Moon',       bonus: '元素精通+80' },
+  { name: '风起之日',           en: 'A Day Carved From Rising Winds',       bonus: '攻击力+18%' },
+  /* ---- 6.0「月之一」挪德卡莱 ---- */
+  { name: '穹境示现之夜',       en: "Night of the Sky's Unveiling",         bonus: '元素精通+80' },
+  { name: '纺月的夜歌',         en: "Silken Moon's Serenade",               bonus: '元素充能效率+20%' },
+  /* ---- 5.x 纳塔 ---- */
+  { name: '长夜之誓',           en: "Long Night's Oath",                    bonus: '下落攻击伤害+25%' },
+  { name: '深廊终曲',           en: 'Finale of the Deep Galleries',         bonus: '冰元素伤害+15%' },
+  { name: '黑曜秘典',           en: 'Obsidian Codex',                       bonus: '夜魂加持下伤害+15%' },
+  { name: '烬城勇者绘卷',       en: 'Scroll of the Hero of Cinder City',    bonus: '元素战技/爆发伤害+15%' },
+  /* ---- 4.x 枫丹 ---- */
+  { name: '未竟的遐思',         en: 'Unfinished Reverie',                   bonus: '攻击力+18%' },
+  { name: '谐律异想断章',       en: 'Fragment of Harmonic Whimsy',          bonus: '攻击力+18%' },
+  { name: '回声之林夜话',       en: 'Nighttime Whispers in the Echoing Woods', bonus: '攻击力+18%' },
+  { name: '昔时之歌',           en: 'Song of Days Past',                    bonus: '治疗加成+15%' },
+  { name: '逐影猎人',           en: 'Marechaussee Hunter',                  bonus: '普通攻击/重击伤害+15%' },
+  { name: '黄金剧团',           en: 'Golden Troupe',                        bonus: '元素战技伤害+20%' },
+  /* ---- 3.x 须弥 ---- */
+  { name: '花海甘露之光',       en: "Vourukasha's Glow",                    bonus: '生命值+20%' },
+  { name: '水仙之梦',           en: "Nymph's Dream",                        bonus: '水元素伤害+15%' },
+  { name: '乐园遗落之花',       en: 'Flower of Paradise Lost',              bonus: '元素精通+80' },
+  { name: '沙上楼阁史话',       en: 'Desert Pavilion Chronicle',            bonus: '风元素伤害+15%' },
+  { name: '深林的记忆',         en: 'Deepwood Memories',                    bonus: '草元素伤害+15%' },
+  { name: '饰金之梦',           en: 'Gilded Dreams',                        bonus: '元素精通+80' },
+  /* ---- 2.x 稻妻 / 璃月 ---- */
+  { name: '辰砂往生录',         en: 'Vermillion Hereafter',                 bonus: '攻击力+18%' },
+  { name: '来歆余响',           en: 'Echoes of an Offering',                bonus: '攻击力+18%' },
+  { name: '华馆梦醒形骸记',     en: 'Husk of Opulent Dreams',               bonus: '防御力+30%' },
+  { name: '海染砗磲',           en: 'Ocean-Hued Clam',                      bonus: '治疗加成+15%' },
+  { name: '绝缘之旗印',         en: 'Emblem of Severed Fate',               bonus: '元素充能效率+20%' },
+  { name: '追忆之注连',         en: "Shimenawa's Reminiscence",             bonus: '攻击力+18%' },
+  /* ---- 1.x 开服系列（含 1.5） ---- */
+  { name: '千岩牢固',           en: 'Tenacity of the Millelith',            bonus: '生命值+20%' },
+  { name: '苍白之火',           en: 'Pale Flame',                           bonus: '物理伤害+25%' },
+  { name: '平息鸣雷的尊者',     en: 'Thundersoother',                       bonus: '受到的雷元素伤害-40%' },
+  { name: '炽烈的炎之魔女',     en: 'Crimson Witch of Flames',              bonus: '火元素伤害+15%' },
+  { name: '流浪大地的乐团',     en: "Wanderer's Troupe",                    bonus: '元素精通+80' },
+  { name: '染血的骑士道',       en: 'Bloodstained Chivalry',                bonus: '物理伤害+25%' },
+  { name: '被怜爱的少女',       en: 'Maiden Beloved',                       bonus: '治疗加成+15%' },
+  { name: '角斗士的终幕礼',     en: "Gladiator's Finale",                   bonus: '攻击力+18%' },
+  { name: '渡过烈火的贤人',     en: 'Lavawalker',                           bonus: '受到的火元素伤害-40%' },
+  { name: '悠古的磐岩',         en: 'Archaic Petra',                        bonus: '岩元素伤害+15%' },
+  { name: '如雷的盛怒',         en: 'Thundering Fury',                      bonus: '雷元素伤害+15%' },
+  { name: '沉沦之心',           en: 'Heart of Depth',                       bonus: '水元素伤害+15%' },
+  { name: '逆飞的流星',         en: 'Retracing Bolide',                     bonus: '护盾强效+35%' },
+  { name: '昔日宗室之仪',       en: 'Noblesse Oblige',                      bonus: '元素爆发伤害+20%' },
+  { name: '翠绿之影',           en: 'Viridescent Venerer',                  bonus: '风元素伤害+15%' },
+  { name: '冰风迷途的勇士',     en: 'Blizzard Strayer',                     bonus: '冰元素伤害+15%' },
 ];
 const SET_NAMES = SETS.map(s => s.name);
 const SET_BONUS = Object.fromEntries(SETS.map(s => [s.name, s.bonus]));
+/* 中文名 → 官方英文名（自定义套装没有英文名，显示时回退到原名） */
+const SET_EN = Object.fromEntries(SETS.filter(s => s.en).map(s => [s.name, s.en]));
+
+/* 套装改名对照（内置库订正用，老存档里的引用靠它一次性改过来）
+ *  - 水仙十字之圣遗物 → 逐影猎人：图鉴官方名为「逐影猎人」Marechaussee Hunter，
+ *    2 件套同为「普通攻击与重击伤害+15%」，此前误用了剧情道具名。
+ *  - 戍卫之誓 → 角斗士的终幕礼：图鉴 46 套中并无「戍卫之誓」，
+ *    其 2 件套「攻击力+18%」与开服套装「角斗士的终幕礼」Gladiator's Finale 一致。
+ */
+const SET_RENAME = {
+  '水仙十字之圣遗物': '逐影猎人',
+  '戍卫之誓': '角斗士的终幕礼',
+};
+/* 改名的 epoch：老存档首次加载时把引用里的旧名换成新名（只跑一次） */
+const SET_EPOCH = 1;
 
 /* ---------- 追加属性需求预设 ----------
  * 用【排序 + 必选 + 重要度算子】表达，不再使用数值权重：
@@ -353,122 +400,377 @@ function toSubs(list) {
  * 格式 '角色名': [ 国度, [定位...] ]
  * 定位第一个为主定位，用于卡片显示；批量筛选时任一命中即选中
  * ============================================================ */
+/* ---------- 角色英文名 ----------
+ * 采用米哈游官方英文本地化名（核对自 Genshin Impact Wiki / 萌娘百科角色模块）。
+ * 旅行者按元素形态分别给出：Traveler (Anemo) / (Geo) / (Electro) / (Dendro) / (Hydro) / (Pyro)。
+ */
+const CH_EN = {
+  '安柏': 'Amber',
+  '凯亚': 'Kaeya',
+  '丽莎': 'Lisa',
+  '芭芭拉': 'Barbara',
+  '琴': 'Jean',
+  '可莉': 'Klee',
+  '诺艾尔': 'Noelle',
+  '菲谢尔': 'Fischl',
+  '砂糖': 'Sucrose',
+  '莫娜': 'Mona',
+  '迪奥娜': 'Diona',
+  '雷泽': 'Razor',
+  '温迪': 'Venti',
+  '班尼特': 'Bennett',
+  '迪卢克': 'Diluc',
+  '阿贝多': 'Albedo',
+  '罗莎莉亚': 'Rosaria',
+  '优菈': 'Eula',
+  '埃洛伊': 'Aloy',
+  '米卡': 'Mika',
+  '法尔伽': 'Varka',
+  '塔利雅': 'Dahlia',
+  '杜林': 'Durin',
+  '洛恩': 'Lohen',
+  '尼可': 'Nicole',
+  '布伦妮': 'Prune',
+  '北斗': 'Beidou',
+  '凝光': 'Ningguang',
+  '香菱': 'Xiangling',
+  '行秋': 'Xingqiu',
+  '重云': 'Chongyun',
+  '刻晴': 'Keqing',
+  '七七': 'Qiqi',
+  '钟离': 'Zhongli',
+  '辛焱': 'Xinyan',
+  '甘雨': 'Ganyu',
+  '魈': 'Xiao',
+  '胡桃': 'Hu Tao',
+  '烟绯': 'Yanfei',
+  '申鹤': 'Shenhe',
+  '云堇': 'Yun Jin',
+  '夜兰': 'Yelan',
+  '瑶瑶': 'Yaoyao',
+  '白术': 'Baizhu',
+  '闲云': 'Xianyun',
+  '嘉明': 'Gaming',
+  '蓝砚': 'Lan Yan',
+  '兹白': 'Zibai',
+  '神里绫华': 'Kamisato Ayaka',
+  '枫原万叶': 'Kaedehara Kazuha',
+  '宵宫': 'Yoimiya',
+  '早柚': 'Sayu',
+  '雷电将军': 'Raiden Shogun',
+  '九条裟罗': 'Kujou Sara',
+  '珊瑚宫心海': 'Sangonomiya Kokomi',
+  '托马': 'Thoma',
+  '荒泷一斗': 'Arataki Itto',
+  '五郎': 'Gorou',
+  '八重神子': 'Yae Miko',
+  '神里绫人': 'Kamisato Ayato',
+  '久岐忍': 'Kuki Shinobu',
+  '鹿野院平藏': 'Shikanoin Heizou',
+  '绮良良': 'Kirara',
+  '梦见月瑞希': 'Yumemizuki Mizuki',
+  '提纳里': 'Tighnari',
+  '柯莱': 'Collei',
+  '赛诺': 'Cyno',
+  '坎蒂丝': 'Candace',
+  '多莉': 'Dori',
+  '妮露': 'Nilou',
+  '纳西妲': 'Nahida',
+  '艾尔海森': 'Alhaitham',
+  '莱依拉': 'Layla',
+  '流浪者': 'Wanderer',
+  '珐露珊': 'Faruzan',
+  '迪希雅': 'Dehya',
+  '卡维': 'Kaveh',
+  '赛索斯': 'Sethos',
+  '林尼': 'Lyney',
+  '琳妮特': 'Lynette',
+  '菲米尼': 'Freminet',
+  '那维莱特': 'Neuvillette',
+  '莱欧斯利': 'Wriothesley',
+  '芙宁娜': 'Furina',
+  '夏洛蒂': 'Charlotte',
+  '娜维娅': 'Navia',
+  '夏沃蕾': 'Chevreuse',
+  '克洛琳德': 'Clorinde',
+  '希格雯': 'Sigewinne',
+  '艾梅莉埃': 'Emilie',
+  '千织': 'Chiori',
+  '爱可菲': 'Escoffier',
+  '玛拉妮': 'Mualani',
+  '卡齐娜': 'Kachina',
+  '基尼奇': 'Kinich',
+  '希诺宁': 'Xilonen',
+  '恰斯卡': 'Chasca',
+  '欧洛伦': 'Ororon',
+  '玛薇卡': 'Mavuika',
+  '茜特菈莉': 'Citlali',
+  '伊安珊': 'Iansan',
+  '瓦雷莎': 'Varesa',
+  '伊法': 'Ifa',
+  '莉奈娅': 'Linnea',
+  '叶洛亚': 'Illuga',
+  '哥伦比娅': 'Columbina',
+  '雅珂达': 'Jahoda',
+  '奈芙尔': 'Nefer',
+  '菲林斯': 'Flins',
+  '菈乌玛': 'Lauma',
+  '爱诺': 'Aino',
+  '伊涅芙': 'Ineffa',
+  '达达利亚': 'Tartaglia',
+  '阿蕾奇诺': 'Arlecchino',
+  '桑多涅': 'Sandrone',
+  '奥黛塔': 'Odette',
+  '阿罗夏': 'Alyosha',
+  '丝柯克': 'Skirk',
+  '旅行者·风': 'Traveler (Anemo)',
+  '旅行者·岩': 'Traveler (Geo)',
+  '旅行者·雷': 'Traveler (Electro)',
+  '旅行者·草': 'Traveler (Dendro)',
+  '旅行者·水': 'Traveler (Hydro)',
+  '旅行者·火': 'Traveler (Pyro)',
+};
+
+/* 图鉴顺序（= 米游社观测枢角色索引：按国度 → 版本登场先后（旧→新））
+ * 角色列表「正序」时国度内按此顺序排；不在此表里的自定义角色排在该国度最后。 */
+const CH_CATALOG = [
+  '安柏',
+  '凯亚',
+  '丽莎',
+  '芭芭拉',
+  '琴',
+  '可莉',
+  '诺艾尔',
+  '菲谢尔',
+  '砂糖',
+  '莫娜',
+  '迪奥娜',
+  '雷泽',
+  '温迪',
+  '班尼特',
+  '迪卢克',
+  '阿贝多',
+  '罗莎莉亚',
+  '优菈',
+  '埃洛伊',
+  '米卡',
+  '法尔伽',
+  '塔利雅',
+  '杜林',
+  '洛恩',
+  '尼可',
+  '布伦妮',
+  '北斗',
+  '凝光',
+  '香菱',
+  '行秋',
+  '重云',
+  '刻晴',
+  '七七',
+  '钟离',
+  '辛焱',
+  '甘雨',
+  '魈',
+  '胡桃',
+  '烟绯',
+  '申鹤',
+  '云堇',
+  '夜兰',
+  '瑶瑶',
+  '白术',
+  '闲云',
+  '嘉明',
+  '蓝砚',
+  '兹白',
+  '神里绫华',
+  '枫原万叶',
+  '宵宫',
+  '早柚',
+  '雷电将军',
+  '九条裟罗',
+  '珊瑚宫心海',
+  '托马',
+  '荒泷一斗',
+  '五郎',
+  '八重神子',
+  '神里绫人',
+  '久岐忍',
+  '鹿野院平藏',
+  '绮良良',
+  '梦见月瑞希',
+  '提纳里',
+  '柯莱',
+  '赛诺',
+  '坎蒂丝',
+  '多莉',
+  '妮露',
+  '纳西妲',
+  '艾尔海森',
+  '莱依拉',
+  '流浪者',
+  '珐露珊',
+  '迪希雅',
+  '卡维',
+  '赛索斯',
+  '林尼',
+  '琳妮特',
+  '菲米尼',
+  '那维莱特',
+  '莱欧斯利',
+  '芙宁娜',
+  '夏洛蒂',
+  '娜维娅',
+  '夏沃蕾',
+  '克洛琳德',
+  '希格雯',
+  '艾梅莉埃',
+  '千织',
+  '爱可菲',
+  '玛拉妮',
+  '卡齐娜',
+  '基尼奇',
+  '希诺宁',
+  '恰斯卡',
+  '欧洛伦',
+  '玛薇卡',
+  '茜特菈莉',
+  '伊安珊',
+  '瓦雷莎',
+  '伊法',
+  '莉奈娅',
+  '叶洛亚',
+  '哥伦比娅',
+  '雅珂达',
+  '奈芙尔',
+  '菲林斯',
+  '菈乌玛',
+  '爱诺',
+  '伊涅芙',
+  '达达利亚',
+  '阿蕾奇诺',
+  '桑多涅',
+  '奥黛塔',
+  '阿罗夏',
+  '丝柯克',
+  '旅行者·风',
+  '旅行者·岩',
+  '旅行者·雷',
+  '旅行者·草',
+  '旅行者·水',
+  '旅行者·火',
+];
+const CH_CATALOG_IDX = Object.fromEntries(CH_CATALOG.map((n, i) => [n, i]));
+
 const CH_META = {
   /* ---------- 蒙德 Mondstadt（26） ---------- */
+  '安柏': ['mondstadt', ['support']],
+  '凯亚': ['mondstadt', ['subdps']],
+  '丽莎': ['mondstadt', ['subdps']],
+  '芭芭拉': ['mondstadt', ['support']],
   '琴': ['mondstadt', ['support']],
-  '迪卢克': ['mondstadt', ['maindps']],
   '可莉': ['mondstadt', ['maindps']],
-  '温迪': ['mondstadt', ['support']],
-  '班尼特': ['mondstadt', ['support', 'subdps']],
+  '诺艾尔': ['mondstadt', ['maindps']],
+  '菲谢尔': ['mondstadt', ['subdps']],
+  '砂糖': ['mondstadt', ['support']],
+  '莫娜': ['mondstadt', ['support', 'subdps']],
   '迪奥娜': ['mondstadt', ['support']],
   '雷泽': ['mondstadt', ['maindps']],
-  '芭芭拉': ['mondstadt', ['support']],
-  '罗莎莉亚': ['mondstadt', ['subdps']],
-  '砂糖': ['mondstadt', ['support']],
-  '菲谢尔': ['mondstadt', ['subdps']],
-  '诺艾尔': ['mondstadt', ['maindps']],
-  '莫娜': ['mondstadt', ['support', 'subdps']],
+  '温迪': ['mondstadt', ['support']],
+  '班尼特': ['mondstadt', ['support', 'subdps']],
+  '迪卢克': ['mondstadt', ['maindps']],
   '阿贝多': ['mondstadt', ['subdps']],
+  '罗莎莉亚': ['mondstadt', ['subdps']],
   '优菈': ['mondstadt', ['maindps']],
-  '米卡': ['mondstadt', ['support']],
-  '安柏': ['mondstadt', ['support']],
-  '丽莎': ['mondstadt', ['subdps']],
-  '凯亚': ['mondstadt', ['subdps']],
   '埃洛伊': ['mondstadt', ['maindps']],   // 2.1 联动角色，归属蒙德
+  '米卡': ['mondstadt', ['support']],
   '法尔伽': ['mondstadt', ['maindps']],
   '塔利雅': ['mondstadt', ['support']],
   '杜林': ['mondstadt', ['subdps']],
   '洛恩': ['mondstadt', ['maindps']],
   '尼可': ['mondstadt', ['maindps']],
   '布伦妮': ['mondstadt', ['support']],
-
   /* ---------- 璃月 Liyue（22） ---------- */
-  '刻晴': ['liyue', ['maindps']],
+  '北斗': ['liyue', ['subdps']],
   '凝光': ['liyue', ['maindps']],
   '香菱': ['liyue', ['subdps']],
   '行秋': ['liyue', ['subdps']],
-  '夜兰': ['liyue', ['subdps']],
-  '钟离': ['liyue', ['support']],
-  '甘雨': ['liyue', ['maindps', 'subdps']],
-  '胡桃': ['liyue', ['maindps']],
+  '重云': ['liyue', ['subdps']],
+  '刻晴': ['liyue', ['maindps']],
   '七七': ['liyue', ['support']],
+  '钟离': ['liyue', ['support']],
+  '辛焱': ['liyue', ['support']],
+  '甘雨': ['liyue', ['maindps', 'subdps']],
+  '魈': ['liyue', ['maindps']],
+  '胡桃': ['liyue', ['maindps']],
+  '烟绯': ['liyue', ['maindps']],
   '申鹤': ['liyue', ['support']],
   '云堇': ['liyue', ['support']],
+  '夜兰': ['liyue', ['subdps']],
   '瑶瑶': ['liyue', ['support']],
   '白术': ['liyue', ['support']],
   '闲云': ['liyue', ['support', 'subdps']],
-  '魈': ['liyue', ['maindps']],
   '嘉明': ['liyue', ['maindps']],
-  '重云': ['liyue', ['subdps']],
-  '辛焱': ['liyue', ['support']],
-  '北斗': ['liyue', ['subdps']],
-  '烟绯': ['liyue', ['maindps']],
-  '兹白': ['liyue', ['maindps']],
   '蓝砚': ['liyue', ['support']],
-
+  '兹白': ['liyue', ['maindps']],
   /* ---------- 稻妻 Inazuma（16） ---------- */
-  '雷电将军': ['inazuma', ['maindps']],
-  '八重神子': ['inazuma', ['subdps']],
   '神里绫华': ['inazuma', ['maindps']],
+  '枫原万叶': ['inazuma', ['support']],
   '宵宫': ['inazuma', ['maindps']],
+  '早柚': ['inazuma', ['support']],
+  '雷电将军': ['inazuma', ['maindps']],
+  '九条裟罗': ['inazuma', ['support']],
   '珊瑚宫心海': ['inazuma', ['support', 'maindps']],
+  '托马': ['inazuma', ['support']],
   '荒泷一斗': ['inazuma', ['maindps']],
   '五郎': ['inazuma', ['support']],
-  '九条裟罗': ['inazuma', ['support']],
-  '枫原万叶': ['inazuma', ['support']],
-  '托马': ['inazuma', ['support']],
-  '早柚': ['inazuma', ['support']],
-  '久岐忍': ['inazuma', ['support', 'subdps']],
+  '八重神子': ['inazuma', ['subdps']],
   '神里绫人': ['inazuma', ['maindps']],
+  '久岐忍': ['inazuma', ['support', 'subdps']],
   '鹿野院平藏': ['inazuma', ['maindps']],
   '绮良良': ['inazuma', ['support']],
   '梦见月瑞希': ['inazuma', ['support']],
-
   /* ---------- 须弥 Sumeru（14） ---------- */
   '提纳里': ['sumeru', ['maindps']],
   '柯莱': ['sumeru', ['subdps']],
-  '多莉': ['sumeru', ['support']],
-  '纳西妲': ['sumeru', ['subdps', 'support']],
   '赛诺': ['sumeru', ['maindps']],
-  '艾尔海森': ['sumeru', ['maindps']],
-  '迪希雅': ['sumeru', ['subdps', 'support']],
-  '卡维': ['sumeru', ['maindps', 'support']],
-  '妮露': ['sumeru', ['support']],
   '坎蒂丝': ['sumeru', ['support']],
+  '多莉': ['sumeru', ['support']],
+  '妮露': ['sumeru', ['support']],
+  '纳西妲': ['sumeru', ['subdps', 'support']],
+  '艾尔海森': ['sumeru', ['maindps']],
+  '莱依拉': ['sumeru', ['support']],
   '流浪者': ['sumeru', ['maindps']],
   '珐露珊': ['sumeru', ['support']],
-  '莱依拉': ['sumeru', ['support']],
+  '迪希雅': ['sumeru', ['subdps', 'support']],
+  '卡维': ['sumeru', ['maindps', 'support']],
   '赛索斯': ['sumeru', ['maindps']],
-
   /* ---------- 枫丹 Fontaine（14） ---------- */
   '林尼': ['fontaine', ['maindps']],
   '琳妮特': ['fontaine', ['subdps', 'support']],
+  '菲米尼': ['fontaine', ['maindps']],
   '那维莱特': ['fontaine', ['maindps']],
   '莱欧斯利': ['fontaine', ['maindps']],
   '芙宁娜': ['fontaine', ['subdps', 'support']],
-  '娜维娅': ['fontaine', ['maindps']],
-  '克洛琳德': ['fontaine', ['maindps']],
-  '夏沃蕾': ['fontaine', ['support']],
-  '爱可菲': ['fontaine', ['support']],
-  '艾梅莉埃': ['fontaine', ['subdps']],
-  '菲米尼': ['fontaine', ['maindps']],
-  '希格雯': ['fontaine', ['support']],
   '夏洛蒂': ['fontaine', ['support']],
+  '娜维娅': ['fontaine', ['maindps']],
+  '夏沃蕾': ['fontaine', ['support']],
+  '克洛琳德': ['fontaine', ['maindps']],
+  '希格雯': ['fontaine', ['support']],
+  '艾梅莉埃': ['fontaine', ['subdps']],
   '千织': ['fontaine', ['subdps']],
-
+  '爱可菲': ['fontaine', ['support']],
   /* ---------- 纳塔 Natlan（11） ---------- */
   '玛拉妮': ['natlan', ['maindps']],
-  '基尼奇': ['natlan', ['maindps']],
   '卡齐娜': ['natlan', ['subdps']],
+  '基尼奇': ['natlan', ['maindps']],
   '希诺宁': ['natlan', ['support']],
   '恰斯卡': ['natlan', ['maindps']],
   '欧洛伦': ['natlan', ['subdps', 'support']],
   '玛薇卡': ['natlan', ['maindps', 'support']],
-  '瓦雷莎': ['natlan', ['maindps']],
-  '伊安珊': ['natlan', ['support']],
-  '伊法': ['natlan', ['support']],
   '茜特菈莉': ['natlan', ['support']],
-
+  '伊安珊': ['natlan', ['support']],
+  '瓦雷莎': ['natlan', ['maindps']],
+  '伊法': ['natlan', ['support']],
   /* ---------- 挪德卡莱 Nod-Krai（9） ---------- */
   '莉奈娅': ['nodkrai', ['subdps']],
   '叶洛亚': ['nodkrai', ['maindps']],
@@ -479,16 +781,13 @@ const CH_META = {
   '菈乌玛': ['nodkrai', ['support']],
   '爱诺': ['nodkrai', ['support']],
   '伊涅芙': ['nodkrai', ['subdps']],
-
   /* ---------- 至冬 Snezhnaya（5） ---------- */
   '达达利亚': ['snezhnaya', ['maindps']],
   '阿蕾奇诺': ['snezhnaya', ['maindps']],
   '桑多涅': ['snezhnaya', ['maindps']],
   '奥黛塔': ['snezhnaya', ['support']],
   '阿罗夏': ['snezhnaya', ['support']],
-
-  /* ---------- 其他 / 旅行者（1 + 6 形态） ----------
-   * 旅行者按「国度-属性」各设一个条目：每个形态都能单独启用、单独配装。 */
+  /* ---------- 其他 / 旅行者（7） ---------- */
   '丝柯克': ['other', ['maindps']],
   '旅行者·风': ['other', ['support']],
   '旅行者·岩': ['other', ['subdps']],
@@ -498,16 +797,6 @@ const CH_META = {
   '旅行者·火': ['other', ['maindps']],
 };
 
-/* ============================================================
- * 内置角色库
- * 紧凑格式：[ 名称, 元素, 追加属性预设, builds, 沙, 杯, 冠, src ]
- *   builds: 数组，第 1 项为主推（4件套或2+2），其余为备选
- *           单项含 1 个套装名 = 4件套；含 2 个 = 2+2
- *   主要属性数组按优先级从高到低排列（第1项=最优）
- *   src: 攻略来源数组（不限定来源，米游社/Game8/KQM/B站等均可，取置信度高、更新新、不重复的链接）
- *        每项为 {url, title}；title 为「作者/标题」标注（选填，留空时按链接域名显示来源平台），可列多个
- *        旧版纯字符串链接会在加载时自动补成 {url, title:''}
- * ============================================================ */
 const RAW_CHARS = [
   /* ---------- 火 ---------- */
   ['胡桃', 'pyro', 'critHp', [['炽烈的炎之魔女'], ['追忆之注连']], ['em', 'hpP'], ['pyro', 'hpP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/43804422', 'https://www.miyoushe.com/ys/article/58957682', 'https://www.miyoushe.com/ys/article/58955919']],
@@ -529,12 +818,12 @@ const RAW_CHARS = [
   /* ---------- 水 ---------- */
   ['行秋', 'hydro', 'crit', [['绝缘之旗印'], ['沉沦之心']], ['atkP', 'er'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/75141780', 'https://www.miyoushe.com/ys/article/70022906', 'https://bbs.mihoyo.com/ys/article/25075041']],
   ['夜兰', 'hydro', 'critHp', [['绝缘之旗印'], ['沉沦之心'], ['千岩牢固']], ['hpP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/69095833', 'https://www.miyoushe.com/ys/article/35379633', 'https://bbs.mihoyo.com/ys/article/23365969']],
-  ['达达利亚', 'hydro', 'crit', [['沉沦之心'], ['水仙十字之圣遗物']], ['atkP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/61217705', 'https://bbs.mihoyo.com/ys/article/31675253', 'https://bbs.mihoyo.com/ys/article/22237098']],
+  ['达达利亚', 'hydro', 'crit', [['沉沦之心'], ['逐影猎人']], ['atkP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/61217705', 'https://bbs.mihoyo.com/ys/article/31675253', 'https://bbs.mihoyo.com/ys/article/22237098']],
   ['珊瑚宫心海', 'hydro', 'hp', [['海染砗磲'], ['千岩牢固']], ['hpP', 'er'], ['hydro', 'hpP'], ['heal', 'hpP'], ['https://bbs.mihoyo.com/ys/article/9783187', 'https://bbs.mihoyo.com/ys/article/28670439', 'https://bbs.mihoyo.com/ys/article/9811643']],
   ['莫娜', 'hydro', 'er', [['绝缘之旗印'], ['昔日宗室之仪']], ['er', 'atkP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/71353241', 'https://www.miyoushe.com/ys/article/71293999', 'https://bbs.mihoyo.com/ys/article/22242956']],
   ['妮露', 'hydro', 'hp', [['乐园遗落之花'], ['千岩牢固', '乐园遗落之花']], ['hpP'], ['hpP'], ['hpP'], ['https://www.miyoushe.com/ys/article/37891114', 'https://bbs.mihoyo.com/ys/article/30319453', 'https://www.miyoushe.com/ys/article/68308954']],
   ['芙宁娜', 'hydro', 'critHp', [['黄金剧团'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/69835283', 'https://www.miyoushe.com/ys/article/54231026', 'https://www.miyoushe.com/ys/article/45238744']],
-  ['那维莱特', 'hydro', 'critHp', [['水仙十字之圣遗物'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/72892872', 'https://www.miyoushe.com/ys/article/51019831', 'https://www.miyoushe.com/ys/article/43799619']],
+  ['那维莱特', 'hydro', 'critHp', [['逐影猎人'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/72892872', 'https://www.miyoushe.com/ys/article/51019831', 'https://www.miyoushe.com/ys/article/43799619']],
   ['芭芭拉', 'hydro', 'heal', [['被怜爱的少女'], ['海染砗磲']], ['hpP'], ['hpP'], ['heal'], ['https://www.miyoushe.com/ys/article/68736041', 'https://bbs.mihoyo.com/ys/article/25074129', 'https://bbs.mihoyo.com/ys/article/23419183']],
   ['玛拉妮', 'hydro', 'critHp', [['黑曜秘典'], ['沉沦之心']], ['hpP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/67605282', 'https://www.miyoushe.com/ys/article/56901714', 'https://www.miyoushe.com/ys/article/67669637']],
   ['塔利雅', 'hydro', 'atk', [['昔日宗室之仪'], ['绝缘之旗印']], ['atkP', 'er'], ['hydro', 'atkP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/65679835', 'https://www.miyoushe.com/ys/article/65404405', 'https://www.miyoushe.com/ys/article/65404256']],
@@ -546,7 +835,7 @@ const RAW_CHARS = [
   ['神里绫华', 'cryo', 'crit', [['冰风迷途的勇士'], ['沉沦之心']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64527638', 'https://www.miyoushe.com/ys/article/32720596', 'https://bbs.mihoyo.com/ys/article/20714244']],
   ['优菈', 'cryo', 'crit', [['苍白之火'], ['苍白之火', '染血的骑士道']], ['atkP'], ['phys'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/40948437', 'https://www.miyoushe.com/ys/article/73861985', 'https://www.miyoushe.com/ys/article/40951883']],
   ['申鹤', 'cryo', 'atk', [['千岩牢固'], ['冰风迷途的勇士', '追忆之注连']], ['atkP'], ['atkP'], ['atkP'], ['https://www.miyoushe.com/ys/article/65787422', 'https://www.miyoushe.com/ys/article/65404318', 'https://www.miyoushe.com/ys/article/65464845']],
-  ['莱欧斯利', 'cryo', 'crit', [['水仙十字之圣遗物'], ['冰风迷途的勇士']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/44583182', 'https://www.miyoushe.com/ys/article/62417764', 'https://www.miyoushe.com/ys/article/76302270']],
+  ['莱欧斯利', 'cryo', 'crit', [['逐影猎人'], ['冰风迷途的勇士']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/44583182', 'https://www.miyoushe.com/ys/article/62417764', 'https://www.miyoushe.com/ys/article/76302270']],
   ['迪奥娜', 'cryo', 'hp', [['千岩牢固'], ['被怜爱的少女']], ['hpP', 'er'], ['hpP'], ['hpP', 'heal'], ['https://www.miyoushe.com/ys/article/76347079', 'https://www.miyoushe.com/ys/article/76479642', 'https://bbs.mihoyo.com/ys/article/27923191']],
   ['罗莎莉亚', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/70615140', 'https://bbs.mihoyo.com/ys/article/25074734', 'https://bbs.mihoyo.com/ys/article/20802145']],
   ['七七', 'cryo', 'heal', [['被怜爱的少女'], ['千岩牢固']], ['atkP', 'er'], ['atkP'], ['heal'], ['https://www.miyoushe.com/ys/article/76326299', 'https://www.miyoushe.com/sr/article/61091178', 'https://bbs.mihoyo.com/ys/article/21881008']],
@@ -711,15 +1000,664 @@ function buildDefaultCharacters() {
   };});
 }
 
+/* ============================================================
+ * 语言：数据语言（角色 / 套装 / 属性等【数据本身】显示成中文还是英文）
+ * ------------------------------------------------------------
+ * 与「显示语言」分开：显示语言只管界面文案，数据语言只管数据内容。
+ * DATA_LANG 由 app.js 在切换时赋值，取值函数统一走 d()。
+ * ============================================================ */
+let DATA_LANG = 'zh';
+let UI_LANG = 'zh';
+function setDataLang(lang) { DATA_LANG = (lang === 'en' ? 'en' : 'zh'); }
+function setUiLang(lang) { UI_LANG = (lang === 'en' ? 'en' : 'zh'); }
+function isDataEn() { return DATA_LANG === 'en'; }
+function isUiEn() { return UI_LANG === 'en'; }
+/* 取译名：英文模式下返回官方英文名，没有译名就回退原文。
+ * _forceZh：导出 / 复制时临时置起——游戏内锁定界面是中文，
+ * 照抄的清单必须跟着游戏走，不能随界面语言变成英文。 */
+let _forceZh = false;
+function withZh(fn) {
+  const old = _forceZh;
+  _forceZh = true;
+  try { return fn(); } finally { _forceZh = old; }
+}
+function d(zh, en) { return (!_forceZh && DATA_LANG === 'en' && en) ? en : zh; }
+
+const ELEMENT_EN = {
+  pyro: 'Pyro', hydro: 'Hydro', cryo: 'Cryo', electro: 'Electro',
+  anemo: 'Anemo', geo: 'Geo', dendro: 'Dendro',
+};
+const REGION_EN = {
+  mondstadt: 'Mondstadt', liyue: 'Liyue', inazuma: 'Inazuma', sumeru: 'Sumeru',
+  fontaine: 'Fontaine', natlan: 'Natlan', nodkrai: 'Nod-Krai',
+  snezhnaya: 'Snezhnaya', other: 'Other',
+};
+const ROLE_EN = { maindps: 'Main DPS', subdps: 'Sub DPS', support: 'Support' };
+const SLOT_EN = {
+  flower: 'Flower of Life', plume: 'Plume of Death', sands: 'Sands of Eon',
+  goblet: 'Goblet of Eonothem', circlet: 'Circlet of Logos',
+};
+const SLOT_SHORT_EN = {
+  flower: 'Flower', plume: 'Plume', sands: 'Sands', goblet: 'Goblet', circlet: 'Circlet',
+};
+/* 主要属性 / 追加属性共用一套词条名（官方英文本地化） */
+const STAT_EN = {
+  hp: 'HP', atk: 'ATK', def: 'DEF',
+  hpP: 'HP%', atkP: 'ATK%', defP: 'DEF%',
+  em: 'Elemental Mastery', er: 'Energy Recharge',
+  pyro: 'Pyro DMG Bonus', hydro: 'Hydro DMG Bonus', cryo: 'Cryo DMG Bonus',
+  electro: 'Electro DMG Bonus', anemo: 'Anemo DMG Bonus', geo: 'Geo DMG Bonus',
+  dendro: 'Dendro DMG Bonus', phys: 'Physical DMG Bonus',
+  cr: 'CRIT Rate', cd: 'CRIT DMG', heal: 'Healing Bonus',
+};
+const SUB_PRESET_EN = {
+  crit: 'CRIT', critHp: 'CRIT + HP', critDef: 'CRIT + DEF',
+  em: 'Elemental Mastery', hp: 'HP', def: 'DEF',
+  er: 'Energy Recharge', atk: 'ATK', heal: 'Healing',
+};
+
+/* ---------- 工具：取名称（统一走数据语言） ---------- */
+function charName(n) { return d(n, CH_EN[n]); }
+function keepRuleName(n) { return d(n, KEEP_RULE_EN[n]); }
+function setName(n)  { return d(n, SET_EN[n]); }
+function elemName(id)   { return d((ELEMENTS[id] || {}).name || id, ELEMENT_EN[id]); }
+function regionName(id) { return d(REGION_NAME[id] || id, REGION_EN[id]); }
+function roleName(id)   { return d(ROLE_NAME[id] || id, ROLE_EN[id]); }
+function slotName(id) {
+  const hit = SLOTS.find(s => s.id === id);
+  return hit ? d(hit.name, SLOT_EN[id]) : id;
+}
+function slotShortName(id) {
+  const hit = SLOTS.find(s => s.id === id);
+  return hit ? d(hit.short, SLOT_SHORT_EN[id]) : id;
+}
+/* 2 件套说明里几条不好直译的，整条给英文 */
+const BONUS_EN = {
+  '夜魂加持下伤害+15%': "DMG +15% in Nightsoul's Blessing",
+  '元素战技/爆发伤害+15%': 'Elemental Skill/Burst DMG +15%',
+  '普通攻击/重击伤害+15%': 'Normal / Charged Attack DMG +15%',
+  '下落攻击伤害+25%': 'Plunging Attack DMG +25%',
+  '受到的雷元素伤害-40%': 'Electro DMG taken -40%',
+  '受到的火元素伤害-40%': 'Pyro DMG taken -40%',
+  '受到的冰元素伤害-40%': 'Cryo DMG taken -40%',
+  '受到的水元素伤害-40%': 'Hydro DMG taken -40%',
+  '护盾强效+35%': 'Shield Strength +35%',
+  '攻击力+18%': 'ATK +18%',
+  '生命值+20%': 'HP +20%',
+  '防御力+30%': 'DEF +30%',
+  '元素精通+80': 'Elemental Mastery +80',
+  '元素充能效率+20%': 'Energy Recharge +20%',
+  '治疗加成+15%': 'Healing Bonus +15%',
+  '物理伤害+25%': 'Physical DMG +25%',
+  '元素战技伤害+20%': 'Elemental Skill DMG +20%',
+  '元素爆发伤害+20%': 'Elemental Burst DMG +20%',
+  '火元素伤害+15%': 'Pyro DMG Bonus +15%',
+  '水元素伤害+15%': 'Hydro DMG Bonus +15%',
+  '冰元素伤害+15%': 'Cryo DMG Bonus +15%',
+  '雷元素伤害+15%': 'Electro DMG Bonus +15%',
+  '风元素伤害+15%': 'Anemo DMG Bonus +15%',
+  '岩元素伤害+15%': 'Geo DMG Bonus +15%',
+  '草元素伤害+15%': 'Dendro DMG Bonus +15%',
+};
+/* 2 件套说明（如「攻击力+18%」）也跟着数据语言走 */
+function setBonusText(name) {
+  const zh = SET_BONUS[name] || '';
+  if (DATA_LANG !== 'en') return zh;
+  if (BONUS_EN[zh]) return BONUS_EN[zh];
+  return zh
+    .replace(/(火|水|冰|雷|风|岩|草|物理)元素伤害/g, function (_, e) {
+      return ELEMENT_EN[{ 火: 'pyro', 水: 'hydro', 冰: 'cryo', 雷: 'electro', 风: 'anemo', 岩: 'geo', 草: 'dendro', 物理: 'phys' }[e]] + ' DMG';
+    })
+    .replace(/受到的(火|水|冰|雷)元素伤害/g, function (_, e) {
+      return ELEMENT_EN[{ 火: 'pyro', 水: 'hydro', 冰: 'cryo', 雷: 'electro' }[e]] + ' DMG Taken';
+    })
+    .replace(/[一-龥]+/g, function (m) {
+      const map = {
+        '攻击力': 'ATK', '生命值': 'HP', '防御力': 'DEF', '元素精通': 'Elemental Mastery',
+        '元素充能效率': 'Energy Recharge', '治疗加成': 'Healing Bonus', '护盾强效': 'Shield Strength',
+        '元素爆发伤害': 'Elemental Burst DMG', '元素战技伤害': 'Elemental Skill DMG',
+        '普通攻击': 'Normal Attack', '重击': 'Charged Attack', '下落攻击': 'Plunging Attack',
+        '夜魂加持下': 'under Nightsoul', '伤害': 'DMG',
+      };
+      return map[m] != null ? map[m] : m;
+    });
+}
 /* ---------- 工具：取主要属性名称 ---------- */
 function mainStatName(slot, id) {
   if (id && typeof id === 'object') id = (id.stat != null ? id.stat : id.id);
   const list = MAIN_STATS[slot] || [];
   const hit = list.find(s => s.id === id);
-  return hit ? hit.name : (typeof id === 'string' ? id : '');
+  return hit ? d(hit.name, STAT_EN[id]) : (typeof id === 'string' ? d(id, STAT_EN[id]) : '');
 }
 function subStatName(id) {
   if (id && typeof id === 'object') id = (id.id != null ? id.id : id.stat);
   const hit = SUB_STATS.find(s => s.id === id);
-  return hit ? hit.name : (typeof id === 'string' ? id : '');
+  return hit ? d(hit.name, STAT_EN[id]) : (typeof id === 'string' ? d(id, STAT_EN[id]) : '');
 }
+
+/* ============================================================
+ * 翻译词典（中文原文 → English）
+ * ------------------------------------------------------------
+ * 用法：界面渲染后统一扫一遍 DOM，把文本 / placeholder / title 按词典替换。
+ * 这样 app.js 里的中文文案不用逐个包函数，切换语言 = 换一张表重扫。
+ * 词典分两块，对应两个独立开关：
+ *   T_DATA_EN 数据语言 = 角色 / 套装 / 国度 / 定位 / 部位 / 词条 / 预设（官方英文本地化）
+ *   T_UI_EN   显示语言 = 界面按钮、标签、提示、说明文案
+ * 没收录的条目自动保留中文，不会翻出半吊子英文。
+ * ============================================================ */
+
+/* 由「中文名 → 英文名」两张表拼出「中文显示名 → 英文显示名」 */
+function _enByName(zhMap, enMap) {
+  const out = {};
+  Object.keys(zhMap).forEach(k => {
+    const zh = zhMap[k], en = enMap[k];
+    if (zh && en && zh !== en) out[zh] = en;
+  });
+  return out;
+}
+const T_DATA_EN = Object.assign(
+  {},
+  CH_EN,
+  SET_EN,
+  _enByName(REGION_NAME, REGION_EN),
+  _enByName(ROLE_NAME, ROLE_EN),
+  _enByName(Object.fromEntries(Object.keys(ELEMENTS).map(k => [k, ELEMENTS[k].name])), ELEMENT_EN),
+  _enByName(Object.fromEntries(SLOTS.map(s => [s.id, s.name])), SLOT_EN),
+  _enByName(Object.fromEntries(SLOTS.map(s => [s.id, s.short])), SLOT_SHORT_EN),
+  _enByName(SUB_PRESET_NAMES, SUB_PRESET_EN),
+  /* 词条名：主要属性 / 追加属性共用一套官方英文名 */
+  _enByName(Object.fromEntries(SUB_STATS.map(s => [s.id, s.name])), STAT_EN),
+  _enByName(Object.keys(MAIN_STATS).reduce((acc, slot) => {
+    MAIN_STATS[slot].forEach(s => { acc[s.id] = s.name; });
+    return acc;
+  }, {}), STAT_EN),
+  { '其他': 'Other', '不限': 'Any' },
+);
+
+/* ---------- 界面文案（显示语言 = English 时启用） ---------- */
+const T_UI_EN = {
+  /* 顶栏 / 导航 */
+  '原神圣遗物锁定方案生成器': 'Genshin Artifact Lock Plan Generator',
+  '输入角色配装需求 → 汇总输出每套圣遗物的锁定清单': 'Pick your characters → get a lock plan for every artifact set',
+  '数据保存在本机浏览器': 'Saved in this browser',
+  '使用说明': 'How to use',
+  '① 角色配置': '① Characters',
+  '① 角色': '① Chars',
+  '② 锁定方案': '② Lock Plans',
+  '② 方案': '② Plans',
+  '③ 追加属性规则': '③ Substat Rules',
+  '③ 追加属性': '③ Substats',
+  '④ 数据管理': '④ Data',
+  '④ 数据': '④ Data',
+  '显示语言': 'UI language',
+  '数据语言': 'Data language',
+  '中文': 'Chinese',
+  '英文': 'English',
+
+  /* 角色页 · 筛选 / 批量 */
+  '搜索角色 / 套装 / 国度 / 定位…': 'Search character / set / region / role…',
+  '全部': 'All',
+  '全部国度': 'All regions',
+  '只看已启用': 'Enabled only',
+  '批量': 'Batch',
+  '全选': 'Select all',
+  '全不选': 'Deselect all',
+  '反选': 'Invert',
+  '按属性': 'By element',
+  '按国度': 'By region',
+  '按定位': 'By role',
+  '已启用': 'Enabled',
+  '个角色': 'characters',
+  '筛出': 'matched',
+  '+ 新增角色': '+ Add character',
+  '没有匹配的角色。': 'No matching characters.',
+  '当前筛选结果为空': 'Nothing matches the current filters',
+  '没有该分类的角色': 'No character in this category',
+  '清空所有角色的启用状态？（配装数据保留）': 'Clear enabled state for all characters? (builds are kept)',
+  '已清空启用状态': 'Enabled state cleared',
+
+  /* 方案页 */
+  '套装筛选': 'Set filter',
+  '全部套装': 'All sets',
+  '部位筛选': 'Slot filter',
+  '全部部位': 'All slots',
+  '隐藏无人需要的套装': 'Hide sets nobody needs',
+  '计入备选配装': 'Include alt builds',
+  '显示详细件数': 'Show piece counts',
+  '复制游戏内方案': 'Copy in-game plan',
+  '游戏内方案已复制': 'In-game plan copied',
+  '复制清单': 'Copy list',
+  '清单已复制到剪贴板': 'List copied to clipboard',
+  '复制失败，请手动选择文本': 'Copy failed — please select the text manually',
+  '导出 CSV': 'Export CSV',
+  'CSV 已导出（Excel 可直接打开）': 'CSV exported (opens in Excel)',
+  '打印 / 存 PDF': 'Print / Save PDF',
+  '请先在「① 角色配置」页勾选你要养的角色，这里会自动生成锁定方案。':
+    'Tick the characters you build on the ① Characters page first — lock plans are generated from them.',
+  '没有符合条件的套装。': 'No set matches the filters.',
+  '原神圣遗物锁定清单': 'Genshin Artifact Lock List',
+  '启用角色': 'Enabled characters',
+  '涉及套装': 'Sets involved',
+  '采纳方案总数': 'Adopted plans',
+  '可整套清理的套装': 'Sets you can clear entirely',
+  '复制': 'Copy',
+  '采纳': 'Adopt',
+  '并入…': 'Merge into…',
+  '拆回': 'Split back',
+  '已合并为一个方案': 'Merged into one plan',
+  '已拆回为合并前的候选': 'Split back into the original candidates',
+  '编辑': 'Edit',
+  '删除': 'Delete',
+  '已删除': 'Deleted',
+  '最优': 'Best',
+  '建议保留': 'Keep',
+  '件': 'pcs',
+  '无角色需要': 'Nobody needs it',
+  '无角色需要 · 可全喂': 'Nobody needs it · safe to feed',
+  '无角色需要 · 可整套清理': 'Nobody needs it · clear the whole set',
+  '稀有·建议多留': 'Rare · keep more',
+  '二选一': 'Either one',
+  '详细件数清单': 'Piece count detail',
+  '追加属性优先：': 'Substat priority:',
+  '未配置套装': 'No set configured',
+  '不限': 'Any',
+  '不限套装）': 'any set)',
+  '（未指定角色）': '(no character)',
+
+  /* 散件 / 过渡 保留规则 */
+  '🧩 散件 / 过渡 保留规则': '🧩 Off-piece / Transitional Keep Rules',
+  '＋ 新增自定义规则': '＋ New custom rule',
+  '＋ 新增规则': '＋ New rule',
+  '收起这一模块（只是不显示，启用的规则照常生效）': 'Collapse this block (display only — enabled rules keep working)',
+  '编辑规则': 'Edit rule',
+  '＋ 新增自定义规则': '＋ New custom rule',
+  '添加规则': 'Add rule',
+  '取消编辑': 'Cancel edit',
+  '名称': 'Name',
+  '描述（可选）': 'Description (optional)',
+  '部位': 'Slot',
+  '要留的主要属性': 'Main stats to keep',
+  '追加属性': 'Substats',
+  '★必须追加属性': '★Required substats',
+  '启用': 'Enable',
+  '停用': 'Disable',
+  '已修改': 'Modified',
+  '恢复默认': 'Restore default',
+  '已恢复默认设置': 'Defaults restored',
+  '已删除规则': 'Rule deleted',
+  '请填写规则名称': 'Please enter a rule name',
+  '请至少勾选一个要留的主要属性': 'Pick at least one main stat to keep',
+
+  /* 追加属性规则页 */
+  '通用分档规则': 'General tier rules',
+  '胚子评分器': 'Artifact scorer',
+  '输入一件圣遗物的信息，快速判断值不值得留。': 'Enter an artifact to see whether it is worth keeping.',
+  '根据你启用的角色，自动汇总出的主要属性白名单 + 追加属性判定逻辑。游戏内可照此执行锁定。':
+    'Auto-summarised from your enabled characters: a main-stat whitelist plus substat rules you can copy into the game.',
+  '各套装推荐追加属性': 'Recommended substats per set',
+  '套装': 'Set',
+  '相对强度': 'Relative weight',
+  '追加属性需求排序 Top5（★= 多数角色标为必选）':
+    'Substat priority Top 5 (★ = most characters marked it Required)',
+  '主要属性': 'Main stat',
+  '主要属性固定': 'Main stat is fixed',
+  '未设置': 'Not set',
+  '未设置，可在下方添加': 'Not set — add one below',
+  '命中': 'Hits',
+
+  /* 数据管理页 */
+  '圣遗物套装管理': 'Artifact Set Manager',
+  '备份与恢复': 'Backup & restore',
+  '打开套装管理': 'Open set manager',
+  '导出配置 JSON': 'Export config JSON',
+  '导入配置 JSON': 'Import config JSON',
+  '清空启用状态': 'Clear enabled state',
+  '恢复内置默认库（硬刷新）': 'Restore built-in defaults (hard reset)',
+  '已导出配置': 'Config exported',
+  '导入成功：': 'Imported: ',
+  '导入失败：文件格式不正确': 'Import failed: invalid file',
+  '已恢复默认库': 'Defaults restored',
+  '更新日志': 'Changelog',
+  '查看更新公告': 'View update notice',
+  '关于数据': 'About the data',
+  '个角色、': ' characters and ',
+  '个套装，整理自社区常见推荐，随版本变动请自行校正。': ' sets, compiled from common community builds — adjust as patches change things.',
+  '上移': 'Move up',
+  '下移': 'Move down',
+  '隐藏': 'Hide',
+  '恢复': 'Restore',
+  '内置': 'Built-in',
+  '自定义': 'Custom',
+  '新套装名称，例：某某之梦': 'New set name, e.g. Some Set',
+  '2件套效果，例：攻击力+18%': '2-piece bonus, e.g. ATK +18%',
+  '+ 添加套装': '+ Add set',
+  '显示已隐藏的内置套装': 'Show hidden built-in sets',
+  '恢复全部内置套装': 'Restore all built-in sets',
+  '请输入套装名称': 'Please enter a set name',
+  '该套装已存在': 'That set already exists',
+  '已存在同名套装': 'A set with that name already exists',
+  '套装名称不能为空': 'Set name cannot be empty',
+  '已添加套装：': 'Set added: ',
+  '已恢复': 'Restored',
+  '个内置套装': 'built-in sets',
+  '内置套装已全部在列表中': 'All built-in sets are already listed',
+  '个角色的配装用到了它，会一并移除。': ' character builds use it and will be updated.',
+  '确定删除这个套装吗？': 'Delete this set?',
+
+  /* 角色编辑浮窗 */
+  '编辑角色': 'Edit character',
+  '新增角色': 'New character',
+  '角色名称': 'Character name',
+  '元素属性': 'Element',
+  '所属国度': 'Region',
+  '队伍定位': 'Role',
+  '可多选，影响批量筛选': 'Multi-select — used by batch filters',
+  '圣遗物配装': 'Artifact builds',
+  '第 1 组为主推，其余为备选；单套=4件套，双套=2+2':
+    'Group 1 is the main build, others are alternates; one set = 4-piece, two sets = 2+2',
+  '下面每组是一张': 'Each group below is a',
+  '只读卡片': 'read-only card',
+  '：要看 / 改词条（三部位主要属性与追加属性）请点「✎ 编辑」，在弹出窗口里点「保存」才生效。':
+    ': to view or edit stats (main stat + substats) tap "✎ Edit" and hit "Save" in the popup.',
+  '+ 添加一组配装': '+ Add a build',
+  '📋 新增时套用…': '📋 Template for new builds…',
+  '空白（双暴默认词条）': 'Blank (default CRIT substats)',
+  '＋ 从预置添加': '＋ Add from presets',
+  '（选择一个已删除的预置组）': '(pick a deleted preset group)',
+  '备注': 'Notes',
+  '攻略来源': 'Sources',
+  '+ 添加链接': '+ Add link',
+  '暂无来源，点击下方「+ 添加链接」': 'No sources yet — tap "+ Add link" below',
+  '↩ 还原主推': '↩ Restore main build',
+  '当前「主推 / 备选」的排布与内置不同（词条内容没变）':
+    'Main / alt arrangement differs from the built-in data (substats unchanged)',
+  '✎ 编辑': '✎ Edit',
+  '设为主推': 'Set as main build',
+  '整组还原': 'Restore this group',
+  '已还原为内置原样，点「保存」后生效': 'Restored to built-in — hit "Save" to apply',
+  '已还原主推排布，点「保存」后生效': 'Main build restored — hit "Save" to apply',
+  '这一组没有内置原样可还原': 'No built-in version to restore for this group',
+  '这个角色没有内置数据可还原': 'No built-in data to restore for this character',
+  '删除角色': 'Delete character',
+  '还原内置': 'Restore built-in',
+  '取消': 'Cancel',
+  '保存': 'Save',
+  '请填写角色名称': 'Please enter a character name',
+  '请至少选择一个套装': 'Pick at least one set',
+  '至少保留一组配装': 'Keep at least one build',
+  '至少保留一个定位': 'Keep at least one role',
+  '可选的都已经在列表里了。': 'Everything available is already listed.',
+  '（选择套装）': '(pick a set)',
+  '（2+2 可选）': '(optional for 2+2)',
+  '（不改，保持当前）': '(keep current)',
+
+  /* 配装编辑浮窗 */
+  '编辑配装': 'Edit build',
+  '关闭': 'Close',
+  '设为主推（第 1 组默认主推，同一角色只可有一组主推）':
+    'Set as main build (group 1 is main by default; only one main per character)',
+  '📋 套用…': '📋 Copy from…',
+  '越靠前越想要；★ = 游戏内锁定方案的「必须」':
+    'Earlier = more wanted; ★ = "Required" in the in-game lock plan',
+  '+ 添加追加属性…': '+ Add substat…',
+  '追加属性需求': 'Substat needs',
+  '+ 添加主要属性': '+ Add main stat',
+  '该主要属性已在列表中': 'That main stat is already listed',
+  '该追加属性已在列表中': 'That substat is already listed',
+  '越靠前优先级越高': 'Earlier = higher priority',
+  '与上一条的重要度关系：': 'Importance vs. the previous entry:',
+  '同等重要': 'Equally important',
+  '略低': 'Slightly lower',
+  '必选': 'Required',
+  '选择属性': 'Choose a stat',
+  '选择主要属性': 'Choose a main stat',
+  '选择追加属性': 'Choose a substat',
+  '改完请点右下角': 'Hit ',
+  '才生效；点「取消」或关掉窗口，改动会全部丢弃。':
+    ' to apply; "Cancel" or closing the window discards every change.',
+  '还原这一组': 'Restore this group',
+
+  /* 更新公告 */
+  '更新公告': 'Update notice',
+  '知道了': 'Got it',
+
+  /* 方案卡片内文案 */
+  '🎮 游戏内锁定方案候选': '🎮 In-game lock plan candidates',
+  '追加属性（五部位相同）': 'Substats (same for all five slots)',
+  '包含（★计入）': 'Include (★ counts)',
+  '个候选方案': 'candidates',
+  '个候选（角色组': 'candidates (character group',
+  '个预设': 'presets',
+  '个自定义预设': 'custom presets',
+  '个自定义预设，多个预设共同生效；': ' custom presets; several can be active at once; ',
+  '个锁定方案': 'lock plans',
+  '个套装': 'sets',
+  '个套装、': ' sets and ',
+  '个套装超过': ' sets exceed',
+  '个套装采纳了超过': ' sets adopted more than',
+  '主推 / 备选': 'Main / alt',
+  '主推': 'Main',
+  '备选': 'Alt',
+  '主推 / 备选」权重：主推': 'Main / alt weighting: main',
+  '（如双暴）自动合并——重要属性相同就并为一套，次要属性（攻击% / 生命% / 防御%）不同的角色用':
+    ' (like CRIT) — same key stats merge into one plan; characters that differ only in ATK% / HP% / DEF% are marked with ',
+  '颜色': 'colour',
+  '区分标注；': ' instead; ',
+  '重要属性': 'Key stats',
+  '候选按角色的': 'Candidates are grouped by each character\'s',
+  '全自动、无需调参': 'fully automatic, no tuning needed',
+  '每个方案的': 'Every plan\'s',
+  '五个部位共用同一份追加属性条件': 'five slots share one substat condition',
+  '，主要属性逐部位独立合并；命中条数': '; main stats are merged per slot; the hit count',
+  '默认「至少两条」': 'defaults to "at least 2"',
+  '，可在下方单独调到 1–4 做更细的筛选；觉得候选多了就用「并入…」合并、或取消勾选「采纳」。':
+    ' and can be set to 1–4 per plan below; if there are too many candidates, use "Merge into…" or untick "Adopt".',
+  '游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上方逐套设置；\n      每种套装游戏内':
+    'In game: Inventory → Artifacts → Lock → pick this set → Edit, then apply the settings above; each set has ',
+  '，请自行收敛。仅有 3 条追加属性的圣遗物，所需数量会自动减 1。':
+    ' — keep it within that. Artifacts with only 3 substats need one less hit.',
+
+  /* 胚子评分器档位 */
+  'S 级 · 必锁': 'S · Lock it',
+  'A 级 · 升级观察': 'A · Level and watch',
+  '主要属性命中「必留」列表，且追加属性': 'Main stat is on the "keep" list and the substats',
+  '同时含暴击率与暴击伤害': 'include both CRIT Rate and CRIT DMG',
+  '主要属性命中需求，追加属性含': 'Main stat matches the need and substats include',
+  '操作：直接锁定，喂到 20 级。': 'Action: lock it and level to 20.',
+  '单个暴击词条 + 1 条有效词条': 'one CRIT roll + 1 useful stat',
+};
+
+/* 合并后的当前词典：按两个开关拼装（界面文案优先级高于数据名） */
+function currentDict() {
+  const m = {};
+  if (typeof isDataEn === 'function' && isDataEn()) Object.assign(m, T_DATA_EN);
+  if (typeof isUiEn === 'function' && isUiEn()) Object.assign(m, T_UI_EN);
+  return m;
+}
+/* 供 app.js 里拼接出来的文案使用：查得到就翻，查不到保留中文 */
+function t(zh) {
+  const m = currentDict();
+  return (m[zh] != null ? m[zh] : zh);
+}
+
+/* 使用说明的整段英文版（避免被 <b> 切碎后没法逐句匹配） */
+const I18N_HTML = {
+  help: [
+    '<h4>How it works</h4>',
+    '<ol>',
+    '<li><b>① Characters</b>: filter by <b>element / region / role</b> at the top (they stack, and combine with the search box and "Enabled only"); when a filter is on, the top right shows "matched N / total". Next to it <b>↓ Ascending / ↑ Descending</b> flips the whole list (your choice is remembered). Tick the characters you actually build. Tap a card to open the <b>edit popup</b>: character info on top, build cards below — each card shows the set, the three main stats and the substats at a glance; <b>"✎ Edit"</b> on a card opens a second <b>build editor popup</b>. Stats only apply after you hit <b>"Save"</b>; "Cancel" / closing / clicking outside warns about unsaved changes first. A character can have several builds (4-piece / 2+2) and <b>each build keeps its own stat needs</b>; when adding one you can start blank or copy an existing build, and deleted <b>built-in presets</b> can be picked back up from "＋ Add from presets".</li>',
+    '<li><b>Made a mess?</b>: both build cards and character cards can show a <b>"Modified"</b> badge — that item now differs from the built-in data. One group gone wrong → <b>"Restore this group"</b> on the card (set + stats + main flag all back to built-in). Only tangled up which build is main → a <b>"↩ Restore main build"</b> button appears above the builds (touches the main flag only). Whole character a mess → <b>"Restore built-in"</b> at the bottom left of the popup (name / element / region / role / note / sources / every build at once). Deleted built-in builds can be re-added from "＋ Add from presets".</li>',
+    '<li><b>Built-in data follows game updates</b>: builds you have <b>not touched</b> automatically pick up new data from the repo; anything <b>you edited</b> is left alone (tagged "Modified") — hit restore if you want the new version.</li>',
+    '<li><b>② Lock Plans</b>: every set gets "in-game lock plan <b>candidates</b>" — clustered automatically by each character\'s <b>substat needs</b>. All <b>five slots in one plan share the same substat condition</b>; main stats are listed per slot, so you can just copy them into the game. <b>No slot limit</b>: there can be many candidates — merge them by hand with "Merge into…" or untick "Adopt" to drop the ones you do not want, then narrow it down to the 3 presets the game allows per set. The <b>"🧩 Off-piece / Transitional Keep Rules"</b> block at the top is character-independent: artifacts worth keeping purely because the main stat is rare (an elemental DMG goblet, say). Each enabled rule produces a candidate plan that joins the character clusters with <b>equal weight</b> for merging and adoption.</li>',
+    '<li><b>Traveler</b> is split into 6 separate entries by element (Traveler · Anemo / Geo / Electro / Dendro / Hydro / Pyro): each form has a different element and different builds, so they can be enabled and edited separately. Likewise <b>Nod-Krai</b> is now its own region (separate from Snezhnaya); if your save is from an older version, regions and roles are corrected once on open — after that your own edits are never overwritten.</li>',
+    '<li><b>List sorting</b>: the ① character cards, the ② set blocks and the ③ "Recommended substats per set" table at the bottom all have a <b>↓ Ascending / ↑ Descending</b> button — one tap flips the direction and the choice is saved locally. Set lists (②③) also get a <b>"Catalog / Usage" toggle</b>: <b>Catalog</b> = the order in the set library (which follows the HoYoLAB catalog), stable and never jumping around; <b>Usage</b> = most used first, which changes with the characters you tick. The character list is ordered by region (Mondstadt → Liyue → … → Other·Traveler).</li>',
+    '<li><b>③ Substat Rules</b>: tier rules plus an artifact scorer, answering "the main stat is right, but are the substats worth keeping?".</li>',
+    '<li><b>④ Data → Set Manager (popup)</b>: hit "Open set manager" to add or remove sets, edit the 2-piece text and reorder; built-in sets are only "hidden" and can be restored any time.</li>',
+    '<li><b>④ Data → Changelog</b>: the built-in characters and artifacts are maintained by hand as the game updates; every change is logged here. A major update pops up the <b>update notice</b> once the first time you open the app (it stops after you have read it) — use "View update notice" to see it again.</li>',
+    '</ol>',
+    '<h4>Reading a plan</h4>',
+    '<ul>',
+    '<li><b>Plan N</b>: built by merging characters with similar substat needs; the heading says who it is for. Several plans under one set are <b>all active at once</b> in the lock screen (they are ORed together).</li>',
+    '<li><b>Adopt / Merge into… / Split back</b>: every candidate starts out adopted; "Merge into…" folds two candidates into one and "Split back" undoes it. Changes are saved. When the number of adopted plans passes the in-game limit (3 per set), an orange warning appears at the top.</li>',
+    '<li><b>Auto-merging</b>: plans are clustered by each character\'s <b>key stats</b> (the run of equally important entries from the top plus the &#9733;required ones — usually just CRIT): matching key stats merge into one plan. Differences in minor stats (ATK% / HP% and so on) do not block a merge — those are shown <b>colour-grouped per character</b>, and which one actually gets the piece depends on what you have. Main stats are merged <b>independently per slot</b>. No tuning needed.</li>',
+    '<li><b>&#9733;Required</b>: the gold entries — the artifact <b>must</b> have them or it is not locked. They come from substats <b>every character in the group ticked as "Required"</b> (set it with the ☆ in the character popup), at most 2.</li>',
+    '<li><b>At least 2</b>: the hit count <b>defaults to "at least 2"</b> — an artifact ends up with 4 substats and at least 2 of them must fall in the substat pool before it is locked; &#9733;required entries count towards those two. To be stricter, change the dropdown on that plan card <b>to 3 or 4</b> (or relax it to 1); each plan remembers its own value.</li>',
+    '<li><b>Collapse</b>: the arrow on the left of the "🧩 Off-piece / Transitional Keep Rules" heading folds the block down to a single title line — it only hides it, enabled rules keep producing candidates.</li>',
+    '<li>Tick <b>"Show piece counts"</b> in the toolbar to expand the suggested keep count and the source of each need; unticked, the page only shows the lock plans you can copy straight over.</li>',
+    '</ul>',
+    '<h4>Gotchas</h4>',
+    '<ul>',
+    '<li>Flower and plume have fixed main stats, so in game you can only set substats for them — that makes those two slots the strictest. After the plan unifies substats, the &#9733;required list and the substat pool only drop entries that clash with flower / plume.</li>',
+    '<li>Elemental DMG goblets have a very low drop rate — turn on the "Elemental DMG Goblet" rule under "🧩 Off-piece / Transitional Keep Rules" to keep a set of them aside.</li>',
+    '<li>A substat can never repeat the main stat of the same slot. After the plan unifies substats, entries clashing with the fixed flower / plume main stats (HP / ATK) are removed automatically; sands / goblet / circlet main stats vary per plan so they cannot be filtered per slot — just skip those when copying.</li>',
+    '<li>Data lives in this browser; use "Data → Export JSON" to move to another device.</li>',
+    '</ul>',
+    '<h4>Language</h4>',
+    '<ul>',
+    '<li>Two independent switches in the top right: <b>UI language</b> (buttons and help text) and <b>Data language</b> (character names, set names, stat names). Both are remembered, and the two can differ.</li>',
+    '<li>Search matches both languages — typing "Hu Tao" or "Marechaussee" works no matter which data language is active.</li>',
+    '<li>Exports and clipboard text follow the game, so they stay in Chinese.</li>',
+    '</ul>',
+  ].join(''),
+};
+
+/* ---------- 界面文案补充（含带数字的句式；逐句收录，避免翻出半吊子英文） ---------- */
+Object.assign(T_UI_EN, {
+  /* 排序 */
+  '排序顺序来自米游社图鉴': 'Order follows the HoYoLAB catalog',
+  '按使用人数排序：用得多的在前': 'Sorted by usage: most used first',
+  '↓ 正序': '↓ Ascending',
+  '↑ 倒序': '↑ Descending',
+  '图鉴': 'Catalog',
+  '推荐': 'Usage',
+  /* 顶栏语言控件 */
+  '显示': 'UI',
+  '数据': 'Data',
+  /* 定位组合（卡片上用「·」连起来的多定位） */
+  '主C·副C': 'Main DPS · Sub DPS',
+  '主C·辅助': 'Main DPS · Support',
+  '副C·主C': 'Sub DPS · Main DPS',
+  '副C·辅助': 'Sub DPS · Support',
+  '辅助·主C': 'Support · Main DPS',
+  '辅助·副C': 'Support · Sub DPS',
+  '主C·副C·辅助': 'Main DPS · Sub DPS · Support',
+  /* 追加属性重要度 */
+  '同权': 'Tied',
+  '次选': '2nd',
+  /* 内置散件规则名 */
+  '元素伤害杯': 'Elemental DMG Goblet',
+  '双暴头': 'CRIT Circlet',
+  '充能沙': 'Energy Recharge Sands',
+  '精通杯': 'Elemental Mastery Goblet',
+  /* 散件规则描述（整句，遇到 <b> 切碎的靠 data-en 顶上） */
+  '空之杯主要属性为任意元素 / 物理伤害加成——掉率极低，是公认必留的稀有胚子':
+    'Goblet with any elemental or Physical DMG Bonus — extremely rare, keep it',
+  '理之冠主要属性为暴击率 / 暴击伤害，追加属性带双暴等好词条即留':
+    'Circlet with CRIT Rate / CRIT DMG, keep it when the substats include CRIT',
+  '时之沙主要属性为元素充能效率，追加属性带双暴 / 攻击等即留':
+    'Sands with Energy Recharge, keep it when the substats include CRIT / ATK',
+  '空之杯主要属性为元素精通——草系反应队常用，同样稀有':
+    'Goblet with Elemental Mastery — common in Dendro reaction teams, just as rare',
+  /* 胚子评分器档位 */
+  'B 级 · 过渡件': 'B · Transitional',
+  'C 级 · 狗粮': 'C · Feed it',
+  '主要属性命中需求但追加属性平庸。': 'Main stat matches but the substats are mediocre.',
+  '主要属性不在任何已启用角色的需求列表中。': 'Main stat is not needed by any enabled character.',
+  '操作：直接喂。': 'Action: feed it.',
+  '操作：先用着，毕业胚子到位后当狗粮喂掉。': 'Action: use it for now, feed it once a better piece shows up.',
+  '操作：升到 4 级看第 4 词条，出双暴继续喂，否则停手留作过渡。':
+    'Action: level to 4 to reveal the 4th substat; keep going on CRIT, otherwise stop and keep it as a transitional piece.',
+  '例外：同套装的对应元素伤害杯极难出货，建议无脑保留。':
+    'Exception: a matching elemental DMG goblet of the same set is extremely rare — always keep it.',
+  '（或你方角色所需的核心双词条）。': '(or the two core substats your characters need).',
+  /* 方案页零碎 */
+  '预设「至少两条」': 'defaults to "at least 2"',
+  '「保存」': '"Save"',
+  '全部角色': 'all characters',
+  '主要属性：': 'Main stat: ',
+  '追加属性：': 'Substats: ',
+  '个候选方案': 'candidate plans',
+  /* 数据页 */
+  '按配装组': 'per build',
+  '个角色、': ' characters, ',
+  /* 使用说明 / 更新日志里的标题 */
+  '三步走': 'How it works',
+  '怎么看方案': 'Reading a plan',
+  '注意': 'Gotchas',
+  '语言': 'Language',
+  /* 更新日志（历史条目） */
+  '套装列表可切换「图鉴 / 推荐」两种排序依据':
+    'Set lists can switch between "Catalog" and "Usage" ordering',
+  '列表可切正序 / 倒序，排序顺序来自米游社图鉴':
+    'Lists can be reversed; the order follows the HoYoLAB catalog',
+  '角色库补全到 124 条 + 国度 / 定位筛选 + 旅行者按形态拆分':
+    'Character library completed to 124 + region / role filters + Traveler split by form',
+  '属性选择浮窗 + 还原拆三档 + 内置数据自动跟随':
+    'Stat picker popup + restore split into three levels + built-in data auto-follow',
+  '角色编辑浮窗化 + 两层还原 + 更新公告与日志':
+    'Character editing in a popup + two levels of restore + update notice and changelog',
+});
+
+/* ---------- 带数字的句式：词典装不下的，用正则兜底 ----------
+ * 每项 [正则, 替换函数]，先查词典、再走规则。 */
+const T_RULES = [
+  [/^\+(\d+)备选$/, m => '+' + m[1] + ' alt'],
+  [/^\/ (\d+) 个$/, m => '/ ' + m[1]],
+  [/^已启用 (\d+) 条 · 生成 (\d+) 个候选方案$/,
+   m => m[1] + ' rule(s) on · ' + m[2] + ' candidate plan(s)'],
+  [/^筛出 (\d+) \/ (\d+) 个?$/, m => m[1] + ' / ' + m[2] + ' matched'],
+  [/^已启用 (\d+) 个角色$/, m => m[1] + ' characters enabled'],
+  [/^共 (\d+) 条?$/, m => m[1] + ' total'],
+  [/^等 (\d+) 人$/, m => '+ ' + m[1] + ' more'],
+  [/^共 (\d+) 人$/, m => m[1] + ' total'],
+  [/^有效权重 ([\d.]+) \/ 约 (\d+) 次词条 = (\d+)%$/,
+   m => 'Weight ' + m[1] + ' / about ' + m[2] + ' rolls = ' + m[3] + '%'],
+  [/^当前版本 (.+)$/, m => 'Version ' + m[1]],
+];
+function trByRules(zh) {
+  const s = String(zh).trim();
+  if (!s) return null;
+  for (let i = 0; i < T_RULES.length; i++) {
+    const m = s.match(T_RULES[i][0]);
+    if (m) return String(zh).replace(s, T_RULES[i][1](m));
+  }
+  return null;
+}
+
+/* ---------- 界面文案补充二：评分器 / 规则卡 / 零碎标签 ---------- */
+Object.assign(T_UI_EN, {
+  '国度': 'Region',
+  '★必须：': '★Required: ',
+  '当前配装用不上': 'not used by the current build',
+  '尚未启用角色，评分器暂用「双暴输出」默认排序。':
+    'No character enabled yet — the scorer falls back to the default "CRIT" ordering.',
+  '当前等级': 'Current level',
+  'C 狗粮': 'C · Feed it',
+  '未选择套装，只做追加属性评分': 'No set selected — scoring substats only',
+  '尚未填写追加属性': 'No substats entered yet',
+  '建议：直接喂，别浪费资源。': 'Verdict: feed it, do not waste resources.',
+  '启用角色后这里会显示每个套装的追加属性需求排序。':
+    'Enable some characters and the substat priority for every set shows up here.',
+  '当前版本': 'Current version',
+  '有效权重': 'Effective weight',
+});
+
+/* ---------- 界面文案补充三：动态写入浮窗的标题 / 标签 ---------- */
+Object.assign(T_UI_EN, {
+  '（主推）': ' (main)',
+  '（备选）': ' (alt)',
+  /* ② 锁定方案页：候选卡 / 计数 / 提示 */
+  '散件 / 过渡保留：': 'Off-piece / transitional keep: ',
+  '供 {x} 使用': 'For {x}',
+  '备选': 'Alt',
+  '次选': '2nd',
+  '共 {n} 个候选（角色组 {c} · 散件规则 {r}）': '{n} candidates ({c} character group(s) · {r} off-piece rule(s))',
+  '等 {n} 人': '+{n} more',
+  '共 {n} 人': '{n} total',
+  '已采纳 {p} / 游戏上限 {m}': 'Adopted {p} / in-game cap {m}',
+  '（未指定角色）': '(no character assigned)',
+  '不限': 'Any',
+  '选择主要属性': 'Choose a main stat',
+  '选择追加属性': 'Choose a substat',
+  '挑一个还没加过的属性：': 'Pick one you have not added yet: ',
+});
