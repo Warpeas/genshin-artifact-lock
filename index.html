@@ -415,8 +415,14 @@ table.tbl tr:hover td{background:#1d242e;}
 .ms-item{
   display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
   border-radius:7px;padding:6px 10px;font-size:13px;
+  /* 允许收缩：里面的下拉框再长也不会把整行撑出容器 */
+  min-width:0;
 }
-.ms-item select{flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:12.5px;font-family:inherit;}
+.ms-item select{
+  flex:1 1 auto;min-width:0;max-width:100%;
+  padding:4px 8px;border-radius:6px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--txt);font-size:12.5px;font-family:inherit;
+}
 .ms-item .ord{color:var(--txt3);font-size:12px;width:34px;flex:none;}
 .ms-item .up,.ms-item .down{background:none;border:none;color:var(--txt3);cursor:pointer;padding:0 3px;font-size:13px;}
 .ms-item .up:hover,.ms-item .down:hover{color:var(--gold);}
@@ -634,9 +640,9 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     padding-top:calc(9px + env(safe-area-inset-top));
   }
   .topbar .sub,.save-hint{display:none;}
-  /* 语言切换：窄屏只留下拉框，把前缀文字让出来 */
+  /* 语言切换：窄屏只留下拉框，不占额外宽度 */
   .lang-fld{font-size:0;gap:0;}
-  .lang-fld select{max-width:92px;font-size:11.5px;padding:3px 4px;}
+  .lang-fld select{max-width:88px;font-size:11.5px;padding:3px 4px;}
   /* 元素分段：英文（Pyro / Electro…）比中文宽，窄屏压缩内边距与字号 */
   .seg-btn{padding:6px 8px;font-size:12px;}
   .logo{width:32px;height:32px;font-size:16px;border-radius:8px;}
@@ -729,6 +735,22 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .ms-item .up,.ms-item .down,.ms-item .rm{min-width:32px;min-height:32px;font-size:16px;}
   .ms-item .star-btn{min-height:32px;padding:4px 12px;font-size:16px;}
   .ms-item .op-btn{min-height:32px;padding:4px 12px;font-size:16px;}
+  /* 属性行：窄屏把「下拉框」和「操作按钮」分两行排，按钮再多也不会挤出去 */
+  .ms-item{flex-wrap:wrap;gap:6px 8px;padding:8px 10px;}
+  .ms-item select{flex:1 1 auto;min-width:104px;}
+  /* 操作按钮整组靠右，排在第二行；换行时补齐整行宽度 */
+  .ms-item .ord{flex:1 1 auto;min-width:104px;width:auto;}
+  .ms-item .star-btn,.ms-item .op-btn{flex:none;margin-left:0;}
+  .ms-item .up,.ms-item .down,.ms-item .rm{flex:none;}
+  /* 行内第一个「弹性」元素（ord 或 op-btn）把下拉框后的空间吃掉，
+     使其后的按钮组自然换到第二行；这里用 order 强制顺序不变 */
+  .ms-item select{order:1;}
+  .ms-item .ord{order:0;}
+  .ms-item .op-btn{order:0;}
+  .ms-item .star-btn{order:2;}
+  .ms-item .up{order:3;}
+  .ms-item .down{order:4;}
+  .ms-item .rm{order:5;margin-left:auto;}
 
   /* --- 抽屉 / 弹窗：占满宽度，底部按钮平铺 --- */
   .drawer{width:100vw;border-left:none;}
@@ -790,14 +812,8 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     </div>
   </div>
   <div class="topbar-right">
-    <label class="lang-fld" title="界面按钮、说明文案用哪种语言">显示
-      <select id="uiLangSel" aria-label="显示语言">
-        <option value="zh">中文</option>
-        <option value="en">English</option>
-      </select>
-    </label>
-    <label class="lang-fld" title="角色名 / 套装名 / 属性名等数据本身用哪种语言">数据
-      <select id="dataLangSel" aria-label="数据语言">
+    <label class="lang-fld" title="界面文案与角色 / 套装 / 属性名一并切换语言">
+      <select id="langSel" aria-label="语言（界面 + 数据）">
         <option value="zh">中文</option>
         <option value="en">English</option>
       </select>
@@ -1149,11 +1165,12 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     </ul>
     <h4>中英文切换</h4>
     <ul>
-      <li>顶栏右上角有两个<b>各自独立</b>的开关：<b>显示语言</b>管界面按钮与说明文案，<b>数据语言</b>管角色名 / 套装名 / 属性名这些数据本身。两者可以不一样，选择都会记住。</li>
-      <li>数据语言切成 English 后，角色与套装显示官方英文名（如 胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），属性、国度、定位、部位同样跟随。</li>
+      <li>顶栏右上角有一个<b>语言下拉</b>，一次把界面文案和数据名一起切过去：选 English 后按钮、说明、以及角色名 / 套装名 / 属性名全都变英文，选择会记住。</li>
+      <li>切成 English 后显示官方英文本地化名（如 胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），属性、国度、定位、部位同样跟随。</li>
       <li>搜索框<b>两种语言都认</b>：不管当前显示哪种，输入「胡桃」或「Hu Tao」、「逐影猎人」或「Marechaussee」都能搜到。</li>
       <li>复制 / 导出的文本<b>始终保持中文</b>——游戏内的锁定界面是中文，照抄时才对得上。</li>
       <li>「更新日志」里记录的是历史改动，保留原始中文不翻译。</li>
+      <li>进阶：底层仍保留<b>分别设置</b>界面语言与数据语言的能力（<code>setLang('ui', …)</code> / <code>setLang('data', …)</code>），供接口或脚本单独调用；界面上不再拆成两个开关。</li>
     </ul>
   </div>
 </div>
@@ -1232,8 +1249,18 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
  * CHANGELOG：新在前，CHANGELOG[0].v 必须等于 APP_VERSION。items 为纯文本（渲染时会 esc）。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.15';
+const APP_VERSION = '2026.09.16';
 const CHANGELOG = [
+  {
+    v: '2026.09.16', date: '2026-09-16',
+    title: '语言开关合并为一个 + 修手机端配装编辑的横向滚动条',
+    items: [
+      '顶栏的「显示语言 / 数据语言」两个下拉合并成一个：选一次，界面文案与角色 / 套装 / 属性名一起切换，少点一步。',
+      '底层仍保留分别设置的能力（setLang 的 ui / data 两个入口），接口或脚本仍可单独调；只是界面上不再拆成两个开关。',
+      '修手机端「编辑配装」浮窗的横向滚动条：主要属性行原来会被最长的属性名（如「元素充能效率」）撑宽，把 ↑ ↓ × 按钮顶出容器，刚打开时看不到删除键。',
+      '现在属性行在窄屏自动折成两行——第一行「重要度 + 属性下拉框」，第二行「★ / ↑ / ↓ / ×」；下拉框可收缩，属性名再长也不会溢出，追加属性行同样修好。',
+    ],
+  },
   {
     v: '2026.09.15', date: '2026-09-15',
     title: '中英文切换（显示语言 / 数据语言）+ 角色与圣遗物按图鉴核对',
@@ -3415,8 +3442,10 @@ function setLang(kind, v) {
   renderDataChangelog();
   document.documentElement.lang = (langOf('ui') === 'en' ? 'en' : 'zh-CN');
   applyI18n();
-  toast(kind === 'ui'
-    ? (next === 'en' ? '显示语言已切换为 English' : '显示语言已切换为中文')
+  // 界面上的下拉是一次切两边的，连着调两次时只在最后弹一次提示
+  if (kind === 'ui' && langOf('data') !== next) return;
+  toast(kind === 'ui' || langOf('data') === next
+    ? (next === 'en' ? '已切换为 English' : '已切换为中文')
     : (next === 'en' ? '数据语言已切换为 English' : '数据语言已切换为中文'));
 }
 function isDesc(key) { return !!(state && state.sortPref && state.sortPref[key] === 'desc'); }
@@ -6434,10 +6463,17 @@ function bind() {
     if (b) toggleSort(b.dataset.sort);
   });
 
-  // 语言切换：显示语言（界面文案）/ 数据语言（角色 · 套装 · 属性）各自独立
-  const uiSel = $('#uiLangSel'), dataSel = $('#dataLangSel');
-  if (uiSel) { uiSel.value = langOf('ui'); uiSel.onchange = e => setLang('ui', e.target.value); }
-  if (dataSel) { dataSel.value = langOf('data'); dataSel.onchange = e => setLang('data', e.target.value); }
+  // 语言切换：界面上只有一个下拉，一次把「界面文案」和「数据名」都切过去
+  // （后端仍保留 setLang('ui', …) / setLang('data', …) 两个独立入口）
+  const langSel = $('#langSel');
+  if (langSel) {
+    langSel.value = langOf('ui');
+    langSel.onchange = e => {
+      const v = e.target.value;
+      setLang('ui', v);
+      setLang('data', v);
+    };
+  }
 
   // 角色页筛选
   $('#charSearch').oninput = e => { ui.search = e.target.value; renderChars(); };

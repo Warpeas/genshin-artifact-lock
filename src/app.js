@@ -527,8 +527,10 @@ function setLang(kind, v) {
   renderDataChangelog();
   document.documentElement.lang = (langOf('ui') === 'en' ? 'en' : 'zh-CN');
   applyI18n();
-  toast(kind === 'ui'
-    ? (next === 'en' ? '显示语言已切换为 English' : '显示语言已切换为中文')
+  // 界面上的下拉是一次切两边的，连着调两次时只在最后弹一次提示
+  if (kind === 'ui' && langOf('data') !== next) return;
+  toast(kind === 'ui' || langOf('data') === next
+    ? (next === 'en' ? '已切换为 English' : '已切换为中文')
     : (next === 'en' ? '数据语言已切换为 English' : '数据语言已切换为中文'));
 }
 function isDesc(key) { return !!(state && state.sortPref && state.sortPref[key] === 'desc'); }
@@ -3546,10 +3548,17 @@ function bind() {
     if (b) toggleSort(b.dataset.sort);
   });
 
-  // 语言切换：显示语言（界面文案）/ 数据语言（角色 · 套装 · 属性）各自独立
-  const uiSel = $('#uiLangSel'), dataSel = $('#dataLangSel');
-  if (uiSel) { uiSel.value = langOf('ui'); uiSel.onchange = e => setLang('ui', e.target.value); }
-  if (dataSel) { dataSel.value = langOf('data'); dataSel.onchange = e => setLang('data', e.target.value); }
+  // 语言切换：界面上只有一个下拉，一次把「界面文案」和「数据名」都切过去
+  // （后端仍保留 setLang('ui', …) / setLang('data', …) 两个独立入口）
+  const langSel = $('#langSel');
+  if (langSel) {
+    langSel.value = langOf('ui');
+    langSel.onchange = e => {
+      const v = e.target.value;
+      setLang('ui', v);
+      setLang('data', v);
+    };
+  }
 
   // 角色页筛选
   $('#charSearch').oninput = e => { ui.search = e.target.value; renderChars(); };

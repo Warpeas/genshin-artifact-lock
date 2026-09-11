@@ -17,14 +17,8 @@
     </div>
   </div>
   <div class="topbar-right">
-    <label class="lang-fld" title="界面按钮、说明文案用哪种语言">显示
-      <select id="uiLangSel" aria-label="显示语言">
-        <option value="zh">中文</option>
-        <option value="en">English</option>
-      </select>
-    </label>
-    <label class="lang-fld" title="角色名 / 套装名 / 属性名等数据本身用哪种语言">数据
-      <select id="dataLangSel" aria-label="数据语言">
+    <label class="lang-fld" title="界面文案与角色 / 套装 / 属性名一并切换语言">
+      <select id="langSel" aria-label="语言（界面 + 数据）">
         <option value="zh">中文</option>
         <option value="en">English</option>
       </select>
@@ -376,11 +370,12 @@
     </ul>
     <h4>中英文切换</h4>
     <ul>
-      <li>顶栏右上角有两个<b>各自独立</b>的开关：<b>显示语言</b>管界面按钮与说明文案，<b>数据语言</b>管角色名 / 套装名 / 属性名这些数据本身。两者可以不一样，选择都会记住。</li>
-      <li>数据语言切成 English 后，角色与套装显示官方英文名（如 胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），属性、国度、定位、部位同样跟随。</li>
+      <li>顶栏右上角有一个<b>语言下拉</b>，一次把界面文案和数据名一起切过去：选 English 后按钮、说明、以及角色名 / 套装名 / 属性名全都变英文，选择会记住。</li>
+      <li>切成 English 后显示官方英文本地化名（如 胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），属性、国度、定位、部位同样跟随。</li>
       <li>搜索框<b>两种语言都认</b>：不管当前显示哪种，输入「胡桃」或「Hu Tao」、「逐影猎人」或「Marechaussee」都能搜到。</li>
       <li>复制 / 导出的文本<b>始终保持中文</b>——游戏内的锁定界面是中文，照抄时才对得上。</li>
       <li>「更新日志」里记录的是历史改动，保留原始中文不翻译。</li>
+      <li>进阶：底层仍保留<b>分别设置</b>界面语言与数据语言的能力（<code>setLang('ui', …)</code> / <code>setLang('data', …)</code>），供接口或脚本单独调用；界面上不再拆成两个开关。</li>
     </ul>
   </div>
 </div>

@@ -408,8 +408,14 @@ table.tbl tr:hover td{background:#1d242e;}
 .ms-item{
   display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
   border-radius:7px;padding:6px 10px;font-size:13px;
+  /* 允许收缩：里面的下拉框再长也不会把整行撑出容器 */
+  min-width:0;
 }
-.ms-item select{flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:12.5px;font-family:inherit;}
+.ms-item select{
+  flex:1 1 auto;min-width:0;max-width:100%;
+  padding:4px 8px;border-radius:6px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--txt);font-size:12.5px;font-family:inherit;
+}
 .ms-item .ord{color:var(--txt3);font-size:12px;width:34px;flex:none;}
 .ms-item .up,.ms-item .down{background:none;border:none;color:var(--txt3);cursor:pointer;padding:0 3px;font-size:13px;}
 .ms-item .up:hover,.ms-item .down:hover{color:var(--gold);}
@@ -627,9 +633,9 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     padding-top:calc(9px + env(safe-area-inset-top));
   }
   .topbar .sub,.save-hint{display:none;}
-  /* 语言切换：窄屏只留下拉框，把前缀文字让出来 */
+  /* 语言切换：窄屏只留下拉框，不占额外宽度 */
   .lang-fld{font-size:0;gap:0;}
-  .lang-fld select{max-width:92px;font-size:11.5px;padding:3px 4px;}
+  .lang-fld select{max-width:88px;font-size:11.5px;padding:3px 4px;}
   /* 元素分段：英文（Pyro / Electro…）比中文宽，窄屏压缩内边距与字号 */
   .seg-btn{padding:6px 8px;font-size:12px;}
   .logo{width:32px;height:32px;font-size:16px;border-radius:8px;}
@@ -722,6 +728,22 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .ms-item .up,.ms-item .down,.ms-item .rm{min-width:32px;min-height:32px;font-size:16px;}
   .ms-item .star-btn{min-height:32px;padding:4px 12px;font-size:16px;}
   .ms-item .op-btn{min-height:32px;padding:4px 12px;font-size:16px;}
+  /* 属性行：窄屏把「下拉框」和「操作按钮」分两行排，按钮再多也不会挤出去 */
+  .ms-item{flex-wrap:wrap;gap:6px 8px;padding:8px 10px;}
+  .ms-item select{flex:1 1 auto;min-width:104px;}
+  /* 操作按钮整组靠右，排在第二行；换行时补齐整行宽度 */
+  .ms-item .ord{flex:1 1 auto;min-width:104px;width:auto;}
+  .ms-item .star-btn,.ms-item .op-btn{flex:none;margin-left:0;}
+  .ms-item .up,.ms-item .down,.ms-item .rm{flex:none;}
+  /* 行内第一个「弹性」元素（ord 或 op-btn）把下拉框后的空间吃掉，
+     使其后的按钮组自然换到第二行；这里用 order 强制顺序不变 */
+  .ms-item select{order:1;}
+  .ms-item .ord{order:0;}
+  .ms-item .op-btn{order:0;}
+  .ms-item .star-btn{order:2;}
+  .ms-item .up{order:3;}
+  .ms-item .down{order:4;}
+  .ms-item .rm{order:5;margin-left:auto;}
 
   /* --- 抽屉 / 弹窗：占满宽度，底部按钮平铺 --- */
   .drawer{width:100vw;border-left:none;}
