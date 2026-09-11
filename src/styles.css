@@ -101,10 +101,12 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .count-badge{font-size:13px;color:var(--txt2);}
 .count-badge b{color:var(--gold);font-size:16px;}
 
-/* ---------- 正序 / 倒序 切换 ---------- */
-.sort-bar{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
+/* ---------- 排序：图鉴 / 推荐 两档 + 正序 / 倒序 ---------- */
+.sort-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .sort-btn{white-space:nowrap;}
 .sort-note{font-size:12px;color:var(--txt3);white-space:nowrap;}
+.sort-by{flex:none;}
+.sort-by .seg-btn{padding:5px 11px;font-size:12px;}
 
 /* ---------- batch bar ---------- */
 .batch-bar{

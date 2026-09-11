@@ -351,18 +351,41 @@ function defaultSets() {
   return SETS.map(s => ({ name: s.name, bonus: s.bonus, builtin: true, hidden: false }));
 }
 
-/* ---------- 列表排序：正序 / 倒序 ----------
- * 正序 = 内置库顺序（角色按国度、套装按套装库），也就是米游社图鉴的排列；
- * 倒序 = 把它整个反过来。只存「要不要反」，顺序本身永远跟着内置库走。
- * key：char = 角色配置页卡片，plan = 锁定方案页套装，setSub = 追加属性规则页套装表格 */
+/* ---------- 列表排序：排序依据 + 正序 / 倒序 ----------
+ * 两档排序依据（只有套装列表有）：
+ *   catalog   图鉴顺序 = 套装库顺序，也就是米游社图鉴的排列，稳定不跳动
+ *   recommend 推荐顺序 = 用的人多的排前面（会随勾选的角色变化）
+ * 正序 / 倒序：把排好的结果整个反过来。
+ * key：char = 角色配置页卡片（只有正倒序），plan = 锁定方案页套装，setSub = 追加属性规则页套装表格 */
 const SORT_KEYS = ['char', 'plan', 'setSub'];
-const SORT_NOTE = '排序顺序来自米游社图鉴';
+const SORT_BY_KEYS = ['plan', 'setSub'];          // 有「排序依据」两档的列表
+const SORT_BY_NAME = { catalog: '图鉴顺序', recommend: '推荐顺序' };
+const SORT_BY_LABEL = { catalog: '图鉴', recommend: '推荐' };   // 分段按钮用短名
+const SORT_BY_KEYS_SORTED = ['catalog', 'recommend'];
+const SORT_NOTE = {
+  catalog: '排序顺序来自米游社图鉴',
+  recommend: '按使用人数排序：用得多的在前',
+};
 function normalizeSortPref(raw) {
   const out = {};
   SORT_KEYS.forEach(k => { out[k] = (raw && raw[k] === 'desc') ? 'desc' : 'asc'; });
+  SORT_BY_KEYS.forEach(k => {
+    out[k + 'By'] = (raw && raw[k + 'By'] === 'recommend') ? 'recommend' : 'catalog';
+  });
   return out;
 }
 function isDesc(key) { return !!(state && state.sortPref && state.sortPref[key] === 'desc'); }
+function sortBy(key) { return (state && state.sortPref && state.sortPref[key + 'By']) || 'catalog'; }
+function setSortBy(key, by) {
+  if (!SORT_BY_KEYS.includes(key)) return;
+  if (by !== 'recommend') by = 'catalog';
+  if (sortBy(key) === by) return;
+  state.sortPref[key + 'By'] = by;
+  save();
+  if (key === 'plan') renderPlan();
+  if (key === 'setSub') renderSetSubTable();
+  toast('套装已切换为「' + SORT_BY_NAME[by] + '」· ' + SORT_NOTE[by]);
+}
 function toggleSort(key) {
   if (!SORT_KEYS.includes(key)) return;
   state.sortPref[key] = isDesc(key) ? 'asc' : 'desc';
@@ -370,20 +393,59 @@ function toggleSort(key) {
   if (key === 'char') renderChars();
   if (key === 'plan') renderPlan();
   if (key === 'setSub') renderSetSubTable();
-  toast((key === 'char' ? '角色' : '套装') + '已切换为' + (isDesc(key) ? '倒序' : '正序') + '（' + SORT_NOTE + '）');
+  toast((key === 'char' ? '角色' : '套装') + '已切换为' + (isDesc(key) ? '倒序' : '正序') +
+        '（' + SORT_NOTE[sortBy(key)] + '）');
 }
-/* 统一的「正序 / 倒序」切换按钮（点一下换一个方向） */
-function sortBtnHtml(key) {
+/* 统一的排序控件：可选「排序依据」两档 + 「正序 / 倒序」按钮 + 说明
+ * withBy = true 时显示「图鉴 / 推荐」分段切换（角色列表没有这一档） */
+function sortBtnHtml(key, withBy) {
   const desc = isDesc(key);
-  return `<button type="button" class="btn sm sort-btn" data-sort="${key}"` +
-    ` title="${SORT_NOTE}：当前为${desc ? '倒序' : '正序'}，点击切换为${desc ? '正序' : '倒序'}">` +
+  const by = withBy ? sortBy(key) : 'catalog';
+  const note = SORT_NOTE[by];
+  let byHtml = '';
+  if (withBy) {
+    byHtml = `<span class="seg sort-by" data-sortby="${key}">` +
+      SORT_BY_KEYS_SORTED.map(v =>
+        `<button type="button" class="seg-btn${by === v ? ' active' : ''}" data-by="${v}"` +
+        ` title="${SORT_NOTE[v]}">${SORT_BY_LABEL[v]}</button>`).join('') +
+      '</span>';
+  }
+  return byHtml +
+    `<button type="button" class="btn sm sort-btn" data-sort="${key}"` +
+    ` title="${note}：当前为${desc ? '倒序' : '正序'}，点击切换为${desc ? '正序' : '倒序'}">` +
     `${desc ? '↑ 倒序' : '↓ 正序'}</button>` +
-    `<span class="sort-note">${SORT_NOTE}</span>`;
+    `<span class="sort-note">${note}</span>`;
 }
 /* 按「内置库顺序」排好，再按偏好决定要不要反过来 */
 function applySort(arr, key, cmp) {
   const out = arr.slice().sort(cmp);
   return isDesc(key) ? out.reverse() : out;
+}
+/* 套装在套装库里的序号（图鉴顺序用） */
+function setOrderMap() {
+  const m = new Map();
+  state.sets.forEach((s, i) => m.set(s.name, i));
+  return m;
+}
+/* ② 方案页：blocks 形如 [套装名, { users: Map }] */
+function cmpPlanSets() {
+  const by = sortBy('plan');
+  if (by === 'recommend') {
+    return (a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh');
+  }
+  const idx = setOrderMap();
+  return (a, b) => (idx.has(a[0]) ? idx.get(a[0]) : 1e9) - (idx.has(b[0]) ? idx.get(b[0]) : 1e9) ||
+                   a[0].localeCompare(b[0], 'zh');
+}
+/* ③ 表格：entries 形如 [套装名, { n: 角色数, list } ] */
+function cmpSetSubRows() {
+  const by = sortBy('setSub');
+  if (by === 'recommend') {
+    return (a, b) => ((b[1].n || 0) - (a[1].n || 0)) || a[0].localeCompare(b[0], 'zh');
+  }
+  const idx = setOrderMap();
+  return (a, b) => (idx.has(a[0]) ? idx.get(a[0]) : 1e9) - (idx.has(b[0]) ? idx.get(b[0]) : 1e9) ||
+                   a[0].localeCompare(b[0], 'zh');
 }
 
 /* 命中条数钳位：只接受 1–SUB_MIN_HIT_MAX 的整数，其余回落到预设值 */
@@ -2515,7 +2577,7 @@ function renderPlan() {
 
   const enabled = state.characters.filter(c => c.enabled).length;
   const psb = $('#planSortBar');
-  if (psb) psb.innerHTML = sortBtnHtml('plan');
+  if (psb) psb.innerHTML = sortBtnHtml('plan', true);
 
   if (!enabled) {
     $('#planBody').innerHTML = '<div class="card"><p class="muted">请先在「① 角色配置」页勾选你要养的角色，这里会自动生成锁定方案。</p></div>';
@@ -2535,18 +2597,11 @@ function renderPlan() {
   const setWeights = setSubRanking(includeAlt);
   renderKeepRules();   // 规则面板：启用状态 + 计数
 
-  // 套装块顺序：正序 = 套装库顺序（米游社图鉴），倒序 = 反过来
-  const setIdx = new Map();
-  state.sets.forEach((s, i) => setIdx.set(s.name, i));
+  // 套装块顺序：图鉴 = 套装库顺序，推荐 = 用的人多在前；再按偏好决定正序 / 倒序
   const ordered = applySort(
     blocks.filter(([name]) => setFilter === 'all' || name === setFilter)
           .filter(([name, b]) => !hideUnused || b.users.size > 0),
-    'plan',
-    (a, b) => {
-      const ia = setIdx.has(a[0]) ? setIdx.get(a[0]) : 1e9;
-      const ib = setIdx.has(b[0]) ? setIdx.get(b[0]) : 1e9;
-      return (ia - ib) || a[0].localeCompare(b[0], 'zh');
-    });
+    'plan', cmpPlanSets());
   const html = ordered.map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights)).join('');
 
   blocks.forEach(([name, b]) => {
@@ -3052,13 +3107,7 @@ function runScore() {
 
 function renderSetSubTable() {
   const rank = setSubRanking($('#planAltBuild') ? $('#planAltBuild').checked : true);
-  const setIdx = new Map();
-  state.sets.forEach((s, i) => setIdx.set(s.name, i));
-  const rows = applySort(Array.from(rank.entries()), 'setSub', (a, b) => {
-    const ia = setIdx.has(a[0]) ? setIdx.get(a[0]) : 1e9;
-    const ib = setIdx.has(b[0]) ? setIdx.get(b[0]) : 1e9;
-    return (ia - ib) || a[0].localeCompare(b[0], 'zh');
-  })
+  const rows = applySort(Array.from(rank.entries()), 'setSub', cmpSetSubRows())
     .map(([setName, o]) => {
       const top = o.list.slice(0, 5);
       if (!top.length) return '';
@@ -3075,7 +3124,7 @@ function renderSetSubTable() {
     }).join('');
 
   $('#setSubTable').innerHTML =
-    `<div class="sort-bar">${sortBtnHtml('setSub')}</div>` +
+    `<div class="sort-bar">${sortBtnHtml('setSub', true)}</div>` +
     (rows
       ? `<table class="tbl"><thead><tr><th>套装</th><th>追加属性需求排序 Top5（★= 多数角色标为必选）</th><th>相对强度</th></tr></thead><tbody>${rows}</tbody></table>`
       : '<p class="muted small">启用角色后这里会显示每个套装的追加属性需求排序。</p>');
@@ -3306,8 +3355,12 @@ function bind() {
     if (t.dataset.tab === 'subs') renderSubs();
   });
 
-  // 列表「正序 / 倒序」切换：三处共用一套按钮（角色页 / 方案页 / 追加属性表格）
+  // 列表排序：三处共用一套控件（角色页 / 方案页 / 追加属性表格）
+  // 「图鉴 / 推荐」两档 = [data-sortby] 容器里的 [data-by] 按钮；「正序 / 倒序」= [data-sort]
   document.addEventListener('click', e => {
+    const byBtn = e.target.closest('[data-by]');
+    const seg = byBtn && byBtn.closest('[data-sortby]');
+    if (seg && byBtn) { setSortBy(seg.dataset.sortby, byBtn.dataset.by); return; }
     const b = e.target.closest('[data-sort]');
     if (b) toggleSort(b.dataset.sort);
   });
