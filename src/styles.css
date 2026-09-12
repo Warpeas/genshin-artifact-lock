@@ -170,7 +170,6 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .cc-region{font-weight:600;}
 .cc-dot{color:var(--txt3);}
 .cc-role{color:var(--txt2);}
-.cc-sets{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
 .set-tag{font-size:11px;padding:2px 7px;border-radius:5px;background:var(--panel2);color:var(--txt2);border:1px solid var(--line);}
 .set-tag.main{background:#2f3a24;color:#cfe6a8;border-color:#4a5c34;}
 .cc-main{display:flex;flex-direction:column;gap:3px;}
@@ -178,9 +177,39 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .cc-main-row span:first-child{color:var(--txt3);flex:none;width:26px;}
 .cc-main-row .ms{color:var(--txt2);}
 
+/* 配装功能定位小标签：统一中性配色（区别于角色级 .role-tag 的旧分色方案） */
+.brole{display:inline-flex;align-items:center;font-size:10.5px;padding:1px 7px;border-radius:5px;font-weight:600;flex:none;border:1px solid rgba(120,160,210,.35);background:rgba(120,160,210,.12);color:#a9c8ef;line-height:1.5;white-space:nowrap;}
+.cc-top .brole{margin-left:4px;}
+.bm-t .brole{margin-left:4px;}
+/* 配装编辑器：功能定位勾选区 + 自定义输入 */
+.role-chks{display:flex;flex-wrap:wrap;gap:6px 12px;margin-bottom:6px;}
+.brole-chk{font-size:12px;color:var(--txt2);}
+.bm-addrole{display:flex;gap:6px;align-items:center;}
+.bm-addrole input{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:4px 8px;font-family:inherit;font-size:12px;}
+.bm-addrole input:focus{outline:none;border-color:#3f4d61;}
+/* 卡片配装条：套装名 + 切换合并为一行可点选按钮；选中 = 绿色高亮，未选中 = 普通色 */
+.cc-builds{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+.cc-bp{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:11px;max-width:100%;padding:2px 8px;border-radius:6px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--txt2);
+  cursor:pointer;font-family:inherit;line-height:1.5;text-align:left;transition:.12s;
+}
+.cc-bp:hover{border-color:#3f4d61;color:var(--txt);}
+.cc-bp.on{background:#2f3a24;color:#cfe6a8;border-color:#4a5c34;font-weight:600;}
+.cc-bp-tag{font-size:10px;opacity:.85;font-weight:400;}
+
 /* 编辑抽屉：攻略来源一行一链接 + 可跳转 + 编辑按钮 */
 .src-list{display:flex;flex-direction:column;gap:6px;margin-bottom:7px;}
 .src-row{display:flex;align-items:center;gap:6px;}
+/* 来源名 + 数据源/攻略标识：明确标注配装数据实际取自哪里 */
+.src-kind{flex:none;font-size:11px;padding:2px 8px;border-radius:5px;line-height:1.5;font-weight:600;
+  white-space:nowrap;max-width:132px;overflow:hidden;text-overflow:ellipsis;
+  background:#1b2836;color:#9fd0f5;border:1px solid #2f4356;}
+.src-kind.is-data{background:rgba(95,211,154,.14);color:#7fe0aa;border-color:rgba(95,211,154,.42);}
+.src-badge{flex:none;font-size:10.5px;padding:1px 6px;border-radius:4px;line-height:1.5;white-space:nowrap;
+  background:#22301f;color:#a9d69b;border:1px solid #3d4a3a;}
+.src-badge.guide{background:var(--panel2);color:var(--txt3);border-color:var(--line);}
 .src-go{flex:1;min-width:0;white-space:normal;word-break:break-all;font-size:11.5px;line-height:1.45;color:#5fc4f0;text-decoration:none;border:1px solid #2a4a5e;border-radius:6px;background:#0e2433;padding:4px 8px;}
 .src-go:hover{background:#13344a;color:#9fdcff;border-color:#3a6685;}
 .src-edit{flex:none;width:30px;height:30px;line-height:1;font-size:15px;border-radius:6px;border:1px solid #2a4a5e;background:#0e2433;color:#7fd0f0;cursor:pointer;}
@@ -687,7 +716,6 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .char-grid{grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px;}
   .char-card{padding:10px 11px;}
   .cc-name{font-size:14px;}
-  .cc-sets{margin-bottom:6px;}
 
   /* --- 套装块：套装名换行后，需求角色独占一行 --- */
   .set-head{flex-wrap:wrap;padding:10px 12px;gap:8px;}
@@ -755,6 +783,8 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .modal-body{padding:14px 16px 18px;}
   .build-item select{max-width:100%;}
   .build-item .bi-head{flex-wrap:wrap;}
+  .src-row{flex-wrap:wrap;}
+  .src-kind{max-width:100%;}
 
   /* --- 触摸目标 / 提示 --- */
   .btn{min-height:36px;}

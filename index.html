@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<html lang="zh-CN" data-page-node-id="t6nrNx8f3ggMP3WB63H9dn">
+<head data-page-node-id="KbGWqUkLnELAGkmiLny7Sh">
+<meta charset="UTF-8" data-page-node-id="pBTzJBG02YW93nA2NWuBQQ">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="HEMONmm8aEvFUhdniU9C4l">
 <title>原神圣遗物锁定方案生成器</title>
 <style>
 :root{
@@ -177,7 +177,6 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .cc-region{font-weight:600;}
 .cc-dot{color:var(--txt3);}
 .cc-role{color:var(--txt2);}
-.cc-sets{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
 .set-tag{font-size:11px;padding:2px 7px;border-radius:5px;background:var(--panel2);color:var(--txt2);border:1px solid var(--line);}
 .set-tag.main{background:#2f3a24;color:#cfe6a8;border-color:#4a5c34;}
 .cc-main{display:flex;flex-direction:column;gap:3px;}
@@ -185,9 +184,39 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .cc-main-row span:first-child{color:var(--txt3);flex:none;width:26px;}
 .cc-main-row .ms{color:var(--txt2);}
 
+/* 配装功能定位小标签：统一中性配色（区别于角色级 .role-tag 的旧分色方案） */
+.brole{display:inline-flex;align-items:center;font-size:10.5px;padding:1px 7px;border-radius:5px;font-weight:600;flex:none;border:1px solid rgba(120,160,210,.35);background:rgba(120,160,210,.12);color:#a9c8ef;line-height:1.5;white-space:nowrap;}
+.cc-top .brole{margin-left:4px;}
+.bm-t .brole{margin-left:4px;}
+/* 配装编辑器：功能定位勾选区 + 自定义输入 */
+.role-chks{display:flex;flex-wrap:wrap;gap:6px 12px;margin-bottom:6px;}
+.brole-chk{font-size:12px;color:var(--txt2);}
+.bm-addrole{display:flex;gap:6px;align-items:center;}
+.bm-addrole input{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:4px 8px;font-family:inherit;font-size:12px;}
+.bm-addrole input:focus{outline:none;border-color:#3f4d61;}
+/* 卡片配装条：套装名 + 切换合并为一行可点选按钮；选中 = 绿色高亮，未选中 = 普通色 */
+.cc-builds{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+.cc-bp{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:11px;max-width:100%;padding:2px 8px;border-radius:6px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--txt2);
+  cursor:pointer;font-family:inherit;line-height:1.5;text-align:left;transition:.12s;
+}
+.cc-bp:hover{border-color:#3f4d61;color:var(--txt);}
+.cc-bp.on{background:#2f3a24;color:#cfe6a8;border-color:#4a5c34;font-weight:600;}
+.cc-bp-tag{font-size:10px;opacity:.85;font-weight:400;}
+
 /* 编辑抽屉：攻略来源一行一链接 + 可跳转 + 编辑按钮 */
 .src-list{display:flex;flex-direction:column;gap:6px;margin-bottom:7px;}
 .src-row{display:flex;align-items:center;gap:6px;}
+/* 来源名 + 数据源/攻略标识：明确标注配装数据实际取自哪里 */
+.src-kind{flex:none;font-size:11px;padding:2px 8px;border-radius:5px;line-height:1.5;font-weight:600;
+  white-space:nowrap;max-width:132px;overflow:hidden;text-overflow:ellipsis;
+  background:#1b2836;color:#9fd0f5;border:1px solid #2f4356;}
+.src-kind.is-data{background:rgba(95,211,154,.14);color:#7fe0aa;border-color:rgba(95,211,154,.42);}
+.src-badge{flex:none;font-size:10.5px;padding:1px 6px;border-radius:4px;line-height:1.5;white-space:nowrap;
+  background:#22301f;color:#a9d69b;border:1px solid #3d4a3a;}
+.src-badge.guide{background:var(--panel2);color:var(--txt3);border-color:var(--line);}
 .src-go{flex:1;min-width:0;white-space:normal;word-break:break-all;font-size:11.5px;line-height:1.45;color:#5fc4f0;text-decoration:none;border:1px solid #2a4a5e;border-radius:6px;background:#0e2433;padding:4px 8px;}
 .src-go:hover{background:#13344a;color:#9fdcff;border-color:#3a6685;}
 .src-edit{flex:none;width:30px;height:30px;line-height:1;font-size:15px;border-radius:6px;border:1px solid #2a4a5e;background:#0e2433;color:#7fd0f0;cursor:pointer;}
@@ -694,7 +723,6 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .char-grid{grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px;}
   .char-card{padding:10px 11px;}
   .cc-name{font-size:14px;}
-  .cc-sets{margin-bottom:6px;}
 
   /* --- 套装块：套装名换行后，需求角色独占一行 --- */
   .set-head{flex-wrap:wrap;padding:10px 12px;gap:8px;}
@@ -762,6 +790,8 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .modal-body{padding:14px 16px 18px;}
   .build-item select{max-width:100%;}
   .build-item .bi-head{flex-wrap:wrap;}
+  .src-row{flex-wrap:wrap;}
+  .src-kind{max-width:100%;}
 
   /* --- 触摸目标 / 提示 --- */
   .btn{min-height:36px;}
@@ -801,430 +831,438 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 }
 </style>
 </head>
-<body>
+<body data-page-node-id="Y84InYvLrjLECUXiv3nexH">
 
-<header class="topbar">
-  <div class="brand">
-    <span class="logo">遗</span>
-    <div>
-      <h1>原神圣遗物锁定方案生成器</h1>
-      <p class="sub">输入角色配装需求 → 汇总输出每套圣遗物的锁定清单</p>
+<header class="topbar" data-page-node-id="5jmecK30TDzr3JJK54fTyW">
+  <div class="brand" data-page-node-id="tZLTKQHKoT7Y7ygKYqeH3E">
+    <span class="logo" data-page-node-id="WVzrGQuSOl3pzSajkUS9pL">遗</span>
+    <div data-page-node-id="BG7h9ensnsk87YDOyWD4IF">
+      <h1 data-page-node-id="rGrWxvov3Xo7CRzdRJvJSx">原神圣遗物锁定方案生成器</h1>
+      <p class="sub" data-page-node-id="wA6iDFJXE7bDfb78o592zD">输入角色配装需求 → 汇总输出每套圣遗物的锁定清单</p>
     </div>
   </div>
-  <div class="topbar-right">
-    <label class="lang-fld" title="界面文案与角色 / 套装 / 属性名一并切换语言">
-      <select id="langSel" aria-label="语言（界面 + 数据）">
-        <option value="zh">中文</option>
-        <option value="en">English</option>
+  <div class="topbar-right" data-page-node-id="mTq1I9F8koFlDrSML5gPJR">
+    <label class="lang-fld" title="界面文案与角色 / 套装 / 属性名一并切换语言" data-page-node-id="YzxlkWbsGUPKl2KuLbNGaT">
+      <select id="langSel" aria-label="语言（界面 + 数据）" data-page-node-id="qLHEpj6neBfpDuD7oKNdGl">
+        <option value="zh" data-page-node-id="0AVD7sWAXUXo4MwK7BLqHB">中文</option>
+        <option value="en" data-page-node-id="WBxsfq66EAU1VrH4U9QSNv">English</option>
       </select>
     </label>
-    <span id="saveHint" class="save-hint">数据保存在本机浏览器</span>
-    <button id="btnHelp" class="btn ghost">使用说明</button>
+    <span id="saveHint" class="save-hint" data-page-node-id="Ynx85z18w2bbgjPSbhnzhN">数据保存在本机浏览器</span>
+    <button id="btnHelp" class="btn ghost" data-page-node-id="CmLxByIRAY7Q22P9HFlxXU">使用说明</button>
   </div>
 </header>
 
-<nav class="tabs">
-  <button class="tab active" data-tab="chars"><span class="t-long">① 角色配置</span><span class="t-short">① 角色</span></button>
-  <button class="tab" data-tab="plan"><span class="t-long">② 锁定方案</span><span class="t-short">② 方案</span></button>
-  <button class="tab" data-tab="subs"><span class="t-long">③ 追加属性规则</span><span class="t-short">③ 追加属性</span></button>
-  <button class="tab" data-tab="data"><span class="t-long">④ 数据管理</span><span class="t-short">④ 数据</span></button>
+<nav class="tabs" data-page-node-id="9y0PKGLF8p5Axci1XRSULE">
+  <button class="tab active" data-tab="chars" data-page-node-id="oVKd5DFjOvZSBGVZceaWn1"><span class="t-long" data-page-node-id="48L8ueevMfN82ZtcN7Xpj7">① 角色配置</span><span class="t-short" data-page-node-id="9PPZP1Le4tfNpVvZq4xtod">① 角色</span></button>
+  <button class="tab" data-tab="plan" data-page-node-id="YAM92DaLn9DmcAK7l7V8RU"><span class="t-long" data-page-node-id="WHikye5ZxLvZ3bwIbjEP5d">② 锁定方案</span><span class="t-short" data-page-node-id="1dIOUXjlhpEOGo1H7GdyQj">② 方案</span></button>
+  <button class="tab" data-tab="subs" data-page-node-id="P8nkgzSUi8MVu0j1hbNoLS"><span class="t-long" data-page-node-id="T0ElNXfDKEHt9t9BC3fHBx">③ 追加属性规则</span><span class="t-short" data-page-node-id="elnqbr9uQHHSyUDoretHJM">③ 追加属性</span></button>
+  <button class="tab" data-tab="data" data-page-node-id="O6xo5Do642dhxLeSD3QHsB"><span class="t-long" data-page-node-id="dwCiAB7iLR9XWHzbQQHRrD">④ 数据管理</span><span class="t-short" data-page-node-id="8R5heLx39w5aAD0AF1k77y">④ 数据</span></button>
 </nav>
 
-<main>
+<main data-page-node-id="alR01nDR1F2xBZbTAFIaoY">
   <!-- ============ 角色配置 ============ -->
-  <section id="tab-chars" class="tabpane active">
-    <div class="toolbar wrap">
-      <input id="charSearch" type="search" placeholder="搜索角色 / 套装 / 国度 / 定位…">
-      <div class="seg" id="elemFilter">
-        <button class="seg-btn active" data-elem="all">全部</button>
-        <button class="seg-btn" data-elem="pyro">火</button>
-        <button class="seg-btn" data-elem="hydro">水</button>
-        <button class="seg-btn" data-elem="cryo">冰</button>
-        <button class="seg-btn" data-elem="electro">雷</button>
-        <button class="seg-btn" data-elem="anemo">风</button>
-        <button class="seg-btn" data-elem="geo">岩</button>
-        <button class="seg-btn" data-elem="dendro">草</button>
+  <section id="tab-chars" class="tabpane active" data-page-node-id="BLFySwgrisUqxEibUCMxDd">
+    <div class="toolbar wrap" data-page-node-id="7gmPVSgU3Fhd130Av5yC2b">
+      <input id="charSearch" type="search" placeholder="搜索角色 / 套装 / 国度 / 定位…" data-page-node-id="2GGDkQ9swkOERziEBSqeqU">
+      <div class="seg" id="elemFilter" data-page-node-id="rsRi5XxsFLESDMGNgNIBT5">
+        <button class="seg-btn active" data-elem="all" data-page-node-id="Cn3jKvF4yop1Lbe28AxU7D">全部</button>
+        <button class="seg-btn" data-elem="pyro" data-page-node-id="BIgSm1TPALi6DoVZ2tPhmw">火</button>
+        <button class="seg-btn" data-elem="hydro" data-page-node-id="ih3GO1aJ3loivfPamdCIS0">水</button>
+        <button class="seg-btn" data-elem="cryo" data-page-node-id="BRi9urXLsMYSYFOjUuIqVw">冰</button>
+        <button class="seg-btn" data-elem="electro" data-page-node-id="ZIgYJTSoOAjxICeAwfN0hx">雷</button>
+        <button class="seg-btn" data-elem="anemo" data-page-node-id="McFWehbxbVIJ7HmBDTo8ha">风</button>
+        <button class="seg-btn" data-elem="geo" data-page-node-id="we1BQOBAnwAGoKxjdtjM0D">岩</button>
+        <button class="seg-btn" data-elem="dendro" data-page-node-id="FUMIUgT785z7xgSfu96dXL">草</button>
       </div>
-      <label class="fld">国度
-        <select id="regionFilter"><option value="all">全部国度</option></select>
+      <label class="fld" data-page-node-id="8jYPoVwpCSriw9VFGGhEM0">国度
+        <select id="regionFilter" data-page-node-id="0uVIiHVAd1OiXRsHimuhQd"><option value="all" data-page-node-id="QF7Z8H2Vy2q8zUgkcEgRuK">全部国度</option></select>
       </label>
-      <div class="seg" id="roleFilter">
-        <button class="seg-btn active" data-role="all">全部</button>
-        <button class="seg-btn" data-role="maindps">主C</button>
-        <button class="seg-btn" data-role="subdps">副C</button>
-        <button class="seg-btn" data-role="support">辅助</button>
+      <div class="seg" id="roleFilter" data-page-node-id="6UYMeP4zESlGTFdMQnenFu">
+        <button class="seg-btn active" data-role="all" data-page-node-id="SCypmCnCxkXSpZ3IH9jwvg">全部</button>
+        <button class="seg-btn" data-role="maindps" data-page-node-id="Grj5eypYzSy2Sl2jKFhSJo">主C</button>
+        <button class="seg-btn" data-role="subdps" data-page-node-id="6qVC4vhFpxbIHQ7l41WR2R">副C</button>
+        <button class="seg-btn" data-role="support" data-page-node-id="NuDeCBljnfgxCCxanA9TyX">辅助</button>
       </div>
-      <label class="chk"><input type="checkbox" id="onlyEnabled"> 只看已启用</label>
-      <span class="sort-bar" id="charSortBar"></span>
-      <span class="spacer"></span>
-      <span id="filterCount" class="count-badge hidden">筛出 <b>0</b> / 0 个</span>
-      <span class="count-badge">已启用 <b id="enabledCount">0</b> 个角色</span>
-      <button id="btnAddChar" class="btn primary">+ 新增角色</button>
+      <label class="chk" data-page-node-id="KwJsCB9KAY95WzdUVvdPV7"><input type="checkbox" id="onlyEnabled" data-page-node-id="o32MPk5Le3NZxFhJCbmsHk"> 只看已启用</label>
+      <span class="sort-bar" id="charSortBar" data-page-node-id="FIwy7nOatYYSNN0cb2TPe1"></span>
+      <span class="spacer" data-page-node-id="ahLHKWO8GnZPM4pGph6RH5"></span>
+      <span id="filterCount" class="count-badge hidden" data-page-node-id="A4G828yRG0BHsDBDS5P9sS">筛出 <b data-page-node-id="sYTORlenI6EqGZE2IcE62B">0</b> / 0 个</span>
+      <span class="count-badge" data-page-node-id="Ax8lgu27auP0TimyqOFpg4">已启用 <b id="enabledCount" data-page-node-id="6JOdHlsasEXbXTiTAznChJ">0</b> 个角色</span>
+      <button id="btnAddChar" class="btn primary" data-page-node-id="4yjMkYHaE1pVE3OOMFuLOk">+ 新增角色</button>
     </div>
 
-    <div class="toolbar batch-bar">
-      <span class="bar-label">批量</span>
-      <button class="btn sm" data-batch="all">全选</button>
-      <button class="btn sm" data-batch="none">全不选</button>
-      <button class="btn sm" data-batch="invert">反选</button>
-      <span class="bar-div"></span>
-      <span class="bar-label">按属性</span>
-      <span class="btn-grp" id="elemBatch"></span>
-      <span class="bar-div"></span>
-      <span class="bar-label">按国度</span>
-      <span class="btn-grp" id="regionBatch"></span>
-      <span class="bar-div"></span>
-      <span class="bar-label">按定位</span>
-      <span class="btn-grp" id="roleBatch"></span>
+    <div class="toolbar batch-bar" data-page-node-id="LhklloXyRtPlKDXJvPwqln">
+      <span class="bar-label" data-page-node-id="qo0HaCohWNAP6BEUfy4lBd">批量</span>
+      <button class="btn sm" data-batch="all" data-page-node-id="wvymJEdN78jFgdAgpxXtiR">全选</button>
+      <button class="btn sm" data-batch="none" data-page-node-id="NMgUBn7jeMETrLYi5NABJs">全不选</button>
+      <button class="btn sm" data-batch="invert" data-page-node-id="2vfoQLQR7jGhnmzerNjY5a">反选</button>
+      <span class="bar-div" data-page-node-id="iJ8uPtehftI9MDhDpwmwwb"></span>
+      <span class="bar-label" data-page-node-id="vJfzpXa71kKWGLVz5Ib37H">按属性</span>
+      <span class="btn-grp" id="elemBatch" data-page-node-id="jtaE0jPjjIVhEkxCAcpIyB"></span>
+      <span class="bar-div" data-page-node-id="KqNmedDunmjLg21v6BHitM"></span>
+      <span class="bar-label" data-page-node-id="yUe4nNa9n0lofqkzD57BMc">按国度</span>
+      <span class="btn-grp" id="regionBatch" data-page-node-id="UrZh7Z06GcvVhaLUAeXyTh"></span>
+      <span class="bar-div" data-page-node-id="Ef9abnfYClj66DFPvVmtHo"></span>
+      <span class="bar-label" data-page-node-id="Oy9CHd3ckaxw1Hw6fVSpFb">按定位</span>
+      <span class="btn-grp" id="roleBatch" data-page-node-id="D6gA7ORb8IAMfH7ZgBgO72"></span>
     </div>
-    <p class="batch-hint" data-en="Element / Region / Role: tap once to select the whole category, tap again to clear it. Categories stack and apply to <b>all characters</b>; &quot;Select all&quot; / &quot;Invert&quot; only affect the current filter result.">属性 / 国度 / 定位：点一次全选该类、再点一次取消，可叠加组合，对<b>全部角色</b>生效；「全选 / 反选」只对当前筛选结果生效</p>
+    <p class="batch-hint" data-en="Element / Region / Role: tap once to select the whole category, tap again to clear it. Categories stack and apply to <b data-page-node-id="VPuN7VFTdtQFH0SB7e0Elm">all characters</b>; &quot;Select all&quot; / &quot;Invert&quot; only affect the current filter result.">属性 / 国度 / 定位：点一次全选该类、再点一次取消，可叠加组合，对<b data-page-node-id="yiiQTWhfqDEMuWJqzpTg4L">全部角色</b>生效；「全选 / 反选」只对当前筛选结果生效</p>
 
-    <div id="charGrid" class="char-grid"></div>
+    <div id="charGrid" class="char-grid" data-page-node-id="ZDynFm6yLFBLkYFIrMOa6v"></div>
   </section>
 
   <!-- ============ 锁定方案 ============ -->
-  <section id="tab-plan" class="tabpane">
-    <div class="toolbar wrap">
-      <label class="fld">套装筛选
-        <select id="planSetFilter"><option value="all">全部套装</option></select>
+  <section id="tab-plan" class="tabpane" data-page-node-id="NYmwm7HdJG8Bd9chyswgpq">
+    <div class="toolbar wrap" data-page-node-id="GBv44rxKz2khO9DYig2Oyz">
+      <label class="fld" data-page-node-id="7xGpwAhQBaINGsNXRb5fHA">套装筛选
+        <select id="planSetFilter" data-page-node-id="WFBp9VF5Lfj4TDLHtkEGg9"><option value="all" data-page-node-id="PtYlKe0AtnbZ6tDtlpdzns">全部套装</option></select>
       </label>
-      <label class="fld">部位筛选
-        <select id="planSlotFilter">
-          <option value="all">全部部位</option>
-          <option value="sands">时之沙</option>
-          <option value="goblet">空之杯</option>
-          <option value="circlet">理之冠</option>
+      <label class="fld" data-page-node-id="xT3BIcCQ3zHrbcq4agcm5B">部位筛选
+        <select id="planSlotFilter" data-page-node-id="Idmb00xD7bfwxzNERVNqgf">
+          <option value="all" data-page-node-id="iZtOVRny3FKBfxySwG2Gbr">全部部位</option>
+          <option value="sands" data-page-node-id="3UxGmCkEug9d1uRE4YADpS">时之沙</option>
+          <option value="goblet" data-page-node-id="PdGTV38FP7GXpGijckSGNZ">空之杯</option>
+          <option value="circlet" data-page-node-id="R9HDJ3AhUTYGN4EhugMJPk">理之冠</option>
         </select>
       </label>
-      <span class="spacer"></span>
-      <label class="chk"><input type="checkbox" id="planHideUnused" checked> 隐藏无人需要的套装</label>
-      <label class="chk"><input type="checkbox" id="planAltBuild" checked> 计入备选配装</label>
-      <label class="chk"><input type="checkbox" id="planDetail"> 显示详细件数</label>
-      <span class="sort-bar" id="planSortBar"></span>
-      <span class="spacer"></span>
-      <button id="btnCopyGame" class="btn primary">复制游戏内方案</button>
-      <button id="btnCopyPlan" class="btn">复制清单</button>
-      <button id="btnCsvPlan" class="btn">导出 CSV</button>
-      <button id="btnPrint" class="btn">打印 / 存 PDF</button>
+      <span class="spacer" data-page-node-id="3OZRoOqPfbKYWj08BzVtz9"></span>
+      <label class="chk" data-page-node-id="qWhT7N44BV0ZxLwNUGoeGi"><input type="checkbox" id="planHideUnused" checked data-page-node-id="GbBoi5o6CcYffIF2sAQl43"> 隐藏无人需要的套装</label>
+      <label class="chk" data-page-node-id="nFD7ZCihcPCqCzfr4Lr5b4"><input type="checkbox" id="planAltBuild" checked data-page-node-id="cn0zY99LO90GIF1sCz2ght"> 计入备选配装</label>
+      <label class="chk" data-page-node-id="w8ELm4he61TqJYEVH68uOS"><input type="checkbox" id="planDetail" data-page-node-id="FK19eHITHT3o8BDVcH7tHO"> 显示详细件数</label>
+      <span class="sort-bar" id="planSortBar" data-page-node-id="6jPWjtjHewU1KAeU201MYV"></span>
+      <span class="spacer" data-page-node-id="24FolU5nodHVwJy6375G56"></span>
+      <button id="btnCopyGame" class="btn primary" data-page-node-id="YMSKk5iysYGe5EXOMcBHHo">复制游戏内方案</button>
+      <button id="btnCopyPlan" class="btn" data-page-node-id="Y1AtxniE5JWd2nC0Os8hEJ">复制清单</button>
+      <button id="btnCsvPlan" class="btn" data-page-node-id="oFzZBoLS7mCrbpP7kNtGPT">导出 CSV</button>
+      <button id="btnPrint" class="btn" data-page-node-id="n8BCYVfiaM6W5025YdqGFU">打印 / 存 PDF</button>
     </div>
 
-    <div id="pickInfo" class="pick-info"></div>
+    <div id="pickInfo" class="pick-info" data-page-node-id="PDT8zGAgFBjFiTcpc4WIfC"></div>
 
-    <div class="card kr-card" id="krCard">
-      <h3 class="kr-head">
-        <button id="krFold" class="kr-fold" type="button" aria-expanded="true" title="收起这一模块（只是不显示，启用的规则照常生效）">▾</button>
-        <span class="kr-head-txt">🧩 散件 / 过渡 保留规则</span>
-        <span id="krCount" class="kr-count"></span>
+    <div class="card kr-card" id="krCard" data-page-node-id="ARiLCBhWItceHFE8fVjrQO">
+      <h3 class="kr-head" data-page-node-id="GYG5ZpXqGinHkRucMt3SKR">
+        <button id="krFold" class="kr-fold" type="button" aria-expanded="true" title="收起这一模块（只是不显示，启用的规则照常生效）" data-page-node-id="y1OHXme3aaF63wOFUJAMAF">▾</button>
+        <span class="kr-head-txt" data-page-node-id="4NI0tYlWoCQdZtQI1Wcwvh">🧩 散件 / 过渡 保留规则</span>
+        <span id="krCount" class="kr-count" data-page-node-id="nejpqQdUAhkCoB43iHecy3"></span>
       </h3>
-      <div id="krBody" class="kr-body">
-        <p class="muted small" data-en="Artifacts worth keeping regardless of any character, either because the <b>main stat itself is rare</b> or because it works as a <b>transitional 2-piece</b> (an elemental DMG goblet, for example). Every enabled rule produces one <b>candidate plan</b> that shows up in the candidate area below with the <b>same weight</b> as character clusters; you can merge it into a character plan or adopt it on its own. <b>The game allows at most 3 custom presets per set</b> — keep it under 3 yourself. <br><b>Built-in rules are editable too</b>: hit &quot;Edit&quot; to change name / description / slot / main stats / substats / &#9733;required in a popup; edited ones are tagged &quot;Modified&quot; and can be reset with one tap. <br>Use the arrow on the left of the heading to <b>collapse the whole block</b> — that only hides it, enabled rules keep producing candidates.">与具体角色无关、只因「主要属性本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
-          每条启用的规则会生成一份<b>候选方案</b>，与角色聚类结果<b>同权</b>出现在下面的候选区；
-          你可以「并入」到某个角色方案里、或单独采纳。<b>游戏内每种套装至多 3 个自定义预设</b>，请自行控制在 3 套以内。
-          <br><b>内置规则也能改</b>：点「编辑」即弹出浮窗修改（名称 / 描述 / 部位 / 主要属性 / 追加属性 / ★必须），改过的会标记「已修改」，可一键「恢复默认」。
-          <br>点标题左侧的箭头可<b>收起整个模块</b>——只是不再显示，已启用的规则照常生成候选方案。</p>
-        <div class="toolbar wrap kr-bar">
-          <button id="btnKrNew" class="btn primary">＋ 新增自定义规则</button>
+      <div id="krBody" class="kr-body" data-page-node-id="QESZPfiRaQsL4WkGZiXu7z">
+        <p class="muted small" data-en="Artifacts worth keeping regardless of any character, either because the <b data-page-node-id="z1GIsqxGcvsVnexrhvzhbq">main stat itself is rare</b> or because it works as a <b data-page-node-id="qODFS8gdsXucl2qNTxTxBY">transitional 2-piece</b> (an elemental DMG goblet, for example). Every enabled rule produces one <b data-page-node-id="Oe7w1GmVzWtZ6tuC00syf5">candidate plan</b> that shows up in the candidate area below with the <b data-page-node-id="vxmWWRN3SuEfmx1wVw6Z1q">same weight</b> as character clusters; you can merge it into a character plan or adopt it on its own. <b data-page-node-id="60sjqL37ZDREugyxHyCwWm">The game allows at most 3 custom presets per set</b> — keep it under 3 yourself. <br data-page-node-id="wjCrXeJfejY1Y0ijqo0GQN"><b data-page-node-id="zlMwOpPGkTolNkFDI5TYav">Built-in rules are editable too</b>: hit &quot;Edit&quot; to change name / description / slot / main stats / substats / &#9733;required in a popup; edited ones are tagged &quot;Modified&quot; and can be reset with one tap. <br data-page-node-id="dCvIDEvANEyYyJD1ktC1Py">Use the arrow on the left of the heading to <b data-page-node-id="xiw8Ql2Sklgdt4FltVZpwy">collapse the whole block</b> — that only hides it, enabled rules keep producing candidates.">与具体角色无关、只因「主要属性本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
+          每条启用的规则会生成一份<b data-page-node-id="RuG0LdlgvaGgty5xjwhxEu">候选方案</b>，与角色聚类结果<b data-page-node-id="VJ931CoAHa2k6ACg9BJuCa">同权</b>出现在下面的候选区；
+          你可以「并入」到某个角色方案里、或单独采纳。<b data-page-node-id="HyaBsxwiXGHU3u4RZGafd1">游戏内每种套装至多 3 个自定义预设</b>，请自行控制在 3 套以内。
+          <br data-page-node-id="2oXsOsNYBIHJEu64M8SgQ5"><b data-page-node-id="7H4qq9qbaBSkYbg19wO86b">内置规则也能改</b>：点「编辑」即弹出浮窗修改（名称 / 描述 / 部位 / 主要属性 / 追加属性 / ★必须），改过的会标记「已修改」，可一键「恢复默认」。
+          <br data-page-node-id="DhnDxVqO7uNFOxJ6aM5XLb">点标题左侧的箭头可<b data-page-node-id="CCLiCaQxAW2HPqj3kFDR0b">收起整个模块</b>——只是不再显示，已启用的规则照常生成候选方案。</p>
+        <div class="toolbar wrap kr-bar" data-page-node-id="ia8tnQGA067ujLdliVRpEK">
+          <button id="btnKrNew" class="btn primary" data-page-node-id="peQENQk75eSvt6HGXjsYoT">＋ 新增自定义规则</button>
         </div>
-        <div id="keepRuleList" class="kr-list"></div>
+        <div id="keepRuleList" class="kr-list" data-page-node-id="i0tkdkBz7rlFWamzZiv4ZV"></div>
       </div>
     </div>
 
-    <div id="planSummary" class="summary-strip"></div>
-    <h2 class="print-only">原神圣遗物锁定清单</h2>
-    <p class="print-only print-meta" id="printMeta"></p>
-    <div id="planBody"></div>
+    <div id="planSummary" class="summary-strip" data-page-node-id="T7SADjr3dcbYwPFDLtd5bZ"></div>
+    <h2 class="print-only" data-page-node-id="WncPE7gKORQTPI9qCQDM17">原神圣遗物锁定清单</h2>
+    <p class="print-only print-meta" id="printMeta" data-page-node-id="O2IDphxSFpMmCEiNTqsLSI"></p>
+    <div id="planBody" data-page-node-id="etgYlmown4yvi7mPG2q5Lq"></div>
   </section>
 
   <!-- ============ 追加属性规则 ============ -->
-  <section id="tab-subs" class="tabpane">
-    <div class="two-col">
-      <div class="card">
-        <h3>通用分档规则</h3>
-        <p class="muted small" data-en="Auto-summarised from the characters you enabled: a main-stat whitelist plus the substat rules to copy into the game.">根据你启用的角色，自动汇总出的主要属性白名单 + 追加属性判定逻辑。游戏内可照此执行锁定。</p>
-        <div id="subRules"></div>
+  <section id="tab-subs" class="tabpane" data-page-node-id="Gsz8L0Cn3piqYcMtBToR1A">
+    <div class="two-col" data-page-node-id="o6P1KOcftkBRBpVrtCrBpo">
+      <div class="card" data-page-node-id="jjnYfxO6EDMM9QbnAyGV67">
+        <h3 data-page-node-id="Q6DYMBCDnpHu7Fy6EbdXtH">通用分档规则</h3>
+        <p class="muted small" data-en="Auto-summarised from the characters you enabled: a main-stat whitelist plus the substat rules to copy into the game." data-page-node-id="mFvprdUjti2T8Iq5a7rzTc">根据你启用的角色，自动汇总出的主要属性白名单 + 追加属性判定逻辑。游戏内可照此执行锁定。</p>
+        <div id="subRules" data-page-node-id="D4ejajt9tZ94zoTubUovr3"></div>
       </div>
 
-      <div class="card">
-        <h3>胚子评分器</h3>
-        <p class="muted small" data-en="Enter an artifact to see at a glance whether it is worth keeping.">输入一件圣遗物的信息，快速判断值不值得留。</p>
-        <div class="form-row">
-          <label class="fld">套装
-            <select id="scoreSet"><option value="">（不限）</option></select>
+      <div class="card" data-page-node-id="wATc4avQzTzmFRJJONqj0B">
+        <h3 data-page-node-id="0idSSbn3QgwzcJohlbsRZn">胚子评分器</h3>
+        <p class="muted small" data-en="Enter an artifact to see at a glance whether it is worth keeping." data-page-node-id="GBeJDk6Z5jfp0owXaXoULM">输入一件圣遗物的信息，快速判断值不值得留。</p>
+        <div class="form-row" data-page-node-id="4sq9EP7aGG08CmkwS9Mu65">
+          <label class="fld" data-page-node-id="KDeN6SbCI5zGUorNAehQG0">套装
+            <select id="scoreSet" data-page-node-id="yxyDhOy6FY0Uuhy1Ti6JTe"><option value="" data-page-node-id="lBccdXQXr1JZCG35Hj6eYV">（不限）</option></select>
           </label>
-          <label class="fld">部位
-            <select id="scoreSlot"></select>
-          </label>
-        </div>
-        <div class="form-row">
-          <label class="fld">主要属性
-            <select id="scoreMain"></select>
+          <label class="fld" data-page-node-id="aPLki8Cs7O2WDYPJpapGJl">部位
+            <select id="scoreSlot" data-page-node-id="Q9RpWdgsNqTdxtjGZ2bXmQ"></select>
           </label>
         </div>
-        <div id="scoreSubs" class="sub-inputs"></div>
-        <div id="scoreResult" class="score-result"></div>
+        <div class="form-row" data-page-node-id="EIW7EKbkSYBY8iuXOv6v9q">
+          <label class="fld" data-page-node-id="TiricV4GCg6YBSJh2co73R">主要属性
+            <select id="scoreMain" data-page-node-id="fKNBlIqcAOLyAN44iCNObk"></select>
+          </label>
+        </div>
+        <div id="scoreSubs" class="sub-inputs" data-page-node-id="htL26pIVFoDJlNjBG9B1mg"></div>
+        <div id="scoreResult" class="score-result" data-page-node-id="R6FqpiDez2gU7EnJ98Fq8a"></div>
       </div>
     </div>
 
-    <div class="card">
-      <h3>各套装推荐追加属性</h3>
-      <p class="muted small" data-en="Aggregated from the <b>ordering</b> of every character that wants this set: earlier = more characters ranked it first. &#9733; means most characters marked it &quot;Required&quot; (the &#9733;Required flag in the lock plan). Main stat / substat needs are counted <b>per build</b>.">按该套装下所有需求角色的<b>排序</b>汇总：越靠前 = 越多人把它排在前面；
-        ★ 表示多数角色把它标成了「必选」（对应锁定方案里的 ★必须）。主要属性 / 追加属性需求<b>按配装组</b>统计。</p>
-      <div id="setSubTable"></div>
+    <div class="card" data-page-node-id="95MefFd6gecP1WgNIWDdlu">
+      <h3 data-page-node-id="Rvgnnl7faFpJuLWGf6uZRq">各套装推荐追加属性</h3>
+      <p class="muted small" data-en="Aggregated from the <b data-page-node-id="94rC7TQQUzCKWcprBm4ioi">ordering</b> of every character that wants this set: earlier = more characters ranked it first. &#9733; means most characters marked it &quot;Required&quot; (the &#9733;Required flag in the lock plan). Main stat / substat needs are counted <b data-page-node-id="E23pijqu77lE6rHUzUVkrj">per build</b>.">按该套装下所有需求角色的<b data-page-node-id="YnvbtFkhItBxUBzvsOqEZj">排序</b>汇总：越靠前 = 越多人把它排在前面；
+        ★ 表示多数角色把它标成了「必选」（对应锁定方案里的 ★必须）。主要属性 / 追加属性需求<b data-page-node-id="mnUugc5aONkFOSoUh62pKT">按配装组</b>统计。</p>
+      <div id="setSubTable" data-page-node-id="q6H3UPkSeGTa0AUFB3O3tK"></div>
     </div>
   </section>
 
   <!-- ============ 数据管理 ============ -->
-  <section id="tab-data" class="tabpane">
-    <div class="card">
-      <h3>圣遗物套装管理</h3>
-      <p class="muted small" data-en="Add or remove sets, edit the 2-piece text, move entries up and down. Built-in sets are only &quot;hidden&quot; and can be restored any time. Hit the button below to work in a popup.">增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。点下面按钮在浮窗里操作。</p>
-      <button id="btnOpenSetMgr" class="btn primary">打开套装管理</button>
+  <section id="tab-data" class="tabpane" data-page-node-id="5GFN0EU2UIBnbhWCL2a5LH">
+    <div class="card" data-page-node-id="Mm9dUPsOG8VTLCHfFGrCJv">
+      <h3 data-page-node-id="QBp1vadpDD7LEWqR1OWkHg">圣遗物套装管理</h3>
+      <p class="muted small" data-en="Add or remove sets, edit the 2-piece text, move entries up and down. Built-in sets are only &quot;hidden&quot; and can be restored any time. Hit the button below to work in a popup." data-page-node-id="ZKGcaLZ6MpEJzyyedWMhqy">增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。点下面按钮在浮窗里操作。</p>
+      <button id="btnOpenSetMgr" class="btn primary" data-page-node-id="48t4JGFLw89PEqBrRb057i">打开套装管理</button>
     </div>
-    <div class="card">
-      <h3>备份与恢复</h3>
-      <p class="muted small" data-en="Your config lives in the browser&#39;s localStorage — export it before switching devices or clearing the cache. <br><b>&quot;Restore built-in defaults&quot;</b> overwrites the local save with the built-in library and wipes every custom edit, i.e. a hard reset. A normal browser refresh only reloads the page and does <b>not</b> clear local storage, so stale or corrupted data would otherwise stick around.">配置保存在浏览器 localStorage，换设备或清缓存前请先导出。<br>
-        <b>「恢复内置默认库」</b>＝用内置默认库覆盖本机存档、清除你的全部自定义修改，相当于一次硬刷新；浏览器普通「刷新」只重载页面、<b>不会</b>清本地存档，所以旧数据 / 乱码会一直留着。</p>
-      <div class="btn-row">
-        <button id="btnExportJson" class="btn primary">导出配置 JSON</button>
-        <button id="btnImportJson" class="btn">导入配置 JSON</button>
-        <input type="file" id="fileImport" accept=".json" hidden>
-        <button id="btnClearEnabled" class="btn">清空启用状态</button>
-        <button id="btnReset" class="btn danger">恢复内置默认库（硬刷新）</button>
+    <div class="card" data-page-node-id="pg0VLuCAP8HLN4JBPDTKHy">
+      <h3 data-page-node-id="2qheWUCmhGC2dB9xJEzxJy">备份与恢复</h3>
+      <p class="muted small" data-en="Your config lives in the browser&#39;s localStorage — export it before switching devices or clearing the cache. <br data-page-node-id="u1knsxRsfuZ2GfDdEgA1ne"><b data-page-node-id="rHT3bTdRq11CxVEBCQTawl">&quot;Restore built-in defaults&quot;</b> overwrites the local save with the built-in library and wipes every custom edit, i.e. a hard reset. A normal browser refresh only reloads the page and does <b data-page-node-id="IhwS1xb8WkYIRUUFVv4UIC">not</b> clear local storage, so stale or corrupted data would otherwise stick around.">配置保存在浏览器 localStorage，换设备或清缓存前请先导出。<br data-page-node-id="QoJMPpoFffALEx2D6kUbUi">
+        <b data-page-node-id="34MoCXvhW6vJ7hpeDfW6JD">「恢复内置默认库」</b>＝用内置默认库覆盖本机存档、清除你的全部自定义修改，相当于一次硬刷新；浏览器普通「刷新」只重载页面、<b data-page-node-id="BuquAjAoF0HK4BW1Sx9rRb">不会</b>清本地存档，所以旧数据 / 乱码会一直留着。</p>
+      <div class="btn-row" data-page-node-id="b2LULjz1RbUVhWJHC4Ywy6">
+        <button id="btnExportJson" class="btn primary" data-page-node-id="CTLoRltCMdgXp1WwaVDsOx">导出配置 JSON</button>
+        <button id="btnImportJson" class="btn" data-page-node-id="JHH6dbibbZvSFLprLgO0FR">导入配置 JSON</button>
+        <input type="file" id="fileImport" accept=".json" hidden data-page-node-id="qCF5381LCvdOoM7EA13BDM">
+        <button id="btnClearEnabled" class="btn" data-page-node-id="QKy7kw90BFUUTj9R6FqYNz">清空启用状态</button>
+        <button id="btnReset" class="btn danger" data-page-node-id="Xv6iJHTOS61K6AhOjRXbkl">恢复内置默认库（硬刷新）</button>
       </div>
     </div>
 
-    <div class="card">
-      <h3>更新日志 <span id="appVersion" class="muted small"></span></h3>
-      <p class="muted small" data-en="The built-in character and artifact data is maintained by hand as the game updates; every change is logged here. A major update pops up the notice once the first time you open the app.">内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。大版本更新后首次打开会自动弹一次公告。</p>
-      <div id="chgLog" class="chg-log"></div>
-      <div class="btn-row">
-        <button id="btnShowNotice" class="btn">查看更新公告</button>
+    <div class="card" data-page-node-id="ZPQYYxpz80eA3VvyimmxMy">
+      <h3 data-page-node-id="uGEPE3jgt5ukoLtG7ExFeX">更新日志 <span id="appVersion" class="muted small" data-page-node-id="5KtXzRbyMMuA0MaUDROkZ7"></span></h3>
+      <p class="muted small" data-en="The built-in character and artifact data is maintained by hand as the game updates; every change is logged here. A major update pops up the notice once the first time you open the app." data-page-node-id="UKCxEmnFqMIXH9b3wpgo6v">内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。大版本更新后首次打开会自动弹一次公告。</p>
+      <div id="chgLog" class="chg-log" data-page-node-id="lwnD09itsP6U6qYdyYSAII"></div>
+      <div class="btn-row" data-page-node-id="21INry2mMNILTDv5AHCSxs">
+        <button id="btnShowNotice" class="btn" data-page-node-id="HajUqsgNmCXWQcbCmDhm7J">查看更新公告</button>
       </div>
     </div>
 
-    <div class="card">
-      <h3>关于数据</h3>
-      <ul class="muted small notes">
-        <li>内置 <b id="statCharCount">0</b> 个角色、<b id="statSetCount">0</b> 个套装，整理自社区常见推荐，随版本变动请自行校正。</li>
-        <li>「主推 / 备选」权重：主推 = 1.0，备选 = 0.5；主要属性优先级 1/2/3 权重 = 1.0 / 0.5 / 0.25。</li>
-        <li>建议保留件数 = 以该主要属性为最优解的角色数（同一角色多套配装不重复计数），区间 1–4。</li>
-        <li>2+2 配装对单套的件数需求更低，汇总时按 0.6 系数折算。</li>
-        <li>主要属性 / 追加属性需求<b>按配装组</b>分别保存：同一角色换套装时可以有不同的词条需求。</li>
+    <div class="card" data-page-node-id="RrHIktOMo4GAUhPRNvozjh">
+      <h3 data-page-node-id="hIq5CvyhuFtYjmlNtboXQf">关于数据</h3>
+      <ul class="muted small notes" data-page-node-id="iE62KaMECsYImmIVjk8L6Q">
+        <li data-page-node-id="RQ1GVjGpRWWiuFtMEtuD5k">内置 <b id="statCharCount" data-page-node-id="Tw7zbWti5sALNQOI0y9kJs">0</b> 个角色、<b id="statSetCount" data-page-node-id="zffKJoZ497RPf80rZwGJhf">0</b> 个套装，整理自社区常见推荐，随版本变动请自行校正。</li>
+        <li data-page-node-id="DI0ELNJakF49VxCaLcJr7E">「主推 / 备选」权重：主推 = 1.0，备选 = 0.5；主要属性优先级 1/2/3 权重 = 1.0 / 0.5 / 0.25。</li>
+        <li data-page-node-id="1zNYs17mTaYaOPPjkenTpv">建议保留件数 = 以该主要属性为最优解的角色数（同一角色多套配装不重复计数），区间 1–4。</li>
+        <li data-page-node-id="GnMSHDllipJjOHNiB80S2n">2+2 配装对单套的件数需求更低，汇总时按 0.6 系数折算。</li>
+        <li data-page-node-id="pbrBSRsF6m24DamyFQ0UiA">主要属性 / 追加属性需求<b data-page-node-id="CxHKjxfw3mVjcDOvx4Vujp">按配装组</b>分别保存：同一角色换套装时可以有不同的词条需求。</li>
       </ul>
     </div>
   </section>
 </main>
 
 <!-- ========== 角色编辑浮窗 ========== -->
-<div id="modalMask" class="modal-mask hidden"></div>
-<div id="charDrawer" class="modal modal-lg hidden">
-  <div class="drawer-head">
-    <h2 id="drawerTitle">编辑角色</h2>
-    <button id="btnCloseDrawer" class="icon-btn">×</button>
+<div id="modalMask" class="modal-mask hidden" data-page-node-id="4WyTHHIEowdCEpeE3FyfYv"></div>
+<div id="charDrawer" class="modal modal-lg hidden" data-page-node-id="gpYetybCXoEQDOEIZJgH5D">
+  <div class="drawer-head" data-page-node-id="Xq3cvUuI5jqtlGampFvCTT">
+    <h2 id="drawerTitle" data-page-node-id="eU4FjbQkeUeU0tO9LBnvVK">编辑角色</h2>
+    <button id="btnCloseDrawer" class="icon-btn" data-page-node-id="THKdVIlU5kfTlFKk92vJQJ">×</button>
   </div>
-  <div id="drawerBody" class="drawer-body"></div>
-  <div class="drawer-foot">
-    <button id="btnDeleteChar" class="btn danger hidden">删除角色</button>
-    <button id="btnRestoreChar" class="btn hidden" title="把名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原成内置数据">还原内置</button>
-    <span class="spacer"></span>
-    <button id="btnCancelEdit" class="btn ghost">取消</button>
-    <button id="btnSaveChar" class="btn primary">保存</button>
+  <div id="drawerBody" class="drawer-body" data-page-node-id="Pgi19zCsQdEF8p36LEbVmb"></div>
+  <div class="drawer-foot" data-page-node-id="vi2N4hQ2nPPx9VvHlKpXJY">
+    <button id="btnDeleteChar" class="btn danger hidden" data-page-node-id="ftChacQCnyuUyW7a1jF0CG">删除角色</button>
+    <button id="btnRestoreChar" class="btn hidden" title="把名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原成内置数据" data-page-node-id="yQ61ZsrfqOK6OC2pqcFaxb">还原内置</button>
+    <span class="spacer" data-page-node-id="tDDrlRFBzRKtayIGzED7BJ"></span>
+    <button id="btnCancelEdit" class="btn ghost" data-page-node-id="dufVMmcjPjOJg68XDbqmZC">取消</button>
+    <button id="btnSaveChar" class="btn primary" data-page-node-id="VeKoQ3mn13qXzhlID0FsMs">保存</button>
   </div>
 </div>
 
 <!-- ========== 配装编辑（二层浮窗，盖在角色浮窗之上） ========== -->
-<div id="buildMask" class="modal-mask mask-l2 hidden"></div>
-<div id="buildBox" class="modal modal-lg modal-l2 hidden">
-  <div class="drawer-head">
-    <h2 id="bmTitle">编辑配装</h2>
-    <button id="bmX" class="icon-btn" title="关闭">×</button>
+<div id="buildMask" class="modal-mask mask-l2 hidden" data-page-node-id="YgDJsFEI4xAXPMhcoHTkId"></div>
+<div id="buildBox" class="modal modal-lg modal-l2 hidden" data-page-node-id="jZMc3JAJZDXtYwfdfMFxQh">
+  <div class="drawer-head" data-page-node-id="JGAmvusudm6EUX9Ods8ueH">
+    <h2 id="bmTitle" data-page-node-id="rQexEuTdUy2rTa3EeFhQDH">编辑配装</h2>
+    <button id="bmX" class="icon-btn" title="关闭" data-page-node-id="8kSc29bCZtFIQCFIJikmwT">×</button>
   </div>
-  <div class="modal-body">
-    <div class="bm-sets">
-      <select id="bmSet0" class="bm-set"></select>
-      <span class="bm-plus">+</span>
-      <select id="bmSet1" class="bm-set"></select>
-      <span id="bmKind" class="bm-kind"></span>
+  <div class="modal-body" data-page-node-id="hEm2OtlrffXEz5XB8ugPcD">
+    <div class="bm-sets" data-page-node-id="tleUxlwtyNyV47kMFDLveb">
+      <select id="bmSet0" class="bm-set" data-page-node-id="CCfZyrcA99V7CCpf5HFhTi"></select>
+      <span class="bm-plus" data-page-node-id="vzI8IbExgxEEOIYNwCQ22I">+</span>
+      <select id="bmSet1" class="bm-set" data-page-node-id="60TAfHqtLmFS088FMF4qCQ"></select>
+      <span id="bmKind" class="bm-kind" data-page-node-id="9IFb05BMFGQa43OfpoiQqQ"></span>
     </div>
-    <div class="bm-row">
-      <label class="chk"><input type="checkbox" id="bmPrio"> 设为主推（第 1 组默认主推，同一角色只可有一组主推）</label>
-      <label class="fld">📋 套用…
-        <select id="bmCopyFrom">
-          <option value="">（不改，保持当前）</option>
+    <div class="bm-row" data-page-node-id="huSTeqgtYZJOGNfBjYVPYg">
+      <label class="chk" data-page-node-id="r3ZC7VXY096WtPZ76DGx0q"><input type="checkbox" id="bmPrio" data-page-node-id="jeRf5KYGBlJOHnqVzmDreD"> 设为主推（第 1 组默认主推，同一角色只可有一组主推）</label>
+      <label class="fld" data-page-node-id="65FiGFFspwhQtb4H2MD4vh">📋 套用…
+        <select id="bmCopyFrom" data-page-node-id="jRZN2xGGwltRDfjvKnfYyQ">
+          <option value="" data-page-node-id="wHGWlX9BpsfeoUOvlkTBem">（不改，保持当前）</option>
         </select>
       </label>
     </div>
-    <div id="bmMainBox"></div>
-    <div class="fgroup">
-      <span class="glabel">追加属性需求 <span class="hint">越靠前越想要；★ = 游戏内锁定方案的「必须」</span></span>
-      <div class="ms-list" id="bmSubs"></div>
-      <button type="button" class="btn sm" id="bmAddSub">+ 添加追加属性…</button>
+    <div class="fgroup" data-page-node-id="M4K0wkZNFnOceCRRwg5ECF">
+      <span class="glabel" data-page-node-id="CzDeec9ddTyBj1EZAFud4v">功能定位 <span class="hint" data-page-node-id="U0OfIcaBH0Z5Euc4X12YFS">可多选；可自定义（跨角色共享），如 输出 / 增伤 / 治疗 / 护盾</span></span>
+      <div id="bmRoles" class="role-chks" data-page-node-id="b1Ydb6GRseS5XzP51otbhZ"></div>
+      <div class="bm-addrole" data-page-node-id="zhXJM7GUtYPUbuhKpsEr22">
+        <input id="bmNewRole" type="text" placeholder="自定义定位，如 增幅反应" maxlength="12" data-page-node-id="ORAJ5Fbgoi9KfFRVBSc5QC" />
+        <button type="button" class="btn sm" id="bmAddRole" data-page-node-id="Btd2GXfLfmKsZ66Fw1XZYD">+ 添加</button>
+      </div>
     </div>
-    <p class="muted small">改完请点右下角<b>「保存」</b>才生效；点「取消」或关掉窗口，改动会全部丢弃。</p>
+    <div id="bmMainBox" data-page-node-id="aBPJgUSr5EcLCgTwLl8Lgx"></div>
+    <div class="fgroup" data-page-node-id="IE7F5PP2NmbHRgKLyyDH89">
+      <span class="glabel" data-page-node-id="EqxrZqwPwWqM9waQZcsRWp">追加属性需求 <span class="hint" data-page-node-id="HpSF79XMOvumYDC5Csc8PL">越靠前越想要；★ = 游戏内锁定方案的「必须」</span></span>
+      <div class="ms-list" id="bmSubs" data-page-node-id="oev7UhFcIZ9D0Yain199mj"></div>
+      <button type="button" class="btn sm" id="bmAddSub" data-page-node-id="Sap0qP7f3CpVvbaZUObBJp">+ 添加追加属性…</button>
+    </div>
+    <p class="muted small" data-page-node-id="5O4PYNm5JPHIszn2efEsk1">改完请点右下角<b data-page-node-id="N99jEkcyZYratc4igLp6rA">「保存」</b>才生效；点「取消」或关掉窗口，改动会全部丢弃。</p>
   </div>
-  <div class="drawer-foot">
-    <button id="bmRestore" class="btn hidden">还原这一组</button>
-    <span class="spacer"></span>
-    <button id="bmCancel" class="btn">取消</button>
-    <button id="bmSave" class="btn primary">保存</button>
+  <div class="drawer-foot" data-page-node-id="OrPXbT7hiwdBPZOlRwkFld">
+    <button id="bmRestore" class="btn hidden" data-page-node-id="E8038TXb1z9teaJiLQs7nF">还原这一组</button>
+    <span class="spacer" data-page-node-id="XmoISGkLrNEWeSoqRhc9Gb"></span>
+    <button id="bmCancel" class="btn" data-page-node-id="uuL2gDuDdImsTIB8owia43">取消</button>
+    <button id="bmSave" class="btn primary" data-page-node-id="1mULfr6MsrE0stHyiyEvNt">保存</button>
   </div>
 </div>
 
 <!-- ========== 属性选择（三层浮窗，盖在配装浮窗之上） ========== -->
-<div id="pickMask" class="modal-mask mask-l3 hidden"></div>
-<div id="pickBox" class="modal modal-l3 hidden">
-  <div class="drawer-head">
-    <h2 id="pickTitle">选择属性</h2>
-    <button id="pickX" class="icon-btn" title="关闭">×</button>
+<div id="pickMask" class="modal-mask mask-l3 hidden" data-page-node-id="apYS9QW3t25wZM2nuHGhka"></div>
+<div id="pickBox" class="modal modal-l3 hidden" data-page-node-id="xLF1lzhgKyIDiVczjqiwFP">
+  <div class="drawer-head" data-page-node-id="1CwwZ51BdYBeRvq9SRmaB2">
+    <h2 id="pickTitle" data-page-node-id="mXjVx44GfCSIEFVQALaA0O">选择属性</h2>
+    <button id="pickX" class="icon-btn" title="关闭" data-page-node-id="D4dH638PcHcthYjhjgAHCG">×</button>
   </div>
-  <div class="modal-body">
-    <p class="muted small" id="pickHint" data-en="Pick one; earlier entries are more wanted."></p>
-    <div id="pickList" class="pick-list"></div>
+  <div class="modal-body" data-page-node-id="3xbb4DEcJqQnAwmp0OHaQj">
+    <p class="muted small" id="pickHint" data-en="Pick one; earlier entries are more wanted." data-page-node-id="SZdYIPyI9F5ScdGsCM1UHF"></p>
+    <div id="pickList" class="pick-list" data-page-node-id="ynAgLi5l7FvprCfctsv3M6"></div>
   </div>
-  <div class="drawer-foot">
-    <span class="spacer"></span>
-    <button id="pickCancel" class="btn">取消</button>
+  <div class="drawer-foot" data-page-node-id="nbrT5p3o1zCQsCyfmBJ7fc">
+    <span class="spacer" data-page-node-id="y7ftcAdegYb04WxPIC8A5r"></span>
+    <button id="pickCancel" class="btn" data-page-node-id="3NFrEkAhLZXEIjnwszyFHk">取消</button>
   </div>
 </div>
 
 <!-- ========== 更新公告 ========== -->
-<div id="noticeMask" class="modal-mask hidden"></div>
-<div id="noticeBox" class="modal hidden">
-  <div class="drawer-head">
-    <h2>更新公告</h2>
-    <button id="btnCloseNotice" class="icon-btn">×</button>
+<div id="noticeMask" class="modal-mask hidden" data-page-node-id="AaNESlR4hu9J2zV2X5AvJJ"></div>
+<div id="noticeBox" class="modal hidden" data-page-node-id="YNIW8bQToWb1JNu15lzE03">
+  <div class="drawer-head" data-page-node-id="FtUm77dh4fDKTpEEYHU7Nn">
+    <h2 data-page-node-id="FfmB8oyxBRJYuySn9j46TC">更新公告</h2>
+    <button id="btnCloseNotice" class="icon-btn" data-page-node-id="QxOBkTgtDajqRT6Ylfrp94">×</button>
   </div>
-  <div class="modal-body" id="noticeBody"></div>
-  <div class="drawer-foot">
-    <span class="spacer"></span>
-    <button id="btnNoticeOk" class="btn primary">知道了</button>
+  <div class="modal-body" id="noticeBody" data-page-node-id="ips0aEUwV1FuoyAPtQDkbl"></div>
+  <div class="drawer-foot" data-page-node-id="mKRKYA6oiIetItqyFoKmc8">
+    <span class="spacer" data-page-node-id="lzMoci7eETa9YyegbSMGty"></span>
+    <button id="btnNoticeOk" class="btn primary" data-page-node-id="0noe22sXwJQVKU16NhlgPh">知道了</button>
   </div>
 </div>
 
 <!-- ========== 使用说明 ========== -->
-<div id="helpMask" class="modal-mask hidden"></div>
-<div id="helpBox" class="modal hidden">
-  <div class="drawer-head">
-    <h2>使用说明</h2>
-    <button id="btnCloseHelp" class="icon-btn">×</button>
+<div id="helpMask" class="modal-mask hidden" data-page-node-id="nKMTELUzGpobqM3RykB1nw"></div>
+<div id="helpBox" class="modal hidden" data-page-node-id="MdMMLnThBMWKCtyYQz7b38">
+  <div class="drawer-head" data-page-node-id="Nn7nIblqBbLiUEkul8JnUA">
+    <h2 data-page-node-id="X5wRdf7nTRlK63KBl6lzxI">使用说明</h2>
+    <button id="btnCloseHelp" class="icon-btn" data-page-node-id="v9swrc7Dy6ja40rpIOBmmw">×</button>
   </div>
-  <div class="modal-body" data-en-key="help">
-    <h4>三步走</h4>
-    <ol>
-      <li><b>① 角色配置</b>：顶部可按<b>元素 / 国度 / 定位</b>筛选（三者可叠加，还能配合搜索框与「只看已启用」），
-        有筛选时右上角显示「筛出 N / 总数」；旁边「<b>↓ 正序 / ↑ 倒序</b>」可把整个列表反过来（会记住你的选择）。
-        勾选你实际要养的角色。点卡片打开<b>编辑浮窗</b>：上面是角色基本信息，下面是配装卡片——
-        每张卡片一眼看全套装、三部位主要属性、追加属性，点卡片上的<b>「✎ 编辑」</b>会再弹出一个<b>配装编辑浮窗</b>。
-        词条改完点<b>「保存」</b>才生效；点取消 / 关闭 / 浮窗外，会提示「有未保存的修改」再放弃。
-        一个角色可以有多组配装（4件套 / 2+2），<b>每组的词条需求分开保存</b>；新增时可以选「空白」或复制现有组，
-        删掉的<b>内置预置组</b>还能从「＋ 从预置添加」里选回来。</li>
-      <li><b>改错了怎么办</b>：配装卡片与角色卡片上都可能出现<b>「已修改」</b>徽标——说明这一项已经和内置数据不一样了。
-        单组改坏 → 卡片上<b>「整组还原」</b>（套装 + 词条 + 主推一起回到内置原样）；
-        只是把谁设成主推搞乱了 → 配装区上方会多出<b>「↩ 还原主推」</b>（只动主推，不碰词条）；
-        整个角色改乱 → 编辑浮窗左下角<b>「还原内置」</b>（名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原）。
+  <div class="modal-body" data-en-key="help" data-page-node-id="ZvwMbg60NkISGjoXO10lc4">
+    <h4 data-page-node-id="EGJHNIMB6FT2J4UM2NnnCV">三步走</h4>
+    <ol data-page-node-id="5CE9k0GVfBD4gaDg7wYsy7">
+      <li data-page-node-id="D9FPa0ky62q9jzbABovdM1"><b data-page-node-id="xUBlU3mW61ER7aPZb2AnZ1">① 角色配置</b>：顶部可按<b data-page-node-id="qSvpWxxMZ20vsqCvwdVTRi">元素 / 国度 / 定位</b>筛选（三者可叠加，还能配合搜索框与「只看已启用」），
+        有筛选时右上角显示「筛出 N / 总数」；旁边「<b data-page-node-id="Gfd8DyD6PBfitQr32KVw0K">↓ 正序 / ↑ 倒序</b>」可把整个列表反过来（会记住你的选择）。
+        勾选你实际要养的角色。点卡片打开<b data-page-node-id="GfK9H4oKa8uHK4PRjQnYvB">编辑浮窗</b>：上面是角色基本信息，下面是配装卡片——
+        每张卡片一眼看全套装、三部位主要属性、追加属性，点卡片上的<b data-page-node-id="gLyTKnIupU7JTFSFjuXU3s">「✎ 编辑」</b>会再弹出一个<b data-page-node-id="4wFeEDoFoAtwY0mb1HyR6m">配装编辑浮窗</b>。
+        词条改完点<b data-page-node-id="eBFqROOm7uL5vPgEFyYPBs">「保存」</b>才生效；点取消 / 关闭 / 浮窗外，会提示「有未保存的修改」再放弃。
+        一个角色可以有多组配装（4件套 / 2+2），<b data-page-node-id="jGOJCg9CiNAgv7T1BXFhO7">每组的词条需求分开保存</b>；新增时可以选「空白」或复制现有组，
+        删掉的<b data-page-node-id="uy0zFDZVIyekuWCg4wRb3R">内置预置组</b>还能从「＋ 从预置添加」里选回来。</li>
+      <li data-page-node-id="1fDKVnCzAIGGwbNbGv2j73"><b data-page-node-id="sDuYX6x6PR67G9nqtCDAIA">改错了怎么办</b>：配装卡片与角色卡片上都可能出现<b data-page-node-id="c8kmsIs6nwpZuKqg14q4oZ">「已修改」</b>徽标——说明这一项已经和内置数据不一样了。
+        单组改坏 → 卡片上<b data-page-node-id="hWmnga17x1uxI7FBn5Z2pI">「整组还原」</b>（套装 + 词条 + 主推一起回到内置原样）；
+        只是把谁设成主推搞乱了 → 配装区上方会多出<b data-page-node-id="Zh63ih5s8aa0RjxOC9G4u8">「↩ 还原主推」</b>（只动主推，不碰词条）；
+        整个角色改乱 → 编辑浮窗左下角<b data-page-node-id="salYgF2IKgHa4Rx8zUG61O">「还原内置」</b>（名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原）。
         删掉的内置配装组可以在「＋ 从预置添加」里选回来。</li>
-      <li><b>内置数据会随版本更新</b>：你<b>没动过</b>的配装组会自动跟着仓库里的新数据走；
-        你<b>自己改过</b>的组一律保留不动（卡片上标「已修改」），想用新版就再点一次还原。</li>
-      <li><b>② 锁定方案</b>：每个套装给出「游戏内锁定方案<b>候选</b>」——按角色的<b>追加属性需求</b>自动聚类，每个方案的
-        <b>五个部位共用同一份追加属性条件</b>，主要属性逐部位列出，照着填进游戏即可。
-        <b>没有槽位上限</b>：候选可以有很多，用「并入…」手动合并、取消勾选「采纳」挑掉不要的，收敛到游戏内每套至多 3 个预设再照抄。
-        页面顶部还有<b>「🧩 散件 / 过渡 保留规则」</b>：与角色无关、只因主要属性稀有（如元素伤害杯）就值得留的圣遗物，
-        可单独开关；启用后每条规则会生成一份候选方案，与角色聚类结果<b>同权</b>参与合并与采纳。</li>
-      <li><b>旅行者</b>按元素形态拆成 6 个独立条目（旅行者·风 / 岩 / 雷 / 草 / 水 / 火）：各形态元素不同、配装不同，可分别启用、分别编辑。
-        同理，国度已细分出<b>挪德卡莱</b>（与至冬分开）；若你的存档是旧版，打开时会自动把角色的国度 / 定位纠正一次，之后你自己改的不再覆盖。</li>
-      <li><b>列表排序</b>：① 角色卡、② 方案页的套装块、③ 底部的「各套装推荐追加属性」表格，旁边都有
-        <b>「↓ 正序 / ↑ 倒序」</b>按钮——点一下换方向，选择会记在本机。
-        套装列表（②③）还多一个<b>「图鉴 / 推荐」两档切换</b>：
-        <b>图鉴</b>＝套装库顺序（<b>排序顺序来自米游社图鉴</b>），稳定、不会因为你勾了谁就跳来跳去；
-        <b>推荐</b>＝用的人多的排前面，会随你勾选的角色变化。角色列表则按国度排列（蒙德 → 璃月 → … → 其他·旅行者）。</li>
-      <li><b>③ 追加属性规则</b>：给出分档判定 + 胚子评分器，解决「主要属性对了但追加属性能不能留」。</li>
-      <li><b>④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
-      <li><b>④ 数据管理 → 更新日志</b>：内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。
-        大版本更新后首次打开会自动弹一次<b>更新公告</b>（读过了就不再弹）；想再看就点「查看更新公告」。</li>
+      <li data-page-node-id="IguMUgLjuBLBsAHfEojefX"><b data-page-node-id="ZcByD3pkEUfBzdWpkRbeI2">内置数据会随版本更新</b>：你<b data-page-node-id="9SQWrDQglfQTNdVCXEUaDx">没动过</b>的配装组会自动跟着仓库里的新数据走；
+        你<b data-page-node-id="iTQEkGkPHdEaxK0xVSdgfW">自己改过</b>的组一律保留不动（卡片上标「已修改」），想用新版就再点一次还原。</li>
+      <li data-page-node-id="SQS1fQFMJBGTPkyFdBPn2V"><b data-page-node-id="BMjY4lyDQQRbtjGOrfLYy5">② 锁定方案</b>：每个套装给出「游戏内锁定方案<b data-page-node-id="Jt5FZX7AhJxh4uZow3LLJB">候选</b>」——按角色的<b data-page-node-id="FvNZCGzVJbdawEKV6Tv1Nt">追加属性需求</b>自动聚类，每个方案的
+        <b data-page-node-id="lLQjNmu16eM526FR010c4s">五个部位共用同一份追加属性条件</b>，主要属性逐部位列出，照着填进游戏即可。
+        <b data-page-node-id="Oh4BadHt9XqPxxXHQETcLd">没有槽位上限</b>：候选可以有很多，用「并入…」手动合并、取消勾选「采纳」挑掉不要的，收敛到游戏内每套至多 3 个预设再照抄。
+        页面顶部还有<b data-page-node-id="AfaMGjARiwBv2qdnzfo3rR">「🧩 散件 / 过渡 保留规则」</b>：与角色无关、只因主要属性稀有（如元素伤害杯）就值得留的圣遗物，
+        可单独开关；启用后每条规则会生成一份候选方案，与角色聚类结果<b data-page-node-id="9bllX1FxhpYO9B54krputx">同权</b>参与合并与采纳。</li>
+      <li data-page-node-id="e6BhqoDpemkCiHw4PF6bSx"><b data-page-node-id="BK4n7WByz1PF4cIcaJCUl5">旅行者</b>按元素形态拆成 6 个独立条目（旅行者·风 / 岩 / 雷 / 草 / 水 / 火）：各形态元素不同、配装不同，可分别启用、分别编辑。
+        同理，国度已细分出<b data-page-node-id="tNRa53CwX8cDtrPf4Jz63U">挪德卡莱</b>（与至冬分开）；若你的存档是旧版，打开时会自动把角色的国度 / 定位纠正一次，之后你自己改的不再覆盖。</li>
+      <li data-page-node-id="YrVOpGa6bGshsVbpSN2LKP"><b data-page-node-id="D2N9WMNtO2cD4e7R3zu0Na">列表排序</b>：① 角色卡、② 方案页的套装块、③ 底部的「各套装推荐追加属性」表格，旁边都有
+        <b data-page-node-id="yLUckzABjX0eiz4BG46RLK">「↓ 正序 / ↑ 倒序」</b>按钮——点一下换方向，选择会记在本机。
+        套装列表（②③）还多一个<b data-page-node-id="UsSr3QavoWbS8a14KxXCgD">「图鉴 / 推荐」两档切换</b>：
+        <b data-page-node-id="6hNzmCrwC9REYY3q3D3yaC">图鉴</b>＝套装库顺序（<b data-page-node-id="9P1x3mINXodEuBz2co8IXM">排序顺序来自米游社图鉴</b>），稳定、不会因为你勾了谁就跳来跳去；
+        <b data-page-node-id="bTMpnQOKTZQCMaP3EqDQB2">推荐</b>＝用的人多的排前面，会随你勾选的角色变化。角色列表则按国度排列（蒙德 → 璃月 → … → 其他·旅行者）。</li>
+      <li data-page-node-id="sBNbBHWqA1455l6vAeszhZ"><b data-page-node-id="KpxwBJHB5qZG6wo9Unxh6m">③ 追加属性规则</b>：给出分档判定 + 胚子评分器，解决「主要属性对了但追加属性能不能留」。</li>
+      <li data-page-node-id="XhikcyqP8ikZiOwB4zk6GM"><b data-page-node-id="GtlHHRYWW49B3WLyExSDYb">④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
+      <li data-page-node-id="yztlGut6Ci0OcDYjk2vkeY"><b data-page-node-id="rTDzlcvI5Et2ApbLpM75xL">④ 数据管理 → 更新日志</b>：内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。
+        大版本更新后首次打开会自动弹一次<b data-page-node-id="W0fxUzBcM8FySXhamUEwDe">更新公告</b>（读过了就不再弹）；想再看就点「查看更新公告」。</li>
     </ol>
-    <h4>怎么看方案</h4>
-    <ul>
-      <li><b>方案 N</b>：由追加属性需求相近的角色合并而来，标题写明「供谁使用」。同一套装的多个方案在锁定界面<b>共同生效</b>（彼此是「或」的关系）。</li>
-      <li><b>采纳 / 并入… / 拆回</b>：每个候选默认「已采纳」；「并入…」把两个候选并成一套，「拆回」还原。改动会保存；
+    <h4 data-page-node-id="LDL96mIMHQ0d1qgfpNRqi1">怎么看方案</h4>
+    <ul data-page-node-id="WQvTNqUHblpOeOZmBtHHaj">
+      <li data-page-node-id="1GGJX6QNbmk4glrMCYMTcg"><b data-page-node-id="nbQ2JUbqSOGz1eVTiz4FG4">方案 N</b>：由追加属性需求相近的角色合并而来，标题写明「供谁使用」。同一套装的多个方案在锁定界面<b data-page-node-id="cV98i0LHsZEMcKYeazyZp1">共同生效</b>（彼此是「或」的关系）。</li>
+      <li data-page-node-id="WYGxHIDDXeSxW4RqSkncMa"><b data-page-node-id="zqSyP9BObzmIcFTII4QDlj">采纳 / 并入… / 拆回</b>：每个候选默认「已采纳」；「并入…」把两个候选并成一套，「拆回」还原。改动会保存；
         采纳数超过游戏内上限（每套 3 个）时，页面顶部会给出橙色提醒。</li>
-      <li><b>自动合并</b>：方案按角色的<b>重要属性</b>（第 1 条起同等重要的那一截 + ★必选，通常就是双暴）自动聚类——
-        重要属性撞上就并为一套；次要属性（攻击力% / 生命值% 之类）不同不影响合并，会按角色<b>分组上色</b>显示，实际给谁再按手上的圣遗物定。
-        主要属性则<b>逐部位独立合并</b>。无需手动调参。</li>
-      <li><b>★必须</b>：金色词条，这件圣遗物<b>必须</b>有它，否则不锁定。来自组内<b>全体角色都勾选了「必选」</b>的追加属性（在角色抽屉里点 ☆ 设置），最多 2 个。</li>
-      <li><b>至少两条</b>：命中条数<b>预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条落在追加属性池里才锁定，
-        ★必须的词条也计入这两条。需要更严就在该方案的卡片上把下拉<b>改到 3 / 4 条</b>（也可放松到 1 条），每个方案单独记。</li>
-      <li><b>收起</b>：点「🧩 散件 / 过渡 保留规则」标题左侧的箭头可把整块收成一行标题——只是不再显示，已启用的规则照常生成候选方案。</li>
-      <li>勾选工具栏「<b>显示详细件数</b>」可展开每套的建议保留件数与需求来源；不勾选时页面只显示可直接照搬的锁定方案。</li>
+      <li data-page-node-id="un8exmwF9VqKayV4WPrmMk"><b data-page-node-id="dZg6BSQS0DNMrdEsIP7Gwf">自动合并</b>：方案按角色的<b data-page-node-id="Hb8FkkfY3FGUTtyDBDXxvu">重要属性</b>（第 1 条起同等重要的那一截 + ★必选，通常就是双暴）自动聚类——
+        重要属性撞上就并为一套；次要属性（攻击力% / 生命值% 之类）不同不影响合并，会按角色<b data-page-node-id="qn6S0bXzrtjhMjndlB8uPG">分组上色</b>显示，实际给谁再按手上的圣遗物定。
+        主要属性则<b data-page-node-id="ZJgyua3VgVewxW2iT9Lm3P">逐部位独立合并</b>。无需手动调参。</li>
+      <li data-page-node-id="yyBLXVk1xwYjmWobp9EHTr"><b data-page-node-id="8BCHDCcGmeDWq52ADKcp2X">★必须</b>：金色词条，这件圣遗物<b data-page-node-id="EW7FXYsVA4w4eFEi0SFLbe">必须</b>有它，否则不锁定。来自组内<b data-page-node-id="EEo9VgQaVRmLRk11AMQ65X">全体角色都勾选了「必选」</b>的追加属性（在角色抽屉里点 ☆ 设置），最多 2 个。</li>
+      <li data-page-node-id="ISrBYJnDLE1INhOinVTZ4q"><b data-page-node-id="6uXUzAjz9mcjspb1Itd53m">至少两条</b>：命中条数<b data-page-node-id="AlVuhkJxiXFqsZKk2U3xHB">预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条落在追加属性池里才锁定，
+        ★必须的词条也计入这两条。需要更严就在该方案的卡片上把下拉<b data-page-node-id="MrVFsrSrpRIDZuNnr9LG01">改到 3 / 4 条</b>（也可放松到 1 条），每个方案单独记。</li>
+      <li data-page-node-id="c84pCl341kTjm7dqxinw5S"><b data-page-node-id="llM8uAE4o0BEppHJ9KDd4r">收起</b>：点「🧩 散件 / 过渡 保留规则」标题左侧的箭头可把整块收成一行标题——只是不再显示，已启用的规则照常生成候选方案。</li>
+      <li data-page-node-id="wtWnkxdfBxly1DqFGH6tk6">勾选工具栏「<b data-page-node-id="dj04XmztaLbIkYeDB0Sh7c">显示详细件数</b>」可展开每套的建议保留件数与需求来源；不勾选时页面只显示可直接照搬的锁定方案。</li>
     </ul>
-    <h4>注意</h4>
-    <ul>
-      <li>花和羽毛主要属性固定，游戏内只能设追加属性，因此这两个部位对追加属性要求最严；方案级统一追加属性后，★必须 / 追加属性池只剔除与花 / 羽冲突的词条。</li>
-      <li>空之杯的元素伤杯掉率极低，建议启用「🧩 散件 / 过渡 保留规则」里的「元素伤害杯」单独留一套。</li>
-      <li>追加属性不可能与同部位主要属性相同。方案级统一追加属性后，已自动剔除与花 / 羽固定主要属性（生命值 / 攻击力）冲突的项；沙 / 杯 / 冠的主要属性随方案而变，无法逐部位剔除——照抄时请自行留意，跳过即可。</li>
-      <li>数据存在本机浏览器，换设备用「数据管理 → 导出 JSON」迁移。</li>
+    <h4 data-page-node-id="2KOiGNaRpZfpcLGsilTiIY">注意</h4>
+    <ul data-page-node-id="GrgWLBi7JFDKtqYs5GdH5J">
+      <li data-page-node-id="DB0I7bqWN3l38vA0bwLlcW">花和羽毛主要属性固定，游戏内只能设追加属性，因此这两个部位对追加属性要求最严；方案级统一追加属性后，★必须 / 追加属性池只剔除与花 / 羽冲突的词条。</li>
+      <li data-page-node-id="987njNotc8pJAeW7da1WOx">空之杯的元素伤杯掉率极低，建议启用「🧩 散件 / 过渡 保留规则」里的「元素伤害杯」单独留一套。</li>
+      <li data-page-node-id="UwHEF75D0NocTf3jKGBIbt">追加属性不可能与同部位主要属性相同。方案级统一追加属性后，已自动剔除与花 / 羽固定主要属性（生命值 / 攻击力）冲突的项；沙 / 杯 / 冠的主要属性随方案而变，无法逐部位剔除——照抄时请自行留意，跳过即可。</li>
+      <li data-page-node-id="Qp1HVFCeFpOh2HHE8l89xu">数据存在本机浏览器，换设备用「数据管理 → 导出 JSON」迁移。</li>
     </ul>
-    <h4>中英文切换</h4>
-    <ul>
-      <li>顶栏右上角有一个<b>语言下拉</b>，一次把界面文案和数据名一起切过去：选 English 后按钮、说明、以及角色名 / 套装名 / 属性名全都变英文，选择会记住。</li>
-      <li>切成 English 后显示官方英文本地化名（如 胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），属性、国度、定位、部位同样跟随。</li>
-      <li>搜索框<b>两种语言都认</b>：不管当前显示哪种，输入「胡桃」或「Hu Tao」、「逐影猎人」或「Marechaussee」都能搜到。</li>
-      <li>复制 / 导出的文本<b>始终保持中文</b>——游戏内的锁定界面是中文，照抄时才对得上。</li>
-      <li>「更新日志」里记录的是历史改动，保留原始中文不翻译。</li>
-      <li>进阶：底层仍保留<b>分别设置</b>界面语言与数据语言的能力（<code>setLang('ui', …)</code> / <code>setLang('data', …)</code>），供接口或脚本单独调用；界面上不再拆成两个开关。</li>
+    <h4 data-page-node-id="cYiqr5wQfFkeTtYnM6Sk8v">中英文切换</h4>
+    <ul data-page-node-id="lTQZFiV01O0eWGlGm2jbfc">
+      <li data-page-node-id="6vcbEFnSF9WvFapuyGkpaz">顶栏右上角有一个<b data-page-node-id="5L58Sz814q51QjRXV2M0YE">语言下拉</b>，一次把界面文案和数据名一起切过去：选 English 后按钮、说明、以及角色名 / 套装名 / 属性名全都变英文，选择会记住。</li>
+      <li data-page-node-id="adaKSWEwmUkKUFT7AkEu0J">切成 English 后显示官方英文本地化名（如 胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），属性、国度、定位、部位同样跟随。</li>
+      <li data-page-node-id="G1riN0EKtIR1MSeMkZmKBB">搜索框<b data-page-node-id="bpTD8DEJeGY6Cdc8AdkWh1">两种语言都认</b>：不管当前显示哪种，输入「胡桃」或「Hu Tao」、「逐影猎人」或「Marechaussee」都能搜到。</li>
+      <li data-page-node-id="UKhObBBweoz7EVugd7ftJh">复制 / 导出的文本<b data-page-node-id="5mwodbxs5GTZcO3NXJOvLW">始终保持中文</b>——游戏内的锁定界面是中文，照抄时才对得上。</li>
+      <li data-page-node-id="dnKVr23a87q9lFJ4ksmx6R">「更新日志」里记录的是历史改动，保留原始中文不翻译。</li>
+      <li data-page-node-id="khVPGhMHiXBoqv4BxIWHoT">进阶：底层仍保留<b data-page-node-id="qgHgMZnG3A0T0Qt1agDgqu">分别设置</b>界面语言与数据语言的能力（<code data-page-node-id="9vssufct16ZtHZNySxCNWS">setLang('ui', …)</code> / <code data-page-node-id="Cx2jSEaS2qNdXZ2XH9gUP3">setLang('data', …)</code>），供接口或脚本单独调用；界面上不再拆成两个开关。</li>
     </ul>
   </div>
 </div>
 
 <!-- ========== 套装管理浮窗 ========== -->
-<div id="setMgrMask" class="modal-mask hidden"></div>
-<div id="setMgrBox" class="modal modal-lg hidden">
-  <div class="drawer-head">
-    <h2>圣遗物套装管理</h2>
-    <button id="btnCloseSetMgr" class="icon-btn">×</button>
+<div id="setMgrMask" class="modal-mask hidden" data-page-node-id="dWCKdEhaKhtvPaKaKDNCPH"></div>
+<div id="setMgrBox" class="modal modal-lg hidden" data-page-node-id="jzsGxOw9nkacb9pI7USvpa">
+  <div class="drawer-head" data-page-node-id="1BGJlPVdGr1NttDD7nMDWa">
+    <h2 data-page-node-id="K96yCYvoS6xAOkRTj00qje">圣遗物套装管理</h2>
+    <button id="btnCloseSetMgr" class="icon-btn" data-page-node-id="xFMywZTeExlGUuyCkI3cHw">×</button>
   </div>
-  <div class="modal-body">
-    <p class="muted small" data-en="The <b>order</b> here is the order used by every dropdown and by the plan page; you can also edit the 2-piece text. &quot;Hide&quot; on a built-in set only stops it from showing (references from character builds are kept) — &quot;Restore&quot; puts it back. &quot;Delete&quot; on a custom set really removes it and clears it from character builds too.">这里的<b>顺序</b>就是各处下拉与方案页的展示顺序；可改 2 件套效果说明。内置套装点「隐藏」只是不显示（角色配装里的引用会保留），点「恢复」即可放回；自定义套装点「删除」会真正移除，并同步清掉角色配装里的引用。</p>
-    <div class="toolbar wrap">
-      <input id="newSetName" placeholder="新套装名称，例：某某之梦">
-      <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%">
-      <button id="btnAddSet" class="btn primary">+ 添加套装</button>
-      <span class="spacer"></span>
-      <label class="chk"><input type="checkbox" id="setShowHidden"> 显示已隐藏的内置套装</label>
-      <button id="btnRestoreSets" class="btn">恢复全部内置套装</button>
+  <div class="modal-body" data-page-node-id="6ezSWg5EIl79CHO3iBAE5C">
+    <p class="muted small" data-en="The <b data-page-node-id="ULHGKTr49xUYWR5me2TTcQ">order</b> here is the order used by every dropdown and by the plan page; you can also edit the 2-piece text. &quot;Hide&quot; on a built-in set only stops it from showing (references from character builds are kept) — &quot;Restore&quot; puts it back. &quot;Delete&quot; on a custom set really removes it and clears it from character builds too.">这里的<b data-page-node-id="YENSik8u9xD61yYQ1kh8gJ">顺序</b>就是各处下拉与方案页的展示顺序；可改 2 件套效果说明。内置套装点「隐藏」只是不显示（角色配装里的引用会保留），点「恢复」即可放回；自定义套装点「删除」会真正移除，并同步清掉角色配装里的引用。</p>
+    <div class="toolbar wrap" data-page-node-id="ROdTDMiJKKYQpt8jMVWPlj">
+      <input id="newSetName" placeholder="新套装名称，例：某某之梦" data-page-node-id="gD6J6DgnfdrKCVkLlpzpTM">
+      <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%" data-page-node-id="BPM0EHodyevXPJYA2bNnHx">
+      <button id="btnAddSet" class="btn primary" data-page-node-id="I2DFcYVDAGaCMY0OkEEnrV">+ 添加套装</button>
+      <span class="spacer" data-page-node-id="BeIk3Tt0UBxHG6rGH9CCWQ"></span>
+      <label class="chk" data-page-node-id="dYc1Wtddfbyp3jEvjUF8c2"><input type="checkbox" id="setShowHidden" data-page-node-id="AvVHgMbBKWNJ5NQt818SbD"> 显示已隐藏的内置套装</label>
+      <button id="btnRestoreSets" class="btn" data-page-node-id="rX6uPEj5u6hRb3mssKNFEK">恢复全部内置套装</button>
     </div>
-    <div id="setManager"></div>
+    <div id="setManager" data-page-node-id="FD2x7CgSKt9uQNeajaY0Qf"></div>
   </div>
 </div>
 
 <!-- ========== 散件 / 过渡规则：新增 / 编辑 浮窗 ========== -->
-<div id="krMask" class="modal-mask hidden"></div>
-<div id="krBox" class="modal hidden">
-  <div class="drawer-head">
-    <h2 id="krFormTitle">＋ 新增自定义规则</h2>
-    <button id="btnKrX" class="icon-btn" title="关闭">×</button>
+<div id="krMask" class="modal-mask hidden" data-page-node-id="VTSQkZZDzDVGd2FHGSDyuI"></div>
+<div id="krBox" class="modal hidden" data-page-node-id="PuH40osIS0603QZ3fNL8Qp">
+  <div class="drawer-head" data-page-node-id="blXPoGhDpqgloVuFhKWALz">
+    <h2 id="krFormTitle" data-page-node-id="fnf7hVCGMNyqyllMDZ9p38">＋ 新增自定义规则</h2>
+    <button id="btnKrX" class="icon-btn" title="关闭" data-page-node-id="0LATaUfYLmyd0EOmjkCBme">×</button>
   </div>
-  <div class="modal-body">
-    <input type="hidden" id="krEditing" value="">
-    <div class="kr-form">
-      <label class="fld">名称
-        <input type="text" id="krName" placeholder="如：防御杯" spellcheck="false">
+  <div class="modal-body" data-page-node-id="L0n6mC2tKChJFOEbMtTOEh">
+    <input type="hidden" id="krEditing" value="" data-page-node-id="049Ie9BSUFFXZeQqs3LYJr">
+    <div class="kr-form" data-page-node-id="s8NTBUlEusLyhnQjsurgPv">
+      <label class="fld" data-page-node-id="RhPBx1IgSCDTP7TlrsPOjr">名称
+        <input type="text" id="krName" placeholder="如：防御杯" spellcheck="false" data-page-node-id="TfE5F07KmdTtxrYeCTXciK">
       </label>
-      <label class="fld">描述（可选）
-        <input type="text" id="krDesc" placeholder="说明这条规则为什么该留" spellcheck="false">
+      <label class="fld" data-page-node-id="4xxxHdyamlPHb6dU6pzOTs">描述（可选）
+        <input type="text" id="krDesc" placeholder="说明这条规则为什么该留" spellcheck="false" data-page-node-id="bxIXO4IGG1jydkwcIDuqc1">
       </label>
-      <label class="fld">部位
-        <select id="krSlot">
-          <option value="sands">时之沙</option>
-          <option value="goblet" selected>空之杯</option>
-          <option value="circlet">理之冠</option>
+      <label class="fld" data-page-node-id="DjqrApWIVMBsl6RAD7N36g">部位
+        <select id="krSlot" data-page-node-id="CF6j8tWrfEPJXykeyAmeX3">
+          <option value="sands" data-page-node-id="AQr6ZrYkgNFHX27BFFDI93">时之沙</option>
+          <option value="goblet" selected data-page-node-id="1KaZdDVzTb2OcgzGUkhaZn">空之杯</option>
+          <option value="circlet" data-page-node-id="DhoDpSq0PdAzZEEar98lmI">理之冠</option>
         </select>
       </label>
-      <div class="kr-pick">
-        <div><b>要留的主要属性</b><div id="krMains" class="kr-chk"></div></div>
-        <div><b>追加属性</b><div id="krPool" class="kr-chk"></div></div>
-        <div><b>★必须追加属性</b><div id="krRequired" class="kr-chk"></div></div>
+      <div class="kr-pick" data-page-node-id="smeBppZiXOtpk9uDV5oxJY">
+        <div data-page-node-id="2AooGYO6zyKpAlsBixB3o5"><b data-page-node-id="7IWUplInmZ1pHSgZUaOsA5">要留的主要属性</b><div id="krMains" class="kr-chk" data-page-node-id="BBbKtWgvGMDRQXiUJMVkP8"></div></div>
+        <div data-page-node-id="Oo22KYJ9nQCDEImw9ELFgv"><b data-page-node-id="ZAK3cgxlI7GPjgK4mfZp5I">追加属性</b><div id="krPool" class="kr-chk" data-page-node-id="oOmRkfyiXkXgJmAb4oT9T1"></div></div>
+        <div data-page-node-id="iVs6iSuYZD2NE4fzTY53xn"><b data-page-node-id="lXMO9uCHzKRJKVE1KERAIr">★必须追加属性</b><div id="krRequired" class="kr-chk" data-page-node-id="FC7JqmeNyOhCFSSUFixMHU"></div></div>
       </div>
-      <p class="muted small" data-en="The hit count <b>defaults to &quot;at least 2&quot;</b> — an artifact ends up with 4 substats, and at least 2 of them should match before it is worth investing in. Once enabled you can <b>set it to 1&ndash;4 per plan card</b> below; the higher the number, the stricter.">命中条数<b>预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条符合要求才值得留下强化；
+      <p class="muted small" data-en="The hit count <b data-page-node-id="W5CxlvvykKbtbG8SQQgx9y">defaults to &quot;at least 2&quot;</b> — an artifact ends up with 4 substats, and at least 2 of them should match before it is worth investing in. Once enabled you can <b>set it to 1&ndash;4 per plan card</b> below; the higher the number, the stricter.">命中条数<b>预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条符合要求才值得留下强化；
         启用后可在下方每个方案卡片上<b>单独调到 1–4 条</b>，数字越大筛选越严。</p>
     </div>
   </div>
@@ -1240,7 +1278,8 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 <script>
 /* ============================================================
  * 原神圣遗物锁定方案生成器 —— 内置数据
- * 说明：内置配装整理自社区常见推荐思路，仅作为初始化参考。
+ * 说明：内置配装取自米游社「观测枢」wiki 角色词条的「推荐装备 → 圣遗物推荐」
+ *      （结构化数据，非攻略图 OCR）。抓取 / 回写脚本见 tools/。
  *      版本更迭后请在「角色配置」页自行增删改，所有改动保存在本地浏览器。
  * ============================================================ */
 
@@ -1249,8 +1288,63 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
  * CHANGELOG：新在前，CHANGELOG[0].v 必须等于 APP_VERSION。items 为纯文本（渲染时会 esc）。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.16';
+const APP_VERSION = '2026.09.21';
 const CHANGELOG = [
+  {
+    v: '2026.09.21', date: '2026-09-21',
+    title: '配装新增「功能定位」（多选 + 自定义，跨角色共享）',
+    items: [
+      '每组配装新增「功能定位」字段：不再用单一 主C/副C/辅助 标签，而是可多选的功能描述，例如 输出 / 增伤 / 减抗 / 治疗 / 护盾 / 增幅反应 / 剧变反应 等。',
+      '配装编辑器里以勾选框呈现：基础词表（输出 / 增伤 / 减抗 / 治疗 / 护盾 / 副C / 辅助 / 精通 / 充能 / 聚怪·控制 / 增幅反应 / 剧变反应）直接勾选，支持同一配装打多个定位。',
+      '支持自定义定位：输入框里填新词（如「增幅反应」）即加入全局自定义词表，跨角色共享，当前配装自动选中。自定义词表随存档保存在本地浏览器。',
+      '全部 124 个角色的内置配装定位已按观测枢 wiki「推荐装备」描述重新推断写入（旧的单一定位标签已清空），个别 wiki 未明确描述的配装留空、可在编辑器里手补。',
+      '角色卡片与详情面板：配装切换按钮后缀显示「（输出·增伤）」、卡片角标以中性色小标签列出该配装的全部定位。',
+    ],
+  },
+  {
+    v: '2026.09.20', date: '2026-09-20',
+    title: '卡片套装名与配装切换合并为一行可点选',
+    items: [
+      '角色卡片原本分开的「套装名」与底下「1 / 2」配装切换按钮，合并成一行可点选的按钮：形如「1 套装A+套装B（主C）」「2 套装C（辅助）」。',
+      '点击某个配装即切换该卡片当前展示的套装与词条；被选中的配装按钮变为绿色高亮，未选中的回退为普通色，一目了然。',
+      '清理了合并后遗留的无用旧样式与死代码（.cc-sets 容器、已不调用的 cardViewBuild）。',
+    ],
+  },
+  {
+    v: '2026.09.19', date: '2026-09-19',
+    title: '卡片流派切换更清爽；「攻略来源」标注来源名与真数据源',
+    items: [
+      '角色卡片上的配装切换芯片去掉表示流派的颜色小点，只保留编号（流派名仍在鼠标悬停提示与卡片角标里显示）。',
+      '详情面板「攻略来源」现在每条链接前标注来源：「米游社wiki」（观测枢词条）带「数据源」标识，表示配装数据实际取自这里；作者攻略带「攻略」标识，注明是延伸阅读、非数据源。',
+      '「攻略来源」说明文案同步更新，明确「只有观测枢词条是数据源，作者攻略图从不读取」。',
+    ],
+  },
+  {
+    v: '2026.09.18', date: '2026-09-18',
+    title: '每组配装独立携带主词条+副词条，区分流派（主C/副C/辅助）',
+    items: [
+      '数据模型改造：每个角色的「每组配装」现在独立携带 套装 + 时之沙/空之杯/理之冠主词条 + 副词条 + 流派标签，不再共用一份粗预设桶。',
+      '副词条直接取自观测枢 wiki「推荐装备」表的精确值，推翻此前由 SUB_PRESETS 粗桶生成的双暴默认——珊瑚宫心海、久岐忍、多莉、砂糖、早柚、白术、瑶瑶、茜特菈莉、菈乌玛、阿罗夏、尼可、布伦妮 等 12 个角色的网页双暴显示已纠正为 wiki 真实值。',
+      '同角色的多组配装（如久岐忍的「精通流」与「副C流」、行秋的宗室4/绝缘4）现在分组保留，不再坍缩成一套；卡片与抽屉可切换查看不同流派的词条。',
+      '新增「流派」标签（主C / 副C / 辅助），由 wiki 主词条启发式推断，可在角色编辑器内手改。',
+      '修正解析 bug：可莉、烟绯、行秋、重云、旅行者·风 的 wiki 用「副词缀」而非「副词条」，此前被漏解析；现已兼容。',
+      '保留全部去重后的五星配装（不再截断为前 3 组）。自定义角色的副词条仍走 SUB_PRESETS 下拉，不受影响。',
+    ],
+  },
+  {
+    v: '2026.09.17', date: '2026-09-17',
+    title: '配装数据按米游社观测枢 wiki「推荐装备」整体核对',
+    items: [
+      '124 个角色条目的推荐圣遗物，改为从观测枢 wiki 角色词条的「推荐装备 → 圣遗物推荐」结构化数据抓取，替换此前人工整理的社区推荐。',
+      '主词条同步写入并按 wiki 原文顺序排序：时之沙 / 空之杯 / 理之冠（例：胡桃「时之沙：生命值/元素精通」→ 生命值%、元素精通）。',
+      '2+2 混搭识别并保留成一组配装（例：妮露「千岩牢固 2 + 花海甘露之光 2」）；四星过渡套（战狂 / 教官 / 流放者等）不再混入正式配装。',
+      '每个角色最多保留 3 组配装，第 1 组仍为主推。',
+      '攻略来源链接全部重写：第 1 条固定为观测枢词条页（真正的取数来源），后面挂筛选过的米游社攻略，卡片上直接显示作者名而不是「米游社」。',
+      '攻略按「作者白名单（Asgater / HoYo青枫）→ 专帖优先 → 较新优先 → 热度」挑选；124 个角色里 105 个拿到这两位的稿子，多角色合集帖（如「纳西妲/胡桃/行秋…」）不收。',
+      '副词条预设（双暴 / 生命 / 精通等）本轮未改：wiki 的副词条常按通用模板写，45 个角色与现有预设冲突，已全部列在 tools/out/report.md 待人工确认。',
+      '此前标注「通用推荐（暂无专属攻略来源）」的 6 个新角色（洛恩 / 尼可 / 布伦妮 / 莉奈娅 / 叶洛亚 / 雅珂达）已查到官方词条，备注清除。',
+    ],
+  },
   {
     v: '2026.09.16', date: '2026-09-16',
     title: '语言开关合并为一个 + 修手机端配装编辑的横向滚动条',
@@ -1410,6 +1504,16 @@ const ROLES = [
   { id: 'support', name: '辅助' },
 ];
 const ROLE_NAME = Object.fromEntries(ROLES.map(r => [r.id, r.name]));
+
+/* ---------- 配装功能定位（一个配装可有多个；可自定义，跨角色共享） ----------
+ * 与角色级「队伍定位」(ROLES：主C/副C/辅助) 是两回事：
+ * 这里是「这套配装拿来干嘛用」——输出 / 增伤 / 减抗 / 治疗 / 护盾 ……
+ * 基础词表在下面，用户还能在编辑器里追加自定义定位（存 state.customBuildRoles）。 */
+const BUILD_ROLES = [
+  '输出', '增伤', '减抗', '治疗', '护盾',
+  '副C', '辅助', '精通', '充能', '聚怪/控制',
+  '增幅反应', '剧变反应',
+];
 
 /* ---------- 部位 ---------- */
 const SLOTS = [
@@ -2049,167 +2153,635 @@ const CH_META = {
 
 const RAW_CHARS = [
   /* ---------- 火 ---------- */
-  ['胡桃', 'pyro', 'critHp', [['炽烈的炎之魔女'], ['追忆之注连']], ['em', 'hpP'], ['pyro', 'hpP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/43804422', 'https://www.miyoushe.com/ys/article/58957682', 'https://www.miyoushe.com/ys/article/58955919']],
-  ['迪卢克', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/73900753', 'https://bbs.mihoyo.com/ys/article/22237040', 'https://bbs.mihoyo.com/ys/article/20413601']],
-  ['可莉', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/73558152', 'https://www.miyoushe.com/ys/article/71866180', 'https://www.miyoushe.com/ys/article/71102349']],
-  ['宵宫', 'pyro', 'crit', [['追忆之注连'], ['来歆余响'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64575893', 'https://www.miyoushe.com/ys/article/47804923', 'https://www.miyoushe.com/ys/article/47752227']],
-  ['林尼', 'pyro', 'crit', [['辰砂往生录'], ['来歆余响']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/59510751', 'https://www.miyoushe.com/ys/article/75046083', 'https://www.miyoushe.com/ys/article/74678199']],
-  ['香菱', 'pyro', 'crit', [['绝缘之旗印'], ['炽烈的炎之魔女']], ['er', 'atkP', 'em'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/75875081', 'https://bbs.mihoyo.com/ys/article/25074981', 'https://bbs.mihoyo.com/ys/article/20230070']],
-  ['班尼特', 'pyro', 'heal', [['昔日宗室之仪'], ['被怜爱的少女']], ['er', 'hpP'], ['hpP'], ['hpP', 'heal'], ['https://www.miyoushe.com/ys/article/54022194', 'https://bbs.mihoyo.com/ys/article/25074159', 'https://bbs.mihoyo.com/ys/article/20068461']],
-  ['玛薇卡', 'pyro', 'crit', [['黑曜秘典'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/66177682', 'https://www.miyoushe.com/ys/article/75910511', 'https://www.miyoushe.com/ys/article/75905772']],
-  ['阿蕾奇诺', 'pyro', 'crit', [['谐律异想断章'], ['炽烈的炎之魔女']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/70507908', 'https://www.miyoushe.com/ys/article/51936359', 'https://www.miyoushe.com/ys/article/51920910']],
-  ['托马', 'pyro', 'hp', [['千岩牢固'], ['绝缘之旗印']], ['hpP', 'er'], ['hpP'], ['hpP'], ['https://www.miyoushe.com/ys/article/32388545', 'https://www.miyoushe.com/ys/article/54061940', 'https://bbs.mihoyo.com/ys/article/25074912']],
-  ['烟绯', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/25075070', 'https://bbs.mihoyo.com/ys/article/23419183', 'https://bbs.mihoyo.com/ys/article/21268500']],
-  ['迪希雅', 'pyro', 'hp', [['千岩牢固'], ['烬城勇者绘卷']], ['hpP'], ['pyro', 'hpP'], ['cr', 'cd', 'hpP'], ['https://www.miyoushe.com/ys/article/36342244', 'https://www.miyoushe.com/ys/article/68183574', 'https://www.miyoushe.com/ys/article/36343279']],
-  ['嘉明', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/48532329', 'https://www.miyoushe.com/ys/article/71813629', 'https://www.miyoushe.com/ys/article/54223358']],
-  ['辛焱', 'pyro', 'def', [['千岩牢固'], ['逆飞的流星']], ['defP'], ['phys', 'defP'], ['cr', 'defP'], ['https://bbs.mihoyo.com/ys/article/25075001', 'https://bbs.mihoyo.com/ys/article/21741667', 'https://bbs.mihoyo.com/ys/article/18634883']],
-  ['夏沃蕾', 'pyro', 'hp', [['昔日宗室之仪'], ['昔时之歌'], ['烬城勇者绘卷']], ['hpP', 'er'], ['hpP'], ['hpP', 'heal'], ['https://www.miyoushe.com/ys/article/47759303', 'https://www.miyoushe.com/ys/article/71769196', 'https://www.miyoushe.com/ys/article/47762991']],
+  ['胡桃',    'pyro', [
+    {sets:['炽烈的炎之魔女'], sands:['hpP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'em', 'atkP'], roles:['增伤', '精通', '增幅反应']},
+    {sets:['追忆之注连'], sands:['hpP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'em', 'atkP'], roles:['增伤', '精通', '充能']},
+    {sets:['沙上楼阁史话'], sands:['hpP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'em', 'atkP'], roles:['增伤', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1627/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/4762213', 'Asgater'], ['https://www.miyoushe.com/ys/article/58957682', 'HoYo青枫']], ''],
+  ['迪卢克',    'pyro', [
+    {sets:['炽烈的炎之魔女'], sands:['atkP', 'em'], goblet:['pyro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤', '精通']},
+    {sets:['长夜之誓'], sands:['atkP', 'em'], goblet:['pyro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/75/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2089934', 'Asgater'], ['https://www.miyoushe.com/ys/article/73900753', 'HoYo青枫']], ''],
+  ['可莉',    'pyro', [
+    {sets:['风起之日'], sands:['atkP'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '充能']},
+    {sets:['逐影猎人'], sands:['atkP'], goblet:['pyro'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/55/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/6675887', 'Asgater'], ['https://www.miyoushe.com/ys/article/73738502', 'HoYo青枫']], ''],
+  ['宵宫',    'pyro', [
+    {sets:['追忆之注连'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤', '精通']},
+    {sets:['沙上楼阁史话'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤', '精通']},
+    {sets:['来歆余响'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/2124/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64575893', 'Asgater'], ['https://www.miyoushe.com/ys/article/47752227', 'Asgater']], ''],
+  ['林尼',    'pyro', [
+    {sets:['逐影猎人'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+    {sets:['逆飞的流星'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤', '护盾']},
+    {sets:['未竟的遐思'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/6937/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/42419524', 'Asgater'], ['https://www.miyoushe.com/ys/article/74678199', 'HoYo青枫']], ''],
+  ['香菱',    'pyro', [
+    {sets:['炽烈的炎之魔女'], sands:['er', 'atkP'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['er', 'cr', 'cd'], roles:['输出', '增伤', '精通', '充能']},
+    {sets:['绝缘之旗印'], sands:['er', 'atkP'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['er', 'cr', 'cd'], roles:['输出', '增伤', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/112/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/1845835', 'Asgater'], ['https://www.miyoushe.com/ys/article/75875081', 'HoYo青枫']], ''],
+  ['班尼特',    'pyro', [
+    {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP', 'cr'], subs:['hpP', 'er', 'cr'], roles:['输出', '治疗', '辅助', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/105/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2785371', 'Asgater'], ['https://www.miyoushe.com/ys/article/71497654', 'HoYo青枫']], ''],
+  ['玛薇卡',    'pyro', [
+    {sets:['黑曜秘典'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['烬城勇者绘卷'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤', '辅助', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/503613/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75883027', 'Asgater'], ['https://www.miyoushe.com/ys/article/75777988', 'HoYo青枫']], ''],
+  ['阿蕾奇诺',    'pyro', [
+    {sets:['谐律异想断章'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
+    {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
+    {sets:['逐影猎人'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
+    {sets:['饰金之梦'], sands:['em', 'atkP'], goblet:['em', 'pyro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'em', 'atkP'], roles:['增伤', '精通', '增幅反应']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/501157/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77185586', 'Asgater'], ['https://www.miyoushe.com/ys/article/77156164', 'HoYo青枫']], ''],
+  ['托马',    'pyro', [
+    {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP', 'cr', 'cd'], roles:['增伤', '辅助']},
+    {sets:['乐园遗落之花'], sands:['em'], goblet:['em'], circlet:['em'], subs:['er', 'em'], roles:['输出', '精通', '剧变反应']},
+    {sets:['绝缘之旗印'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP', 'cr', 'cd'], roles:['护盾']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/2606/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/11543853', 'Asgater'], ['https://www.miyoushe.com/ys/article/45620252', 'HoYo青枫']], ''],
+  ['烟绯',    'pyro', [
+    {sets:['炽烈的炎之魔女'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['逐影猎人'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['流浪大地的乐团'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['角斗士的终幕礼'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1795/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/10183681', 'Asgater'], ['https://www.miyoushe.com/ys/article/25075070', '嗔痴ovo']], ''],
+  ['迪希雅',    'pyro', [
+    {sets:['绝缘之旗印'], sands:['er', 'atkP', 'hpP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'atkP'], roles:['增伤', '充能']},
+    {sets:['花海甘露之光'], sands:['er', 'atkP', 'hpP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'atkP'], roles:['输出', '增伤']},
+    {sets:['炽烈的炎之魔女'], sands:['er', 'atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'atkP'], roles:['增伤']},
+    {sets:['炽烈的炎之魔女'], sands:['er', 'atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'atkP', 'em'], roles:['增伤', '精通']},
+    {sets:['饰金之梦'], sands:['em', 'er', 'atkP'], goblet:['em', 'pyro', 'atkP'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'hpP', 'atkP'], roles:['增伤', '精通', '剧变反应']},
+    {sets:['乐园遗落之花'], sands:['em', 'er', 'atkP'], goblet:['em', 'pyro', 'atkP'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'hpP', 'atkP'], roles:['增伤', '精通', '剧变反应']},
+    {sets:['千岩牢固'], sands:['er', 'atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'atkP'], roles:['增伤', '护盾', '辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/6180/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/36343000', 'Asgater'], ['https://www.miyoushe.com/ys/article/36342244', '饭桶绢']], ''],
+  ['嘉明',    'pyro', [
+    {sets:['长夜之誓'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '精通']},
+    {sets:['逐影猎人'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '精通']},
+    {sets:['炽烈的炎之魔女'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '精通']},
+    {sets:['辰砂往生录'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/500672/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/48532329', 'Asgater'], ['https://www.miyoushe.com/ys/article/71813629', 'HoYo青枫']], ''],
+  ['辛焱',    'pyro', [
+    {sets:['苍白之火'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er', 'defP'], roles:['增伤']},
+    {sets:['染血的骑士道', '苍白之火'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er', 'defP'], roles:['增伤']},
+    {sets:['追忆之注连'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er', 'defP'], roles:['输出', '增伤', '充能']},
+    {sets:['昔日宗室之仪'], sands:['defP'], goblet:['defP'], circlet:['defP', 'cd'], subs:['defP', 'er', 'cd', 'cr'], roles:['护盾', '辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1291/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/14848049', 'Asgater'], ['https://www.miyoushe.com/ys/article/49461187', 'HoYo青枫']], ''],
+  ['夏沃蕾',    'pyro', [
+    {sets:['昔日宗室之仪'], sands:['hpP', 'er'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'er', 'cr', 'em'], roles:['辅助']},
+    {sets:['昔时之歌'], sands:['hpP', 'er'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['hpP', 'er', 'cr', 'em'], roles:['治疗']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/500605/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62961015', 'Asgater'], ['https://www.miyoushe.com/ys/article/71769196', 'HoYo青枫']], ''],
 
   /* ---------- 水 ---------- */
-  ['行秋', 'hydro', 'crit', [['绝缘之旗印'], ['沉沦之心']], ['atkP', 'er'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/75141780', 'https://www.miyoushe.com/ys/article/70022906', 'https://bbs.mihoyo.com/ys/article/25075041']],
-  ['夜兰', 'hydro', 'critHp', [['绝缘之旗印'], ['沉沦之心'], ['千岩牢固']], ['hpP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/69095833', 'https://www.miyoushe.com/ys/article/35379633', 'https://bbs.mihoyo.com/ys/article/23365969']],
-  ['达达利亚', 'hydro', 'crit', [['沉沦之心'], ['逐影猎人']], ['atkP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/61217705', 'https://bbs.mihoyo.com/ys/article/31675253', 'https://bbs.mihoyo.com/ys/article/22237098']],
-  ['珊瑚宫心海', 'hydro', 'hp', [['海染砗磲'], ['千岩牢固']], ['hpP', 'er'], ['hydro', 'hpP'], ['heal', 'hpP'], ['https://bbs.mihoyo.com/ys/article/9783187', 'https://bbs.mihoyo.com/ys/article/28670439', 'https://bbs.mihoyo.com/ys/article/9811643']],
-  ['莫娜', 'hydro', 'er', [['绝缘之旗印'], ['昔日宗室之仪']], ['er', 'atkP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/71353241', 'https://www.miyoushe.com/ys/article/71293999', 'https://bbs.mihoyo.com/ys/article/22242956']],
-  ['妮露', 'hydro', 'hp', [['乐园遗落之花'], ['千岩牢固', '乐园遗落之花']], ['hpP'], ['hpP'], ['hpP'], ['https://www.miyoushe.com/ys/article/37891114', 'https://bbs.mihoyo.com/ys/article/30319453', 'https://www.miyoushe.com/ys/article/68308954']],
-  ['芙宁娜', 'hydro', 'critHp', [['黄金剧团'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/69835283', 'https://www.miyoushe.com/ys/article/54231026', 'https://www.miyoushe.com/ys/article/45238744']],
-  ['那维莱特', 'hydro', 'critHp', [['逐影猎人'], ['沉沦之心']], ['hpP', 'er'], ['hydro', 'hpP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/72892872', 'https://www.miyoushe.com/ys/article/51019831', 'https://www.miyoushe.com/ys/article/43799619']],
-  ['芭芭拉', 'hydro', 'heal', [['被怜爱的少女'], ['海染砗磲']], ['hpP'], ['hpP'], ['heal'], ['https://www.miyoushe.com/ys/article/68736041', 'https://bbs.mihoyo.com/ys/article/25074129', 'https://bbs.mihoyo.com/ys/article/23419183']],
-  ['玛拉妮', 'hydro', 'critHp', [['黑曜秘典'], ['沉沦之心']], ['hpP'], ['hydro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/67605282', 'https://www.miyoushe.com/ys/article/56901714', 'https://www.miyoushe.com/ys/article/67669637']],
-  ['塔利雅', 'hydro', 'atk', [['昔日宗室之仪'], ['绝缘之旗印']], ['atkP', 'er'], ['hydro', 'atkP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/65679835', 'https://www.miyoushe.com/ys/article/65404405', 'https://www.miyoushe.com/ys/article/65404256']],
-  ['希格雯', 'hydro', 'heal', [['昔时之歌'], ['海染砗磲']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP'], ['https://www.miyoushe.com/ys/article/54243679', 'https://www.miyoushe.com/ys/article/54229003', 'https://www.miyoushe.com/ys/article/61942374']],
-  ['坎蒂丝', 'hydro', 'hp', [['千岩牢固'], ['绝缘之旗印']], ['hpP', 'er'], ['hpP'], ['hpP'], ['https://bbs.mihoyo.com/ys/article/29482398', 'https://www.miyoushe.com/ys/article/74049148', 'https://bbs.mihoyo.com/ys/article/29611709']],
+  ['行秋',    'hydro', [
+    {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '辅助', '精通', '充能']},
+    {sets:['绝缘之旗印'], sands:['er', 'atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/241/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2552072', 'Asgater'], ['https://www.miyoushe.com/ys/article/75141780', 'HoYo青枫']], ''],
+  ['夜兰',    'hydro', [
+    {sets:['绝缘之旗印'], sands:['hpP', 'er'], goblet:['hydro', 'hpP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'er', 'hpP'], roles:['增伤', '充能']},
+    {sets:['昔日宗室之仪'], sands:['hpP', 'er'], goblet:['hydro', 'hpP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'er', 'hpP'], roles:['增伤', '辅助']},
+    {sets:['逐影猎人'], sands:['hpP', 'er'], goblet:['hydro', 'hpP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'er', 'hpP'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/4081/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/69095833', 'Asgater'], ['https://www.miyoushe.com/ys/article/69055107', 'HoYo青枫']], ''],
+  ['达达利亚',    'hydro', [
+    {sets:['水仙之梦'], sands:['atkP'], goblet:['hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
+    {sets:['沉沦之心'], sands:['atkP'], goblet:['hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
+    {sets:['沙上楼阁史话'], sands:['atkP'], goblet:['hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1220/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61585425', 'Asgater'], ['https://www.miyoushe.com/ys/article/5346426', 'Asgater']], ''],
+  ['珊瑚宫心海',    'hydro', [
+    {sets:['海染砗磲'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['heal'], subs:['hpP', 'er', 'em'], roles:['增伤', '治疗', '辅助']},
+    {sets:['昔时之歌'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['heal'], subs:['hpP', 'er', 'em'], roles:['增伤', '治疗']},
+    {sets:['被怜爱的少女'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['heal'], subs:['hpP', 'er', 'em'], roles:['增伤', '治疗']},
+    {sets:['千岩牢固'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['heal'], subs:['hpP', 'er', 'em'], roles:['输出', '增伤', '辅助']},
+    {sets:['乐园遗落之花'], sands:['hpP', 'er'], goblet:['hpP', 'em'], circlet:['heal'], subs:['hpP', 'er', 'em'], roles:['输出', '精通', '剧变反应']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/2403/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64666544', 'Asgater'], ['https://www.miyoushe.com/ys/article/41647205', 'Asgater']], ''],
+  ['莫娜',    'hydro', [
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'atkP', 'em', 'cr', 'cd'], roles:['增伤']},
+    {sets:['千岩牢固'], sands:['er', 'atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'atkP', 'em', 'cr', 'cd'], roles:['增伤', '辅助']},
+    {sets:['绝缘之旗印'], sands:['er', 'atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'atkP', 'em', 'cr', 'cd'], roles:['增伤', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1057/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71353241', 'Asgater'], ['https://www.miyoushe.com/ys/article/71337189', '猫冬']], ''],
+  ['妮露',    'hydro', [
+    {sets:['千岩牢固', '花海甘露之光'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['em', 'hpP', 'cr', 'cd'], roles:['输出', '精通']},
+    {sets:['沉沦之心', '水仙之梦'], sands:['hpP'], goblet:['hydro', 'hpP'], circlet:['cr', 'cd', 'hpP'], subs:['em', 'cr', 'cd', 'hpP'], roles:['输出', '增伤', '精通']},
+    {sets:['深林的记忆'], sands:['hpP'], goblet:['hydro', 'hpP'], circlet:['cr', 'cd', 'hpP'], subs:['em', 'cr', 'cd', 'hpP'], roles:['输出', '增伤', '辅助', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/5020/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68590672', 'Asgater'], ['https://www.miyoushe.com/ys/article/55223165', 'HoYo青枫']], ''],
+  ['芙宁娜',    'hydro', [
+    {sets:['黄金剧团'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'er'], roles:['输出', '增伤']},
+    {sets:['千岩牢固'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'er'], roles:['增伤', '辅助']},
+    {sets:['昔日宗室之仪'], sands:['hpP'], goblet:['hpP', 'hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'er'], roles:['增伤', '辅助']},
+    {sets:['逐影猎人'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'er'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/500291/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70375033', 'Asgater'], ['https://www.miyoushe.com/ys/article/69782038', 'HoYo青枫']], ''],
+  ['那维莱特',    'hydro', [
+    {sets:['逐影猎人'], sands:['hpP'], goblet:['hydro'], circlet:['cd', 'hpP'], subs:['cr', 'cd', 'hpP'], roles:['输出', '增伤']},
+    {sets:['沉沦之心'], sands:['hpP'], goblet:['hydro'], circlet:['cr', 'cd', 'hpP'], subs:['cr', 'cd', 'hpP'], roles:['增伤']},
+    {sets:['水仙之梦', '沉沦之心'], sands:['hpP'], goblet:['hydro'], circlet:['cr', 'cd', 'hpP'], subs:['cr', 'cd', 'hpP'], roles:['增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/500207/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72892872', 'Asgater'], ['https://www.miyoushe.com/ys/article/72778260', 'HoYo青枫']], ''],
+  ['芭芭拉',    'hydro', [
+    {sets:['被怜爱的少女'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP', 'cr'], roles:['治疗']},
+    {sets:['海染砗磲'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP', 'cr'], roles:['输出', '治疗']},
+    {sets:['昔时之歌'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP', 'cr'], roles:['输出', '治疗']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/61/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68736041', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/45449320', 'HoYo青枫']], ''],
+  ['玛拉妮',    'hydro', [
+    {sets:['黑曜秘典'], sands:['hpP', 'em'], goblet:['hydro', 'hpP'], circlet:['cd', 'hpP'], subs:['cd', 'hpP', 'em', 'cr'], roles:['输出', '增伤', '精通']},
+    {sets:['饰金之梦'], sands:['hpP', 'em'], goblet:['hydro', 'hpP'], circlet:['cd', 'hpP'], subs:['cd', 'hpP', 'em', 'cr'], roles:['增伤', '辅助', '精通']},
+    {sets:['沉沦之心'], sands:['hpP', 'em'], goblet:['hydro', 'hpP'], circlet:['cd', 'hpP'], subs:['cd', 'hpP', 'em', 'cr'], roles:['增伤', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/501625/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/67646572', 'Asgater'], ['https://www.miyoushe.com/ys/article/67669637', 'HoYo青枫']], ''],
+  ['塔利雅',    'hydro', [
+    {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'cr'], roles:['辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/505418/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/65404405', 'Asgater'], ['https://www.miyoushe.com/ys/article/74011159', 'HoYo青枫']], ''],
+  ['希格雯',    'hydro', [
+    {sets:['昔时之歌'], sands:['hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['hpP', 'er'], roles:['治疗', '辅助']},
+    {sets:['海染砗磲'], sands:['hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['hpP', 'er'], roles:['治疗', '辅助']},
+    {sets:['千岩牢固'], sands:['hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['hpP', 'er'], roles:['治疗', '辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/501214/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61942325', 'Asgater'], ['https://www.miyoushe.com/ys/article/74923340', 'HoYo青枫']], ''],
+  ['坎蒂丝',    'hydro', [
+    {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hydro', 'hpP'], circlet:['hpP', 'cr'], subs:['cr', 'cd', 'hpP'], roles:['输出', '增伤', '辅助', '充能']},
+    {sets:['绝缘之旗印'], sands:['er', 'hpP'], goblet:['hydro', 'hpP'], circlet:['hpP', 'cr'], subs:['cr', 'cd', 'hpP'], roles:['输出', '增伤', '充能']},
+    {sets:['角斗士的终幕礼'], sands:['er', 'hpP'], goblet:['hydro', 'hpP'], circlet:['hpP', 'cr'], subs:['cr', 'cd', 'hpP', 'er'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/4781/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74049148', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/29481187', '猫冬']], ''],
 
   /* ---------- 冰 ---------- */
-  ['甘雨', 'cryo', 'crit', [['冰风迷途的勇士'], ['流浪大地的乐团']], ['atkP'], ['cryo'], ['cd', 'cr'], ['https://bbs.mihoyo.com/ys/article/14957113', 'https://www.miyoushe.com/ys/article/61283838', 'https://www.miyoushe.com/ys/article/38956966']],
-  ['神里绫华', 'cryo', 'crit', [['冰风迷途的勇士'], ['沉沦之心']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64527638', 'https://www.miyoushe.com/ys/article/32720596', 'https://bbs.mihoyo.com/ys/article/20714244']],
-  ['优菈', 'cryo', 'crit', [['苍白之火'], ['苍白之火', '染血的骑士道']], ['atkP'], ['phys'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/40948437', 'https://www.miyoushe.com/ys/article/73861985', 'https://www.miyoushe.com/ys/article/40951883']],
-  ['申鹤', 'cryo', 'atk', [['千岩牢固'], ['冰风迷途的勇士', '追忆之注连']], ['atkP'], ['atkP'], ['atkP'], ['https://www.miyoushe.com/ys/article/65787422', 'https://www.miyoushe.com/ys/article/65404318', 'https://www.miyoushe.com/ys/article/65464845']],
-  ['莱欧斯利', 'cryo', 'crit', [['逐影猎人'], ['冰风迷途的勇士']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/44583182', 'https://www.miyoushe.com/ys/article/62417764', 'https://www.miyoushe.com/ys/article/76302270']],
-  ['迪奥娜', 'cryo', 'hp', [['千岩牢固'], ['被怜爱的少女']], ['hpP', 'er'], ['hpP'], ['hpP', 'heal'], ['https://www.miyoushe.com/ys/article/76347079', 'https://www.miyoushe.com/ys/article/76479642', 'https://bbs.mihoyo.com/ys/article/27923191']],
-  ['罗莎莉亚', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/70615140', 'https://bbs.mihoyo.com/ys/article/25074734', 'https://bbs.mihoyo.com/ys/article/20802145']],
-  ['七七', 'cryo', 'heal', [['被怜爱的少女'], ['千岩牢固']], ['atkP', 'er'], ['atkP'], ['heal'], ['https://www.miyoushe.com/ys/article/76326299', 'https://www.miyoushe.com/sr/article/61091178', 'https://bbs.mihoyo.com/ys/article/21881008']],
-  ['爱可菲', 'cryo', 'atk', [['黄金剧团'], ['冰风迷途的勇士']], ['atkP'], ['cryo', 'atkP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/73995271', 'https://www.miyoushe.com/ys/article/64215753', 'https://www.miyoushe.com/ys/article/64193368']],
-  ['丝柯克', 'cryo', 'crit', [['深廊终曲'], ['冰风迷途的勇士']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/73991725', 'https://www.miyoushe.com/ys/article/65478404', 'https://www.miyoushe.com/ys/article/65404377']],
-  ['重云', 'cryo', 'crit', [['冰风迷途的勇士'], ['昔日宗室之仪']], ['atkP'], ['cryo'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/11361211', 'https://bbs.mihoyo.com/ys/article/25075185', 'https://bbs.mihoyo.com/ys/article/24476281']],
-  ['菲米尼', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo', 'phys'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/43154250', 'https://www.miyoushe.com/ys/article/76548802', 'https://www.miyoushe.com/ys/article/43066421']],
-  ['夏洛蒂', 'cryo', 'heal', [['千岩牢固'], ['被怜爱的少女']], ['atkP', 'er'], ['atkP'], ['heal', 'atkP'], ['https://www.miyoushe.com/ys/article/45238643', 'https://www.miyoushe.com/ys/article/74068739', 'https://www.miyoushe.com/ys/article/45186920']],
-  ['米卡', 'cryo', 'heal', [['千岩牢固'], ['被怜爱的少女']], ['atkP', 'er'], ['atkP'], ['heal', 'atkP'], ['https://www.miyoushe.com/ys/article/75831154', 'https://www.miyoushe.com/ys/article/37059683', 'https://www.miyoushe.com/ys/article/37103850']],
+  ['甘雨',    'cryo', [
+    {sets:['流浪大地的乐团'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通', '增幅反应']},
+    {sets:['追忆之注连'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通', '充能', '增幅反应']},
+    {sets:['沙上楼阁史话'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通', '充能', '增幅反应']},
+    {sets:['未竟的遐思'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通', '增幅反应']},
+    {sets:['逐影猎人'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤', '精通', '增幅反应']},
+    {sets:['冰风迷途的勇士'], sands:['atkP', 'er'], goblet:['cryo'], circlet:['cd'], subs:['cd', 'cr', 'atkP', 'er'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1433/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61529617', 'Asgater'], ['https://www.miyoushe.com/ys/article/38956966', 'Asgater']], ''],
+  ['神里绫华',    'cryo', [
+    {sets:['冰风迷途的勇士'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd', 'atkP'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+    {sets:['逐影猎人'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd', 'atkP'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+    {sets:['绝缘之旗印'], sands:['atkP', 'er'], goblet:['cryo', 'atkP'], circlet:['cd', 'atkP'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/2123/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64527638', 'Asgater'], ['https://www.miyoushe.com/ys/article/37017728', 'Asgater']], ''],
+  ['优菈',    'cryo', [
+    {sets:['苍白之火'], sands:['atkP'], goblet:['phys', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+    {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['phys', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/2040/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/40951883', 'Asgater'], ['https://www.miyoushe.com/ys/article/73861985', 'HoYo青枫']], ''],
+  ['申鹤',    'cryo', [
+    {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['atkP'], circlet:['atkP', 'cr', 'cd'], subs:['atkP', 'er', 'cr', 'cd'], roles:['辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/3386/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/65404318', 'Asgater'], ['https://www.miyoushe.com/ys/article/65464845', 'HoYo青枫']], ''],
+  ['莱欧斯利',    'cryo', [
+    {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '辅助']},
+    {sets:['逐影猎人'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '辅助', '精通']},
+    {sets:['辰砂往生录'], sands:['em', 'atkP'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '辅助', '精通']},
+    {sets:['沙上楼阁史话'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '辅助', '精通']},
+    {sets:['追忆之注连'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '辅助', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/500286/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62418468', 'Asgater'], ['https://www.miyoushe.com/ys/article/76302270', 'HoYo青枫']], ''],
+  ['迪奥娜',    'cryo', [
+    {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP', 'cr'], roles:['辅助']},
+    {sets:['千岩牢固'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP', 'cr'], roles:['治疗', '护盾', '充能']},
+    {sets:['被怜爱的少女'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP'], roles:['治疗']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1221/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76347079', 'Asgater'], ['https://www.miyoushe.com/ys/article/76479642', 'HoYo青枫']], ''],
+  ['罗莎莉亚',    'cryo', [
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+    {sets:['冰风迷途的勇士'], sands:['er', 'atkP'], goblet:['cryo'], circlet:['cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤']},
+    {sets:['苍白之火'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1744/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/11126959', 'Asgater'], ['https://www.miyoushe.com/ys/article/70615140', 'HoYo青枫']], ''],
+  ['七七',    'cryo', [
+    {sets:['千岩牢固'], sands:['atkP'], goblet:['atkP'], circlet:['heal', 'cr'], subs:['er', 'atkP', 'cr'], roles:['输出', '辅助']},
+    {sets:['海染砗磲'], sands:['atkP'], goblet:['atkP'], circlet:['heal', 'cr'], subs:['er', 'atkP', 'cr'], roles:['输出', '治疗']},
+    {sets:['昔时之歌'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal', 'cr'], subs:['er', 'atkP', 'cr'], roles:['治疗']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1056/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61557727', 'Asgater'], ['https://www.miyoushe.com/ys/article/76326299', 'HoYo青枫']], ''],
+  ['爱可菲',    'cryo', [
+    {sets:['黄金剧团'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+    {sets:['千岩牢固'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/504976/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73899692', 'Asgater'], ['https://www.miyoushe.com/ys/article/73987299', 'HoYo青枫']], ''],
+  ['丝柯克',    'cryo', [
+    {sets:['深廊终曲'], sands:['atkP'], goblet:['atkP', 'cryo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+    {sets:['逐影猎人'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤']},
+    {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['atkP', 'cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/505417/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73966901', 'Asgater'], ['https://www.miyoushe.com/ys/article/73965211', 'HoYo青枫']], ''],
+  ['重云',    'cryo', [
+    {sets:['昔日宗室之仪'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通', '充能']},
+    {sets:['绝缘之旗印'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/644/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2994955', 'Asgater'], ['https://www.miyoushe.com/ys/article/45409890', 'HoYo青枫']], ''],
+  ['菲米尼',    'cryo', [
+    {sets:['苍白之火'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+    {sets:['染血的骑士道', '苍白之火'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+    {sets:['冰风迷途的勇士'], sands:['atkP'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/7257/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/43154250', 'Asgater'], ['https://www.miyoushe.com/ys/article/76548802', 'HoYo青枫']], ''],
+  ['夏洛蒂',    'cryo', [
+    {sets:['昔时之歌'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal'], subs:['cr', 'atkP'], roles:['治疗', '辅助']},
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal'], subs:['cr', 'atkP'], roles:['辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/500292/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/45238643', 'Asgater'], ['https://www.miyoushe.com/ys/article/74068739', 'HoYo青枫']], ''],
+  ['米卡',    'cryo', [
+    {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP', 'cr'], subs:['er', 'hpP', 'cr'], roles:['辅助']},
+    {sets:['海染砗磲'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP', 'cr'], subs:['er', 'hpP', 'cr'], roles:['治疗', '辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/6285/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/37055160', 'Asgater'], ['https://www.miyoushe.com/ys/article/75831154', 'HoYo青枫']], ''],
 
   /* ---------- 雷 ---------- */
-  ['雷电将军', 'electro', 'crit', [['绝缘之旗印']], ['er', 'atkP'], ['electro', 'atkP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/47804425', 'https://www.miyoushe.com/ys/article/32613094', 'https://bbs.mihoyo.com/ys/article/18889634']],
-  ['八重神子', 'electro', 'crit', [['饰金之梦'], ['如雷的盛怒']], ['atkP'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64762050', 'https://www.miyoushe.com/ys/article/64630754', 'https://bbs.mihoyo.com/ys/article/17929472']],
-  ['菲谢尔', 'electro', 'crit', [['如雷的盛怒'], ['饰金之梦'], ['绝缘之旗印']], ['atkP'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/72463227', 'https://www.miyoushe.com/ys/article/72528522', 'https://www.miyoushe.com/ys/article/44410305']],
-  ['刻晴', 'electro', 'crit', [['如雷的盛怒'], ['饰金之梦']], ['atkP'], ['electro'], ['cd', 'cr'], ['https://www.miyoushe.com/ys/article/61261935', 'https://www.miyoushe.com/sr/article/61091188', 'https://www.miyoushe.com/ys/article/33231059']],
-  ['赛诺', 'electro', 'em', [['饰金之梦'], ['如雷的盛怒']], ['em', 'atkP'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/45995448', 'https://bbs.mihoyo.com/ys/article/29480539', 'https://www.miyoushe.com/ys/article/68307851']],
-  ['久岐忍', 'electro', 'em', [['饰金之梦'], ['乐园遗落之花']], ['em'], ['em'], ['em'], ['https://bbs.mihoyo.com/ys/article/24454467', 'https://www.miyoushe.com/sr/article/68674152', 'https://www.miyoushe.com/ys/article/32513206']],
-  ['九条裟罗', 'electro', 'atk', [['昔日宗室之仪'], ['绝缘之旗印']], ['er', 'atkP'], ['electro', 'atkP'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/9505598', 'https://bbs.mihoyo.com/ys/article/25074355', 'https://bbs.mihoyo.com/ys/article/21593056']],
-  ['雷泽', 'electro', 'crit', [['苍白之火'], ['平息鸣雷的尊者']], ['atkP'], ['phys'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/71260308', 'https://www.miyoushe.com/sr/article/75508081', 'https://bbs.mihoyo.com/ys/article/25074526']],
-  ['克洛琳德', 'electro', 'crit', [['谐律异想断章'], ['如雷的盛怒']], ['atkP'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/53505994', 'https://www.miyoushe.com/ys/article/53493282', 'https://www.miyoushe.com/ys/article/61261814']],
-  ['瓦雷莎', 'electro', 'crit', [['黑曜秘典'], ['长夜之誓']], ['atkP'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/62923305', 'https://www.miyoushe.com/ys/article/62882282', 'https://www.miyoushe.com/ys/article/71889313']],
-  ['伊安珊', 'electro', 'atk', [['烬城勇者绘卷'], ['昔日宗室之仪']], ['atkP', 'er'], ['electro', 'atkP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/62923263', 'https://www.miyoushe.com/ys/article/62890274', 'https://www.miyoushe.com/ys/article/62922913']],
-  ['欧洛伦', 'electro', 'atk', [['烬城勇者绘卷'], ['绝缘之旗印']], ['atkP', 'er'], ['electro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/59513932', 'https://www.miyoushe.com/ys/article/59513936', 'https://www.miyoushe.com/ys/article/76822394']],
-  ['多莉', 'electro', 'hp', [['千岩牢固'], ['被怜爱的少女']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP'], ['https://www.miyoushe.com/sr/article/69337526', 'https://bbs.mihoyo.com/ys/article/28690959', 'https://bbs.mihoyo.com/ys/article/28936608']],
+  ['雷电将军',    'electro', [
+    {sets:['绝缘之旗印'], sands:['er'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er'], roles:['增伤', '充能']},
+    {sets:['乐园遗落之花'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em'], roles:['精通', '剧变反应']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/2404/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76824456', 'Asgater'], ['https://www.miyoushe.com/ys/article/76739565', 'HoYo青枫']], ''],
+  ['八重神子',    'electro', [
+    {sets:['炉火融炼之心'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤', '辅助', '精通']},
+    {sets:['千岩牢固'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['辅助']},
+    {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['饰金之梦'], sands:['atkP', 'em'], goblet:['atkP', 'electro'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '辅助', '精通']},
+    {sets:['黄金剧团'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '副C']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/3564/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76347725', 'Asgater'], ['https://www.miyoushe.com/ys/article/76435138', 'HoYo青枫']], ''],
+  ['菲谢尔',    'electro', [
+    {sets:['风起之日'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤']},
+    {sets:['黄金剧团'], sands:['atkP', 'em'], goblet:['electro'], circlet:['cr'], subs:['cd', 'cr', 'atkP', 'em', 'er'], roles:['输出', '增伤', '副C', '精通']},
+    {sets:['千岩牢固'], sands:['atkP', 'er'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er', 'em'], roles:['输出', '增伤', '辅助']},
+    {sets:['如雷的盛怒'], sands:['atkP', 'em'], goblet:['electro'], circlet:['cr'], subs:['cd', 'cr', 'atkP', 'em', 'er'], roles:['增伤', '精通', '剧变反应']},
+    {sets:['苍白之火'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/382/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72463227', 'Asgater'], ['https://www.miyoushe.com/ys/article/72528522', 'HoYo青枫']], ''],
+  ['刻晴',    'electro', [
+    {sets:['如雷的盛怒'], sands:['atkP', 'em'], goblet:['electro'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1058/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61418035', 'Asgater'], ['https://www.miyoushe.com/ys/article/1787731', 'Asgater']], ''],
+  ['赛诺',    'electro', [
+    {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
+    {sets:['如雷的盛怒'], sands:['em', 'atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['em', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '精通', '充能']},
+    {sets:['饰金之梦'], sands:['em', 'atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['em', 'cr', 'cd', 'atkP'], roles:['增伤', '精通']},
+    {sets:['穹境示现之夜'], sands:['em', 'atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['em', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '精通', '剧变反应']},
+    {sets:['角斗士的终幕礼'], sands:['atkP', 'em'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['em', 'cr', 'cd', 'atkP'], roles:['增伤', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/4780/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76480300', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/29481308', '猫冬']], ''],
+  ['久岐忍',    'electro', [
+    {sets:['饰金之梦'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em', 'hpP', 'er'], roles:['输出', '精通']},
+    {sets:['如雷的盛怒'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em', 'hpP', 'er'], roles:['输出', '精通']},
+    {sets:['乐园遗落之花'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em', 'hpP', 'er'], roles:['输出', '精通', '剧变反应']},
+    {sets:['千岩牢固'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['cr', 'em', 'hpP', 'er'], roles:['辅助', '精通']},
+    {sets:['昔日宗室之仪'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['cr', 'em', 'hpP', 'er'], roles:['辅助', '精通']},
+    {sets:['海染砗磲'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'hpP', 'cr'], subs:['cr', 'em', 'hpP', 'er'], roles:['输出', '治疗', '精通']},
+    {sets:['被怜爱的少女'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'hpP', 'cr'], subs:['cr', 'em', 'hpP', 'er'], roles:['治疗', '精通']},
+    {sets:['被怜爱的少女'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['cr', 'em', 'hpP', 'er'], roles:['治疗', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/4148/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/32513206', 'Asgater'], ['https://www.miyoushe.com/ys/article/68674152', 'HoYo青枫']], ''],
+  ['九条裟罗',    'electro', [
+    {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '辅助']},
+    {sets:['绝缘之旗印'], sands:['atkP', 'er'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/2402/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/9131930', 'Asgater'], ['https://www.miyoushe.com/ys/article/25074355', '嗔痴ovo']], ''],
+  ['雷泽',    'electro', [
+    {sets:['风起之日'], sands:['atkP'], goblet:['phys', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤']},
+    {sets:['苍白之火'], sands:['atkP'], goblet:['phys', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通', '充能']},
+    {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['phys', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/56/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2178005', 'Asgater'], ['https://www.miyoushe.com/ys/article/75508081', 'HoYo青枫']], ''],
+  ['克洛琳德',    'electro', [
+    {sets:['谐律异想断章'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤']},
+    {sets:['如雷的盛怒'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通']},
+    {sets:['逐影猎人'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤']},
+    {sets:['来歆余响'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤']},
+    {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/501213/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75166713', 'Asgater'], ['https://www.miyoushe.com/ys/article/74324480', 'HoYo青枫']], ''],
+  ['瓦雷莎',    'electro', [
+    {sets:['长夜之誓'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+    {sets:['黑曜秘典'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'atkP'], subs:['cd', 'cr', 'atkP', 'er'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/504570/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71719330', 'Asgater'], ['https://www.miyoushe.com/ys/article/71622492', 'HoYo青枫']], ''],
+  ['伊安珊',    'electro', [
+    {sets:['烬城勇者绘卷'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP', 'cr'], subs:['er', 'atkP', 'cr'], roles:['增伤', '辅助', '精通']},
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP', 'cr'], subs:['er', 'atkP', 'cr'], roles:['辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/504621/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62890274', 'Asgater'], ['https://www.miyoushe.com/ys/article/71744341', 'HoYo青枫']], ''],
+  ['欧洛伦',    'electro', [
+    {sets:['烬城勇者绘卷'], sands:[], goblet:[], circlet:['cr'], subs:['cr'], roles:['输出', '副C', '辅助', '充能']},
+    {sets:['烬城勇者绘卷'], sands:['atkP'], goblet:[], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/502927/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/59513932', 'Asgater'], ['https://www.miyoushe.com/ys/article/76822394', 'HoYo青枫']], ''],
+  ['多莉',    'electro', [
+    {sets:['海染砗磲'], sands:['er', 'hpP'], goblet:['hpP', 'electro'], circlet:['heal', 'hpP'], subs:['hpP', 'er'], roles:['增伤', '治疗', '充能']},
+    {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['electro', 'hpP'], circlet:['hpP', 'cd', 'cr'], subs:['hpP', 'cd', 'cr'], roles:['输出', '增伤', '充能']},
+    {sets:['被怜爱的少女'], sands:['er', 'hpP'], goblet:['hpP', 'electro'], circlet:['heal', 'hpP'], subs:['hpP', 'er'], roles:['增伤', '治疗', '充能']},
+    {sets:['如雷的盛怒'], sands:['atkP', 'er'], goblet:['electro'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'er'], roles:['输出', '增伤', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/4736/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/28690959', 'Asgater'], ['https://www.miyoushe.com/ys/article/69337526', 'HoYo青枫']], ''],
 
   /* ---------- 风 ---------- */
-  ['枫原万叶', 'anemo', 'em', [['翠绿之影']], ['em'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/51026414', 'https://bbs.mihoyo.com/ys/article/25403328', 'https://www.miyoushe.com/ys/article/51015181']],
-  ['温迪', 'anemo', 'em', [['翠绿之影']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr'], ['https://www.miyoushe.com/ys/article/71235177', 'https://www.miyoushe.com/ys/article/71128239', 'https://www.miyoushe.com/ys/article/63567342']],
-  ['砂糖', 'anemo', 'em', [['翠绿之影']], ['em'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/73607818', 'https://www.miyoushe.com/sr/article/69299682', 'https://bbs.mihoyo.com/ys/article/25074877']],
-  ['琴', 'anemo', 'atk', [['翠绿之影'], ['被怜爱的少女']], ['atkP', 'er'], ['anemo', 'atkP'], ['atkP', 'heal'], ['https://www.miyoushe.com/ys/article/73882906', 'https://bbs.mihoyo.com/ys/article/22243055', 'https://bbs.mihoyo.com/ys/article/20636331']],
-  ['魈', 'anemo', 'crit', [['辰砂往生录'], ['翠绿之影', '追忆之注连']], ['atkP'], ['anemo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/49507346', 'https://bbs.mihoyo.com/ys/article/14291328', 'https://www.miyoushe.com/zzz/article/61286356']],
-  ['鹿野院平藏', 'anemo', 'em', [['翠绿之影']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr'], ['https://bbs.mihoyo.com/ys/article/25502533', 'https://bbs.mihoyo.com/ys/article/25515428', 'https://bbs.mihoyo.com/ys/article/25475900']],
-  ['早柚', 'anemo', 'em', [['翠绿之影']], ['em', 'er'], ['em'], ['em', 'heal'], ['https://bbs.mihoyo.com/ys/article/25075158', 'https://bbs.mihoyo.com/ys/article/20803122', 'https://bbs.mihoyo.com/ys/article/20756639']],
-  ['流浪者', 'anemo', 'crit', [['沙上楼阁史话'], ['翠绿之影']], ['atkP'], ['anemo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/52854441', 'https://www.miyoushe.com/ys/article/32509992', 'https://www.miyoushe.com/ys/article/68213153']],
-  ['闲云', 'anemo', 'atk', [['昔时之歌'], ['翠绿之影']], ['atkP', 'er'], ['atkP'], ['atkP'], ['https://www.miyoushe.com/ys/article/62923290', 'https://www.miyoushe.com/ys/article/48531983', 'https://www.miyoushe.com/ys/article/62920755']],
-  ['恰斯卡', 'anemo', 'crit', [['黑曜秘典'], ['翠绿之影']], ['atkP'], ['anemo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/67613530', 'https://www.miyoushe.com/ys/article/67504158', 'https://www.miyoushe.com/ys/article/59513958']],
-  ['琳妮特', 'anemo', 'crit', [['翠绿之影'], ['沙上楼阁史话']], ['atkP'], ['anemo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64763434', 'https://www.miyoushe.com/ys/article/42420011', 'https://www.miyoushe.com/ys/article/77532016']],
-  ['伊法', 'anemo', 'em', [['翠绿之影'], ['烬城勇者绘卷']], ['em', 'atkP'], ['anemo', 'em'], ['em', 'cr'], ['https://www.miyoushe.com/ys/article/64215763', 'https://www.miyoushe.com/ys/article/64193378', 'https://www.miyoushe.com/ys/article/64215506']],
-  ['梦见月瑞希', 'anemo', 'em', [['翠绿之影'], ['饰金之梦', '流浪大地的乐团']], ['em', 'er'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/61944028', 'https://www.miyoushe.com/ys/article/61942278', 'https://www.miyoushe.com/ys/article/77540856']],
+  ['枫原万叶',    'anemo', [
+    {sets:['翠绿之影'], sands:['em', 'atkP'], goblet:['em', 'anemo'], circlet:['em', 'cr', 'cd'], subs:['em', 'er', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '精通', '剧变反应']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/2142/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64697921', 'Asgater'], ['https://www.miyoushe.com/ys/article/57050468', 'HoYo青枫']], ''],
+  ['温迪',    'anemo', [
+    {sets:['翠绿之影'], sands:['atkP', 'em'], goblet:['em'], circlet:['cr', 'cd', 'em'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['辅助', '精通', '剧变反应']},
+    {sets:['沙上楼阁史话'], sands:['atkP'], goblet:['anemo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+    {sets:['来歆余响'], sands:['atkP'], goblet:['anemo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+    {sets:['风起之日'], sands:['atkP'], goblet:['anemo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/57/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71128239', 'Asgater'], ['https://www.miyoushe.com/ys/article/71164926', 'HoYo青枫']], ''],
+  ['砂糖',    'anemo', [
+    {sets:['翠绿之影'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['减抗', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1055/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/8687340', 'Asgater'], ['https://www.miyoushe.com/ys/article/73607818', 'HoYo青枫']], ''],
+  ['琴',    'anemo', [
+    {sets:['翠绿之影'], sands:['atkP', 'er'], goblet:['atkP'], circlet:['heal', 'cr'], subs:['cr', 'er', 'cd', 'atkP'], roles:['输出', '减抗', '辅助']},
+    {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['atkP'], circlet:['heal', 'cr'], subs:['cr', 'er', 'cd', 'atkP'], roles:['输出', '辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/59/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2439886', 'Asgater'], ['https://www.miyoushe.com/ys/article/73882906', 'HoYo青枫']], ''],
+  ['魈',    'anemo', [
+    {sets:['长夜之誓'], sands:['atkP'], goblet:['atkP', 'anemo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+    {sets:['辰砂往生录'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+    {sets:['逐影猎人'], sands:['atkP'], goblet:['atkP', 'anemo'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤']},
+    {sets:['沙上楼阁史话'], sands:['atkP'], goblet:['atkP', 'anemo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1498/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61486523', 'Asgater'], ['https://www.miyoushe.com/ys/article/49581298', 'HoYo青枫']], ''],
+  ['鹿野院平藏',    'anemo', [
+    {sets:['翠绿之影'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '辅助', '精通', '剧变反应']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/4197/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/25488733', 'Asgater'], ['https://www.miyoushe.com/ys/article/45911850', 'HoYo青枫']], ''],
+  ['早柚',    'anemo', [
+    {sets:['翠绿之影'], sands:['er', 'em', 'atkP'], goblet:['em', 'atkP', 'anemo'], circlet:['heal', 'em', 'atkP'], subs:['er', 'em', 'atkP'], roles:['增伤', '减抗', '精通']},
+    {sets:['被怜爱的少女'], sands:['er', 'em', 'atkP'], goblet:['em', 'atkP', 'anemo'], circlet:['heal', 'em', 'atkP'], subs:['er', 'em', 'atkP'], roles:['增伤', '精通']},
+    {sets:['昔日宗室之仪'], sands:['er', 'em', 'atkP'], goblet:['em', 'atkP', 'anemo'], circlet:['heal', 'em', 'atkP'], subs:['er', 'em', 'atkP'], roles:['增伤', '辅助', '精通']},
+    {sets:['流浪大地的乐团'], sands:['er', 'em', 'atkP'], goblet:['em', 'atkP', 'anemo'], circlet:['heal', 'em', 'atkP'], subs:['er', 'em', 'atkP'], roles:['增伤', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/2125/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/8360257', 'Asgater'], ['https://www.miyoushe.com/ys/article/45698695', 'HoYo青枫']], ''],
+  ['流浪者',    'anemo', [
+    {sets:['沙上楼阁史话'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['来歆余响'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['追忆之注连'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['逐影猎人'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/5494/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/32506738', 'Asgater'], ['https://www.miyoushe.com/ys/article/32509992', '饭桶绢']], ''],
+  ['闲云',    'anemo', [
+    {sets:['翠绿之影'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP', 'cr', 'cd'], roles:['减抗', '辅助', '精通', '剧变反应']},
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP', 'cr', 'cd'], roles:[]},
+    {sets:['昔时之歌'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP', 'cr', 'cd'], roles:['增伤', '治疗']},
+    {sets:['海染砗磲'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP', 'cr', 'cd'], roles:['治疗']},
+    {sets:['角斗士的终幕礼'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP', 'cr', 'cd'], roles:['充能']},
+    {sets:['长夜之誓'], sands:['er', 'atkP'], goblet:['anemo', 'atkP'], circlet:['cr', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/500673/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62923290', 'Asgater'], ['https://www.miyoushe.com/ys/article/62920755', 'HoYo青枫']], ''],
+  ['恰斯卡',    'anemo', [
+    {sets:['黑曜秘典'], sands:['atkP'], goblet:['atkP'], circlet:['cd'], subs:['cd', 'atkP', 'cr'], roles:['输出', '增伤']},
+    {sets:['逐影猎人'], sands:['atkP'], goblet:['atkP'], circlet:['cd'], subs:['cd', 'atkP', 'cr'], roles:['输出']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/502928/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74448954', 'Asgater'], ['https://www.miyoushe.com/ys/article/74429071', 'HoYo青枫']], ''],
+  ['琳妮特',    'anemo', [
+    {sets:['翠绿之影'], sands:['atkP', 'er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'er', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '充能']},
+    {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'er', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '充能']},
+    {sets:['逐影猎人'], sands:['atkP', 'er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'er', 'cd', 'atkP'], roles:['输出', '增伤', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/6938/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/42420011', 'Asgater'], ['https://www.miyoushe.com/ys/article/77532016', 'HoYo青枫']], ''],
+  ['伊法',    'anemo', [
+    {sets:['翠绿之影'], sands:['em', 'atkP'], goblet:['em', 'anemo'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'atkP'], roles:['增伤', '精通', '剧变反应']},
+    {sets:['烬城勇者绘卷'], sands:['em', 'atkP'], goblet:['em', 'anemo'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'atkP'], roles:['增伤', '辅助', '精通']},
+    {sets:['黑曜秘典'], sands:['atkP'], goblet:['anemo'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/504977/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64215763', 'Asgater'], ['https://www.miyoushe.com/ys/article/64215506', 'HoYo青枫']], ''],
+  ['梦见月瑞希',    'anemo', [
+    {sets:['翠绿之影'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er', 'cr'], roles:['精通', '剧变反应']},
+    {sets:['血红之证'], sands:['em', 'er'], goblet:['em'], circlet:['cr', 'cd', 'em'], subs:['em', 'er', 'cr'], roles:['输出', '增伤', '辅助', '精通', '剧变反应']},
+    {sets:['饰金之梦'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er', 'cr'], roles:['精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/504440/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77540856', 'Asgater'], ['https://www.miyoushe.com/ys/article/76206764', 'HoYo青枫']], ''],
 
   /* ---------- 岩 ---------- */
-  ['钟离', 'geo', 'hp', [['千岩牢固'], ['悠古的磐岩']], ['hpP'], ['geo', 'hpP'], ['hpP', 'cr'], ['https://www.miyoushe.com/ys/article/70478147', 'https://www.miyoushe.com/ys/article/43113435', 'https://bbs.mihoyo.com/ys/article/15008953']],
-  ['阿贝多', 'geo', 'def', [['华馆梦醒形骸记'], ['悠古的磐岩']], ['defP'], ['geo', 'defP'], ['cr', 'cd', 'defP'], ['https://bbs.mihoyo.com/ys/article/12540853', 'https://www.miyoushe.com/ys/article/71204498', 'https://bbs.mihoyo.com/ys/article/12492354']],
-  ['荒泷一斗', 'geo', 'def', [['华馆梦醒形骸记']], ['defP'], ['geo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/50510058', 'https://bbs.mihoyo.com/ys/article/24446310', 'https://www.miyoushe.com/ys/article/50248084']],
-  ['诺艾尔', 'geo', 'def', [['华馆梦醒形骸记'], ['逆飞的流星']], ['defP'], ['geo'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/25074833', 'https://bbs.mihoyo.com/ys/article/23419183', 'https://bbs.mihoyo.com/ys/article/20700735']],
-  ['五郎', 'geo', 'def', [['华馆梦醒形骸记'], ['千岩牢固']], ['defP', 'er'], ['defP'], ['defP', 'cr'], ['https://bbs.mihoyo.com/ys/article/13360837', 'https://bbs.mihoyo.com/ys/article/13058643', 'https://www.miyoushe.com/ys/article/72730171']],
-  ['凝光', 'geo', 'crit', [['悠古的磐岩'], ['追忆之注连']], ['atkP'], ['geo'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/11354285', 'https://bbs.mihoyo.com/ys/article/25074768', 'https://bbs.mihoyo.com/ys/article/21079968']],
-  ['娜维娅', 'geo', 'crit', [['回声之林夜话'], ['逆飞的流星']], ['atkP'], ['geo'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64214960', 'https://www.miyoushe.com/ys/article/64215722', 'https://www.miyoushe.com/ys/article/46721884']],
-  ['希诺宁', 'geo', 'def', [['烬城勇者绘卷'], ['华馆梦醒形骸记']], ['defP'], ['defP'], ['defP', 'heal'], ['https://www.miyoushe.com/ys/article/71701174', 'https://www.miyoushe.com/ys/article/63567294', 'https://www.miyoushe.com/ys/article/58423970']],
-  ['卡齐娜', 'geo', 'def', [['烬城勇者绘卷'], ['华馆梦醒形骸记']], ['defP'], ['geo', 'defP'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/56901692', 'https://www.miyoushe.com/ys/article/57054342', 'https://www.miyoushe.com/ys/article/57054661']],
-  ['云堇', 'geo', 'def', [['华馆梦醒形骸记'], ['千岩牢固']], ['defP', 'er'], ['defP'], ['defP'], ['https://bbs.mihoyo.com/ys/article/14159567', 'https://bbs.mihoyo.com/ys/article/14168921', 'https://www.miyoushe.com/ys/article/70590053']],
+  ['钟离',    'geo', [
+    {sets:['千岩牢固'], sands:['hpP', 'er'], goblet:['hpP', 'geo'], circlet:['hpP', 'cr'], subs:['hpP', 'er', 'cr', 'cd'], roles:['增伤', '护盾', '辅助']},
+    {sets:['悠古的磐岩'], sands:['hpP', 'er'], goblet:['hpP', 'geo'], circlet:['hpP', 'cr'], subs:['hpP', 'er', 'cr', 'cd'], roles:['输出', '增伤', '辅助']},
+    {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP', 'geo'], circlet:['hpP', 'cr'], subs:['er', 'hpP', 'cr', 'cd'], roles:['增伤', '辅助', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1290/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70478147', 'Asgater'], ['https://www.miyoushe.com/ys/article/60064315', 'HoYo青枫']], ''],
+  ['阿贝多',    'geo', [
+    {sets:['华馆梦醒形骸记'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd'], subs:['defP', 'er', 'cd', 'cr'], roles:['输出', '增伤']},
+    {sets:['黄金剧团'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd'], subs:['defP', 'er', 'cd', 'cr'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/1360/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71574894', 'Asgater'], ['https://www.miyoushe.com/ys/article/73555470', 'HoYo青枫']], ''],
+  ['荒泷一斗',    'geo', [
+    {sets:['华馆梦醒形骸记'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'defP', 'er'], roles:['增伤']},
+    {sets:['回声之林夜话'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'defP', 'er'], roles:['增伤', '副C', '精通']},
+    {sets:['逆飞的流星'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'defP', 'er'], roles:['输出', '增伤', '护盾']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/3276/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64666521', 'Asgater'], ['https://www.miyoushe.com/ys/article/50245580', 'HoYo青枫']], ''],
+  ['诺艾尔',    'geo', [
+    {sets:['华馆梦醒形骸记'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd', 'defP'], subs:['defP', 'cr', 'cd'], roles:['输出', '增伤']},
+    {sets:['逐影猎人'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd', 'defP'], subs:['defP', 'cr', 'cd'], roles:['输出', '增伤']},
+    {sets:['角斗士的终幕礼'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd', 'defP'], subs:['defP', 'cr', 'cd'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/111/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/6159886', 'Asgater'], ['https://www.miyoushe.com/ys/article/74472429', 'HoYo青枫']], ''],
+  ['五郎',    'geo', [
+    {sets:['华馆梦醒形骸记'], sands:['defP', 'er'], goblet:['defP'], circlet:['cr', 'defP'], subs:['cr', 'defP', 'er'], roles:['输出', '副C', '辅助']},
+    {sets:['昔日宗室之仪'], sands:['defP', 'er'], goblet:['defP'], circlet:['cr', 'defP'], subs:['cr', 'defP', 'er'], roles:['输出', '辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/3275/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/13047127', 'Asgater'], ['https://www.miyoushe.com/ys/article/72730171', 'HoYo青枫']], ''],
+  ['凝光',    'geo', [
+    {sets:['回声之林夜话'], sands:['atkP'], goblet:['geo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/78/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/3645665', 'Asgater'], ['https://www.miyoushe.com/ys/article/49459379', 'HoYo青枫']], ''],
+  ['娜维娅',    'geo', [
+    {sets:['回声之林夜话'], sands:['atkP'], goblet:['geo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '辅助']},
+    {sets:['黄金剧团'], sands:['atkP'], goblet:['geo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/500419/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64215722', 'Asgater'], ['https://www.miyoushe.com/ys/article/64212556', 'HoYo青枫']], ''],
+  ['希诺宁',    'geo', [
+    {sets:['烬城勇者绘卷'], sands:['defP'], goblet:['defP'], circlet:['defP', 'heal', 'cr'], subs:['defP', 'er', 'cr'], roles:['输出', '增伤', '精通']},
+    {sets:['悠古的磐岩'], sands:['defP'], goblet:['defP'], circlet:['defP', 'heal', 'cr'], subs:['defP', 'er', 'cr'], roles:['输出', '辅助']},
+    {sets:['黑曜秘典'], sands:['defP'], goblet:['defP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'defP'], roles:['输出', '增伤']},
+    {sets:['华馆梦醒形骸记'], sands:['defP'], goblet:['defP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'defP'], roles:['输出']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/502306/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71701174', 'Asgater'], ['https://www.miyoushe.com/ys/article/71693771', 'HoYo青枫']], ''],
+  ['卡齐娜',    'geo', [
+    {sets:['烬城勇者绘卷'], sands:['er', 'defP'], goblet:['geo', 'defP'], circlet:['cr', 'defP'], subs:['cd', 'er', 'defP'], roles:['增伤', '辅助']},
+    {sets:['黄金剧团'], sands:['er', 'defP'], goblet:['geo', 'defP'], circlet:['cr', 'defP'], subs:['cd', 'er', 'defP'], roles:['输出', '增伤', '副C']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/501626/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/57054661', 'Asgater'], ['https://www.miyoushe.com/ys/article/57054342', 'HoYo青枫']], ''],
+  ['云堇',    'geo', [
+    {sets:['华馆梦醒形骸记'], sands:['defP', 'er'], goblet:['defP'], circlet:['cr', 'defP'], subs:['cr', 'defP', 'er'], roles:[]},
+    {sets:['昔日宗室之仪'], sands:['defP', 'er'], goblet:['defP'], circlet:['cr', 'defP'], subs:['cr', 'defP', 'er'], roles:[]},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/3387/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/40126329', 'Asgater'], ['https://www.miyoushe.com/ys/article/70590053', 'HoYo青枫']], ''],
 
   /* ---------- 草 ---------- */
-  ['纳西妲', 'dendro', 'em', [['深林的记忆'], ['饰金之梦']], ['em'], ['dendro', 'em'], ['em', 'cr'], ['https://www.miyoushe.com/ys/article/68365889', 'https://www.miyoushe.com/ys/article/48532156', 'https://www.miyoushe.com/ys/article/48527814']],
-  ['艾尔海森', 'dendro', 'em', [['饰金之梦'], ['深林的记忆']], ['em', 'atkP'], ['dendro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/34393808', 'https://www.miyoushe.com/ys/article/68243036', 'https://www.miyoushe.com/ys/article/53490437']],
-  ['提纳里', 'dendro', 'em', [['深林的记忆'], ['流浪大地的乐团']], ['em', 'atkP'], ['dendro'], ['cr', 'cd'], ['https://bbs.mihoyo.com/ys/article/27858534', 'https://www.miyoushe.com/ys/article/68276063', 'https://bbs.mihoyo.com/ys/article/27882468']],
-  ['基尼奇', 'dendro', 'crit', [['黑曜秘典'], ['深林的记忆', '追忆之注连']], ['atkP'], ['dendro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/64733796', 'https://www.miyoushe.com/ys/article/57703059', 'https://www.miyoushe.com/ys/article/64763431']],
-  ['艾梅莉埃', 'dendro', 'atk', [['未竟的遐思'], ['深林的记忆', '追忆之注连']], ['atkP'], ['dendro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/66265444', 'https://www.miyoushe.com/ys/article/66196228', 'https://www.miyoushe.com/ys/article/56283870']],
-  ['白术', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP', 'er'], ['hpP'], ['hpP'], ['https://www.miyoushe.com/ys/article/45242415', 'https://www.miyoushe.com/ys/article/52845613', 'https://www.miyoushe.com/ys/article/61217694']],
-  ['瑶瑶', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP', 'er'], ['hpP'], ['heal', 'hpP'], ['https://www.miyoushe.com/ys/article/70045506', 'https://www.miyoushe.com/ys/article/36315371', 'https://www.miyoushe.com/ys/article/34411972']],
-  ['柯莱', 'dendro', 'er', [['深林的记忆'], ['绝缘之旗印']], ['er'], ['dendro'], ['cr', 'cd'], ['https://www.miyoushe.com/ys/article/70046336', 'https://bbs.mihoyo.com/ys/article/27942377', 'https://bbs.mihoyo.com/ys/article/27923191']],
-  ['卡维', 'dendro', 'em', [['饰金之梦'], ['深林的记忆']], ['em', 'er'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/38866023', 'https://www.miyoushe.com/ys/article/68699830', 'https://www.miyoushe.com/ys/article/38867337']],
-  ['绮良良', 'dendro', 'hp', [['千岩牢固'], ['深林的记忆']], ['hpP'], ['hpP'], ['hpP'], ['https://www.miyoushe.com/ys/article/75118187', 'https://www.miyoushe.com/ys/article/39667535', 'https://www.miyoushe.com/ys/article/39654659']],
+  ['纳西妲',    'dendro', [
+    {sets:['深林的记忆'], sands:['em'], goblet:['em', 'dendro'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'er'], roles:['输出', '增伤', '减抗', '辅助', '精通', '充能']},
+    {sets:['黄金剧团'], sands:['em'], goblet:['em', 'dendro'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'er'], roles:['输出', '增伤', '精通', '充能']},
+    {sets:['深林的记忆', '饰金之梦'], sands:['em'], goblet:['em', 'dendro'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'er'], roles:['输出', '增伤', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/5111/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68365889', 'Asgater'], ['https://www.miyoushe.com/ys/article/68333843', 'HoYo青枫']], ''],
+  ['艾尔海森',    'dendro', [
+    {sets:['饰金之梦'], sands:['em', 'atkP'], goblet:['dendro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '精通']},
+    {sets:['深林的记忆', '饰金之梦'], sands:['em', 'atkP'], goblet:['dendro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '精通']},
+    {sets:['深林的记忆'], sands:['em', 'atkP'], goblet:['dendro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '辅助', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/5865/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/40275921', 'Asgater'], ['https://www.miyoushe.com/ys/article/53490437', 'HoYo青枫']], ''],
+  ['提纳里',    'dendro', [
+    {sets:['流浪大地的乐团'], sands:['em', 'atkP'], goblet:['dendro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '精通', '剧变反应']},
+    {sets:['饰金之梦'], sands:['em', 'atkP'], goblet:['dendro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '精通', '剧变反应']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/4334/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/27853308', 'Asgater'], ['https://www.miyoushe.com/ys/article/40773364', 'O丶Ha丶Yo']], ''],
+  ['基尼奇',    'dendro', [
+    {sets:['黑曜秘典'], sands:['atkP'], goblet:['dendro'], circlet:['cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤']},
+    {sets:['未竟的遐思'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤']},
+    {sets:['深林的记忆'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤', '减抗']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/501624/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64759482', 'Asgater'], ['https://www.miyoushe.com/ys/article/64752081', 'HoYo青枫']], ''],
+  ['艾梅莉埃',    'dendro', [
+    {sets:['未竟的遐思'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤']},
+    {sets:['深林的记忆'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤', '减抗', '辅助']},
+    {sets:['渡过烈火的贤人'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/501441/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/66196228', 'Asgater'], ['https://www.miyoushe.com/ys/article/74340680', 'HoYo青枫']], ''],
+  ['白术',    'dendro', [
+    {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP'], roles:['输出', '辅助']},
+    {sets:['海染砗磲'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP'], roles:['输出', '治疗', '辅助']},
+    {sets:['昔时之歌'], sands:['hpP', 'er'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP'], roles:['治疗']},
+    {sets:['深林的记忆'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP'], roles:['减抗']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/6489/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61386859', 'Asgater'], ['https://www.miyoushe.com/ys/article/39043255', 'HoYo青枫']], ''],
+  ['瑶瑶',    'dendro', [
+    {sets:['深林的记忆'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP', 'cr'], subs:['em', 'er', 'atkP'], roles:['输出', '治疗', '辅助', '精通', '充能']},
+    {sets:['千岩牢固'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal', 'cr'], subs:['em', 'er', 'atkP'], roles:['输出', '治疗', '辅助', '精通', '充能']},
+    {sets:['海染砗磲', '被怜爱的少女'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal', 'cr'], subs:['em', 'er', 'atkP'], roles:['输出', '治疗', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/5866/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70045506', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/49457300', 'HoYo青枫']], ''],
+  ['柯莱',    'dendro', [
+    {sets:['深林的记忆'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['cr', 'atkP'], subs:['cr', 'er', 'em', 'atkP'], roles:['输出', '增伤', '减抗', '辅助', '精通', '充能']},
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['cr', 'atkP'], subs:['cr', 'er', 'em', 'atkP'], roles:['输出', '增伤', '辅助', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/4333/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/27844043', 'Asgater'], ['https://www.miyoushe.com/ys/article/70046336', 'HoYo青枫']], ''],
+  ['卡维',    'dendro', [
+    {sets:['深林的记忆'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subs:['er', 'em', 'atkP', 'cr'], roles:['输出', '减抗', '精通', '充能']},
+    {sets:['乐园遗落之花'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subs:['er', 'em', 'atkP', 'cr'], roles:['输出', '精通', '充能', '剧变反应']},
+    {sets:['饰金之梦', '流浪大地的乐团'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subs:['er', 'em', 'atkP', 'cr'], roles:['输出', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/6490/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/38867337', 'Asgater'], ['https://www.miyoushe.com/ys/article/68699830', 'HoYo青枫']], ''],
+  ['绮良良',    'dendro', [
+    {sets:['花海甘露之光', '千岩牢固'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'er', 'cr', 'em'], roles:['输出', '护盾', '精通', '充能']},
+    {sets:['深林的记忆'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'er', 'cr', 'em'], roles:['输出', '减抗', '精通', '充能']},
+    {sets:['昔日宗室之仪'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'er', 'cr', 'em'], roles:['输出', '辅助', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/6594/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75118187', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/39658042', 'O丶Ha丶Yo']], ''],
 
   /* ---------- 补遗：2.x–4.x 老角色（初始库未收录） ---------- */
-  ['安柏', 'pyro', 'crit', [['炽烈的炎之魔女'], ['炽烈的炎之魔女', '流浪大地的乐团']], ['atkP'], ['pyro'], ['cr'], ['https://bbs.mihoyo.com/ys/article/25074046', 'https://bbs.mihoyo.com/ys/article/21900143', 'https://bbs.mihoyo.com/ys/article/8286004']],
-  ['丽莎', 'electro', 'crit', [['如雷的盛怒'], ['如雷的盛怒', '饰金之梦']], ['atkP'], ['electro'], ['cr'], ['https://bbs.mihoyo.com/ys/article/18195176', 'https://bbs.mihoyo.com/ys/article/25074562', 'https://bbs.mihoyo.com/ys/article/21905051']],
-  ['凯亚', 'cryo', 'crit', [['冰风迷途的勇士'], ['冰风迷途的勇士', '苍白之火']], ['atkP'], ['cryo'], ['cr'], ['https://bbs.mihoyo.com/ys/article/25074424', 'https://bbs.mihoyo.com/ys/article/21902157', 'https://bbs.mihoyo.com/ys/article/15434494']],
-  ['北斗', 'electro', 'crit', [['如雷的盛怒'], ['如雷的盛怒', '绝缘之旗印']], ['atkP'], ['electro'], ['cr'], ['https://www.miyoushe.com/ys/article/76326682', 'https://www.miyoushe.com/ys/article/76458044', 'https://bbs.mihoyo.com/ys/article/25074190']],
-  ['埃洛伊', 'cryo', 'crit', [['冰风迷途的勇士'], ['冰风迷途的勇士', '苍白之火']], ['atkP'], ['cryo'], ['cr'], ['https://bbs.mihoyo.com/ys/article/22236845', 'https://bbs.mihoyo.com/ys/article/20991211', 'https://bbs.mihoyo.com/ys/article/11394064']],
-  ['神里绫人', 'hydro', 'crit', [['沉沦之心'], ['沉沦之心', '来歆余响']], ['atkP'], ['hydro'], ['cr'], ['https://www.miyoushe.com/ys/article/64552586', 'https://www.miyoushe.com/ys/article/45995770?create=1', 'https://www.miyoushe.com/ys/article/33348334']],
-  ['千织', 'geo', 'critDef', [['黄金剧团'], ['黄金剧团', '悠古的磐岩']], ['defP'], ['geo'], ['cr'], ['https://www.miyoushe.com/ys/article/64606530', 'https://www.miyoushe.com/ys/article/50261907', 'https://www.miyoushe.com/ys/article/50251961']],
-  ['珐露珊', 'anemo', 'er', [['翠绿之影'], ['翠绿之影', '绝缘之旗印']], ['er'], ['anemo'], ['cr'], ['https://www.miyoushe.com/ys/article/71373526', 'https://www.miyoushe.com/ys/article/32525530', 'https://www.miyoushe.com/ys/article/32504999']],
-  ['莱依拉', 'cryo', 'hp', [['千岩牢固'], ['千岩牢固', '昔日宗室之仪']], ['hpP'], ['hpP'], ['heal'], ['https://bbs.mihoyo.com/ys/article/31870136', 'https://bbs.mihoyo.com/ys/article/31944305', 'https://bbs.mihoyo.com/ys/article/31721820']],
-  ['赛索斯', 'electro', 'crit', [['来歆余响'], ['来歆余响', '如雷的盛怒']], ['atkP'], ['electro'], ['cr'], ['https://www.miyoushe.com/ys/article/53493547', 'https://www.miyoushe.com/ys/article/53494323', 'https://www.miyoushe.com/ys/article/72499518']],
-  ['蓝砚', 'anemo', 'er', [['翠绿之影'], ['翠绿之影', '千岩牢固']], ['er'], ['anemo'], ['heal'], ['https://www.miyoushe.com/ys/article/61341054', 'https://www.miyoushe.com/ys/article/61261987', 'https://www.miyoushe.com/ys/article/61128886']],
-  ['茜特菈莉', 'cryo', 'em', [['烬城勇者绘卷'], ['乐园遗落之花', '饰金之梦']], ['em', 'er'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/66928936', 'https://www.miyoushe.com/ys/article/60616408', 'https://www.miyoushe.com/ys/article/66889568']],
+  ['安柏',    'pyro', [
+    {sets:['流浪大地的乐团'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通']},
+    {sets:['追忆之注连'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/54/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/37742112', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/51535868', 'Sattle']], ''],
+  ['丽莎',    'electro', [
+    {sets:['如雷的盛怒'], sands:['er', 'atkP'], goblet:['electro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er', 'em'], roles:['增伤', '精通', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/92/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/37742112', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/51617580', 'Sattle']], ''],
+  ['凯亚',    'cryo', [
+    {sets:['苍白之火'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤']},
+    {sets:['绝缘之旗印'], sands:['atkP'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤', '充能']},
+    {sets:['冰风迷途的勇士'], sands:['atkP'], goblet:['cryo'], circlet:['cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/76/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/15434494', 'Asgater'], ['https://www.miyoushe.com/ys/article/46046481', 'HoYo青枫']], ''],
+  ['北斗',    'electro', [
+    {sets:['绝缘之旗印'], sands:['er', 'atkP'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '充能']},
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['electro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '辅助', '充能']},
+    {sets:['如雷的盛怒'], sands:['er', 'atkP'], goblet:['electro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '充能']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/79/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76326682', 'Asgater'], ['https://www.miyoushe.com/ys/article/76458044', 'HoYo青枫']], ''],
+  ['埃洛伊',    'cryo', [
+    {sets:['冰风迷途的勇士'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤']},
+    {sets:['追忆之注连'], sands:['atkP'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/2415/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/10800364', 'Asgater'], ['https://www.miyoushe.com/ys/article/22236845', '嗔痴ovo']], ''],
+  ['神里绫人',    'hydro', [
+    {sets:['沉沦之心'], sands:['atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+    {sets:['水仙之梦'], sands:['atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+    {sets:['来歆余响'], sands:['atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+    {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/3875/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64552586', 'Asgater'], ['https://www.miyoushe.com/ys/article/33794608', '坤易']], ''],
+  ['千织',    'geo', [
+    {sets:['华馆梦醒形骸记'], sands:['defP'], goblet:['geo', 'defP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'defP', 'atkP'], roles:['输出', '增伤']},
+    {sets:['黄金剧团'], sands:['defP'], goblet:['geo', 'defP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'defP', 'atkP'], roles:['输出', '增伤', '副C']},
+    {sets:['千岩牢固'], sands:['defP'], goblet:['geo', 'defP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'defP', 'atkP'], roles:['输出', '增伤', '辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/500987/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64606530', 'Asgater'], ['https://www.miyoushe.com/ys/article/58421614', 'HoYo青枫']], ''],
+  ['珐露珊',    'anemo', [
+    {sets:['千岩牢固'], sands:['er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '充能']},
+    {sets:['昔日宗室之仪'], sands:['er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '充能']},
+    {sets:['翠绿之影'], sands:['er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '精通', '充能', '剧变反应']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/5493/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/32504999', 'Asgater'], ['https://www.miyoushe.com/ys/article/71373526', 'HoYo青枫']], ''],
+  ['莱依拉',    'cryo', [
+    {sets:['千岩牢固'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP', 'cr'], roles:['护盾', '辅助']},
+    {sets:['昔日宗室之仪'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP', 'cr'], roles:['辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/5297/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/45987202', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/37943311', 'HoYo青枫']], ''],
+  ['赛索斯',    'electro', [
+    {sets:['流浪大地的乐团'], sands:['em'], goblet:['electro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'er'], roles:['输出', '增伤', '精通']},
+    {sets:['饰金之梦'], sands:['em'], goblet:['electro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'er'], roles:['输出', '增伤', '精通']},
+    {sets:['逆飞的流星'], sands:['em'], goblet:['electro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'er'], roles:['增伤', '护盾', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/501212/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/53493547', 'Asgater'], ['https://www.miyoushe.com/ys/article/72499518', 'HoYo青枫']], ''],
+  ['蓝砚',    'anemo', [
+    {sets:['翠绿之影'], sands:['atkP', 'er'], goblet:['atkP', 'anemo'], circlet:['atkP', 'cr', 'cd'], subs:['atkP', 'er', 'cr', 'cd', 'em'], roles:['输出', '增伤', '精通', '剧变反应']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/503614/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61128886', 'Asgater'], ['https://www.miyoushe.com/ys/article/77813912', 'HoYo青枫']], ''],
+  ['茜特菈莉',    'cryo', [
+    {sets:['烬城勇者绘卷'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['增伤', '精通', '充能']},
+    {sets:['千岩牢固'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['护盾', '精通']},
+    {sets:['昔日宗室之仪'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/503612/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76171935', 'Asgater'], ['https://www.miyoushe.com/ys/article/76168720', 'HoYo青枫']], ''],
 
   /* ---------- 补遗：5.8 伊涅芙 + 6.0–6.5 挪德卡莱 ---------- */
-  ['伊涅芙', 'electro', 'crit', [['穹境示现之夜'], ['如雷的盛怒', '饰金之梦']], ['atkP'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/66930889', 'https://www.miyoushe.com/ys/article/66926002', 'https://www.miyoushe.com/ys/article/66860312']],
-  ['菈乌玛', 'dendro', 'em', [['纺月的夜歌'], ['深林的记忆', '饰金之梦']], ['em'], ['em'], ['em'], ['https://www.miyoushe.com/ys/article/75010416', 'https://www.miyoushe.com/ys/article/68379786', 'https://www.miyoushe.com/ys/article/68366449']],
-  ['菲林斯', 'electro', 'crit', [['穹境示现之夜'], ['饰金之梦', '如雷的盛怒']], ['atkP'], ['electro'], ['cr'], ['https://bbs.mihoyo.com/ys/article/73536135', 'https://www.miyoushe.com/ys/article/69103292', 'https://www.miyoushe.com/ys/article/69057298']],
-  ['爱诺', 'hydro', 'er', [['纺月的夜歌'], ['昔日宗室之仪', '千岩牢固']], ['er'], ['hpP'], ['heal'], ['https://www.miyoushe.com/ys/article/68366413', 'https://www.miyoushe.com/ys/article/68335669', 'https://www.miyoushe.com/ys/article/68363201']],
-  ['奈芙尔', 'dendro', 'em', [['穹境示现之夜'], ['深林的记忆', '饰金之梦']], ['em'], ['em'], ['cr'], ['https://www.miyoushe.com/ys/article/74992752', 'https://www.miyoushe.com/ys/article/69841102', 'https://www.miyoushe.com/ys/article/69783347']],
-  ['杜林', 'pyro', 'crit', [['风起之日'], ['昔日宗室之仪', '辰砂往生录']], ['atkP'], ['pyro'], ['cr'], ['https://www.miyoushe.com/ys/article/75458713', 'https://www.miyoushe.com/ys/article/71128406', 'https://www.miyoushe.com/ys/article/71078792']],
-  ['哥伦比娅', 'hydro', 'hp', [['晨星与月的晓歌'], ['千岩牢固', '昔日宗室之仪']], ['hpP', 'er'], ['hpP'], ['cr'], ['https://www.miyoushe.com/ys/article/72303663', 'https://www.miyoushe.com/ys/article/72259629', 'https://www.miyoushe.com/ys/article/72259367']],
-  ['兹白', 'geo', 'critDef', [['穹境示现之夜'], ['华馆梦醒形骸记', '悠古的磐岩']], ['defP'], ['defP'], ['cr'], ['https://www.miyoushe.com/ys/article/72899669', 'https://www.miyoushe.com/ys/article/72865664', 'https://www.miyoushe.com/ys/article/72928080']],
+  ['伊涅芙',    'electro', [
+    {sets:['纺月的夜歌'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '辅助', '精通']},
+    {sets:['晨星与月的晓歌'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '副C', '精通', '剧变反应']},
+    {sets:['千岩牢固'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:[]},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/505631/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77883619', 'Asgater'], ['https://www.miyoushe.com/ys/article/72311458', 'HoYo青枫']], ''],
+  ['菈乌玛',    'dendro', [
+    {sets:['纺月的夜歌'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['辅助', '精通', '充能']},
+    {sets:['穹境示现之夜'], sands:['em'], goblet:['em'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'em', 'er'], roles:['输出', '精通']},
+    {sets:['深林的记忆'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['减抗', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/505973/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74866766', 'Asgater'], ['https://www.miyoushe.com/ys/article/74959885', 'HoYo青枫']], ''],
+  ['菲林斯',    'electro', [
+    {sets:['穹境示现之夜'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通']},
+    {sets:['饰金之梦'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/505971/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77795408', 'Asgater'], ['https://www.miyoushe.com/ys/article/73472412', 'HoYo青枫']], ''],
+  ['爱诺',    'hydro', [
+    {sets:['纺月的夜歌'], sands:['er', 'em'], goblet:['em'], circlet:['em', 'cr'], subs:['em', 'er', 'cr', 'cd'], roles:['增伤', '精通']},
+    {sets:['昔日宗室之仪'], sands:['er', 'em'], goblet:['em'], circlet:['em', 'cr'], subs:['em', 'er', 'cr', 'cd'], roles:['辅助', '精通', '剧变反应']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/505972/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68366413', 'Asgater'], ['https://www.miyoushe.com/ys/article/72688435', 'HoYo青枫']], ''],
+  ['奈芙尔',    'dendro', [
+    {sets:['穹境示现之夜'], sands:['em'], goblet:['em'], circlet:['cd', 'em', 'cr'], subs:['cd', 'cr', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['饰金之梦'], sands:['em'], goblet:['em'], circlet:['cd', 'cr', 'em'], subs:['cd', 'cr', 'em'], roles:['精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/506676/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74962160', 'Asgater'], ['https://www.miyoushe.com/ys/article/74983763', 'HoYo青枫']], ''],
+  ['杜林',    'pyro', [
+    {sets:['风起之日'], sands:['atkP', 'em'], goblet:['pyro', 'atkP', 'em'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通']},
+    {sets:['天之美赐'], sands:['atkP', 'er'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '辅助']},
+    {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '辅助']},
+    {sets:['深林的记忆'], sands:['atkP', 'er'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '减抗', '辅助']},
+    {sets:['纺月的夜歌'], sands:['atkP', 'er'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '辅助', '精通', '剧变反应']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/507241/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75443427', 'Asgater'], ['https://www.miyoushe.com/ys/article/71125651', 'HoYo青枫']], ''],
+  ['哥伦比娅',    'hydro', [
+    {sets:['晨星与月的晓歌'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['cr', 'cd', 'hpP'], subs:['cd', 'cr', 'hpP', 'er', 'em'], roles:['输出', '副C', '精通']},
+    {sets:['纺月的夜歌'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['cr', 'cd', 'hpP'], subs:['cd', 'cr', 'hpP', 'er', 'em'], roles:['增伤', '辅助', '精通', '充能']},
+    {sets:['穹境示现之夜'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['cd', 'hpP'], subs:['cd', 'cr', 'hpP', 'er', 'em'], roles:['输出', '精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/507505/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76665391', 'Asgater'], ['https://www.miyoushe.com/ys/article/72301009', 'HoYo青枫']], ''],
+  ['兹白',    'geo', [
+    {sets:['穹境示现之夜'], sands:['defP', 'em'], goblet:['defP', 'em'], circlet:['cd', 'cr', 'defP'], subs:['cr', 'cd', 'defP', 'em'], roles:['输出', '精通']},
+    {sets:['华馆梦醒形骸记'], sands:['defP', 'em'], goblet:['defP', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'defP', 'em'], roles:['精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/507503/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72899669', 'Asgater'], ['https://www.miyoushe.com/ys/article/72891550', 'HoYo青枫']], ''],
 
   /* ---------- 补遗：6.6–7.0（新版本，配装可能随环境微调） ---------- */
-  ['桑多涅', 'cryo', 'crit', [['影中沉凝的幻灭'], ['苍白之火', '染血的骑士道']], ['atkP'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/76432747', 'https://www.miyoushe.com/ys/article/76348458', 'https://www.miyoushe.com/ys/article/76348139']],
-  ['奥黛塔', 'cryo', 'crit', [['炉火融炼之心'], ['昔日宗室之仪', '辰砂往生录']], ['atkP'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/77385286', 'https://www.miyoushe.com/ys/article/77367319', 'https://www.miyoushe.com/ys/article/77319627']],
-  ['阿罗夏', 'electro', 'er', [['昔日宗室之仪'], ['昔日宗室之仪', '辰砂往生录']], ['er'], ['atkP'], ['cr'], ['https://www.miyoushe.com/ys/article/77397277', 'https://www.miyoushe.com/ys/article/77367254', 'https://www.miyoushe.com/ys/article/77259762']],
-  ['法尔伽', 'anemo', 'crit', [['风起之日'], ['沙上楼阁史话', '辰砂往生录']], ['atkP'], ['anemo'], ['cr'], ['https://bbs.mihoyo.com/ys/article/73525902', 'https://www.miyoushe.com/ys/article/73567276', 'https://www.miyoushe.com/ys/article/73524547']],
+  ['桑多涅',    'cryo', [
+    {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
+    {sets:['饰金之梦'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['精通']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/508841/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76348139', 'Asgater'], ['https://www.miyoushe.com/ys/article/76345204', 'HoYo青枫']], ''],
+  ['奥黛塔',    'cryo', [
+    {sets:['炉火融炼之心'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP'], roles:['辅助']},
+    {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr', 'atkP'], subs:['cr', 'cd', 'atkP'], roles:['输出']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/509103/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77367319', 'Asgater'], ['https://www.miyoushe.com/ys/article/77363319', 'HoYo青枫']], ''],
+  ['阿罗夏',    'electro', [
+    {sets:['炉火融炼之心'], sands:[], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['atkP'], roles:['增伤', '辅助', '精通']},
+    {sets:['昔日宗室之仪'], sands:[], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['atkP'], roles:['辅助']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/509104/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77367254', 'Asgater'], ['https://www.miyoushe.com/ys/article/77363224', 'HoYo青枫']], ''],
+  ['法尔伽',    'anemo', [
+    {sets:['风起之日'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP'], roles:['输出']},
+    {sets:['沙上楼阁史话'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+    {sets:['来歆余响'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出']},
+    {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤']},
+  ],   [['https://baike.mihoyo.com/ys/obc/content/507995/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73524547', 'Asgater'], ['https://www.miyoushe.com/ys/article/73521348', 'HoYo青枫']], ''],
 
   /* ---------- 补遗：蒙德 5.x 群角色（洛恩 / 尼可 / 布伦妮） ---------- */
-  ['洛恩', 'cryo', 'crit', [['冰风迷途的勇士'], ['苍白之火']], ['atkP'], ['cryo'], ['cr', 'cd'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
-  ['尼可', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
-  ['布伦妮', 'anemo', 'em', [['翠绿之影'], ['昔日宗室之仪']], ['er', 'em'], ['anemo', 'em'], ['em'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
+  ['洛恩',    'cryo', [
+    {sets:['风起之日'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+    {sets:['逐影猎人'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+    {sets:['冰风迷途的勇士'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/508598/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75904223', 'Asgater'], ['https://www.miyoushe.com/ys/article/75898105', 'HoYo青枫']],    ''],
+  ['尼可',    'pyro', [
+    {sets:['天之美赐'], sands:['atkP'], goblet:['atkP'], circlet:['atkP'], subs:['atkP', 'er'], roles:['增伤', '充能']},
+    {sets:['昔日宗室之仪'], sands:['atkP'], goblet:['atkP'], circlet:['atkP'], subs:['atkP', 'er'], roles:['辅助']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/508596/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75443707', 'Asgater'], ['https://www.miyoushe.com/ys/article/75440644', 'HoYo青枫']],    ''],
+  ['布伦妮',    'anemo', [
+    {sets:['翠绿之影'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP'], roles:['精通', '剧变反应']},
+    {sets:['天之美赐'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP'], roles:['增伤', '辅助', '充能']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/508597/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75443677', 'Asgater'], ['https://www.miyoushe.com/ys/article/75442988', 'HoYo青枫']],    ''],
 
   /* ---------- 补遗：挪德卡莱（莉奈娅 / 叶洛亚 / 雅珂达） ---------- */
-  ['莉奈娅', 'geo', 'crit', [['悠古的磐岩'], ['华馆梦醒形骸记']], ['atkP'], ['geo'], ['cr', 'cd'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
-  ['叶洛亚', 'geo', 'critDef', [['华馆梦醒形骸记'], ['悠古的磐岩']], ['defP', 'atkP'], ['geo'], ['cr', 'cd'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
-  ['雅珂达', 'anemo', 'em', [['翠绿之影'], ['纺月的夜歌']], ['er', 'em'], ['em'], ['em'], [], '通用推荐（暂无专属攻略来源），请按实际玩法调整'],
+  ['莉奈娅',    'geo', [
+    {sets:['晨星与月的晓歌'], sands:['defP', 'er'], goblet:['defP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'defP', 'er'], roles:['精通']},
+    {sets:['华馆梦醒形骸记'], sands:['defP', 'er'], goblet:['defP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'defP', 'er'], roles:[]},
+    {sets:['纺月的夜歌'], sands:['defP', 'er'], goblet:['defP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'defP', 'er'], roles:['辅助', '精通', '充能']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/508198/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74448955', 'Asgater'], ['https://www.miyoushe.com/ys/article/74409707', 'Asgater']],    ''],
+  ['叶洛亚',    'geo', [
+    {sets:['纺月的夜歌'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em', 'er', 'cr'], roles:['输出', '辅助', '精通']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/507504/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72899643', 'Asgater'], ['https://www.miyoushe.com/ys/article/72869570', 'HoYo青枫']],    ''],
+  ['雅珂达',    'anemo', [
+    {sets:['翠绿之影'], sands:['er'], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['er', 'atkP', 'cr'], roles:['精通', '剧变反应']},
+    {sets:['纺月的夜歌'], sands:['er'], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['er', 'atkP', 'cr'], roles:['充能']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/507287/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71128393', 'Asgater'], ['https://www.miyoushe.com/ys/article/70977150', 'Asgater']],    ''],
 
   /* ---------- 旅行者：按「元素形态」各设一个条目，各自独立配装 ---------- */
-  ['旅行者·风', 'anemo', 'em', [['翠绿之影']], ['er', 'em'], ['anemo', 'em'], ['em'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
-  ['旅行者·岩', 'geo', 'crit', [['悠古的磐岩'], ['华馆梦醒形骸记']], ['atkP', 'defP'], ['geo'], ['cr', 'cd'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
-  ['旅行者·雷', 'electro', 'er', [['绝缘之旗印'], ['昔日宗室之仪']], ['er', 'atkP'], ['electro', 'atkP'], ['cr', 'cd'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
-  ['旅行者·草', 'dendro', 'em', [['深林的记忆'], ['饰金之梦']], ['er', 'em'], ['dendro', 'em'], ['em', 'cr'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
-  ['旅行者·水', 'hydro', 'crit', [['沉沦之心'], ['绝缘之旗印']], ['atkP', 'er'], ['hydro'], ['cr', 'cd'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
-  ['旅行者·火', 'pyro', 'crit', [['炽烈的炎之魔女'], ['追忆之注连']], ['atkP'], ['pyro'], ['cr', 'cd'], [], '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·风',    'anemo', [
+    {sets:['翠绿之影'], sands:['er', 'atkP'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], roles:['输出', '增伤', '减抗', '辅助', '充能']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/505499/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/21131045', '猫冬']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·岩',    'geo', [
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['geo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+    {sets:['悠古的磐岩'], sands:['er', 'atkP'], goblet:['geo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], roles:['输出', '增伤', '充能']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/505501/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/21129731', '猫冬']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·雷',    'electro', [
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/505496/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/21133391', '猫冬'], ['https://www.miyoushe.com/ys/article/15010965', '紫月居士']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·草',    'dendro', [
+    {sets:['深林的记忆'], sands:['atkP', 'er'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '减抗', '辅助']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/505498/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/27855840', '猫冬'], ['https://www.miyoushe.com/ys/article/29509842', '紫月居士']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·水',    'hydro', [
+    {sets:['黄金剧团'], sands:['atkP', 'er'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], roles:['增伤']},
+    {sets:['水仙之梦', '沉沦之心'], sands:['atkP', 'er'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], roles:['增伤']},
+    {sets:['辰砂往生录'], sands:['atkP', 'er'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], roles:['增伤']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/505500/detail', '观测枢词条']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·火',    'pyro', [
+    {sets:['烬城勇者绘卷'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤', '辅助', '精通']},
+    {sets:['黑曜秘典'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cd', 'atkP'], subs:['cd', 'atkP', 'cr', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['长夜之誓'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cd', 'atkP', 'cr', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['角斗士的终幕礼'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cd', 'atkP', 'cr', 'em'], roles:['输出', '增伤', '精通']},
+    {sets:['乐园遗落之花'], sands:['em'], goblet:['em'], circlet:['em'], subs:['cr', 'er'], roles:['输出', '精通', '剧变反应']},
+  ],    [['https://baike.mihoyo.com/ys/obc/content/4074/detail', '观测枢词条']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
 ];
 
 /* ---------- 展开为完整结构 ---------- */
-/* 生成一份「主要属性 + 追加属性」需求（按配装组独立） */
-function makeStatNeeds(sands, goblet, circlet, subPreset) {
-  return {
-    main: {
-      sands:   sands.map((stat, i) => ({ stat, rank: i + 1 })),
-      goblet:  goblet.map((stat, i) => ({ stat, rank: i + 1 })),
-      circlet: circlet.map((stat, i) => ({ stat, rank: i + 1 })),
-    },
-    subs: toSubs(SUB_PRESETS[subPreset] || SUB_PRESETS.crit),
-  };
+/* wiki 副词条是 id 列表（按优先级），转成 app 内部 [{id, req, op}]；
+   首位标记 ★必选（req），其余按 '>' 递减。 */
+function subIdsToSubs(ids) {
+  return toSubs((ids || []).map((id, i) => [id, i === 0, '>']));
 }
 
 /* 把来源链接项归一化为 {url, title}（兼容旧版纯字符串 / [url,title] 数组 / 对象） */
@@ -2226,28 +2798,58 @@ function normSrcList(list) {
 }
 
 function buildDefaultCharacters() {
-  return RAW_CHARS.map(([name, element, subPreset, builds, sands, goblet, circlet, src, note], i) => {
+  return RAW_CHARS.map((row, i) => {
+    const name = row[0];
+    const element = row[1];
     const meta = CH_META[name] || ['other', ['maindps']];
-    const need = makeStatNeeds(sands, goblet, circlet, subPreset);
-    return {
-    id: 'c' + i + '_' + name,
-    name,
-    skey: name, // 出厂角色名：改名后不变，是「改名了还能还原」的唯一可靠锚点（id 会随数组插入漂移）
-    element,
-    region: meta[0],
-    roles: meta[1].slice(),
-    enabled: false,
-    note: note || '',
-    src: normSrcList(src),
-    custom: false,
-    // 主 / 追加属性需求按【配装组】区分：一组配装 = 一套词条需求
-    // bkey：出厂指纹，永远用出厂角色名（如「胡桃#0」），用来判定这一组是不是内置原样、能不能还原
-    builds: builds.map((sets, idx) => Object.assign({
-      sets,
+
+    // 数据格式兼容：
+    //   新格式：[name, element, [ {sets,sands,goblet,circlet,subs,tag}... ], src, note]
+    //   旧格式（兜底）：[name, element, subPreset, [sets...], sands[], goblet[], circlet[], src, note]
+    let buildsRaw, srcRaw, noteRaw;
+    if (Array.isArray(row[2])) {
+      buildsRaw = row[2]; srcRaw = row[3]; noteRaw = row[4];
+    } else {
+      const subPreset = row[2];
+      const setsList = row[3] || [];
+      const fn = (arr) => (arr || []).map((stat, j) => ({ stat, rank: j + 1 }));
+      const presets = SUB_PRESETS[subPreset] || SUB_PRESETS.crit;
+      buildsRaw = setsList.map(sets => ({
+        sets,
+        sands: fn(row[4]), goblet: fn(row[5]), circlet: fn(row[6]),
+        subs: presets.map(s => s[0]), tag: null,
+      }));
+      srcRaw = row[7]; noteRaw = row[8];
+    }
+
+    // 每组配装独立携带 套装 + 主词条 + 副词条（直接来自 wiki，不再走粗预设桶）
+    const builds = buildsRaw.map((b, idx) => ({
+      sets: b.sets || [],
       bkey: name + '#' + idx,
       priority: idx === 0 ? 'main' : 'alt',
-    }, JSON.parse(JSON.stringify(need)))),
-  };});
+      main: {
+        sands:   (b.sands   || []).map((stat, j) => ({ stat, rank: j + 1 })),
+        goblet:  (b.goblet  || []).map((stat, j) => ({ stat, rank: j + 1 })),
+        circlet: (b.circlet || []).map((stat, j) => ({ stat, rank: j + 1 })),
+      },
+      subs: subIdsToSubs(b.subs),
+      roles: Array.isArray(b.roles) ? b.roles.filter(s => typeof s === 'string' && s) : [],
+    }));
+
+    return {
+      id: 'c' + i + '_' + name,
+      name,
+      skey: name, // 出厂角色名：改名后不变，是「改名了还能还原」的唯一可靠锚点（id 会随数组插入漂移）
+      element,
+      region: meta[0],
+      roles: meta[1].slice(),
+      enabled: false,
+      note: noteRaw || '',
+      src: normSrcList(srcRaw),
+      custom: false,
+      builds,
+    };
+  });
 }
 
 /* ============================================================
@@ -2940,6 +3542,7 @@ let ui = {
   elem: 'all', region: 'all', role: 'all',
   search: '', onlyEnabled: false,
   planSet: 'all', planSlot: 'all', buildIdx: 0,
+  charView: {},          // 卡片上当前展示的配装组下标（按角色 id）：用于多流派切换预览
 };
 /* 当前是否有任一筛选条件生效（用于「批量」作用域提示与筛选计数显示） */
 function charsFiltering() {
@@ -3592,6 +4195,10 @@ function normalize(o) {
   });
   delete o.customSets;
 
+  // 配装功能定位的自定义词表（跨角色共享，用户可在编辑器里追加）
+  o.customBuildRoles = Array.isArray(o.customBuildRoles)
+    ? o.customBuildRoles.filter(s => typeof s === 'string' && s.trim()) : [];
+
   // 语言：ui = 界面文案，data = 角色 / 套装 / 属性等数据内容，两者独立
   o.lang = normalizeLang(o.lang);
   // 各列表的正序 / 倒序偏好（排序顺序本身来自米游社图鉴，这里只记要不要反过来）
@@ -3632,6 +4239,8 @@ function normalizeBuild(b, c) {
     // fcanon = 上次与出厂同步时的内容指纹；内容还等于它 → 说明用户没动过，可以自动跟随出厂更新
     fcanon: (b.fcanon == null ? null : String(b.fcanon)),
     priority: b.priority === 'alt' ? 'alt' : 'main',
+    // 功能定位：输出 / 增伤 / 减抗 / 治疗 / 护盾 ……（多选，可在编辑器里改，也支持自定义）
+    roles: Array.isArray(b.roles) ? b.roles.filter(s => typeof s === 'string' && s) : [],
   };
   // 主要属性：优先用组内的，缺失则回落到角色级旧数据
   const srcMain = b.main || c.main;
@@ -3787,6 +4396,20 @@ function srcPlatformName(u) {
   return srcHost(u) || '链接';
 }
 
+/* 来源行的标注：来源名 + 是否「真数据源」
+ *   观测枢词条（baike.mihoyo.com / obc/content）= 配装数据**实际取自这里** → 「米游社wiki」+ 数据源
+ *   其余（作者攻略 / 缺标题）= 延伸阅读，**非数据源** → 显示作者名或平台名 + 攻略
+ * 记牢：只有词条「推荐装备」表格是数据源，作者攻略图从不读取（见项目 MEMORY）。 */
+function srcMeta(it) {
+  const u = (it && it.url ? String(it.url) : '').toLowerCase();
+  const t = (it && it.title ? String(it.title) : '').trim();
+  const isWiki = /观测枢|wiki/i.test(t) || u.includes('baike.mihoyo.com') ||
+    u.includes('hoyowiki') || u.includes('obc/content');
+  if (isWiki) return { label: '米游社wiki', kind: 'data' };
+  if (t) return { label: t, kind: 'guide' };
+  return { label: srcPlatformName(it && it.url), kind: 'guide' };
+}
+
 let toastTimer = null;
 function toast(msg) {
   const el = $('#toast');
@@ -3871,6 +4494,16 @@ function poolSubs(list) {
 function mainBuild(c) {
   const list = c.builds || [];
   return list.find(b => b.priority === 'main') || list[0] || { sets: [], main: {}, subs: [] };
+}
+
+/* 配装功能定位（多选）的小标签：统一中性配色，区别于角色级 .role-tag */
+function buildRoleBadges(roles) {
+  return (roles || []).map(r => `<span class="brole">${esc(r)}</span>`).join('');
+}
+/* 配装按钮后缀：把多个定位拼成「（输出·增伤）」 */
+function buildRoleInline(roles) {
+  const a = (roles || []).filter(Boolean);
+  return a.length ? `（${a.map(esc).join('·')}）` : '';
 }
 
 /* ============================================================
@@ -4798,43 +5431,7 @@ function renderChars() {
   const csb = $('#charSortBar');
   if (csb) csb.innerHTML = sortBtnHtml('char');
 
-  grid.innerHTML = list.map(c => {
-    const el = ELEMENTS[c.element];
-    const rg = c.region;
-    const roleTxt = (c.roles || []).map(r => ROLE_NAME[r] || r).join('·');
-    const mb = mainBuild(c);
-    const sets = mb.sets || [];
-    const mainRow = (slot) => {
-      const arr = (mb.main && mb.main[slot]) || [];
-      if (!arr.length) return '';
-      return `<div class="cc-main-row"><span>${SLOTS.find(s => s.id === slot).short}</span><span class="ms">${
-        arr.map(m => `<span class="ms r${m.rank}">${esc(mainStatName(slot, m.stat))}</span>`).join(' / ')
-      }</span></div>`;
-    };
-    return `
-    <div class="char-card ${c.enabled ? 'on' : ''}" data-id="${c.id}">
-      <div class="cc-top">
-        <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
-        <span class="cc-name" title="${esc(c.name)}">${esc(c.name)}</span>
-        ${charModified(c) ? '<span class="cc-mod" title="与内置数据不同；可在角色编辑里「还原为内置数据」">已修改</span>' : ''}
-        <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
-      </div>
-      <div class="cc-meta">
-        <span class="cc-region" style="color:${REGION_COLOR[rg] || '#9fb3c8'}">${esc(REGION_NAME[rg] || '其他')}</span>
-        <span class="cc-dot">·</span>
-        <span class="cc-role">${esc(roleTxt || '未分类')}</span>
-      </div>
-      <div class="cc-sets">
-        ${sets.length
-          ? sets.map(s => `<span class="set-tag ${mb.priority === 'main' ? 'main' : ''}">${esc(s)}${sets.length > 1 ? ' ·2+2' : ''}</span>`).join('')
-          : '<span class="set-tag">未配置套装</span>'}
-        ${c.builds.length > 1 ? `<span class="set-tag">+${c.builds.length - 1}备选</span>` : ''}
-      </div>
-      <div class="cc-main">
-        ${mainRow('sands')}${mainRow('goblet')}${mainRow('circlet')}
-      </div>
-    </div>`;
-  }).join('') || '<p class="muted">没有匹配的角色。</p>';
+  grid.innerHTML = list.map(charCardHtml).join('') || '<p class="muted">没有匹配的角色。</p>';
 
   $('#enabledCount').textContent = state.characters.filter(c => c.enabled).length;
   $('#statCharCount').textContent = state.characters.length;
@@ -4850,15 +5447,81 @@ function renderChars() {
   updateBatchState();
 
   grid.querySelectorAll('.char-card').forEach(card => {
-    card.addEventListener('click', e => {
-      if (e.target.dataset.toggle) {
-        const c = state.characters.find(x => x.id === e.target.dataset.toggle);
-        c.enabled = !c.enabled;
-        save(); renderChars(); renderPlan(); renderSubs();
-        return;
-      }
-      openDrawer(card.dataset.id);
-    });
+    const c = list.find(x => x.id === card.dataset.id);
+    if (c) bindCard(card, c);
+  });
+}
+
+/* 单张角色卡片的完整 HTML（整页渲染与单卡切换芯片共用，保证两种路径一致） */
+function charCardHtml(c) {
+  const el = ELEMENTS[c.element];
+  const rg = c.region;
+  const roleTxt = (c.roles || []).map(r => ROLE_NAME[r] || r).join('·');
+  const list = c.builds || [];
+  const hasView = typeof ui.charView[c.id] === 'number' && list[ui.charView[c.id]];
+  const mainIdx = Math.max(0, list.findIndex(b => b.priority === 'main'));
+  const viewIdx = hasView ? ui.charView[c.id] : mainIdx;
+  const mb = list[viewIdx] || mainBuild(c);
+  const sets = mb.sets || [];
+  const mainRow = (slot) => {
+    const arr = (mb.main && mb.main[slot]) || [];
+    if (!arr.length) return '';
+    return `<div class="cc-main-row"><span>${SLOTS.find(s => s.id === slot).short}</span><span class="ms">${
+      arr.map(m => `<span class="ms r${m.rank}">${esc(mainStatName(slot, m.stat))}</span>`).join(' / ')
+    }</span></div>`;
+  };
+  // 套装名 + 配装切换 合并为一行可点选按钮：编号 套装名（定位）
+  // 选中（viewIdx）= 绿色高亮；未选中 = 普通色
+  const builds = list.length
+    ? list.map((b, i) => {
+        const stxt = (b.sets || []).map(s => esc(s)).join('+');
+        const t = buildRoleInline(b.roles);
+        return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="配装 ${i + 1}${t ? ' · ' + (b.roles || []).join('/') : ''}">${i + 1} ${stxt}${t ? `<span class="cc-bp-tag">${t}</span>` : ''}</button>`;
+      }).join('')
+    : '<span class="set-tag">未配置套装</span>';
+  return `
+  <div class="char-card ${c.enabled ? 'on' : ''}" data-id="${c.id}">
+    <div class="cc-top">
+      <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
+      <span class="cc-name" title="${esc(c.name)}">${esc(c.name)}</span>
+      ${buildRoleBadges(mb.roles)}
+      ${charModified(c) ? '<span class="cc-mod" title="与内置数据不同；可在角色编辑里「还原为内置数据」">已修改</span>' : ''}
+      <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
+    </div>
+    <div class="cc-meta">
+      <span class="cc-region" style="color:${REGION_COLOR[rg] || '#9fb3c8'}">${esc(REGION_NAME[rg] || '其他')}</span>
+      <span class="cc-dot">·</span>
+      <span class="cc-role">${esc(roleTxt || '未分类')}</span>
+    </div>
+    <div class="cc-builds">${builds}</div>
+    <div class="cc-main">
+      ${mainRow('sands')}${mainRow('goblet')}${mainRow('circlet')}
+    </div>
+  </div>`;
+}
+
+/* 单卡点击：切换配装芯片 / 星标启用 / 打开编辑抽屉 */
+function bindCard(card, c) {
+  card.addEventListener('click', e => {
+    const chip = e.target.closest('[data-vi]');
+    if (chip) {
+      e.stopPropagation();
+      ui.charView[c.id] = +chip.dataset.vi;
+      const fresh = document.createElement('div');
+      fresh.innerHTML = charCardHtml(c);
+      const nc = fresh.firstElementChild;
+      card.replaceWith(nc);
+      bindCard(nc, c);
+      return;
+    }
+    const tog = e.target.closest('[data-toggle]');
+    if (tog) {
+      const ch = state.characters.find(x => x.id === tog.dataset.toggle);
+      ch.enabled = !ch.enabled;
+      save(); renderChars(); renderPlan(); renderSubs();
+      return;
+    }
+    openDrawer(c.id);
   });
 }
 
@@ -5049,7 +5712,7 @@ function drawDrawer() {
     <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
   </div>
   <div class="fgroup">
-    <label>攻略来源 <span class="hint">文章 URL 可直接点击跳转；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源；工具不作解析，仅存档你认可的配装攻略。留空表示暂无来源</span></label>
+    <label>攻略来源 <span class="hint">每行标注来源：「米游社wiki」词条是配装数据的实际来源（数据源），作者攻略为延伸阅读（非数据源，本项目从不读取）；URL 可直接点击跳转；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源。留空表示暂无来源</span></label>
     <div id="edSrcList" class="src-list"></div>
     <button type="button" class="btn sm" id="edAddSrc">+ 添加链接</button>
   </div>`;
@@ -5101,8 +5764,15 @@ function drawDrawer() {
     wrap.innerHTML = arr.length ? arr.map((it, i) => {
       const u = it.url;
       const on = srcEditIdx === i;
+      const meta = srcMeta(it);
+      const isData = meta.kind === 'data';
+      const badge = isData
+        ? '<span class="src-badge" title="配装数据实际取自这里">数据源</span>'
+        : '<span class="src-badge guide" title="米游社攻略，延伸阅读，非数据源">攻略</span>';
       return `
       <div class="src-row" data-i="${i}">
+        <span class="src-kind ${isData ? 'is-data' : ''}" title="${isData ? '配装数据的实际来源（真数据源）' : '延伸阅读，非数据源'}">${esc(meta.label)}</span>
+        ${badge}
         ${on
           ? `<input type="text" class="src-url" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
              <button type="button" class="src-ok" data-i="${i}" title="确认修改">✓</button>
@@ -5243,6 +5913,7 @@ function drawBuildCards() {
       <div class="bm-t">
         <span class="prio-tag ${b.priority}">${b.priority === 'main' ? '主推' : '备选'}</span>
         <span class="bm-name">配装 ${i + 1}　${esc(sets.join(' + ') || '未选套装')}</span>
+        ${buildRoleBadges(b.roles)}
         <span class="bm-kind">${sets.length === 2 ? '2+2 组合' : (sets.length === 1 ? '4 件套' : '未选择套装')}</span>
         ${mod ? '<span class="bm-mod">已修改</span>' : ''}
       </div>
@@ -5351,6 +6022,7 @@ function bmDirty() { return canonBuildPrio(bmDraft) !== bmOrig; }
 
 function drawBuildForm() {
   const B = bmDraft;
+  if (!Array.isArray(B.roles)) B.roles = [];
   const sets = (B.sets || []).filter(Boolean);
   // 套装双下拉
   ['bmSet0', 'bmSet1'].forEach((id, k) => {
@@ -5435,6 +6107,8 @@ function drawBuildForm() {
     };
   });
   drawMains(B, 'bm');
+  // 功能定位（多选 + 自定义）：单独渲染，不打断上面的表单状态
+  drawBuildRoles();
   // 追加属性：弹窗里挑一个还没加过的
   const add = $('#bmAddSub');
   add.onclick = () => {
@@ -5445,6 +6119,40 @@ function drawBuildForm() {
       id => { B.subs.push({ id, req: false, op: '>' }); drawSubs(B, 'bm'); });
   };
   drawSubs(B, 'bm');
+}
+
+/* 配装功能定位：基础词表 + 用户自定义词表，勾选即写入 B.roles（多选）。
+ * 自定义输入框把新定位加入全局池 state.customBuildRoles（跨角色共享）并选中本组。 */
+function drawBuildRoles() {
+  const B = bmDraft;
+  const box = $('#bmRoles');
+  if (!box) return;
+  const pool = BUILD_ROLES.concat(state.customBuildRoles.filter(r => !BUILD_ROLES.includes(r)));
+  box.innerHTML = pool.map(r => {
+    const on = (B.roles || []).includes(r);
+    return `<label class="chk brole-chk"><input type="checkbox" data-brole="${esc(r)}" ${on ? 'checked' : ''}> ${esc(r)}</label>`;
+  }).join('') || '<span class="muted small">（暂无可选定位）</span>';
+  box.querySelectorAll('input[data-brole]').forEach(cb => {
+    cb.onchange = () => {
+      const name = cb.dataset.brole;
+      const set = new Set(B.roles || []);
+      if (cb.checked) set.add(name); else set.delete(name);
+      B.roles = Array.from(set);
+    };
+  });
+  const add = $('#bmAddRole');
+  if (add) add.onclick = () => {
+    const inp = $('#bmNewRole');
+    const name = (inp.value || '').trim();
+    if (!name) return;
+    if (!BUILD_ROLES.includes(name) && !state.customBuildRoles.includes(name)) {
+      state.customBuildRoles.push(name);
+    }
+    if (!(B.roles || []).includes(name)) B.roles = (B.roles || []).concat(name);
+    save();
+    inp.value = '';
+    drawBuildRoles();
+  };
 }
 
 /* 保存：写回 editing.builds，主推唯一，关浮窗并重绘卡片 */
@@ -5605,6 +6313,7 @@ function freshBuild(priority) {
   return {
     sets: [],
     priority: priority || 'main',
+    roles: [],
     main: { sands: [], goblet: [], circlet: [] },
     subs: toSubs(SUB_PRESETS.crit),
   };

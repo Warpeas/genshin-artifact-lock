@@ -25,6 +25,7 @@ let ui = {
   elem: 'all', region: 'all', role: 'all',
   search: '', onlyEnabled: false,
   planSet: 'all', planSlot: 'all', buildIdx: 0,
+  charView: {},          // 卡片上当前展示的配装组下标（按角色 id）：用于多流派切换预览
 };
 /* 当前是否有任一筛选条件生效（用于「批量」作用域提示与筛选计数显示） */
 function charsFiltering() {
@@ -677,6 +678,10 @@ function normalize(o) {
   });
   delete o.customSets;
 
+  // 配装功能定位的自定义词表（跨角色共享，用户可在编辑器里追加）
+  o.customBuildRoles = Array.isArray(o.customBuildRoles)
+    ? o.customBuildRoles.filter(s => typeof s === 'string' && s.trim()) : [];
+
   // 语言：ui = 界面文案，data = 角色 / 套装 / 属性等数据内容，两者独立
   o.lang = normalizeLang(o.lang);
   // 各列表的正序 / 倒序偏好（排序顺序本身来自米游社图鉴，这里只记要不要反过来）
@@ -717,6 +722,8 @@ function normalizeBuild(b, c) {
     // fcanon = 上次与出厂同步时的内容指纹；内容还等于它 → 说明用户没动过，可以自动跟随出厂更新
     fcanon: (b.fcanon == null ? null : String(b.fcanon)),
     priority: b.priority === 'alt' ? 'alt' : 'main',
+    // 功能定位：输出 / 增伤 / 减抗 / 治疗 / 护盾 ……（多选，可在编辑器里改，也支持自定义）
+    roles: Array.isArray(b.roles) ? b.roles.filter(s => typeof s === 'string' && s) : [],
   };
   // 主要属性：优先用组内的，缺失则回落到角色级旧数据
   const srcMain = b.main || c.main;
@@ -872,6 +879,20 @@ function srcPlatformName(u) {
   return srcHost(u) || '链接';
 }
 
+/* 来源行的标注：来源名 + 是否「真数据源」
+ *   观测枢词条（baike.mihoyo.com / obc/content）= 配装数据**实际取自这里** → 「米游社wiki」+ 数据源
+ *   其余（作者攻略 / 缺标题）= 延伸阅读，**非数据源** → 显示作者名或平台名 + 攻略
+ * 记牢：只有词条「推荐装备」表格是数据源，作者攻略图从不读取（见项目 MEMORY）。 */
+function srcMeta(it) {
+  const u = (it && it.url ? String(it.url) : '').toLowerCase();
+  const t = (it && it.title ? String(it.title) : '').trim();
+  const isWiki = /观测枢|wiki/i.test(t) || u.includes('baike.mihoyo.com') ||
+    u.includes('hoyowiki') || u.includes('obc/content');
+  if (isWiki) return { label: '米游社wiki', kind: 'data' };
+  if (t) return { label: t, kind: 'guide' };
+  return { label: srcPlatformName(it && it.url), kind: 'guide' };
+}
+
 let toastTimer = null;
 function toast(msg) {
   const el = $('#toast');
@@ -956,6 +977,16 @@ function poolSubs(list) {
 function mainBuild(c) {
   const list = c.builds || [];
   return list.find(b => b.priority === 'main') || list[0] || { sets: [], main: {}, subs: [] };
+}
+
+/* 配装功能定位（多选）的小标签：统一中性配色，区别于角色级 .role-tag */
+function buildRoleBadges(roles) {
+  return (roles || []).map(r => `<span class="brole">${esc(r)}</span>`).join('');
+}
+/* 配装按钮后缀：把多个定位拼成「（输出·增伤）」 */
+function buildRoleInline(roles) {
+  const a = (roles || []).filter(Boolean);
+  return a.length ? `（${a.map(esc).join('·')}）` : '';
 }
 
 /* ============================================================
@@ -1883,43 +1914,7 @@ function renderChars() {
   const csb = $('#charSortBar');
   if (csb) csb.innerHTML = sortBtnHtml('char');
 
-  grid.innerHTML = list.map(c => {
-    const el = ELEMENTS[c.element];
-    const rg = c.region;
-    const roleTxt = (c.roles || []).map(r => ROLE_NAME[r] || r).join('·');
-    const mb = mainBuild(c);
-    const sets = mb.sets || [];
-    const mainRow = (slot) => {
-      const arr = (mb.main && mb.main[slot]) || [];
-      if (!arr.length) return '';
-      return `<div class="cc-main-row"><span>${SLOTS.find(s => s.id === slot).short}</span><span class="ms">${
-        arr.map(m => `<span class="ms r${m.rank}">${esc(mainStatName(slot, m.stat))}</span>`).join(' / ')
-      }</span></div>`;
-    };
-    return `
-    <div class="char-card ${c.enabled ? 'on' : ''}" data-id="${c.id}">
-      <div class="cc-top">
-        <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
-        <span class="cc-name" title="${esc(c.name)}">${esc(c.name)}</span>
-        ${charModified(c) ? '<span class="cc-mod" title="与内置数据不同；可在角色编辑里「还原为内置数据」">已修改</span>' : ''}
-        <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
-      </div>
-      <div class="cc-meta">
-        <span class="cc-region" style="color:${REGION_COLOR[rg] || '#9fb3c8'}">${esc(REGION_NAME[rg] || '其他')}</span>
-        <span class="cc-dot">·</span>
-        <span class="cc-role">${esc(roleTxt || '未分类')}</span>
-      </div>
-      <div class="cc-sets">
-        ${sets.length
-          ? sets.map(s => `<span class="set-tag ${mb.priority === 'main' ? 'main' : ''}">${esc(s)}${sets.length > 1 ? ' ·2+2' : ''}</span>`).join('')
-          : '<span class="set-tag">未配置套装</span>'}
-        ${c.builds.length > 1 ? `<span class="set-tag">+${c.builds.length - 1}备选</span>` : ''}
-      </div>
-      <div class="cc-main">
-        ${mainRow('sands')}${mainRow('goblet')}${mainRow('circlet')}
-      </div>
-    </div>`;
-  }).join('') || '<p class="muted">没有匹配的角色。</p>';
+  grid.innerHTML = list.map(charCardHtml).join('') || '<p class="muted">没有匹配的角色。</p>';
 
   $('#enabledCount').textContent = state.characters.filter(c => c.enabled).length;
   $('#statCharCount').textContent = state.characters.length;
@@ -1935,15 +1930,81 @@ function renderChars() {
   updateBatchState();
 
   grid.querySelectorAll('.char-card').forEach(card => {
-    card.addEventListener('click', e => {
-      if (e.target.dataset.toggle) {
-        const c = state.characters.find(x => x.id === e.target.dataset.toggle);
-        c.enabled = !c.enabled;
-        save(); renderChars(); renderPlan(); renderSubs();
-        return;
-      }
-      openDrawer(card.dataset.id);
-    });
+    const c = list.find(x => x.id === card.dataset.id);
+    if (c) bindCard(card, c);
+  });
+}
+
+/* 单张角色卡片的完整 HTML（整页渲染与单卡切换芯片共用，保证两种路径一致） */
+function charCardHtml(c) {
+  const el = ELEMENTS[c.element];
+  const rg = c.region;
+  const roleTxt = (c.roles || []).map(r => ROLE_NAME[r] || r).join('·');
+  const list = c.builds || [];
+  const hasView = typeof ui.charView[c.id] === 'number' && list[ui.charView[c.id]];
+  const mainIdx = Math.max(0, list.findIndex(b => b.priority === 'main'));
+  const viewIdx = hasView ? ui.charView[c.id] : mainIdx;
+  const mb = list[viewIdx] || mainBuild(c);
+  const sets = mb.sets || [];
+  const mainRow = (slot) => {
+    const arr = (mb.main && mb.main[slot]) || [];
+    if (!arr.length) return '';
+    return `<div class="cc-main-row"><span>${SLOTS.find(s => s.id === slot).short}</span><span class="ms">${
+      arr.map(m => `<span class="ms r${m.rank}">${esc(mainStatName(slot, m.stat))}</span>`).join(' / ')
+    }</span></div>`;
+  };
+  // 套装名 + 配装切换 合并为一行可点选按钮：编号 套装名（定位）
+  // 选中（viewIdx）= 绿色高亮；未选中 = 普通色
+  const builds = list.length
+    ? list.map((b, i) => {
+        const stxt = (b.sets || []).map(s => esc(s)).join('+');
+        const t = buildRoleInline(b.roles);
+        return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="配装 ${i + 1}${t ? ' · ' + (b.roles || []).join('/') : ''}">${i + 1} ${stxt}${t ? `<span class="cc-bp-tag">${t}</span>` : ''}</button>`;
+      }).join('')
+    : '<span class="set-tag">未配置套装</span>';
+  return `
+  <div class="char-card ${c.enabled ? 'on' : ''}" data-id="${c.id}">
+    <div class="cc-top">
+      <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
+      <span class="cc-name" title="${esc(c.name)}">${esc(c.name)}</span>
+      ${buildRoleBadges(mb.roles)}
+      ${charModified(c) ? '<span class="cc-mod" title="与内置数据不同；可在角色编辑里「还原为内置数据」">已修改</span>' : ''}
+      <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
+    </div>
+    <div class="cc-meta">
+      <span class="cc-region" style="color:${REGION_COLOR[rg] || '#9fb3c8'}">${esc(REGION_NAME[rg] || '其他')}</span>
+      <span class="cc-dot">·</span>
+      <span class="cc-role">${esc(roleTxt || '未分类')}</span>
+    </div>
+    <div class="cc-builds">${builds}</div>
+    <div class="cc-main">
+      ${mainRow('sands')}${mainRow('goblet')}${mainRow('circlet')}
+    </div>
+  </div>`;
+}
+
+/* 单卡点击：切换配装芯片 / 星标启用 / 打开编辑抽屉 */
+function bindCard(card, c) {
+  card.addEventListener('click', e => {
+    const chip = e.target.closest('[data-vi]');
+    if (chip) {
+      e.stopPropagation();
+      ui.charView[c.id] = +chip.dataset.vi;
+      const fresh = document.createElement('div');
+      fresh.innerHTML = charCardHtml(c);
+      const nc = fresh.firstElementChild;
+      card.replaceWith(nc);
+      bindCard(nc, c);
+      return;
+    }
+    const tog = e.target.closest('[data-toggle]');
+    if (tog) {
+      const ch = state.characters.find(x => x.id === tog.dataset.toggle);
+      ch.enabled = !ch.enabled;
+      save(); renderChars(); renderPlan(); renderSubs();
+      return;
+    }
+    openDrawer(c.id);
   });
 }
 
@@ -2134,7 +2195,7 @@ function drawDrawer() {
     <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
   </div>
   <div class="fgroup">
-    <label>攻略来源 <span class="hint">文章 URL 可直接点击跳转；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源；工具不作解析，仅存档你认可的配装攻略。留空表示暂无来源</span></label>
+    <label>攻略来源 <span class="hint">每行标注来源：「米游社wiki」词条是配装数据的实际来源（数据源），作者攻略为延伸阅读（非数据源，本项目从不读取）；URL 可直接点击跳转；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源。留空表示暂无来源</span></label>
     <div id="edSrcList" class="src-list"></div>
     <button type="button" class="btn sm" id="edAddSrc">+ 添加链接</button>
   </div>`;
@@ -2186,8 +2247,15 @@ function drawDrawer() {
     wrap.innerHTML = arr.length ? arr.map((it, i) => {
       const u = it.url;
       const on = srcEditIdx === i;
+      const meta = srcMeta(it);
+      const isData = meta.kind === 'data';
+      const badge = isData
+        ? '<span class="src-badge" title="配装数据实际取自这里">数据源</span>'
+        : '<span class="src-badge guide" title="米游社攻略，延伸阅读，非数据源">攻略</span>';
       return `
       <div class="src-row" data-i="${i}">
+        <span class="src-kind ${isData ? 'is-data' : ''}" title="${isData ? '配装数据的实际来源（真数据源）' : '延伸阅读，非数据源'}">${esc(meta.label)}</span>
+        ${badge}
         ${on
           ? `<input type="text" class="src-url" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
              <button type="button" class="src-ok" data-i="${i}" title="确认修改">✓</button>
@@ -2328,6 +2396,7 @@ function drawBuildCards() {
       <div class="bm-t">
         <span class="prio-tag ${b.priority}">${b.priority === 'main' ? '主推' : '备选'}</span>
         <span class="bm-name">配装 ${i + 1}　${esc(sets.join(' + ') || '未选套装')}</span>
+        ${buildRoleBadges(b.roles)}
         <span class="bm-kind">${sets.length === 2 ? '2+2 组合' : (sets.length === 1 ? '4 件套' : '未选择套装')}</span>
         ${mod ? '<span class="bm-mod">已修改</span>' : ''}
       </div>
@@ -2436,6 +2505,7 @@ function bmDirty() { return canonBuildPrio(bmDraft) !== bmOrig; }
 
 function drawBuildForm() {
   const B = bmDraft;
+  if (!Array.isArray(B.roles)) B.roles = [];
   const sets = (B.sets || []).filter(Boolean);
   // 套装双下拉
   ['bmSet0', 'bmSet1'].forEach((id, k) => {
@@ -2520,6 +2590,8 @@ function drawBuildForm() {
     };
   });
   drawMains(B, 'bm');
+  // 功能定位（多选 + 自定义）：单独渲染，不打断上面的表单状态
+  drawBuildRoles();
   // 追加属性：弹窗里挑一个还没加过的
   const add = $('#bmAddSub');
   add.onclick = () => {
@@ -2530,6 +2602,40 @@ function drawBuildForm() {
       id => { B.subs.push({ id, req: false, op: '>' }); drawSubs(B, 'bm'); });
   };
   drawSubs(B, 'bm');
+}
+
+/* 配装功能定位：基础词表 + 用户自定义词表，勾选即写入 B.roles（多选）。
+ * 自定义输入框把新定位加入全局池 state.customBuildRoles（跨角色共享）并选中本组。 */
+function drawBuildRoles() {
+  const B = bmDraft;
+  const box = $('#bmRoles');
+  if (!box) return;
+  const pool = BUILD_ROLES.concat(state.customBuildRoles.filter(r => !BUILD_ROLES.includes(r)));
+  box.innerHTML = pool.map(r => {
+    const on = (B.roles || []).includes(r);
+    return `<label class="chk brole-chk"><input type="checkbox" data-brole="${esc(r)}" ${on ? 'checked' : ''}> ${esc(r)}</label>`;
+  }).join('') || '<span class="muted small">（暂无可选定位）</span>';
+  box.querySelectorAll('input[data-brole]').forEach(cb => {
+    cb.onchange = () => {
+      const name = cb.dataset.brole;
+      const set = new Set(B.roles || []);
+      if (cb.checked) set.add(name); else set.delete(name);
+      B.roles = Array.from(set);
+    };
+  });
+  const add = $('#bmAddRole');
+  if (add) add.onclick = () => {
+    const inp = $('#bmNewRole');
+    const name = (inp.value || '').trim();
+    if (!name) return;
+    if (!BUILD_ROLES.includes(name) && !state.customBuildRoles.includes(name)) {
+      state.customBuildRoles.push(name);
+    }
+    if (!(B.roles || []).includes(name)) B.roles = (B.roles || []).concat(name);
+    save();
+    inp.value = '';
+    drawBuildRoles();
+  };
 }
 
 /* 保存：写回 editing.builds，主推唯一，关浮窗并重绘卡片 */
@@ -2690,6 +2796,7 @@ function freshBuild(priority) {
   return {
     sets: [],
     priority: priority || 'main',
+    roles: [],
     main: { sands: [], goblet: [], circlet: [] },
     subs: toSubs(SUB_PRESETS.crit),
   };
