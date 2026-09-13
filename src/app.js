@@ -1978,7 +1978,7 @@ function charCardHtml(c) {
   // 选中（viewIdx）= 绿色高亮；未选中 = 普通色
   const builds = list.length
     ? list.map((b, i) => {
-        const stxt = (b.sets || []).map(s => esc(s)).join('+');
+        const stxt = (b.sets || []).map(s => esc(setName(s))).join('+');
         const t = buildRoleInline(b.roles);
         return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="配装 ${i + 1}${t ? ' · ' + (b.roles || []).join('/') : ''}">${i + 1} ${stxt}${t ? `<span class="cc-bp-tag">${t}</span>` : ''}</button>`;
       }).join('')
@@ -2199,13 +2199,13 @@ function drawDrawer() {
       <label class="fld">📋 新增时套用…
         <select id="edAddFrom">
           <option value="blank">空白（双暴默认词条）</option>
-          ${editing.builds.map((b, i) => `<option value="b${i}">复制配装${i + 1}（${esc((b.sets || []).filter(Boolean).join(' + ') || '未选套装')}）</option>`).join('')}
+          ${editing.builds.map((b, i) => `<option value="b${i}">复制配装${i + 1}（${esc((b.sets || []).filter(Boolean).map(setName).join(' + ') || '未选套装')}）</option>`).join('')}
         </select>
       </label>
       ${factoryPresetOptions(editing).length ? `<label class="fld">＋ 从预置添加
         <select id="edAddPreset">
           <option value="">（选择一个已删除的预置组）</option>
-          ${factoryPresetOptions(editing).map(b => `<option value="${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).join(' + '))}</option>`).join('')}
+          ${factoryPresetOptions(editing).map(b => `<option value="${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).map(setName).join(' + '))}</option>`).join('')}
         </select>
       </label>` : ''}
     </div>
@@ -2416,7 +2416,7 @@ function drawBuildCards() {
     <div class="bm-card" data-bi="${i}">
       <div class="bm-t">
         <span class="prio-tag ${b.priority}">${b.priority === 'main' ? '主推' : '备选'}</span>
-        <span class="bm-name">配装 ${i + 1}　${esc(sets.join(' + ') || '未选套装')}</span>
+        <span class="bm-name">配装 ${i + 1}　${esc(sets.map(setName).join(' + ') || '未选套装')}</span>
         ${buildRoleBadges(b.roles)}
         <span class="bm-kind">${sets.length === 2 ? '2+2 组合' : (sets.length === 1 ? '4 件套' : '未选择套装')}</span>
         ${mod ? '<span class="bm-mod">已修改</span>' : ''}
@@ -2553,10 +2553,10 @@ function drawBuildForm() {
     '<option value="">（不改，保持当前）</option>' +
     '<optgroup label="复制其他配装组">' +
       editing.builds.map((b, j) => j === bmIndex ? '' :
-        `<option value="b${j}">配装${j + 1}（${esc((b.sets || []).filter(Boolean).join(' + ') || '未选套装')}）</option>`).join('') +
+        `<option value="b${j}">配装${j + 1}（${esc((b.sets || []).filter(Boolean).map(setName).join(' + ') || '未选套装')}）</option>`).join('') +
     '</optgroup>' +
     (presets.length ? '<optgroup label="出厂预置">' +
-      presets.map(b => `<option value="f${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).join(' + '))}</option>`).join('') +
+      presets.map(b => `<option value="f${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).map(setName).join(' + '))}</option>`).join('') +
     '</optgroup>' : '') +
     '<optgroup label="追加属性预设（仅追加属性）">' +
       Object.keys(SUB_PRESETS).map(k => `<option value="p${k}">${esc(SUB_PRESET_NAMES[k])}</option>`).join('') +
@@ -3419,7 +3419,7 @@ function runScore() {
 function renderSetSubTable() {
   const rank = setSubRanking($('#planAltBuild') ? $('#planAltBuild').checked : true);
   const rows = applySort(Array.from(rank.entries()), 'setSub', cmpSetSubRows())
-    .map(([setName, o]) => {
+    .map(([sn, o]) => {
       const top = o.list.slice(0, 5);
       if (!top.length) return '';
       const max = Math.max(0.001, top[0].score);
@@ -3428,7 +3428,7 @@ function renderSetSubTable() {
       const bars = top.map(t =>
         `<div style="display:flex;align-items:center;gap:5px;margin:2px 0"><span class="wbar" style="width:${Math.max(2, (t.score / max) * 90)}px"></span></div>`).join('');
       return `<tr>
-        <td class="col-set" style="white-space:nowrap">${esc(setName)}<span class="muted small"> ×${o.n}</span></td>
+        <td class="col-set" style="white-space:nowrap">${esc(setName(sn))}<span class="muted small"> ×${o.n}</span></td>
         <td>${tags}</td>
         <td class="col-str" style="width:130px">${bars}</td>
       </tr>`;

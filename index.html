@@ -801,6 +801,20 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     border-radius:0;border:none;
     top:0;left:0;transform:none;
   }
+  /* 开屏更新公告：手机上改小卡片——居中、日志区可滚动、底部「知道了」常驻 */
+  #noticeBox{
+    top:50%;left:50%;transform:translate(-50%,-50%);
+    width:min(92vw,420px);max-width:420px;height:auto;
+    max-height:min(80vh,560px);
+    border-radius:14px;display:flex;flex-direction:column;
+  }
+  #noticeBox .modal-body{
+    flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:14px 16px;
+  }
+  #noticeBox .drawer-foot{
+    flex:0 0 auto;padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  }
   .modal-body{padding:14px 16px calc(18px + env(safe-area-inset-bottom));flex:1;}
   .build-item select{max-width:100%;}
   .build-item .bi-head{flex-wrap:wrap;}
@@ -1299,8 +1313,17 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
  * CHANGELOG：新在前，CHANGELOG[0].v 必须等于 APP_VERSION。items 为纯文本（渲染时会 esc）。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.14';
+const APP_VERSION = '2026.09.14.1';
 const CHANGELOG = [
+  {
+    v: '2026.09.14.1', date: '2026-09-14',
+    title: '英文套装名跟随切换 + 手机开屏公告改小卡片 + 日志按「日期·子版本」归并',
+    items: [
+      '切换英文（数据语言 English）时圣遗物套装名跟随切换为官方英文名：覆盖角色卡配装芯片、配装编辑抽屉标题、副词条表套装列、以及「复制配装」下拉选项（此前这些位置仍残留中文名）。',
+      '手机端（≤560px）开屏更新公告由全屏改为小巧居中的可滚动卡片：日志区域独立上下滑动，底部「知道了」按钮常驻可见，短公告不再被撑成满屏高框。',
+      '更新日志改为按「日期 + 同日子版本号」归并：同一天的多次更新用 2026.09.14.1 / 2026.09.14.2 区分，避免每天散出多条重复日期的条目。',
+    ],
+  },
   {
     v: '2026.09.14', date: '2026-09-14',
     title: '手机端适配修复：顶栏空间优化 + 弹窗全屏',
@@ -5427,7 +5450,7 @@ function charCardHtml(c) {
   // 选中（viewIdx）= 绿色高亮；未选中 = 普通色
   const builds = list.length
     ? list.map((b, i) => {
-        const stxt = (b.sets || []).map(s => esc(s)).join('+');
+        const stxt = (b.sets || []).map(s => esc(setName(s))).join('+');
         const t = buildRoleInline(b.roles);
         return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="配装 ${i + 1}${t ? ' · ' + (b.roles || []).join('/') : ''}">${i + 1} ${stxt}${t ? `<span class="cc-bp-tag">${t}</span>` : ''}</button>`;
       }).join('')
@@ -5648,13 +5671,13 @@ function drawDrawer() {
       <label class="fld">📋 新增时套用…
         <select id="edAddFrom">
           <option value="blank">空白（双暴默认词条）</option>
-          ${editing.builds.map((b, i) => `<option value="b${i}">复制配装${i + 1}（${esc((b.sets || []).filter(Boolean).join(' + ') || '未选套装')}）</option>`).join('')}
+          ${editing.builds.map((b, i) => `<option value="b${i}">复制配装${i + 1}（${esc((b.sets || []).filter(Boolean).map(setName).join(' + ') || '未选套装')}）</option>`).join('')}
         </select>
       </label>
       ${factoryPresetOptions(editing).length ? `<label class="fld">＋ 从预置添加
         <select id="edAddPreset">
           <option value="">（选择一个已删除的预置组）</option>
-          ${factoryPresetOptions(editing).map(b => `<option value="${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).join(' + '))}</option>`).join('')}
+          ${factoryPresetOptions(editing).map(b => `<option value="${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).map(setName).join(' + '))}</option>`).join('')}
         </select>
       </label>` : ''}
     </div>
@@ -5865,7 +5888,7 @@ function drawBuildCards() {
     <div class="bm-card" data-bi="${i}">
       <div class="bm-t">
         <span class="prio-tag ${b.priority}">${b.priority === 'main' ? '主推' : '备选'}</span>
-        <span class="bm-name">配装 ${i + 1}　${esc(sets.join(' + ') || '未选套装')}</span>
+        <span class="bm-name">配装 ${i + 1}　${esc(sets.map(setName).join(' + ') || '未选套装')}</span>
         ${buildRoleBadges(b.roles)}
         <span class="bm-kind">${sets.length === 2 ? '2+2 组合' : (sets.length === 1 ? '4 件套' : '未选择套装')}</span>
         ${mod ? '<span class="bm-mod">已修改</span>' : ''}
@@ -6002,10 +6025,10 @@ function drawBuildForm() {
     '<option value="">（不改，保持当前）</option>' +
     '<optgroup label="复制其他配装组">' +
       editing.builds.map((b, j) => j === bmIndex ? '' :
-        `<option value="b${j}">配装${j + 1}（${esc((b.sets || []).filter(Boolean).join(' + ') || '未选套装')}）</option>`).join('') +
+        `<option value="b${j}">配装${j + 1}（${esc((b.sets || []).filter(Boolean).map(setName).join(' + ') || '未选套装')}）</option>`).join('') +
     '</optgroup>' +
     (presets.length ? '<optgroup label="出厂预置">' +
-      presets.map(b => `<option value="f${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).join(' + '))}</option>`).join('') +
+      presets.map(b => `<option value="f${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).map(setName).join(' + '))}</option>`).join('') +
     '</optgroup>' : '') +
     '<optgroup label="追加属性预设（仅追加属性）">' +
       Object.keys(SUB_PRESETS).map(k => `<option value="p${k}">${esc(SUB_PRESET_NAMES[k])}</option>`).join('') +
@@ -6868,7 +6891,7 @@ function runScore() {
 function renderSetSubTable() {
   const rank = setSubRanking($('#planAltBuild') ? $('#planAltBuild').checked : true);
   const rows = applySort(Array.from(rank.entries()), 'setSub', cmpSetSubRows())
-    .map(([setName, o]) => {
+    .map(([sn, o]) => {
       const top = o.list.slice(0, 5);
       if (!top.length) return '';
       const max = Math.max(0.001, top[0].score);
@@ -6877,7 +6900,7 @@ function renderSetSubTable() {
       const bars = top.map(t =>
         `<div style="display:flex;align-items:center;gap:5px;margin:2px 0"><span class="wbar" style="width:${Math.max(2, (t.score / max) * 90)}px"></span></div>`).join('');
       return `<tr>
-        <td class="col-set" style="white-space:nowrap">${esc(setName)}<span class="muted small"> ×${o.n}</span></td>
+        <td class="col-set" style="white-space:nowrap">${esc(setName(sn))}<span class="muted small"> ×${o.n}</span></td>
         <td>${tags}</td>
         <td class="col-str" style="width:130px">${bars}</td>
       </tr>`;

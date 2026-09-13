@@ -794,6 +794,20 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     border-radius:0;border:none;
     top:0;left:0;transform:none;
   }
+  /* 开屏更新公告：手机上改小卡片——居中、日志区可滚动、底部「知道了」常驻 */
+  #noticeBox{
+    top:50%;left:50%;transform:translate(-50%,-50%);
+    width:min(92vw,420px);max-width:420px;height:auto;
+    max-height:min(80vh,560px);
+    border-radius:14px;display:flex;flex-direction:column;
+  }
+  #noticeBox .modal-body{
+    flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:14px 16px;
+  }
+  #noticeBox .drawer-foot{
+    flex:0 0 auto;padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom));
+  }
   .modal-body{padding:14px 16px calc(18px + env(safe-area-inset-bottom));flex:1;}
   .build-item select{max-width:100%;}
   .build-item .bi-head{flex-wrap:wrap;}
