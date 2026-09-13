@@ -675,7 +675,9 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   }
   .topbar .sub,.save-hint{display:none;}
   /* 语言切换：窄屏压缩内边距字号，单按钮保持完整可读 */
-  .lang-btn{font-size:11.5px;padding:4px 9px;gap:3px;}
+  .lang-btn{font-size:11px;padding:3px 7px;gap:2px;}
+  .lang-btn .lang-sep{padding:0;}
+  .lang-btn .lang-seg{padding:1px 4px;}
   /* 元素分段：英文（Pyro / Electro…）比中文宽，窄屏压缩内边距与字号 */
   .seg-btn{padding:6px 8px;font-size:12px;}
   .logo{width:32px;height:32px;font-size:16px;border-radius:8px;}
@@ -683,9 +685,12 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .brand{min-width:0;}
   .brand>div{min-width:0;}
   .topbar h1{
-    font-size:15px;letter-spacing:0;
+    font-size:14px;letter-spacing:0;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
+  /* 极窄屏：帮助按钮改用「?」图标，把横向空间让给标题 */
+  #btnHelp{font-size:0;padding:7px 11px;}
+  #btnHelp::before{content:'?';font-size:17px;font-weight:700;line-height:1;}
 
   /* --- 标签页：可横向滚动，避免挤成两行 --- */
   .tabs{
@@ -790,8 +795,13 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .drawer-body{padding:14px 16px;}
   .drawer-foot{padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom));gap:8px;}
   .drawer-foot .btn{flex:1;}
-  .modal{width:94vw;max-height:86vh;}
-  .modal-body{padding:14px 16px 18px;}
+  /* 弹窗在手机上直接占满整屏：避免 94vw 的窄卡片在 390px 屏里内容拥挤 */
+  .modal,.modal-lg,.modal-l3{
+    width:100vw;max-width:none;height:100vh;max-height:100vh;
+    border-radius:0;border:none;
+    top:0;left:0;transform:none;
+  }
+  .modal-body{padding:14px 16px calc(18px + env(safe-area-inset-bottom));flex:1;}
   .build-item select{max-width:100%;}
   .build-item .bi-head{flex-wrap:wrap;}
   .src-row{flex-wrap:wrap;}
@@ -850,7 +860,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     <button id="btnLang" class="lang-btn" type="button" aria-label="切换语言（中文 / English）" title="界面与数据名当前为中文，点击切到 English">
       <span class="lang-seg" data-seg="zh">中</span><span class="lang-sep" aria-hidden="true">/</span><span class="lang-seg" data-seg="en">EN</span>
     </button>
-    <button id="btnHelp" class="btn ghost" data-en="Instructions">使用说明</button>
+    <button id="btnHelp" class="btn ghost" data-en="Instructions" aria-label="使用说明">使用说明</button>
   </div>
 </header>
 
@@ -1289,8 +1299,16 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
  * CHANGELOG：新在前，CHANGELOG[0].v 必须等于 APP_VERSION。items 为纯文本（渲染时会 esc）。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.13';
+const APP_VERSION = '2026.09.14';
 const CHANGELOG = [
+  {
+    v: '2026.09.14', date: '2026-09-14',
+    title: '手机端适配修复：顶栏空间优化 + 弹窗全屏',
+    items: [
+      '手机端（≤560px）顶栏：语言按钮「中 / EN」进一步压缩内边距；帮助按钮「使用说明」改为「?」图标，释放横向空间给标题；标题字号从 15px 降到 14px，减少省略。',
+      '手机端弹窗（更新公告 / 使用说明 / 角色编辑 / 配装编辑 / 属性选择 / 套装管理 / 规则表单）统一改为 100vw × 100vh 全屏，取消圆角与边框，底部加安全区留白；解决 94vw 卡片在 390px 屏上内容拥挤的问题。',
+    ],
+  },
   {
     v: '2026.09.13', date: '2026-09-13',
     title: '数据按观测枢 wiki 整体重核对 + 中英文切换定稿 + 配装功能定位',
