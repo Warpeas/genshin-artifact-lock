@@ -44,19 +44,24 @@ button{font-family:inherit;}
 .topbar h1{font-size:17px;letter-spacing:.5px;}
 .sub{margin:0;font-size:12px;color:var(--txt3);}
 .topbar-right{display:flex;align-items:center;gap:10px;}
-.save-hint{font-size:12px;color:var(--txt3);}
+/* 预留最长文案的宽度，避免「已保存」⇄「数据保存在本机浏览器」切换时顶栏左右跳 */
+.save-hint{font-size:12px;color:var(--txt3);white-space:nowrap;min-width:10em;text-align:left;}
 
-/* ---------- 语言切换（显示语言 / 数据语言，各自独立） ---------- */
-.lang-fld{
-  display:flex;align-items:center;gap:5px;
-  font-size:12px;color:var(--txt3);white-space:nowrap;
+/* ---------- 语言切换：顶栏单个按钮，外观为「中 / EN」两段，当前语言段高亮 ---------- */
+.lang-btn{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:12px;line-height:1;font-weight:700;white-space:nowrap;user-select:none;
+  padding:4px 9px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--line);background:var(--bg3);
+  transition:color .15s,background .15s,border-color .15s,box-shadow .15s;
 }
-.lang-fld select{
-  font-size:12px;padding:4px 6px;border-radius:7px;
-  border:1px solid var(--line);background:var(--bg3);color:var(--txt);
-  cursor:pointer;max-width:104px;
+.lang-btn:hover{ border-color:var(--gold2); }
+.lang-btn .lang-sep{ color:var(--txt3);font-weight:400;padding:0 1px; }
+.lang-btn .lang-seg{ padding:1px 5px;border-radius:5px;color:var(--txt3);transition:.15s; }
+/* 当前语言段高亮，状态一目了然（两种语言都常显，点一下切到另一种） */
+.lang-btn .lang-seg.active{
+  color:#2a2113;background:linear-gradient(145deg,var(--gold2),var(--gold));
 }
-.lang-fld select:hover{border-color:var(--gold);}
 
 /* ---------- tabs ---------- */
 .tabs{display:flex;gap:4px;padding:0 22px;background:var(--bg2);border-bottom:1px solid var(--line);position:sticky;top:var(--tbh,67px);z-index:49;}
@@ -662,9 +667,8 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     padding-top:calc(9px + env(safe-area-inset-top));
   }
   .topbar .sub,.save-hint{display:none;}
-  /* 语言切换：窄屏只留下拉框，不占额外宽度 */
-  .lang-fld{font-size:0;gap:0;}
-  .lang-fld select{max-width:88px;font-size:11.5px;padding:3px 4px;}
+  /* 语言切换：窄屏压缩内边距字号，单按钮保持完整可读 */
+  .lang-btn{font-size:11.5px;padding:4px 9px;gap:3px;}
   /* 元素分段：英文（Pyro / Electro…）比中文宽，窄屏压缩内边距与字号 */
   .seg-btn{padding:6px 8px;font-size:12px;}
   .logo{width:32px;height:32px;font-size:16px;border-radius:8px;}

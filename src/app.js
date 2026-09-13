@@ -487,6 +487,12 @@ function applyI18n(root) {
     });
   });
 }
+/* applyI18n 会整段替换带 data-en 的元素（含其中的 <b id> 计数），
+ * 所以翻译之后要把这些动态计数再填一遍，否则会显示成模板里的 0 */
+function refreshStatCounts() {
+  const cc = $('#statCharCount'); if (cc) cc.textContent = state.characters.length;
+  const sc = $('#statSetCount'); if (sc) sc.textContent = state.sets.filter(s => !s.hidden).length;
+}
 /* 动态内容（浮窗 / 重渲染的列表）自动跟随当前语言：
  * 只处理「新增节点」，忽略自己改写文本 / 属性引起的回调，避免来回触发死循环。 */
 let _i18nQueue = [];
@@ -528,11 +534,26 @@ function setLang(kind, v) {
   renderDataChangelog();
   document.documentElement.lang = (langOf('ui') === 'en' ? 'en' : 'zh-CN');
   applyI18n();
-  // 界面上的下拉是一次切两边的，连着调两次时只在最后弹一次提示
+  refreshStatCounts();
+  // 单个语言按钮一次切两边（ui+data），连着调两次时只在最后弹一次提示
   if (kind === 'ui' && langOf('data') !== next) return;
   toast(kind === 'ui' || langOf('data') === next
     ? (next === 'en' ? '已切换为 English' : '已切换为中文')
     : (next === 'en' ? '数据语言已切换为 English' : '数据语言已切换为中文'));
+}
+/* 顶栏单个语言按钮，外观「中 / EN」两段：当前语言段高亮，点一下切到另一种 */
+function syncLangBtn() {
+  const btn = $('#btnLang');
+  if (!btn) return;
+  const cur = langOf('ui');
+  const zh = btn.querySelector('.lang-seg[data-seg="zh"]');
+  const en = btn.querySelector('.lang-seg[data-seg="en"]');
+  if (zh) zh.classList.toggle('active', cur === 'zh');
+  if (en) en.classList.toggle('active', cur === 'en');
+  btn.setAttribute('title', cur === 'en'
+    ? '界面与数据名当前为 English，点击切回中文'
+    : '界面与数据名当前为中文，点击切到 English');
+  btn.setAttribute('aria-label', cur === 'en' ? '切换语言（当前 English）' : '切换语言（当前中文）');
 }
 function isDesc(key) { return !!(state && state.sortPref && state.sortPref[key] === 'desc'); }
 function sortBy(key) { return (state && state.sortPref && state.sortPref[key + 'By']) || 'catalog'; }
@@ -3655,16 +3676,18 @@ function bind() {
     if (b) toggleSort(b.dataset.sort);
   });
 
-  // 语言切换：界面上只有一个下拉，一次把「界面文案」和「数据名」都切过去
-  // （后端仍保留 setLang('ui', …) / setLang('data', …) 两个独立入口）
-  const langSel = $('#langSel');
-  if (langSel) {
-    langSel.value = langOf('ui');
-    langSel.onchange = e => {
-      const v = e.target.value;
-      setLang('ui', v);
-      setLang('data', v);
+  // 语言切换：顶栏单个按钮，按钮上的文字即「当前语言」；
+  // 点击即切到另一种，并一次把「界面文案」和「数据名」都切过去
+  // （后端仍保留 setLang('ui'/'data') 两个独立入口）
+  const langBtn = $('#btnLang');
+  if (langBtn) {
+    langBtn.onclick = () => {
+      const next = langOf('ui') === 'en' ? 'zh' : 'en';
+      setLang('ui', next);
+      setLang('data', next);
+      syncLangBtn();
     };
+    syncLangBtn();
   }
 
   // 角色页筛选
@@ -4105,6 +4128,7 @@ function syncTopbarHeight() {
   renderDataChangelog();
   maybeShowNotice();
   applyI18n();                    // 按当前语言把整页文案过一遍
+  refreshStatCounts();            // applyI18n 会重置带 data-en 元素里的计数，这里补回真实值
   startI18nObserver();            // 之后动态插入的内容自动跟着走
   syncTopbarHeight();
   window.addEventListener('resize', syncTopbarHeight);

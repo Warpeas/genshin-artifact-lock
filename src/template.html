@@ -17,14 +17,11 @@
     </div>
   </div>
   <div class="topbar-right">
-    <label class="lang-fld" title="界面文案与角色 / 套装 / 属性名一并切换语言">
-      <select id="langSel" aria-label="语言（界面 + 数据）">
-        <option value="zh">中文</option>
-        <option value="en">English</option>
-      </select>
-    </label>
     <span id="saveHint" class="save-hint">数据保存在本机浏览器</span>
-    <button id="btnHelp" class="btn ghost">使用说明</button>
+    <button id="btnLang" class="lang-btn" type="button" aria-label="切换语言（中文 / English）" title="界面与数据名当前为中文，点击切到 English">
+      <span class="lang-seg" data-seg="zh">中</span><span class="lang-sep" aria-hidden="true">/</span><span class="lang-seg" data-seg="en">EN</span>
+    </button>
+    <button id="btnHelp" class="btn ghost" data-en="Instructions">使用说明</button>
   </div>
 </header>
 
@@ -118,7 +115,7 @@
     <div class="card kr-card" id="krCard">
       <h3 class="kr-head">
         <button id="krFold" class="kr-fold" type="button" aria-expanded="true" title="收起这一模块（只是不显示，启用的规则照常生效）">▾</button>
-        <span class="kr-head-txt">🧩 散件 / 过渡 保留规则</span>
+        <span class="kr-head-txt" data-en="🧩 Loose / transitional keep rules">🧩 散件 / 过渡 保留规则</span>
         <span id="krCount" class="kr-count"></span>
       </h3>
       <div id="krBody" class="kr-body">
@@ -128,7 +125,7 @@
           <br><b>内置规则也能改</b>：点「编辑」即弹出浮窗修改（名称 / 描述 / 部位 / 主要属性 / 追加属性 / ★必须），改过的会标记「已修改」，可一键「恢复默认」。
           <br>点标题左侧的箭头可<b>收起整个模块</b>——只是不再显示，已启用的规则照常生成候选方案。</p>
         <div class="toolbar wrap kr-bar">
-          <button id="btnKrNew" class="btn primary">＋ 新增自定义规则</button>
+          <button id="btnKrNew" class="btn primary" data-en="+ New custom rule">＋ 新增自定义规则</button>
         </div>
         <div id="keepRuleList" class="kr-list"></div>
       </div>
@@ -187,14 +184,14 @@
     </div>
     <div class="card">
       <h3>备份与恢复</h3>
-      <p class="muted small" data-en="Your config lives in the browser&#39;s localStorage — export it before switching devices or clearing the cache. <br><b>&quot;Restore built-in defaults&quot;</b> overwrites the local save with the built-in library and wipes every custom edit, i.e. a hard reset. A normal browser refresh only reloads the page and does <b>not</b> clear local storage, so stale or corrupted data would otherwise stick around.">配置保存在浏览器 localStorage，换设备或清缓存前请先导出。<br>
+      <p class="muted small" data-en="Your config lives in this browser&#39;s local storage — export a copy before switching devices or clearing the cache. <br><b>&quot;Restore built-in defaults&quot;</b> overwrites your local save with the built-in library and erases every custom edit you&#39;ve made; it works like a hard reset. A normal browser refresh only reloads the page and does <b>not</b> clear local storage, so any stale or corrupted data would otherwise keep lingering.">配置保存在浏览器的本地存储中，换设备或清缓存前请先导出。<br>
         <b>「恢复内置默认库」</b>＝用内置默认库覆盖本机存档、清除你的全部自定义修改，相当于一次硬刷新；浏览器普通「刷新」只重载页面、<b>不会</b>清本地存档，所以旧数据 / 乱码会一直留着。</p>
       <div class="btn-row">
-        <button id="btnExportJson" class="btn primary">导出配置 JSON</button>
-        <button id="btnImportJson" class="btn">导入配置 JSON</button>
+        <button id="btnExportJson" class="btn primary" data-en="Export config (JSON)">导出配置 JSON</button>
+        <button id="btnImportJson" class="btn" data-en="Import config (JSON)">导入配置 JSON</button>
         <input type="file" id="fileImport" accept=".json" hidden>
-        <button id="btnClearEnabled" class="btn">清空启用状态</button>
-        <button id="btnReset" class="btn danger">恢复内置默认库（硬刷新）</button>
+        <button id="btnClearEnabled" class="btn" data-en="Clear enabled state">清空启用状态</button>
+        <button id="btnReset" class="btn danger" data-en="Restore built-in defaults (hard reset)">恢复内置默认库（硬刷新）</button>
       </div>
     </div>
 
@@ -210,11 +207,11 @@
     <div class="card">
       <h3>关于数据</h3>
       <ul class="muted small notes">
-        <li>内置 <b id="statCharCount">0</b> 个角色、<b id="statSetCount">0</b> 个套装，整理自社区常见推荐，随版本变动请自行校正。</li>
-        <li>「主推 / 备选」权重：主推 = 1.0，备选 = 0.5；主要属性优先级 1/2/3 权重 = 1.0 / 0.5 / 0.25。</li>
-        <li>建议保留件数 = 以该主要属性为最优解的角色数（同一角色多套配装不重复计数），区间 1–4。</li>
-        <li>2+2 配装对单套的件数需求更低，汇总时按 0.6 系数折算。</li>
-        <li>主要属性 / 追加属性需求<b>按配装组</b>分别保存：同一角色换套装时可以有不同的词条需求。</li>
+        <li data-en="Built-in data covers <b id='statCharCount'>0</b> characters and <b id='statSetCount'>0</b> artifact sets, compiled from common community recommendations. Please verify as the game updates.">内置 <b id="statCharCount">0</b> 个角色、<b id="statSetCount">0</b> 个套装，整理自社区常见推荐，随版本变动请自行校正。</li>
+        <li data-en='Weights for "primary / secondary" builds: primary = 1.0, secondary = 0.5. Main-stat priority 1/2/3 weights = 1.0 / 0.5 / 0.25.'>「主推 / 备选」权重：主推 = 1.0，备选 = 0.5；主要属性优先级 1/2/3 权重 = 1.0 / 0.5 / 0.25。</li>
+        <li data-en="Recommended keep count = the number of characters for which this main stat is the best choice (a character with multiple builds is counted once), ranging 1–4.">建议保留件数 = 以该主要属性为最优解的角色数（同一角色多套配装不重复计数），区间 1–4。</li>
+        <li data-en="A 2+2 build needs fewer pieces per set, so when aggregated it is counted at a 0.6 factor.">2+2 配装对单套的件数需求更低，汇总时按 0.6 系数折算。</li>
+        <li data-en="Main-stat / sub-stat requirements are saved per build group, so a single character can have different stat needs when switching sets.">主要属性 / 追加属性需求<b>按配装组</b>分别保存：同一角色换套装时可以有不同的词条需求。</li>
       </ul>
     </div>
   </section>
@@ -378,7 +375,7 @@
     </ul>
     <h4>中英文切换</h4>
     <ul>
-      <li>顶栏右上角有一个<b>语言下拉</b>，一次把界面文案和数据名一起切过去：选 English 后按钮、说明、以及角色名 / 套装名 / 属性名全都变英文，选择会记住。</li>
+      <li>顶栏右上角有一个<b>中 / EN 切换按钮</b>，亮起的一侧就是当前语言；点 EN 后按钮、说明、以及角色名 / 套装名 / 属性名全都变英文，选择会记住。</li>
       <li>切成 English 后显示官方英文本地化名（如 胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），属性、国度、定位、部位同样跟随。</li>
       <li>搜索框<b>两种语言都认</b>：不管当前显示哪种，输入「胡桃」或「Hu Tao」、「逐影猎人」或「Marechaussee」都能搜到。</li>
       <li>复制 / 导出的文本<b>始终保持中文</b>——游戏内的锁定界面是中文，照抄时才对得上。</li>

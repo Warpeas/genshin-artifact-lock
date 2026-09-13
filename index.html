@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-page-node-id="t6nrNx8f3ggMP3WB63H9dn">
-<head data-page-node-id="KbGWqUkLnELAGkmiLny7Sh">
-<meta charset="UTF-8" data-page-node-id="pBTzJBG02YW93nA2NWuBQQ">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" data-page-node-id="HEMONmm8aEvFUhdniU9C4l">
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>原神圣遗物锁定方案生成器</title>
 <style>
 :root{
@@ -51,19 +51,24 @@ button{font-family:inherit;}
 .topbar h1{font-size:17px;letter-spacing:.5px;}
 .sub{margin:0;font-size:12px;color:var(--txt3);}
 .topbar-right{display:flex;align-items:center;gap:10px;}
-.save-hint{font-size:12px;color:var(--txt3);}
+/* 预留最长文案的宽度，避免「已保存」⇄「数据保存在本机浏览器」切换时顶栏左右跳 */
+.save-hint{font-size:12px;color:var(--txt3);white-space:nowrap;min-width:10em;text-align:left;}
 
-/* ---------- 语言切换（显示语言 / 数据语言，各自独立） ---------- */
-.lang-fld{
-  display:flex;align-items:center;gap:5px;
-  font-size:12px;color:var(--txt3);white-space:nowrap;
+/* ---------- 语言切换：顶栏单个按钮，外观为「中 / EN」两段，当前语言段高亮 ---------- */
+.lang-btn{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:12px;line-height:1;font-weight:700;white-space:nowrap;user-select:none;
+  padding:4px 9px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--line);background:var(--bg3);
+  transition:color .15s,background .15s,border-color .15s,box-shadow .15s;
 }
-.lang-fld select{
-  font-size:12px;padding:4px 6px;border-radius:7px;
-  border:1px solid var(--line);background:var(--bg3);color:var(--txt);
-  cursor:pointer;max-width:104px;
+.lang-btn:hover{ border-color:var(--gold2); }
+.lang-btn .lang-sep{ color:var(--txt3);font-weight:400;padding:0 1px; }
+.lang-btn .lang-seg{ padding:1px 5px;border-radius:5px;color:var(--txt3);transition:.15s; }
+/* 当前语言段高亮，状态一目了然（两种语言都常显，点一下切到另一种） */
+.lang-btn .lang-seg.active{
+  color:#2a2113;background:linear-gradient(145deg,var(--gold2),var(--gold));
 }
-.lang-fld select:hover{border-color:var(--gold);}
 
 /* ---------- tabs ---------- */
 .tabs{display:flex;gap:4px;padding:0 22px;background:var(--bg2);border-bottom:1px solid var(--line);position:sticky;top:var(--tbh,67px);z-index:49;}
@@ -669,9 +674,8 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
     padding-top:calc(9px + env(safe-area-inset-top));
   }
   .topbar .sub,.save-hint{display:none;}
-  /* 语言切换：窄屏只留下拉框，不占额外宽度 */
-  .lang-fld{font-size:0;gap:0;}
-  .lang-fld select{max-width:88px;font-size:11.5px;padding:3px 4px;}
+  /* 语言切换：窄屏压缩内边距字号，单按钮保持完整可读 */
+  .lang-btn{font-size:11.5px;padding:4px 9px;gap:3px;}
   /* 元素分段：英文（Pyro / Electro…）比中文宽，窄屏压缩内边距与字号 */
   .seg-btn{padding:6px 8px;font-size:12px;}
   .logo{width:32px;height:32px;font-size:16px;border-radius:8px;}
@@ -831,438 +835,435 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 }
 </style>
 </head>
-<body data-page-node-id="Y84InYvLrjLECUXiv3nexH">
+<body>
 
-<header class="topbar" data-page-node-id="5jmecK30TDzr3JJK54fTyW">
-  <div class="brand" data-page-node-id="tZLTKQHKoT7Y7ygKYqeH3E">
-    <span class="logo" data-page-node-id="WVzrGQuSOl3pzSajkUS9pL">遗</span>
-    <div data-page-node-id="BG7h9ensnsk87YDOyWD4IF">
-      <h1 data-page-node-id="rGrWxvov3Xo7CRzdRJvJSx">原神圣遗物锁定方案生成器</h1>
-      <p class="sub" data-page-node-id="wA6iDFJXE7bDfb78o592zD">输入角色配装需求 → 汇总输出每套圣遗物的锁定清单</p>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">遗</span>
+    <div>
+      <h1>原神圣遗物锁定方案生成器</h1>
+      <p class="sub">输入角色配装需求 → 汇总输出每套圣遗物的锁定清单</p>
     </div>
   </div>
-  <div class="topbar-right" data-page-node-id="mTq1I9F8koFlDrSML5gPJR">
-    <label class="lang-fld" title="界面文案与角色 / 套装 / 属性名一并切换语言" data-page-node-id="YzxlkWbsGUPKl2KuLbNGaT">
-      <select id="langSel" aria-label="语言（界面 + 数据）" data-page-node-id="qLHEpj6neBfpDuD7oKNdGl">
-        <option value="zh" data-page-node-id="0AVD7sWAXUXo4MwK7BLqHB">中文</option>
-        <option value="en" data-page-node-id="WBxsfq66EAU1VrH4U9QSNv">English</option>
-      </select>
-    </label>
-    <span id="saveHint" class="save-hint" data-page-node-id="Ynx85z18w2bbgjPSbhnzhN">数据保存在本机浏览器</span>
-    <button id="btnHelp" class="btn ghost" data-page-node-id="CmLxByIRAY7Q22P9HFlxXU">使用说明</button>
+  <div class="topbar-right">
+    <span id="saveHint" class="save-hint">数据保存在本机浏览器</span>
+    <button id="btnLang" class="lang-btn" type="button" aria-label="切换语言（中文 / English）" title="界面与数据名当前为中文，点击切到 English">
+      <span class="lang-seg" data-seg="zh">中</span><span class="lang-sep" aria-hidden="true">/</span><span class="lang-seg" data-seg="en">EN</span>
+    </button>
+    <button id="btnHelp" class="btn ghost" data-en="Instructions">使用说明</button>
   </div>
 </header>
 
-<nav class="tabs" data-page-node-id="9y0PKGLF8p5Axci1XRSULE">
-  <button class="tab active" data-tab="chars" data-page-node-id="oVKd5DFjOvZSBGVZceaWn1"><span class="t-long" data-page-node-id="48L8ueevMfN82ZtcN7Xpj7">① 角色配置</span><span class="t-short" data-page-node-id="9PPZP1Le4tfNpVvZq4xtod">① 角色</span></button>
-  <button class="tab" data-tab="plan" data-page-node-id="YAM92DaLn9DmcAK7l7V8RU"><span class="t-long" data-page-node-id="WHikye5ZxLvZ3bwIbjEP5d">② 锁定方案</span><span class="t-short" data-page-node-id="1dIOUXjlhpEOGo1H7GdyQj">② 方案</span></button>
-  <button class="tab" data-tab="subs" data-page-node-id="P8nkgzSUi8MVu0j1hbNoLS"><span class="t-long" data-page-node-id="T0ElNXfDKEHt9t9BC3fHBx">③ 追加属性规则</span><span class="t-short" data-page-node-id="elnqbr9uQHHSyUDoretHJM">③ 追加属性</span></button>
-  <button class="tab" data-tab="data" data-page-node-id="O6xo5Do642dhxLeSD3QHsB"><span class="t-long" data-page-node-id="dwCiAB7iLR9XWHzbQQHRrD">④ 数据管理</span><span class="t-short" data-page-node-id="8R5heLx39w5aAD0AF1k77y">④ 数据</span></button>
+<nav class="tabs">
+  <button class="tab active" data-tab="chars"><span class="t-long">① 角色配置</span><span class="t-short">① 角色</span></button>
+  <button class="tab" data-tab="plan"><span class="t-long">② 锁定方案</span><span class="t-short">② 方案</span></button>
+  <button class="tab" data-tab="subs"><span class="t-long">③ 追加属性规则</span><span class="t-short">③ 追加属性</span></button>
+  <button class="tab" data-tab="data"><span class="t-long">④ 数据管理</span><span class="t-short">④ 数据</span></button>
 </nav>
 
-<main data-page-node-id="alR01nDR1F2xBZbTAFIaoY">
+<main>
   <!-- ============ 角色配置 ============ -->
-  <section id="tab-chars" class="tabpane active" data-page-node-id="BLFySwgrisUqxEibUCMxDd">
-    <div class="toolbar wrap" data-page-node-id="7gmPVSgU3Fhd130Av5yC2b">
-      <input id="charSearch" type="search" placeholder="搜索角色 / 套装 / 国度 / 定位…" data-page-node-id="2GGDkQ9swkOERziEBSqeqU">
-      <div class="seg" id="elemFilter" data-page-node-id="rsRi5XxsFLESDMGNgNIBT5">
-        <button class="seg-btn active" data-elem="all" data-page-node-id="Cn3jKvF4yop1Lbe28AxU7D">全部</button>
-        <button class="seg-btn" data-elem="pyro" data-page-node-id="BIgSm1TPALi6DoVZ2tPhmw">火</button>
-        <button class="seg-btn" data-elem="hydro" data-page-node-id="ih3GO1aJ3loivfPamdCIS0">水</button>
-        <button class="seg-btn" data-elem="cryo" data-page-node-id="BRi9urXLsMYSYFOjUuIqVw">冰</button>
-        <button class="seg-btn" data-elem="electro" data-page-node-id="ZIgYJTSoOAjxICeAwfN0hx">雷</button>
-        <button class="seg-btn" data-elem="anemo" data-page-node-id="McFWehbxbVIJ7HmBDTo8ha">风</button>
-        <button class="seg-btn" data-elem="geo" data-page-node-id="we1BQOBAnwAGoKxjdtjM0D">岩</button>
-        <button class="seg-btn" data-elem="dendro" data-page-node-id="FUMIUgT785z7xgSfu96dXL">草</button>
+  <section id="tab-chars" class="tabpane active">
+    <div class="toolbar wrap">
+      <input id="charSearch" type="search" placeholder="搜索角色 / 套装 / 国度 / 定位…">
+      <div class="seg" id="elemFilter">
+        <button class="seg-btn active" data-elem="all">全部</button>
+        <button class="seg-btn" data-elem="pyro">火</button>
+        <button class="seg-btn" data-elem="hydro">水</button>
+        <button class="seg-btn" data-elem="cryo">冰</button>
+        <button class="seg-btn" data-elem="electro">雷</button>
+        <button class="seg-btn" data-elem="anemo">风</button>
+        <button class="seg-btn" data-elem="geo">岩</button>
+        <button class="seg-btn" data-elem="dendro">草</button>
       </div>
-      <label class="fld" data-page-node-id="8jYPoVwpCSriw9VFGGhEM0">国度
-        <select id="regionFilter" data-page-node-id="0uVIiHVAd1OiXRsHimuhQd"><option value="all" data-page-node-id="QF7Z8H2Vy2q8zUgkcEgRuK">全部国度</option></select>
+      <label class="fld">国度
+        <select id="regionFilter"><option value="all">全部国度</option></select>
       </label>
-      <div class="seg" id="roleFilter" data-page-node-id="6UYMeP4zESlGTFdMQnenFu">
-        <button class="seg-btn active" data-role="all" data-page-node-id="SCypmCnCxkXSpZ3IH9jwvg">全部</button>
-        <button class="seg-btn" data-role="maindps" data-page-node-id="Grj5eypYzSy2Sl2jKFhSJo">主C</button>
-        <button class="seg-btn" data-role="subdps" data-page-node-id="6qVC4vhFpxbIHQ7l41WR2R">副C</button>
-        <button class="seg-btn" data-role="support" data-page-node-id="NuDeCBljnfgxCCxanA9TyX">辅助</button>
+      <div class="seg" id="roleFilter">
+        <button class="seg-btn active" data-role="all">全部</button>
+        <button class="seg-btn" data-role="maindps">主C</button>
+        <button class="seg-btn" data-role="subdps">副C</button>
+        <button class="seg-btn" data-role="support">辅助</button>
       </div>
-      <label class="chk" data-page-node-id="KwJsCB9KAY95WzdUVvdPV7"><input type="checkbox" id="onlyEnabled" data-page-node-id="o32MPk5Le3NZxFhJCbmsHk"> 只看已启用</label>
-      <span class="sort-bar" id="charSortBar" data-page-node-id="FIwy7nOatYYSNN0cb2TPe1"></span>
-      <span class="spacer" data-page-node-id="ahLHKWO8GnZPM4pGph6RH5"></span>
-      <span id="filterCount" class="count-badge hidden" data-page-node-id="A4G828yRG0BHsDBDS5P9sS">筛出 <b data-page-node-id="sYTORlenI6EqGZE2IcE62B">0</b> / 0 个</span>
-      <span class="count-badge" data-page-node-id="Ax8lgu27auP0TimyqOFpg4">已启用 <b id="enabledCount" data-page-node-id="6JOdHlsasEXbXTiTAznChJ">0</b> 个角色</span>
-      <button id="btnAddChar" class="btn primary" data-page-node-id="4yjMkYHaE1pVE3OOMFuLOk">+ 新增角色</button>
+      <label class="chk"><input type="checkbox" id="onlyEnabled"> 只看已启用</label>
+      <span class="sort-bar" id="charSortBar"></span>
+      <span class="spacer"></span>
+      <span id="filterCount" class="count-badge hidden">筛出 <b>0</b> / 0 个</span>
+      <span class="count-badge">已启用 <b id="enabledCount">0</b> 个角色</span>
+      <button id="btnAddChar" class="btn primary">+ 新增角色</button>
     </div>
 
-    <div class="toolbar batch-bar" data-page-node-id="LhklloXyRtPlKDXJvPwqln">
-      <span class="bar-label" data-page-node-id="qo0HaCohWNAP6BEUfy4lBd">批量</span>
-      <button class="btn sm" data-batch="all" data-page-node-id="wvymJEdN78jFgdAgpxXtiR">全选</button>
-      <button class="btn sm" data-batch="none" data-page-node-id="NMgUBn7jeMETrLYi5NABJs">全不选</button>
-      <button class="btn sm" data-batch="invert" data-page-node-id="2vfoQLQR7jGhnmzerNjY5a">反选</button>
-      <span class="bar-div" data-page-node-id="iJ8uPtehftI9MDhDpwmwwb"></span>
-      <span class="bar-label" data-page-node-id="vJfzpXa71kKWGLVz5Ib37H">按属性</span>
-      <span class="btn-grp" id="elemBatch" data-page-node-id="jtaE0jPjjIVhEkxCAcpIyB"></span>
-      <span class="bar-div" data-page-node-id="KqNmedDunmjLg21v6BHitM"></span>
-      <span class="bar-label" data-page-node-id="yUe4nNa9n0lofqkzD57BMc">按国度</span>
-      <span class="btn-grp" id="regionBatch" data-page-node-id="UrZh7Z06GcvVhaLUAeXyTh"></span>
-      <span class="bar-div" data-page-node-id="Ef9abnfYClj66DFPvVmtHo"></span>
-      <span class="bar-label" data-page-node-id="Oy9CHd3ckaxw1Hw6fVSpFb">按定位</span>
-      <span class="btn-grp" id="roleBatch" data-page-node-id="D6gA7ORb8IAMfH7ZgBgO72"></span>
+    <div class="toolbar batch-bar">
+      <span class="bar-label">批量</span>
+      <button class="btn sm" data-batch="all">全选</button>
+      <button class="btn sm" data-batch="none">全不选</button>
+      <button class="btn sm" data-batch="invert">反选</button>
+      <span class="bar-div"></span>
+      <span class="bar-label">按属性</span>
+      <span class="btn-grp" id="elemBatch"></span>
+      <span class="bar-div"></span>
+      <span class="bar-label">按国度</span>
+      <span class="btn-grp" id="regionBatch"></span>
+      <span class="bar-div"></span>
+      <span class="bar-label">按定位</span>
+      <span class="btn-grp" id="roleBatch"></span>
     </div>
-    <p class="batch-hint" data-en="Element / Region / Role: tap once to select the whole category, tap again to clear it. Categories stack and apply to <b data-page-node-id="VPuN7VFTdtQFH0SB7e0Elm">all characters</b>; &quot;Select all&quot; / &quot;Invert&quot; only affect the current filter result.">属性 / 国度 / 定位：点一次全选该类、再点一次取消，可叠加组合，对<b data-page-node-id="yiiQTWhfqDEMuWJqzpTg4L">全部角色</b>生效；「全选 / 反选」只对当前筛选结果生效</p>
+    <p class="batch-hint" data-en="Element / Region / Role: tap once to select the whole category, tap again to clear it. Categories stack and apply to <b>all characters</b>; &quot;Select all&quot; / &quot;Invert&quot; only affect the current filter result.">属性 / 国度 / 定位：点一次全选该类、再点一次取消，可叠加组合，对<b>全部角色</b>生效；「全选 / 反选」只对当前筛选结果生效</p>
 
-    <div id="charGrid" class="char-grid" data-page-node-id="ZDynFm6yLFBLkYFIrMOa6v"></div>
+    <div id="charGrid" class="char-grid"></div>
   </section>
 
   <!-- ============ 锁定方案 ============ -->
-  <section id="tab-plan" class="tabpane" data-page-node-id="NYmwm7HdJG8Bd9chyswgpq">
-    <div class="toolbar wrap" data-page-node-id="GBv44rxKz2khO9DYig2Oyz">
-      <label class="fld" data-page-node-id="7xGpwAhQBaINGsNXRb5fHA">套装筛选
-        <select id="planSetFilter" data-page-node-id="WFBp9VF5Lfj4TDLHtkEGg9"><option value="all" data-page-node-id="PtYlKe0AtnbZ6tDtlpdzns">全部套装</option></select>
+  <section id="tab-plan" class="tabpane">
+    <div class="toolbar wrap">
+      <label class="fld">套装筛选
+        <select id="planSetFilter"><option value="all">全部套装</option></select>
       </label>
-      <label class="fld" data-page-node-id="xT3BIcCQ3zHrbcq4agcm5B">部位筛选
-        <select id="planSlotFilter" data-page-node-id="Idmb00xD7bfwxzNERVNqgf">
-          <option value="all" data-page-node-id="iZtOVRny3FKBfxySwG2Gbr">全部部位</option>
-          <option value="sands" data-page-node-id="3UxGmCkEug9d1uRE4YADpS">时之沙</option>
-          <option value="goblet" data-page-node-id="PdGTV38FP7GXpGijckSGNZ">空之杯</option>
-          <option value="circlet" data-page-node-id="R9HDJ3AhUTYGN4EhugMJPk">理之冠</option>
+      <label class="fld">部位筛选
+        <select id="planSlotFilter">
+          <option value="all">全部部位</option>
+          <option value="sands">时之沙</option>
+          <option value="goblet">空之杯</option>
+          <option value="circlet">理之冠</option>
         </select>
       </label>
-      <span class="spacer" data-page-node-id="3OZRoOqPfbKYWj08BzVtz9"></span>
-      <label class="chk" data-page-node-id="qWhT7N44BV0ZxLwNUGoeGi"><input type="checkbox" id="planHideUnused" checked data-page-node-id="GbBoi5o6CcYffIF2sAQl43"> 隐藏无人需要的套装</label>
-      <label class="chk" data-page-node-id="nFD7ZCihcPCqCzfr4Lr5b4"><input type="checkbox" id="planAltBuild" checked data-page-node-id="cn0zY99LO90GIF1sCz2ght"> 计入备选配装</label>
-      <label class="chk" data-page-node-id="w8ELm4he61TqJYEVH68uOS"><input type="checkbox" id="planDetail" data-page-node-id="FK19eHITHT3o8BDVcH7tHO"> 显示详细件数</label>
-      <span class="sort-bar" id="planSortBar" data-page-node-id="6jPWjtjHewU1KAeU201MYV"></span>
-      <span class="spacer" data-page-node-id="24FolU5nodHVwJy6375G56"></span>
-      <button id="btnCopyGame" class="btn primary" data-page-node-id="YMSKk5iysYGe5EXOMcBHHo">复制游戏内方案</button>
-      <button id="btnCopyPlan" class="btn" data-page-node-id="Y1AtxniE5JWd2nC0Os8hEJ">复制清单</button>
-      <button id="btnCsvPlan" class="btn" data-page-node-id="oFzZBoLS7mCrbpP7kNtGPT">导出 CSV</button>
-      <button id="btnPrint" class="btn" data-page-node-id="n8BCYVfiaM6W5025YdqGFU">打印 / 存 PDF</button>
+      <span class="spacer"></span>
+      <label class="chk"><input type="checkbox" id="planHideUnused" checked> 隐藏无人需要的套装</label>
+      <label class="chk"><input type="checkbox" id="planAltBuild" checked> 计入备选配装</label>
+      <label class="chk"><input type="checkbox" id="planDetail"> 显示详细件数</label>
+      <span class="sort-bar" id="planSortBar"></span>
+      <span class="spacer"></span>
+      <button id="btnCopyGame" class="btn primary">复制游戏内方案</button>
+      <button id="btnCopyPlan" class="btn">复制清单</button>
+      <button id="btnCsvPlan" class="btn">导出 CSV</button>
+      <button id="btnPrint" class="btn">打印 / 存 PDF</button>
     </div>
 
-    <div id="pickInfo" class="pick-info" data-page-node-id="PDT8zGAgFBjFiTcpc4WIfC"></div>
+    <div id="pickInfo" class="pick-info"></div>
 
-    <div class="card kr-card" id="krCard" data-page-node-id="ARiLCBhWItceHFE8fVjrQO">
-      <h3 class="kr-head" data-page-node-id="GYG5ZpXqGinHkRucMt3SKR">
-        <button id="krFold" class="kr-fold" type="button" aria-expanded="true" title="收起这一模块（只是不显示，启用的规则照常生效）" data-page-node-id="y1OHXme3aaF63wOFUJAMAF">▾</button>
-        <span class="kr-head-txt" data-page-node-id="4NI0tYlWoCQdZtQI1Wcwvh">🧩 散件 / 过渡 保留规则</span>
-        <span id="krCount" class="kr-count" data-page-node-id="nejpqQdUAhkCoB43iHecy3"></span>
+    <div class="card kr-card" id="krCard">
+      <h3 class="kr-head">
+        <button id="krFold" class="kr-fold" type="button" aria-expanded="true" title="收起这一模块（只是不显示，启用的规则照常生效）">▾</button>
+        <span class="kr-head-txt" data-en="🧩 Loose / transitional keep rules">🧩 散件 / 过渡 保留规则</span>
+        <span id="krCount" class="kr-count"></span>
       </h3>
-      <div id="krBody" class="kr-body" data-page-node-id="QESZPfiRaQsL4WkGZiXu7z">
-        <p class="muted small" data-en="Artifacts worth keeping regardless of any character, either because the <b data-page-node-id="z1GIsqxGcvsVnexrhvzhbq">main stat itself is rare</b> or because it works as a <b data-page-node-id="qODFS8gdsXucl2qNTxTxBY">transitional 2-piece</b> (an elemental DMG goblet, for example). Every enabled rule produces one <b data-page-node-id="Oe7w1GmVzWtZ6tuC00syf5">candidate plan</b> that shows up in the candidate area below with the <b data-page-node-id="vxmWWRN3SuEfmx1wVw6Z1q">same weight</b> as character clusters; you can merge it into a character plan or adopt it on its own. <b data-page-node-id="60sjqL37ZDREugyxHyCwWm">The game allows at most 3 custom presets per set</b> — keep it under 3 yourself. <br data-page-node-id="wjCrXeJfejY1Y0ijqo0GQN"><b data-page-node-id="zlMwOpPGkTolNkFDI5TYav">Built-in rules are editable too</b>: hit &quot;Edit&quot; to change name / description / slot / main stats / substats / &#9733;required in a popup; edited ones are tagged &quot;Modified&quot; and can be reset with one tap. <br data-page-node-id="dCvIDEvANEyYyJD1ktC1Py">Use the arrow on the left of the heading to <b data-page-node-id="xiw8Ql2Sklgdt4FltVZpwy">collapse the whole block</b> — that only hides it, enabled rules keep producing candidates.">与具体角色无关、只因「主要属性本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
-          每条启用的规则会生成一份<b data-page-node-id="RuG0LdlgvaGgty5xjwhxEu">候选方案</b>，与角色聚类结果<b data-page-node-id="VJ931CoAHa2k6ACg9BJuCa">同权</b>出现在下面的候选区；
-          你可以「并入」到某个角色方案里、或单独采纳。<b data-page-node-id="HyaBsxwiXGHU3u4RZGafd1">游戏内每种套装至多 3 个自定义预设</b>，请自行控制在 3 套以内。
-          <br data-page-node-id="2oXsOsNYBIHJEu64M8SgQ5"><b data-page-node-id="7H4qq9qbaBSkYbg19wO86b">内置规则也能改</b>：点「编辑」即弹出浮窗修改（名称 / 描述 / 部位 / 主要属性 / 追加属性 / ★必须），改过的会标记「已修改」，可一键「恢复默认」。
-          <br data-page-node-id="DhnDxVqO7uNFOxJ6aM5XLb">点标题左侧的箭头可<b data-page-node-id="CCLiCaQxAW2HPqj3kFDR0b">收起整个模块</b>——只是不再显示，已启用的规则照常生成候选方案。</p>
-        <div class="toolbar wrap kr-bar" data-page-node-id="ia8tnQGA067ujLdliVRpEK">
-          <button id="btnKrNew" class="btn primary" data-page-node-id="peQENQk75eSvt6HGXjsYoT">＋ 新增自定义规则</button>
+      <div id="krBody" class="kr-body">
+        <p class="muted small" data-en="Artifacts worth keeping regardless of any character, either because the <b>main stat itself is rare</b> or because it works as a <b>transitional 2-piece</b> (an elemental DMG goblet, for example). Every enabled rule produces one <b>candidate plan</b> that shows up in the candidate area below with the <b>same weight</b> as character clusters; you can merge it into a character plan or adopt it on its own. <b>The game allows at most 3 custom presets per set</b> — keep it under 3 yourself. <br><b>Built-in rules are editable too</b>: hit &quot;Edit&quot; to change name / description / slot / main stats / substats / &#9733;required in a popup; edited ones are tagged &quot;Modified&quot; and can be reset with one tap. <br>Use the arrow on the left of the heading to <b>collapse the whole block</b> — that only hides it, enabled rules keep producing candidates.">与具体角色无关、只因「主要属性本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
+          每条启用的规则会生成一份<b>候选方案</b>，与角色聚类结果<b>同权</b>出现在下面的候选区；
+          你可以「并入」到某个角色方案里、或单独采纳。<b>游戏内每种套装至多 3 个自定义预设</b>，请自行控制在 3 套以内。
+          <br><b>内置规则也能改</b>：点「编辑」即弹出浮窗修改（名称 / 描述 / 部位 / 主要属性 / 追加属性 / ★必须），改过的会标记「已修改」，可一键「恢复默认」。
+          <br>点标题左侧的箭头可<b>收起整个模块</b>——只是不再显示，已启用的规则照常生成候选方案。</p>
+        <div class="toolbar wrap kr-bar">
+          <button id="btnKrNew" class="btn primary" data-en="+ New custom rule">＋ 新增自定义规则</button>
         </div>
-        <div id="keepRuleList" class="kr-list" data-page-node-id="i0tkdkBz7rlFWamzZiv4ZV"></div>
+        <div id="keepRuleList" class="kr-list"></div>
       </div>
     </div>
 
-    <div id="planSummary" class="summary-strip" data-page-node-id="T7SADjr3dcbYwPFDLtd5bZ"></div>
-    <h2 class="print-only" data-page-node-id="WncPE7gKORQTPI9qCQDM17">原神圣遗物锁定清单</h2>
-    <p class="print-only print-meta" id="printMeta" data-page-node-id="O2IDphxSFpMmCEiNTqsLSI"></p>
-    <div id="planBody" data-page-node-id="etgYlmown4yvi7mPG2q5Lq"></div>
+    <div id="planSummary" class="summary-strip"></div>
+    <h2 class="print-only">原神圣遗物锁定清单</h2>
+    <p class="print-only print-meta" id="printMeta"></p>
+    <div id="planBody"></div>
   </section>
 
   <!-- ============ 追加属性规则 ============ -->
-  <section id="tab-subs" class="tabpane" data-page-node-id="Gsz8L0Cn3piqYcMtBToR1A">
-    <div class="two-col" data-page-node-id="o6P1KOcftkBRBpVrtCrBpo">
-      <div class="card" data-page-node-id="jjnYfxO6EDMM9QbnAyGV67">
-        <h3 data-page-node-id="Q6DYMBCDnpHu7Fy6EbdXtH">通用分档规则</h3>
-        <p class="muted small" data-en="Auto-summarised from the characters you enabled: a main-stat whitelist plus the substat rules to copy into the game." data-page-node-id="mFvprdUjti2T8Iq5a7rzTc">根据你启用的角色，自动汇总出的主要属性白名单 + 追加属性判定逻辑。游戏内可照此执行锁定。</p>
-        <div id="subRules" data-page-node-id="D4ejajt9tZ94zoTubUovr3"></div>
+  <section id="tab-subs" class="tabpane">
+    <div class="two-col">
+      <div class="card">
+        <h3>通用分档规则</h3>
+        <p class="muted small" data-en="Auto-summarised from the characters you enabled: a main-stat whitelist plus the substat rules to copy into the game.">根据你启用的角色，自动汇总出的主要属性白名单 + 追加属性判定逻辑。游戏内可照此执行锁定。</p>
+        <div id="subRules"></div>
       </div>
 
-      <div class="card" data-page-node-id="wATc4avQzTzmFRJJONqj0B">
-        <h3 data-page-node-id="0idSSbn3QgwzcJohlbsRZn">胚子评分器</h3>
-        <p class="muted small" data-en="Enter an artifact to see at a glance whether it is worth keeping." data-page-node-id="GBeJDk6Z5jfp0owXaXoULM">输入一件圣遗物的信息，快速判断值不值得留。</p>
-        <div class="form-row" data-page-node-id="4sq9EP7aGG08CmkwS9Mu65">
-          <label class="fld" data-page-node-id="KDeN6SbCI5zGUorNAehQG0">套装
-            <select id="scoreSet" data-page-node-id="yxyDhOy6FY0Uuhy1Ti6JTe"><option value="" data-page-node-id="lBccdXQXr1JZCG35Hj6eYV">（不限）</option></select>
+      <div class="card">
+        <h3>胚子评分器</h3>
+        <p class="muted small" data-en="Enter an artifact to see at a glance whether it is worth keeping.">输入一件圣遗物的信息，快速判断值不值得留。</p>
+        <div class="form-row">
+          <label class="fld">套装
+            <select id="scoreSet"><option value="">（不限）</option></select>
           </label>
-          <label class="fld" data-page-node-id="aPLki8Cs7O2WDYPJpapGJl">部位
-            <select id="scoreSlot" data-page-node-id="Q9RpWdgsNqTdxtjGZ2bXmQ"></select>
-          </label>
-        </div>
-        <div class="form-row" data-page-node-id="EIW7EKbkSYBY8iuXOv6v9q">
-          <label class="fld" data-page-node-id="TiricV4GCg6YBSJh2co73R">主要属性
-            <select id="scoreMain" data-page-node-id="fKNBlIqcAOLyAN44iCNObk"></select>
+          <label class="fld">部位
+            <select id="scoreSlot"></select>
           </label>
         </div>
-        <div id="scoreSubs" class="sub-inputs" data-page-node-id="htL26pIVFoDJlNjBG9B1mg"></div>
-        <div id="scoreResult" class="score-result" data-page-node-id="R6FqpiDez2gU7EnJ98Fq8a"></div>
+        <div class="form-row">
+          <label class="fld">主要属性
+            <select id="scoreMain"></select>
+          </label>
+        </div>
+        <div id="scoreSubs" class="sub-inputs"></div>
+        <div id="scoreResult" class="score-result"></div>
       </div>
     </div>
 
-    <div class="card" data-page-node-id="95MefFd6gecP1WgNIWDdlu">
-      <h3 data-page-node-id="Rvgnnl7faFpJuLWGf6uZRq">各套装推荐追加属性</h3>
-      <p class="muted small" data-en="Aggregated from the <b data-page-node-id="94rC7TQQUzCKWcprBm4ioi">ordering</b> of every character that wants this set: earlier = more characters ranked it first. &#9733; means most characters marked it &quot;Required&quot; (the &#9733;Required flag in the lock plan). Main stat / substat needs are counted <b data-page-node-id="E23pijqu77lE6rHUzUVkrj">per build</b>.">按该套装下所有需求角色的<b data-page-node-id="YnvbtFkhItBxUBzvsOqEZj">排序</b>汇总：越靠前 = 越多人把它排在前面；
-        ★ 表示多数角色把它标成了「必选」（对应锁定方案里的 ★必须）。主要属性 / 追加属性需求<b data-page-node-id="mnUugc5aONkFOSoUh62pKT">按配装组</b>统计。</p>
-      <div id="setSubTable" data-page-node-id="q6H3UPkSeGTa0AUFB3O3tK"></div>
+    <div class="card">
+      <h3>各套装推荐追加属性</h3>
+      <p class="muted small" data-en="Aggregated from the <b>ordering</b> of every character that wants this set: earlier = more characters ranked it first. &#9733; means most characters marked it &quot;Required&quot; (the &#9733;Required flag in the lock plan). Main stat / substat needs are counted <b>per build</b>.">按该套装下所有需求角色的<b>排序</b>汇总：越靠前 = 越多人把它排在前面；
+        ★ 表示多数角色把它标成了「必选」（对应锁定方案里的 ★必须）。主要属性 / 追加属性需求<b>按配装组</b>统计。</p>
+      <div id="setSubTable"></div>
     </div>
   </section>
 
   <!-- ============ 数据管理 ============ -->
-  <section id="tab-data" class="tabpane" data-page-node-id="5GFN0EU2UIBnbhWCL2a5LH">
-    <div class="card" data-page-node-id="Mm9dUPsOG8VTLCHfFGrCJv">
-      <h3 data-page-node-id="QBp1vadpDD7LEWqR1OWkHg">圣遗物套装管理</h3>
-      <p class="muted small" data-en="Add or remove sets, edit the 2-piece text, move entries up and down. Built-in sets are only &quot;hidden&quot; and can be restored any time. Hit the button below to work in a popup." data-page-node-id="ZKGcaLZ6MpEJzyyedWMhqy">增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。点下面按钮在浮窗里操作。</p>
-      <button id="btnOpenSetMgr" class="btn primary" data-page-node-id="48t4JGFLw89PEqBrRb057i">打开套装管理</button>
+  <section id="tab-data" class="tabpane">
+    <div class="card">
+      <h3>圣遗物套装管理</h3>
+      <p class="muted small" data-en="Add or remove sets, edit the 2-piece text, move entries up and down. Built-in sets are only &quot;hidden&quot; and can be restored any time. Hit the button below to work in a popup.">增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。点下面按钮在浮窗里操作。</p>
+      <button id="btnOpenSetMgr" class="btn primary">打开套装管理</button>
     </div>
-    <div class="card" data-page-node-id="pg0VLuCAP8HLN4JBPDTKHy">
-      <h3 data-page-node-id="2qheWUCmhGC2dB9xJEzxJy">备份与恢复</h3>
-      <p class="muted small" data-en="Your config lives in the browser&#39;s localStorage — export it before switching devices or clearing the cache. <br data-page-node-id="u1knsxRsfuZ2GfDdEgA1ne"><b data-page-node-id="rHT3bTdRq11CxVEBCQTawl">&quot;Restore built-in defaults&quot;</b> overwrites the local save with the built-in library and wipes every custom edit, i.e. a hard reset. A normal browser refresh only reloads the page and does <b data-page-node-id="IhwS1xb8WkYIRUUFVv4UIC">not</b> clear local storage, so stale or corrupted data would otherwise stick around.">配置保存在浏览器 localStorage，换设备或清缓存前请先导出。<br data-page-node-id="QoJMPpoFffALEx2D6kUbUi">
-        <b data-page-node-id="34MoCXvhW6vJ7hpeDfW6JD">「恢复内置默认库」</b>＝用内置默认库覆盖本机存档、清除你的全部自定义修改，相当于一次硬刷新；浏览器普通「刷新」只重载页面、<b data-page-node-id="BuquAjAoF0HK4BW1Sx9rRb">不会</b>清本地存档，所以旧数据 / 乱码会一直留着。</p>
-      <div class="btn-row" data-page-node-id="b2LULjz1RbUVhWJHC4Ywy6">
-        <button id="btnExportJson" class="btn primary" data-page-node-id="CTLoRltCMdgXp1WwaVDsOx">导出配置 JSON</button>
-        <button id="btnImportJson" class="btn" data-page-node-id="JHH6dbibbZvSFLprLgO0FR">导入配置 JSON</button>
-        <input type="file" id="fileImport" accept=".json" hidden data-page-node-id="qCF5381LCvdOoM7EA13BDM">
-        <button id="btnClearEnabled" class="btn" data-page-node-id="QKy7kw90BFUUTj9R6FqYNz">清空启用状态</button>
-        <button id="btnReset" class="btn danger" data-page-node-id="Xv6iJHTOS61K6AhOjRXbkl">恢复内置默认库（硬刷新）</button>
+    <div class="card">
+      <h3>备份与恢复</h3>
+      <p class="muted small" data-en="Your config lives in this browser&#39;s local storage — export a copy before switching devices or clearing the cache. <br><b>&quot;Restore built-in defaults&quot;</b> overwrites your local save with the built-in library and erases every custom edit you&#39;ve made; it works like a hard reset. A normal browser refresh only reloads the page and does <b>not</b> clear local storage, so any stale or corrupted data would otherwise keep lingering.">配置保存在浏览器的本地存储中，换设备或清缓存前请先导出。<br>
+        <b>「恢复内置默认库」</b>＝用内置默认库覆盖本机存档、清除你的全部自定义修改，相当于一次硬刷新；浏览器普通「刷新」只重载页面、<b>不会</b>清本地存档，所以旧数据 / 乱码会一直留着。</p>
+      <div class="btn-row">
+        <button id="btnExportJson" class="btn primary" data-en="Export config (JSON)">导出配置 JSON</button>
+        <button id="btnImportJson" class="btn" data-en="Import config (JSON)">导入配置 JSON</button>
+        <input type="file" id="fileImport" accept=".json" hidden>
+        <button id="btnClearEnabled" class="btn" data-en="Clear enabled state">清空启用状态</button>
+        <button id="btnReset" class="btn danger" data-en="Restore built-in defaults (hard reset)">恢复内置默认库（硬刷新）</button>
       </div>
     </div>
 
-    <div class="card" data-page-node-id="ZPQYYxpz80eA3VvyimmxMy">
-      <h3 data-page-node-id="uGEPE3jgt5ukoLtG7ExFeX">更新日志 <span id="appVersion" class="muted small" data-page-node-id="5KtXzRbyMMuA0MaUDROkZ7"></span></h3>
-      <p class="muted small" data-en="The built-in character and artifact data is maintained by hand as the game updates; every change is logged here. A major update pops up the notice once the first time you open the app." data-page-node-id="UKCxEmnFqMIXH9b3wpgo6v">内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。大版本更新后首次打开会自动弹一次公告。</p>
-      <div id="chgLog" class="chg-log" data-page-node-id="lwnD09itsP6U6qYdyYSAII"></div>
-      <div class="btn-row" data-page-node-id="21INry2mMNILTDv5AHCSxs">
-        <button id="btnShowNotice" class="btn" data-page-node-id="HajUqsgNmCXWQcbCmDhm7J">查看更新公告</button>
+    <div class="card">
+      <h3>更新日志 <span id="appVersion" class="muted small"></span></h3>
+      <p class="muted small" data-en="The built-in character and artifact data is maintained by hand as the game updates; every change is logged here. A major update pops up the notice once the first time you open the app.">内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。大版本更新后首次打开会自动弹一次公告。</p>
+      <div id="chgLog" class="chg-log"></div>
+      <div class="btn-row">
+        <button id="btnShowNotice" class="btn">查看更新公告</button>
       </div>
     </div>
 
-    <div class="card" data-page-node-id="RrHIktOMo4GAUhPRNvozjh">
-      <h3 data-page-node-id="hIq5CvyhuFtYjmlNtboXQf">关于数据</h3>
-      <ul class="muted small notes" data-page-node-id="iE62KaMECsYImmIVjk8L6Q">
-        <li data-page-node-id="RQ1GVjGpRWWiuFtMEtuD5k">内置 <b id="statCharCount" data-page-node-id="Tw7zbWti5sALNQOI0y9kJs">0</b> 个角色、<b id="statSetCount" data-page-node-id="zffKJoZ497RPf80rZwGJhf">0</b> 个套装，整理自社区常见推荐，随版本变动请自行校正。</li>
-        <li data-page-node-id="DI0ELNJakF49VxCaLcJr7E">「主推 / 备选」权重：主推 = 1.0，备选 = 0.5；主要属性优先级 1/2/3 权重 = 1.0 / 0.5 / 0.25。</li>
-        <li data-page-node-id="1zNYs17mTaYaOPPjkenTpv">建议保留件数 = 以该主要属性为最优解的角色数（同一角色多套配装不重复计数），区间 1–4。</li>
-        <li data-page-node-id="GnMSHDllipJjOHNiB80S2n">2+2 配装对单套的件数需求更低，汇总时按 0.6 系数折算。</li>
-        <li data-page-node-id="pbrBSRsF6m24DamyFQ0UiA">主要属性 / 追加属性需求<b data-page-node-id="CxHKjxfw3mVjcDOvx4Vujp">按配装组</b>分别保存：同一角色换套装时可以有不同的词条需求。</li>
+    <div class="card">
+      <h3>关于数据</h3>
+      <ul class="muted small notes">
+        <li data-en="Built-in data covers <b id='statCharCount'>0</b> characters and <b id='statSetCount'>0</b> artifact sets, compiled from common community recommendations. Please verify as the game updates.">内置 <b id="statCharCount">0</b> 个角色、<b id="statSetCount">0</b> 个套装，整理自社区常见推荐，随版本变动请自行校正。</li>
+        <li data-en='Weights for "primary / secondary" builds: primary = 1.0, secondary = 0.5. Main-stat priority 1/2/3 weights = 1.0 / 0.5 / 0.25.'>「主推 / 备选」权重：主推 = 1.0，备选 = 0.5；主要属性优先级 1/2/3 权重 = 1.0 / 0.5 / 0.25。</li>
+        <li data-en="Recommended keep count = the number of characters for which this main stat is the best choice (a character with multiple builds is counted once), ranging 1–4.">建议保留件数 = 以该主要属性为最优解的角色数（同一角色多套配装不重复计数），区间 1–4。</li>
+        <li data-en="A 2+2 build needs fewer pieces per set, so when aggregated it is counted at a 0.6 factor.">2+2 配装对单套的件数需求更低，汇总时按 0.6 系数折算。</li>
+        <li data-en="Main-stat / sub-stat requirements are saved per build group, so a single character can have different stat needs when switching sets.">主要属性 / 追加属性需求<b>按配装组</b>分别保存：同一角色换套装时可以有不同的词条需求。</li>
       </ul>
     </div>
   </section>
 </main>
 
 <!-- ========== 角色编辑浮窗 ========== -->
-<div id="modalMask" class="modal-mask hidden" data-page-node-id="4WyTHHIEowdCEpeE3FyfYv"></div>
-<div id="charDrawer" class="modal modal-lg hidden" data-page-node-id="gpYetybCXoEQDOEIZJgH5D">
-  <div class="drawer-head" data-page-node-id="Xq3cvUuI5jqtlGampFvCTT">
-    <h2 id="drawerTitle" data-page-node-id="eU4FjbQkeUeU0tO9LBnvVK">编辑角色</h2>
-    <button id="btnCloseDrawer" class="icon-btn" data-page-node-id="THKdVIlU5kfTlFKk92vJQJ">×</button>
+<div id="modalMask" class="modal-mask hidden"></div>
+<div id="charDrawer" class="modal modal-lg hidden">
+  <div class="drawer-head">
+    <h2 id="drawerTitle">编辑角色</h2>
+    <button id="btnCloseDrawer" class="icon-btn">×</button>
   </div>
-  <div id="drawerBody" class="drawer-body" data-page-node-id="Pgi19zCsQdEF8p36LEbVmb"></div>
-  <div class="drawer-foot" data-page-node-id="vi2N4hQ2nPPx9VvHlKpXJY">
-    <button id="btnDeleteChar" class="btn danger hidden" data-page-node-id="ftChacQCnyuUyW7a1jF0CG">删除角色</button>
-    <button id="btnRestoreChar" class="btn hidden" title="把名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原成内置数据" data-page-node-id="yQ61ZsrfqOK6OC2pqcFaxb">还原内置</button>
-    <span class="spacer" data-page-node-id="tDDrlRFBzRKtayIGzED7BJ"></span>
-    <button id="btnCancelEdit" class="btn ghost" data-page-node-id="dufVMmcjPjOJg68XDbqmZC">取消</button>
-    <button id="btnSaveChar" class="btn primary" data-page-node-id="VeKoQ3mn13qXzhlID0FsMs">保存</button>
+  <div id="drawerBody" class="drawer-body"></div>
+  <div class="drawer-foot">
+    <button id="btnDeleteChar" class="btn danger hidden">删除角色</button>
+    <button id="btnRestoreChar" class="btn hidden" title="把名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原成内置数据">还原内置</button>
+    <span class="spacer"></span>
+    <button id="btnCancelEdit" class="btn ghost">取消</button>
+    <button id="btnSaveChar" class="btn primary">保存</button>
   </div>
 </div>
 
 <!-- ========== 配装编辑（二层浮窗，盖在角色浮窗之上） ========== -->
-<div id="buildMask" class="modal-mask mask-l2 hidden" data-page-node-id="YgDJsFEI4xAXPMhcoHTkId"></div>
-<div id="buildBox" class="modal modal-lg modal-l2 hidden" data-page-node-id="jZMc3JAJZDXtYwfdfMFxQh">
-  <div class="drawer-head" data-page-node-id="JGAmvusudm6EUX9Ods8ueH">
-    <h2 id="bmTitle" data-page-node-id="rQexEuTdUy2rTa3EeFhQDH">编辑配装</h2>
-    <button id="bmX" class="icon-btn" title="关闭" data-page-node-id="8kSc29bCZtFIQCFIJikmwT">×</button>
+<div id="buildMask" class="modal-mask mask-l2 hidden"></div>
+<div id="buildBox" class="modal modal-lg modal-l2 hidden">
+  <div class="drawer-head">
+    <h2 id="bmTitle">编辑配装</h2>
+    <button id="bmX" class="icon-btn" title="关闭">×</button>
   </div>
-  <div class="modal-body" data-page-node-id="hEm2OtlrffXEz5XB8ugPcD">
-    <div class="bm-sets" data-page-node-id="tleUxlwtyNyV47kMFDLveb">
-      <select id="bmSet0" class="bm-set" data-page-node-id="CCfZyrcA99V7CCpf5HFhTi"></select>
-      <span class="bm-plus" data-page-node-id="vzI8IbExgxEEOIYNwCQ22I">+</span>
-      <select id="bmSet1" class="bm-set" data-page-node-id="60TAfHqtLmFS088FMF4qCQ"></select>
-      <span id="bmKind" class="bm-kind" data-page-node-id="9IFb05BMFGQa43OfpoiQqQ"></span>
+  <div class="modal-body">
+    <div class="bm-sets">
+      <select id="bmSet0" class="bm-set"></select>
+      <span class="bm-plus">+</span>
+      <select id="bmSet1" class="bm-set"></select>
+      <span id="bmKind" class="bm-kind"></span>
     </div>
-    <div class="bm-row" data-page-node-id="huSTeqgtYZJOGNfBjYVPYg">
-      <label class="chk" data-page-node-id="r3ZC7VXY096WtPZ76DGx0q"><input type="checkbox" id="bmPrio" data-page-node-id="jeRf5KYGBlJOHnqVzmDreD"> 设为主推（第 1 组默认主推，同一角色只可有一组主推）</label>
-      <label class="fld" data-page-node-id="65FiGFFspwhQtb4H2MD4vh">📋 套用…
-        <select id="bmCopyFrom" data-page-node-id="jRZN2xGGwltRDfjvKnfYyQ">
-          <option value="" data-page-node-id="wHGWlX9BpsfeoUOvlkTBem">（不改，保持当前）</option>
+    <div class="bm-row">
+      <label class="chk"><input type="checkbox" id="bmPrio"> 设为主推（第 1 组默认主推，同一角色只可有一组主推）</label>
+      <label class="fld">📋 套用…
+        <select id="bmCopyFrom">
+          <option value="">（不改，保持当前）</option>
         </select>
       </label>
     </div>
-    <div class="fgroup" data-page-node-id="M4K0wkZNFnOceCRRwg5ECF">
-      <span class="glabel" data-page-node-id="CzDeec9ddTyBj1EZAFud4v">功能定位 <span class="hint" data-page-node-id="U0OfIcaBH0Z5Euc4X12YFS">可多选；可自定义（跨角色共享），如 输出 / 增伤 / 治疗 / 护盾</span></span>
-      <div id="bmRoles" class="role-chks" data-page-node-id="b1Ydb6GRseS5XzP51otbhZ"></div>
-      <div class="bm-addrole" data-page-node-id="zhXJM7GUtYPUbuhKpsEr22">
-        <input id="bmNewRole" type="text" placeholder="自定义定位，如 增幅反应" maxlength="12" data-page-node-id="ORAJ5Fbgoi9KfFRVBSc5QC" />
-        <button type="button" class="btn sm" id="bmAddRole" data-page-node-id="Btd2GXfLfmKsZ66Fw1XZYD">+ 添加</button>
+    <div class="fgroup">
+      <span class="glabel">功能定位 <span class="hint">可多选；可自定义（跨角色共享），如 输出 / 增伤 / 治疗 / 护盾</span></span>
+      <div id="bmRoles" class="role-chks"></div>
+      <div class="bm-addrole">
+        <input id="bmNewRole" type="text" placeholder="自定义定位，如 增幅反应" maxlength="12" />
+        <button type="button" class="btn sm" id="bmAddRole">+ 添加</button>
       </div>
     </div>
-    <div id="bmMainBox" data-page-node-id="aBPJgUSr5EcLCgTwLl8Lgx"></div>
-    <div class="fgroup" data-page-node-id="IE7F5PP2NmbHRgKLyyDH89">
-      <span class="glabel" data-page-node-id="EqxrZqwPwWqM9waQZcsRWp">追加属性需求 <span class="hint" data-page-node-id="HpSF79XMOvumYDC5Csc8PL">越靠前越想要；★ = 游戏内锁定方案的「必须」</span></span>
-      <div class="ms-list" id="bmSubs" data-page-node-id="oev7UhFcIZ9D0Yain199mj"></div>
-      <button type="button" class="btn sm" id="bmAddSub" data-page-node-id="Sap0qP7f3CpVvbaZUObBJp">+ 添加追加属性…</button>
+    <div id="bmMainBox"></div>
+    <div class="fgroup">
+      <span class="glabel">追加属性需求 <span class="hint">越靠前越想要；★ = 游戏内锁定方案的「必须」</span></span>
+      <div class="ms-list" id="bmSubs"></div>
+      <button type="button" class="btn sm" id="bmAddSub">+ 添加追加属性…</button>
     </div>
-    <p class="muted small" data-page-node-id="5O4PYNm5JPHIszn2efEsk1">改完请点右下角<b data-page-node-id="N99jEkcyZYratc4igLp6rA">「保存」</b>才生效；点「取消」或关掉窗口，改动会全部丢弃。</p>
+    <p class="muted small">改完请点右下角<b>「保存」</b>才生效；点「取消」或关掉窗口，改动会全部丢弃。</p>
   </div>
-  <div class="drawer-foot" data-page-node-id="OrPXbT7hiwdBPZOlRwkFld">
-    <button id="bmRestore" class="btn hidden" data-page-node-id="E8038TXb1z9teaJiLQs7nF">还原这一组</button>
-    <span class="spacer" data-page-node-id="XmoISGkLrNEWeSoqRhc9Gb"></span>
-    <button id="bmCancel" class="btn" data-page-node-id="uuL2gDuDdImsTIB8owia43">取消</button>
-    <button id="bmSave" class="btn primary" data-page-node-id="1mULfr6MsrE0stHyiyEvNt">保存</button>
+  <div class="drawer-foot">
+    <button id="bmRestore" class="btn hidden">还原这一组</button>
+    <span class="spacer"></span>
+    <button id="bmCancel" class="btn">取消</button>
+    <button id="bmSave" class="btn primary">保存</button>
   </div>
 </div>
 
 <!-- ========== 属性选择（三层浮窗，盖在配装浮窗之上） ========== -->
-<div id="pickMask" class="modal-mask mask-l3 hidden" data-page-node-id="apYS9QW3t25wZM2nuHGhka"></div>
-<div id="pickBox" class="modal modal-l3 hidden" data-page-node-id="xLF1lzhgKyIDiVczjqiwFP">
-  <div class="drawer-head" data-page-node-id="1CwwZ51BdYBeRvq9SRmaB2">
-    <h2 id="pickTitle" data-page-node-id="mXjVx44GfCSIEFVQALaA0O">选择属性</h2>
-    <button id="pickX" class="icon-btn" title="关闭" data-page-node-id="D4dH638PcHcthYjhjgAHCG">×</button>
+<div id="pickMask" class="modal-mask mask-l3 hidden"></div>
+<div id="pickBox" class="modal modal-l3 hidden">
+  <div class="drawer-head">
+    <h2 id="pickTitle">选择属性</h2>
+    <button id="pickX" class="icon-btn" title="关闭">×</button>
   </div>
-  <div class="modal-body" data-page-node-id="3xbb4DEcJqQnAwmp0OHaQj">
-    <p class="muted small" id="pickHint" data-en="Pick one; earlier entries are more wanted." data-page-node-id="SZdYIPyI9F5ScdGsCM1UHF"></p>
-    <div id="pickList" class="pick-list" data-page-node-id="ynAgLi5l7FvprCfctsv3M6"></div>
+  <div class="modal-body">
+    <p class="muted small" id="pickHint" data-en="Pick one; earlier entries are more wanted."></p>
+    <div id="pickList" class="pick-list"></div>
   </div>
-  <div class="drawer-foot" data-page-node-id="nbrT5p3o1zCQsCyfmBJ7fc">
-    <span class="spacer" data-page-node-id="y7ftcAdegYb04WxPIC8A5r"></span>
-    <button id="pickCancel" class="btn" data-page-node-id="3NFrEkAhLZXEIjnwszyFHk">取消</button>
+  <div class="drawer-foot">
+    <span class="spacer"></span>
+    <button id="pickCancel" class="btn">取消</button>
   </div>
 </div>
 
 <!-- ========== 更新公告 ========== -->
-<div id="noticeMask" class="modal-mask hidden" data-page-node-id="AaNESlR4hu9J2zV2X5AvJJ"></div>
-<div id="noticeBox" class="modal hidden" data-page-node-id="YNIW8bQToWb1JNu15lzE03">
-  <div class="drawer-head" data-page-node-id="FtUm77dh4fDKTpEEYHU7Nn">
-    <h2 data-page-node-id="FfmB8oyxBRJYuySn9j46TC">更新公告</h2>
-    <button id="btnCloseNotice" class="icon-btn" data-page-node-id="QxOBkTgtDajqRT6Ylfrp94">×</button>
+<div id="noticeMask" class="modal-mask hidden"></div>
+<div id="noticeBox" class="modal hidden">
+  <div class="drawer-head">
+    <h2>更新公告</h2>
+    <button id="btnCloseNotice" class="icon-btn">×</button>
   </div>
-  <div class="modal-body" id="noticeBody" data-page-node-id="ips0aEUwV1FuoyAPtQDkbl"></div>
-  <div class="drawer-foot" data-page-node-id="mKRKYA6oiIetItqyFoKmc8">
-    <span class="spacer" data-page-node-id="lzMoci7eETa9YyegbSMGty"></span>
-    <button id="btnNoticeOk" class="btn primary" data-page-node-id="0noe22sXwJQVKU16NhlgPh">知道了</button>
+  <div class="modal-body" id="noticeBody"></div>
+  <div class="drawer-foot">
+    <span class="spacer"></span>
+    <button id="btnNoticeOk" class="btn primary">知道了</button>
   </div>
 </div>
 
 <!-- ========== 使用说明 ========== -->
-<div id="helpMask" class="modal-mask hidden" data-page-node-id="nKMTELUzGpobqM3RykB1nw"></div>
-<div id="helpBox" class="modal hidden" data-page-node-id="MdMMLnThBMWKCtyYQz7b38">
-  <div class="drawer-head" data-page-node-id="Nn7nIblqBbLiUEkul8JnUA">
-    <h2 data-page-node-id="X5wRdf7nTRlK63KBl6lzxI">使用说明</h2>
-    <button id="btnCloseHelp" class="icon-btn" data-page-node-id="v9swrc7Dy6ja40rpIOBmmw">×</button>
+<div id="helpMask" class="modal-mask hidden"></div>
+<div id="helpBox" class="modal hidden">
+  <div class="drawer-head">
+    <h2>使用说明</h2>
+    <button id="btnCloseHelp" class="icon-btn">×</button>
   </div>
-  <div class="modal-body" data-en-key="help" data-page-node-id="ZvwMbg60NkISGjoXO10lc4">
-    <h4 data-page-node-id="EGJHNIMB6FT2J4UM2NnnCV">三步走</h4>
-    <ol data-page-node-id="5CE9k0GVfBD4gaDg7wYsy7">
-      <li data-page-node-id="D9FPa0ky62q9jzbABovdM1"><b data-page-node-id="xUBlU3mW61ER7aPZb2AnZ1">① 角色配置</b>：顶部可按<b data-page-node-id="qSvpWxxMZ20vsqCvwdVTRi">元素 / 国度 / 定位</b>筛选（三者可叠加，还能配合搜索框与「只看已启用」），
-        有筛选时右上角显示「筛出 N / 总数」；旁边「<b data-page-node-id="Gfd8DyD6PBfitQr32KVw0K">↓ 正序 / ↑ 倒序</b>」可把整个列表反过来（会记住你的选择）。
-        勾选你实际要养的角色。点卡片打开<b data-page-node-id="GfK9H4oKa8uHK4PRjQnYvB">编辑浮窗</b>：上面是角色基本信息，下面是配装卡片——
-        每张卡片一眼看全套装、三部位主要属性、追加属性，点卡片上的<b data-page-node-id="gLyTKnIupU7JTFSFjuXU3s">「✎ 编辑」</b>会再弹出一个<b data-page-node-id="4wFeEDoFoAtwY0mb1HyR6m">配装编辑浮窗</b>。
-        词条改完点<b data-page-node-id="eBFqROOm7uL5vPgEFyYPBs">「保存」</b>才生效；点取消 / 关闭 / 浮窗外，会提示「有未保存的修改」再放弃。
-        一个角色可以有多组配装（4件套 / 2+2），<b data-page-node-id="jGOJCg9CiNAgv7T1BXFhO7">每组的词条需求分开保存</b>；新增时可以选「空白」或复制现有组，
-        删掉的<b data-page-node-id="uy0zFDZVIyekuWCg4wRb3R">内置预置组</b>还能从「＋ 从预置添加」里选回来。</li>
-      <li data-page-node-id="1fDKVnCzAIGGwbNbGv2j73"><b data-page-node-id="sDuYX6x6PR67G9nqtCDAIA">改错了怎么办</b>：配装卡片与角色卡片上都可能出现<b data-page-node-id="c8kmsIs6nwpZuKqg14q4oZ">「已修改」</b>徽标——说明这一项已经和内置数据不一样了。
-        单组改坏 → 卡片上<b data-page-node-id="hWmnga17x1uxI7FBn5Z2pI">「整组还原」</b>（套装 + 词条 + 主推一起回到内置原样）；
-        只是把谁设成主推搞乱了 → 配装区上方会多出<b data-page-node-id="Zh63ih5s8aa0RjxOC9G4u8">「↩ 还原主推」</b>（只动主推，不碰词条）；
-        整个角色改乱 → 编辑浮窗左下角<b data-page-node-id="salYgF2IKgHa4Rx8zUG61O">「还原内置」</b>（名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原）。
+  <div class="modal-body" data-en-key="help">
+    <h4>三步走</h4>
+    <ol>
+      <li><b>① 角色配置</b>：顶部可按<b>元素 / 国度 / 定位</b>筛选（三者可叠加，还能配合搜索框与「只看已启用」），
+        有筛选时右上角显示「筛出 N / 总数」；旁边「<b>↓ 正序 / ↑ 倒序</b>」可把整个列表反过来（会记住你的选择）。
+        勾选你实际要养的角色。点卡片打开<b>编辑浮窗</b>：上面是角色基本信息，下面是配装卡片——
+        每张卡片一眼看全套装、三部位主要属性、追加属性，点卡片上的<b>「✎ 编辑」</b>会再弹出一个<b>配装编辑浮窗</b>。
+        词条改完点<b>「保存」</b>才生效；点取消 / 关闭 / 浮窗外，会提示「有未保存的修改」再放弃。
+        一个角色可以有多组配装（4件套 / 2+2），<b>每组的词条需求分开保存</b>；新增时可以选「空白」或复制现有组，
+        删掉的<b>内置预置组</b>还能从「＋ 从预置添加」里选回来。</li>
+      <li><b>改错了怎么办</b>：配装卡片与角色卡片上都可能出现<b>「已修改」</b>徽标——说明这一项已经和内置数据不一样了。
+        单组改坏 → 卡片上<b>「整组还原」</b>（套装 + 词条 + 主推一起回到内置原样）；
+        只是把谁设成主推搞乱了 → 配装区上方会多出<b>「↩ 还原主推」</b>（只动主推，不碰词条）；
+        整个角色改乱 → 编辑浮窗左下角<b>「还原内置」</b>（名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原）。
         删掉的内置配装组可以在「＋ 从预置添加」里选回来。</li>
-      <li data-page-node-id="IguMUgLjuBLBsAHfEojefX"><b data-page-node-id="ZcByD3pkEUfBzdWpkRbeI2">内置数据会随版本更新</b>：你<b data-page-node-id="9SQWrDQglfQTNdVCXEUaDx">没动过</b>的配装组会自动跟着仓库里的新数据走；
-        你<b data-page-node-id="iTQEkGkPHdEaxK0xVSdgfW">自己改过</b>的组一律保留不动（卡片上标「已修改」），想用新版就再点一次还原。</li>
-      <li data-page-node-id="SQS1fQFMJBGTPkyFdBPn2V"><b data-page-node-id="BMjY4lyDQQRbtjGOrfLYy5">② 锁定方案</b>：每个套装给出「游戏内锁定方案<b data-page-node-id="Jt5FZX7AhJxh4uZow3LLJB">候选</b>」——按角色的<b data-page-node-id="FvNZCGzVJbdawEKV6Tv1Nt">追加属性需求</b>自动聚类，每个方案的
-        <b data-page-node-id="lLQjNmu16eM526FR010c4s">五个部位共用同一份追加属性条件</b>，主要属性逐部位列出，照着填进游戏即可。
-        <b data-page-node-id="Oh4BadHt9XqPxxXHQETcLd">没有槽位上限</b>：候选可以有很多，用「并入…」手动合并、取消勾选「采纳」挑掉不要的，收敛到游戏内每套至多 3 个预设再照抄。
-        页面顶部还有<b data-page-node-id="AfaMGjARiwBv2qdnzfo3rR">「🧩 散件 / 过渡 保留规则」</b>：与角色无关、只因主要属性稀有（如元素伤害杯）就值得留的圣遗物，
-        可单独开关；启用后每条规则会生成一份候选方案，与角色聚类结果<b data-page-node-id="9bllX1FxhpYO9B54krputx">同权</b>参与合并与采纳。</li>
-      <li data-page-node-id="e6BhqoDpemkCiHw4PF6bSx"><b data-page-node-id="BK4n7WByz1PF4cIcaJCUl5">旅行者</b>按元素形态拆成 6 个独立条目（旅行者·风 / 岩 / 雷 / 草 / 水 / 火）：各形态元素不同、配装不同，可分别启用、分别编辑。
-        同理，国度已细分出<b data-page-node-id="tNRa53CwX8cDtrPf4Jz63U">挪德卡莱</b>（与至冬分开）；若你的存档是旧版，打开时会自动把角色的国度 / 定位纠正一次，之后你自己改的不再覆盖。</li>
-      <li data-page-node-id="YrVOpGa6bGshsVbpSN2LKP"><b data-page-node-id="D2N9WMNtO2cD4e7R3zu0Na">列表排序</b>：① 角色卡、② 方案页的套装块、③ 底部的「各套装推荐追加属性」表格，旁边都有
-        <b data-page-node-id="yLUckzABjX0eiz4BG46RLK">「↓ 正序 / ↑ 倒序」</b>按钮——点一下换方向，选择会记在本机。
-        套装列表（②③）还多一个<b data-page-node-id="UsSr3QavoWbS8a14KxXCgD">「图鉴 / 推荐」两档切换</b>：
-        <b data-page-node-id="6hNzmCrwC9REYY3q3D3yaC">图鉴</b>＝套装库顺序（<b data-page-node-id="9P1x3mINXodEuBz2co8IXM">排序顺序来自米游社图鉴</b>），稳定、不会因为你勾了谁就跳来跳去；
-        <b data-page-node-id="bTMpnQOKTZQCMaP3EqDQB2">推荐</b>＝用的人多的排前面，会随你勾选的角色变化。角色列表则按国度排列（蒙德 → 璃月 → … → 其他·旅行者）。</li>
-      <li data-page-node-id="sBNbBHWqA1455l6vAeszhZ"><b data-page-node-id="KpxwBJHB5qZG6wo9Unxh6m">③ 追加属性规则</b>：给出分档判定 + 胚子评分器，解决「主要属性对了但追加属性能不能留」。</li>
-      <li data-page-node-id="XhikcyqP8ikZiOwB4zk6GM"><b data-page-node-id="GtlHHRYWW49B3WLyExSDYb">④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
-      <li data-page-node-id="yztlGut6Ci0OcDYjk2vkeY"><b data-page-node-id="rTDzlcvI5Et2ApbLpM75xL">④ 数据管理 → 更新日志</b>：内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。
-        大版本更新后首次打开会自动弹一次<b data-page-node-id="W0fxUzBcM8FySXhamUEwDe">更新公告</b>（读过了就不再弹）；想再看就点「查看更新公告」。</li>
+      <li><b>内置数据会随版本更新</b>：你<b>没动过</b>的配装组会自动跟着仓库里的新数据走；
+        你<b>自己改过</b>的组一律保留不动（卡片上标「已修改」），想用新版就再点一次还原。</li>
+      <li><b>② 锁定方案</b>：每个套装给出「游戏内锁定方案<b>候选</b>」——按角色的<b>追加属性需求</b>自动聚类，每个方案的
+        <b>五个部位共用同一份追加属性条件</b>，主要属性逐部位列出，照着填进游戏即可。
+        <b>没有槽位上限</b>：候选可以有很多，用「并入…」手动合并、取消勾选「采纳」挑掉不要的，收敛到游戏内每套至多 3 个预设再照抄。
+        页面顶部还有<b>「🧩 散件 / 过渡 保留规则」</b>：与角色无关、只因主要属性稀有（如元素伤害杯）就值得留的圣遗物，
+        可单独开关；启用后每条规则会生成一份候选方案，与角色聚类结果<b>同权</b>参与合并与采纳。</li>
+      <li><b>旅行者</b>按元素形态拆成 6 个独立条目（旅行者·风 / 岩 / 雷 / 草 / 水 / 火）：各形态元素不同、配装不同，可分别启用、分别编辑。
+        同理，国度已细分出<b>挪德卡莱</b>（与至冬分开）；若你的存档是旧版，打开时会自动把角色的国度 / 定位纠正一次，之后你自己改的不再覆盖。</li>
+      <li><b>列表排序</b>：① 角色卡、② 方案页的套装块、③ 底部的「各套装推荐追加属性」表格，旁边都有
+        <b>「↓ 正序 / ↑ 倒序」</b>按钮——点一下换方向，选择会记在本机。
+        套装列表（②③）还多一个<b>「图鉴 / 推荐」两档切换</b>：
+        <b>图鉴</b>＝套装库顺序（<b>排序顺序来自米游社图鉴</b>），稳定、不会因为你勾了谁就跳来跳去；
+        <b>推荐</b>＝用的人多的排前面，会随你勾选的角色变化。角色列表则按国度排列（蒙德 → 璃月 → … → 其他·旅行者）。</li>
+      <li><b>③ 追加属性规则</b>：给出分档判定 + 胚子评分器，解决「主要属性对了但追加属性能不能留」。</li>
+      <li><b>④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
+      <li><b>④ 数据管理 → 更新日志</b>：内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。
+        大版本更新后首次打开会自动弹一次<b>更新公告</b>（读过了就不再弹）；想再看就点「查看更新公告」。</li>
     </ol>
-    <h4 data-page-node-id="LDL96mIMHQ0d1qgfpNRqi1">怎么看方案</h4>
-    <ul data-page-node-id="WQvTNqUHblpOeOZmBtHHaj">
-      <li data-page-node-id="1GGJX6QNbmk4glrMCYMTcg"><b data-page-node-id="nbQ2JUbqSOGz1eVTiz4FG4">方案 N</b>：由追加属性需求相近的角色合并而来，标题写明「供谁使用」。同一套装的多个方案在锁定界面<b data-page-node-id="cV98i0LHsZEMcKYeazyZp1">共同生效</b>（彼此是「或」的关系）。</li>
-      <li data-page-node-id="WYGxHIDDXeSxW4RqSkncMa"><b data-page-node-id="zqSyP9BObzmIcFTII4QDlj">采纳 / 并入… / 拆回</b>：每个候选默认「已采纳」；「并入…」把两个候选并成一套，「拆回」还原。改动会保存；
+    <h4>怎么看方案</h4>
+    <ul>
+      <li><b>方案 N</b>：由追加属性需求相近的角色合并而来，标题写明「供谁使用」。同一套装的多个方案在锁定界面<b>共同生效</b>（彼此是「或」的关系）。</li>
+      <li><b>采纳 / 并入… / 拆回</b>：每个候选默认「已采纳」；「并入…」把两个候选并成一套，「拆回」还原。改动会保存；
         采纳数超过游戏内上限（每套 3 个）时，页面顶部会给出橙色提醒。</li>
-      <li data-page-node-id="un8exmwF9VqKayV4WPrmMk"><b data-page-node-id="dZg6BSQS0DNMrdEsIP7Gwf">自动合并</b>：方案按角色的<b data-page-node-id="Hb8FkkfY3FGUTtyDBDXxvu">重要属性</b>（第 1 条起同等重要的那一截 + ★必选，通常就是双暴）自动聚类——
-        重要属性撞上就并为一套；次要属性（攻击力% / 生命值% 之类）不同不影响合并，会按角色<b data-page-node-id="qn6S0bXzrtjhMjndlB8uPG">分组上色</b>显示，实际给谁再按手上的圣遗物定。
-        主要属性则<b data-page-node-id="ZJgyua3VgVewxW2iT9Lm3P">逐部位独立合并</b>。无需手动调参。</li>
-      <li data-page-node-id="yyBLXVk1xwYjmWobp9EHTr"><b data-page-node-id="8BCHDCcGmeDWq52ADKcp2X">★必须</b>：金色词条，这件圣遗物<b data-page-node-id="EW7FXYsVA4w4eFEi0SFLbe">必须</b>有它，否则不锁定。来自组内<b data-page-node-id="EEo9VgQaVRmLRk11AMQ65X">全体角色都勾选了「必选」</b>的追加属性（在角色抽屉里点 ☆ 设置），最多 2 个。</li>
-      <li data-page-node-id="ISrBYJnDLE1INhOinVTZ4q"><b data-page-node-id="6uXUzAjz9mcjspb1Itd53m">至少两条</b>：命中条数<b data-page-node-id="AlVuhkJxiXFqsZKk2U3xHB">预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条落在追加属性池里才锁定，
-        ★必须的词条也计入这两条。需要更严就在该方案的卡片上把下拉<b data-page-node-id="MrVFsrSrpRIDZuNnr9LG01">改到 3 / 4 条</b>（也可放松到 1 条），每个方案单独记。</li>
-      <li data-page-node-id="c84pCl341kTjm7dqxinw5S"><b data-page-node-id="llM8uAE4o0BEppHJ9KDd4r">收起</b>：点「🧩 散件 / 过渡 保留规则」标题左侧的箭头可把整块收成一行标题——只是不再显示，已启用的规则照常生成候选方案。</li>
-      <li data-page-node-id="wtWnkxdfBxly1DqFGH6tk6">勾选工具栏「<b data-page-node-id="dj04XmztaLbIkYeDB0Sh7c">显示详细件数</b>」可展开每套的建议保留件数与需求来源；不勾选时页面只显示可直接照搬的锁定方案。</li>
+      <li><b>自动合并</b>：方案按角色的<b>重要属性</b>（第 1 条起同等重要的那一截 + ★必选，通常就是双暴）自动聚类——
+        重要属性撞上就并为一套；次要属性（攻击力% / 生命值% 之类）不同不影响合并，会按角色<b>分组上色</b>显示，实际给谁再按手上的圣遗物定。
+        主要属性则<b>逐部位独立合并</b>。无需手动调参。</li>
+      <li><b>★必须</b>：金色词条，这件圣遗物<b>必须</b>有它，否则不锁定。来自组内<b>全体角色都勾选了「必选」</b>的追加属性（在角色抽屉里点 ☆ 设置），最多 2 个。</li>
+      <li><b>至少两条</b>：命中条数<b>预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条落在追加属性池里才锁定，
+        ★必须的词条也计入这两条。需要更严就在该方案的卡片上把下拉<b>改到 3 / 4 条</b>（也可放松到 1 条），每个方案单独记。</li>
+      <li><b>收起</b>：点「🧩 散件 / 过渡 保留规则」标题左侧的箭头可把整块收成一行标题——只是不再显示，已启用的规则照常生成候选方案。</li>
+      <li>勾选工具栏「<b>显示详细件数</b>」可展开每套的建议保留件数与需求来源；不勾选时页面只显示可直接照搬的锁定方案。</li>
     </ul>
-    <h4 data-page-node-id="2KOiGNaRpZfpcLGsilTiIY">注意</h4>
-    <ul data-page-node-id="GrgWLBi7JFDKtqYs5GdH5J">
-      <li data-page-node-id="DB0I7bqWN3l38vA0bwLlcW">花和羽毛主要属性固定，游戏内只能设追加属性，因此这两个部位对追加属性要求最严；方案级统一追加属性后，★必须 / 追加属性池只剔除与花 / 羽冲突的词条。</li>
-      <li data-page-node-id="987njNotc8pJAeW7da1WOx">空之杯的元素伤杯掉率极低，建议启用「🧩 散件 / 过渡 保留规则」里的「元素伤害杯」单独留一套。</li>
-      <li data-page-node-id="UwHEF75D0NocTf3jKGBIbt">追加属性不可能与同部位主要属性相同。方案级统一追加属性后，已自动剔除与花 / 羽固定主要属性（生命值 / 攻击力）冲突的项；沙 / 杯 / 冠的主要属性随方案而变，无法逐部位剔除——照抄时请自行留意，跳过即可。</li>
-      <li data-page-node-id="Qp1HVFCeFpOh2HHE8l89xu">数据存在本机浏览器，换设备用「数据管理 → 导出 JSON」迁移。</li>
+    <h4>注意</h4>
+    <ul>
+      <li>花和羽毛主要属性固定，游戏内只能设追加属性，因此这两个部位对追加属性要求最严；方案级统一追加属性后，★必须 / 追加属性池只剔除与花 / 羽冲突的词条。</li>
+      <li>空之杯的元素伤杯掉率极低，建议启用「🧩 散件 / 过渡 保留规则」里的「元素伤害杯」单独留一套。</li>
+      <li>追加属性不可能与同部位主要属性相同。方案级统一追加属性后，已自动剔除与花 / 羽固定主要属性（生命值 / 攻击力）冲突的项；沙 / 杯 / 冠的主要属性随方案而变，无法逐部位剔除——照抄时请自行留意，跳过即可。</li>
+      <li>数据存在本机浏览器，换设备用「数据管理 → 导出 JSON」迁移。</li>
     </ul>
-    <h4 data-page-node-id="cYiqr5wQfFkeTtYnM6Sk8v">中英文切换</h4>
-    <ul data-page-node-id="lTQZFiV01O0eWGlGm2jbfc">
-      <li data-page-node-id="6vcbEFnSF9WvFapuyGkpaz">顶栏右上角有一个<b data-page-node-id="5L58Sz814q51QjRXV2M0YE">语言下拉</b>，一次把界面文案和数据名一起切过去：选 English 后按钮、说明、以及角色名 / 套装名 / 属性名全都变英文，选择会记住。</li>
-      <li data-page-node-id="adaKSWEwmUkKUFT7AkEu0J">切成 English 后显示官方英文本地化名（如 胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），属性、国度、定位、部位同样跟随。</li>
-      <li data-page-node-id="G1riN0EKtIR1MSeMkZmKBB">搜索框<b data-page-node-id="bpTD8DEJeGY6Cdc8AdkWh1">两种语言都认</b>：不管当前显示哪种，输入「胡桃」或「Hu Tao」、「逐影猎人」或「Marechaussee」都能搜到。</li>
-      <li data-page-node-id="UKhObBBweoz7EVugd7ftJh">复制 / 导出的文本<b data-page-node-id="5mwodbxs5GTZcO3NXJOvLW">始终保持中文</b>——游戏内的锁定界面是中文，照抄时才对得上。</li>
-      <li data-page-node-id="dnKVr23a87q9lFJ4ksmx6R">「更新日志」里记录的是历史改动，保留原始中文不翻译。</li>
-      <li data-page-node-id="khVPGhMHiXBoqv4BxIWHoT">进阶：底层仍保留<b data-page-node-id="qgHgMZnG3A0T0Qt1agDgqu">分别设置</b>界面语言与数据语言的能力（<code data-page-node-id="9vssufct16ZtHZNySxCNWS">setLang('ui', …)</code> / <code data-page-node-id="Cx2jSEaS2qNdXZ2XH9gUP3">setLang('data', …)</code>），供接口或脚本单独调用；界面上不再拆成两个开关。</li>
+    <h4>中英文切换</h4>
+    <ul>
+      <li>顶栏右上角有一个<b>中 / EN 切换按钮</b>，亮起的一侧就是当前语言；点 EN 后按钮、说明、以及角色名 / 套装名 / 属性名全都变英文，选择会记住。</li>
+      <li>切成 English 后显示官方英文本地化名（如 胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），属性、国度、定位、部位同样跟随。</li>
+      <li>搜索框<b>两种语言都认</b>：不管当前显示哪种，输入「胡桃」或「Hu Tao」、「逐影猎人」或「Marechaussee」都能搜到。</li>
+      <li>复制 / 导出的文本<b>始终保持中文</b>——游戏内的锁定界面是中文，照抄时才对得上。</li>
+      <li>「更新日志」里记录的是历史改动，保留原始中文不翻译。</li>
+      <li>进阶：底层仍保留<b>分别设置</b>界面语言与数据语言的能力（<code>setLang('ui', …)</code> / <code>setLang('data', …)</code>），供接口或脚本单独调用；界面上不再拆成两个开关。</li>
     </ul>
   </div>
 </div>
 
 <!-- ========== 套装管理浮窗 ========== -->
-<div id="setMgrMask" class="modal-mask hidden" data-page-node-id="dWCKdEhaKhtvPaKaKDNCPH"></div>
-<div id="setMgrBox" class="modal modal-lg hidden" data-page-node-id="jzsGxOw9nkacb9pI7USvpa">
-  <div class="drawer-head" data-page-node-id="1BGJlPVdGr1NttDD7nMDWa">
-    <h2 data-page-node-id="K96yCYvoS6xAOkRTj00qje">圣遗物套装管理</h2>
-    <button id="btnCloseSetMgr" class="icon-btn" data-page-node-id="xFMywZTeExlGUuyCkI3cHw">×</button>
+<div id="setMgrMask" class="modal-mask hidden"></div>
+<div id="setMgrBox" class="modal modal-lg hidden">
+  <div class="drawer-head">
+    <h2>圣遗物套装管理</h2>
+    <button id="btnCloseSetMgr" class="icon-btn">×</button>
   </div>
-  <div class="modal-body" data-page-node-id="6ezSWg5EIl79CHO3iBAE5C">
-    <p class="muted small" data-en="The <b data-page-node-id="ULHGKTr49xUYWR5me2TTcQ">order</b> here is the order used by every dropdown and by the plan page; you can also edit the 2-piece text. &quot;Hide&quot; on a built-in set only stops it from showing (references from character builds are kept) — &quot;Restore&quot; puts it back. &quot;Delete&quot; on a custom set really removes it and clears it from character builds too.">这里的<b data-page-node-id="YENSik8u9xD61yYQ1kh8gJ">顺序</b>就是各处下拉与方案页的展示顺序；可改 2 件套效果说明。内置套装点「隐藏」只是不显示（角色配装里的引用会保留），点「恢复」即可放回；自定义套装点「删除」会真正移除，并同步清掉角色配装里的引用。</p>
-    <div class="toolbar wrap" data-page-node-id="ROdTDMiJKKYQpt8jMVWPlj">
-      <input id="newSetName" placeholder="新套装名称，例：某某之梦" data-page-node-id="gD6J6DgnfdrKCVkLlpzpTM">
-      <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%" data-page-node-id="BPM0EHodyevXPJYA2bNnHx">
-      <button id="btnAddSet" class="btn primary" data-page-node-id="I2DFcYVDAGaCMY0OkEEnrV">+ 添加套装</button>
-      <span class="spacer" data-page-node-id="BeIk3Tt0UBxHG6rGH9CCWQ"></span>
-      <label class="chk" data-page-node-id="dYc1Wtddfbyp3jEvjUF8c2"><input type="checkbox" id="setShowHidden" data-page-node-id="AvVHgMbBKWNJ5NQt818SbD"> 显示已隐藏的内置套装</label>
-      <button id="btnRestoreSets" class="btn" data-page-node-id="rX6uPEj5u6hRb3mssKNFEK">恢复全部内置套装</button>
+  <div class="modal-body">
+    <p class="muted small" data-en="The <b>order</b> here is the order used by every dropdown and by the plan page; you can also edit the 2-piece text. &quot;Hide&quot; on a built-in set only stops it from showing (references from character builds are kept) — &quot;Restore&quot; puts it back. &quot;Delete&quot; on a custom set really removes it and clears it from character builds too.">这里的<b>顺序</b>就是各处下拉与方案页的展示顺序；可改 2 件套效果说明。内置套装点「隐藏」只是不显示（角色配装里的引用会保留），点「恢复」即可放回；自定义套装点「删除」会真正移除，并同步清掉角色配装里的引用。</p>
+    <div class="toolbar wrap">
+      <input id="newSetName" placeholder="新套装名称，例：某某之梦">
+      <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%">
+      <button id="btnAddSet" class="btn primary">+ 添加套装</button>
+      <span class="spacer"></span>
+      <label class="chk"><input type="checkbox" id="setShowHidden"> 显示已隐藏的内置套装</label>
+      <button id="btnRestoreSets" class="btn">恢复全部内置套装</button>
     </div>
-    <div id="setManager" data-page-node-id="FD2x7CgSKt9uQNeajaY0Qf"></div>
+    <div id="setManager"></div>
   </div>
 </div>
 
 <!-- ========== 散件 / 过渡规则：新增 / 编辑 浮窗 ========== -->
-<div id="krMask" class="modal-mask hidden" data-page-node-id="VTSQkZZDzDVGd2FHGSDyuI"></div>
-<div id="krBox" class="modal hidden" data-page-node-id="PuH40osIS0603QZ3fNL8Qp">
-  <div class="drawer-head" data-page-node-id="blXPoGhDpqgloVuFhKWALz">
-    <h2 id="krFormTitle" data-page-node-id="fnf7hVCGMNyqyllMDZ9p38">＋ 新增自定义规则</h2>
-    <button id="btnKrX" class="icon-btn" title="关闭" data-page-node-id="0LATaUfYLmyd0EOmjkCBme">×</button>
+<div id="krMask" class="modal-mask hidden"></div>
+<div id="krBox" class="modal hidden">
+  <div class="drawer-head">
+    <h2 id="krFormTitle">＋ 新增自定义规则</h2>
+    <button id="btnKrX" class="icon-btn" title="关闭">×</button>
   </div>
-  <div class="modal-body" data-page-node-id="L0n6mC2tKChJFOEbMtTOEh">
-    <input type="hidden" id="krEditing" value="" data-page-node-id="049Ie9BSUFFXZeQqs3LYJr">
-    <div class="kr-form" data-page-node-id="s8NTBUlEusLyhnQjsurgPv">
-      <label class="fld" data-page-node-id="RhPBx1IgSCDTP7TlrsPOjr">名称
-        <input type="text" id="krName" placeholder="如：防御杯" spellcheck="false" data-page-node-id="TfE5F07KmdTtxrYeCTXciK">
+  <div class="modal-body">
+    <input type="hidden" id="krEditing" value="">
+    <div class="kr-form">
+      <label class="fld">名称
+        <input type="text" id="krName" placeholder="如：防御杯" spellcheck="false">
       </label>
-      <label class="fld" data-page-node-id="4xxxHdyamlPHb6dU6pzOTs">描述（可选）
-        <input type="text" id="krDesc" placeholder="说明这条规则为什么该留" spellcheck="false" data-page-node-id="bxIXO4IGG1jydkwcIDuqc1">
+      <label class="fld">描述（可选）
+        <input type="text" id="krDesc" placeholder="说明这条规则为什么该留" spellcheck="false">
       </label>
-      <label class="fld" data-page-node-id="DjqrApWIVMBsl6RAD7N36g">部位
-        <select id="krSlot" data-page-node-id="CF6j8tWrfEPJXykeyAmeX3">
-          <option value="sands" data-page-node-id="AQr6ZrYkgNFHX27BFFDI93">时之沙</option>
-          <option value="goblet" selected data-page-node-id="1KaZdDVzTb2OcgzGUkhaZn">空之杯</option>
-          <option value="circlet" data-page-node-id="DhoDpSq0PdAzZEEar98lmI">理之冠</option>
+      <label class="fld">部位
+        <select id="krSlot">
+          <option value="sands">时之沙</option>
+          <option value="goblet" selected>空之杯</option>
+          <option value="circlet">理之冠</option>
         </select>
       </label>
-      <div class="kr-pick" data-page-node-id="smeBppZiXOtpk9uDV5oxJY">
-        <div data-page-node-id="2AooGYO6zyKpAlsBixB3o5"><b data-page-node-id="7IWUplInmZ1pHSgZUaOsA5">要留的主要属性</b><div id="krMains" class="kr-chk" data-page-node-id="BBbKtWgvGMDRQXiUJMVkP8"></div></div>
-        <div data-page-node-id="Oo22KYJ9nQCDEImw9ELFgv"><b data-page-node-id="ZAK3cgxlI7GPjgK4mfZp5I">追加属性</b><div id="krPool" class="kr-chk" data-page-node-id="oOmRkfyiXkXgJmAb4oT9T1"></div></div>
-        <div data-page-node-id="iVs6iSuYZD2NE4fzTY53xn"><b data-page-node-id="lXMO9uCHzKRJKVE1KERAIr">★必须追加属性</b><div id="krRequired" class="kr-chk" data-page-node-id="FC7JqmeNyOhCFSSUFixMHU"></div></div>
+      <div class="kr-pick">
+        <div><b>要留的主要属性</b><div id="krMains" class="kr-chk"></div></div>
+        <div><b>追加属性</b><div id="krPool" class="kr-chk"></div></div>
+        <div><b>★必须追加属性</b><div id="krRequired" class="kr-chk"></div></div>
       </div>
-      <p class="muted small" data-en="The hit count <b data-page-node-id="W5CxlvvykKbtbG8SQQgx9y">defaults to &quot;at least 2&quot;</b> — an artifact ends up with 4 substats, and at least 2 of them should match before it is worth investing in. Once enabled you can <b>set it to 1&ndash;4 per plan card</b> below; the higher the number, the stricter.">命中条数<b>预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条符合要求才值得留下强化；
+      <p class="muted small" data-en="The hit count <b>defaults to &quot;at least 2&quot;</b> — an artifact ends up with 4 substats, and at least 2 of them should match before it is worth investing in. Once enabled you can <b>set it to 1&ndash;4 per plan card</b> below; the higher the number, the stricter.">命中条数<b>预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条符合要求才值得留下强化；
         启用后可在下方每个方案卡片上<b>单独调到 1–4 条</b>，数字越大筛选越严。</p>
     </div>
   </div>
@@ -1288,106 +1289,19 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
  * CHANGELOG：新在前，CHANGELOG[0].v 必须等于 APP_VERSION。items 为纯文本（渲染时会 esc）。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.21';
+const APP_VERSION = '2026.09.13';
 const CHANGELOG = [
   {
-    v: '2026.09.21', date: '2026-09-21',
-    title: '配装新增「功能定位」（多选 + 自定义，跨角色共享）',
-    items: [
-      '每组配装新增「功能定位」字段：不再用单一 主C/副C/辅助 标签，而是可多选的功能描述，例如 输出 / 增伤 / 减抗 / 治疗 / 护盾 / 增幅反应 / 剧变反应 等。',
-      '配装编辑器里以勾选框呈现：基础词表（输出 / 增伤 / 减抗 / 治疗 / 护盾 / 副C / 辅助 / 精通 / 充能 / 聚怪·控制 / 增幅反应 / 剧变反应）直接勾选，支持同一配装打多个定位。',
-      '支持自定义定位：输入框里填新词（如「增幅反应」）即加入全局自定义词表，跨角色共享，当前配装自动选中。自定义词表随存档保存在本地浏览器。',
-      '全部 124 个角色的内置配装定位已按观测枢 wiki「推荐装备」描述重新推断写入（旧的单一定位标签已清空），个别 wiki 未明确描述的配装留空、可在编辑器里手补。',
-      '角色卡片与详情面板：配装切换按钮后缀显示「（输出·增伤）」、卡片角标以中性色小标签列出该配装的全部定位。',
-    ],
-  },
-  {
-    v: '2026.09.20', date: '2026-09-20',
-    title: '卡片套装名与配装切换合并为一行可点选',
-    items: [
-      '角色卡片原本分开的「套装名」与底下「1 / 2」配装切换按钮，合并成一行可点选的按钮：形如「1 套装A+套装B（主C）」「2 套装C（辅助）」。',
-      '点击某个配装即切换该卡片当前展示的套装与词条；被选中的配装按钮变为绿色高亮，未选中的回退为普通色，一目了然。',
-      '清理了合并后遗留的无用旧样式与死代码（.cc-sets 容器、已不调用的 cardViewBuild）。',
-    ],
-  },
-  {
-    v: '2026.09.19', date: '2026-09-19',
-    title: '卡片流派切换更清爽；「攻略来源」标注来源名与真数据源',
-    items: [
-      '角色卡片上的配装切换芯片去掉表示流派的颜色小点，只保留编号（流派名仍在鼠标悬停提示与卡片角标里显示）。',
-      '详情面板「攻略来源」现在每条链接前标注来源：「米游社wiki」（观测枢词条）带「数据源」标识，表示配装数据实际取自这里；作者攻略带「攻略」标识，注明是延伸阅读、非数据源。',
-      '「攻略来源」说明文案同步更新，明确「只有观测枢词条是数据源，作者攻略图从不读取」。',
-    ],
-  },
-  {
-    v: '2026.09.18', date: '2026-09-18',
-    title: '每组配装独立携带主词条+副词条，区分流派（主C/副C/辅助）',
-    items: [
-      '数据模型改造：每个角色的「每组配装」现在独立携带 套装 + 时之沙/空之杯/理之冠主词条 + 副词条 + 流派标签，不再共用一份粗预设桶。',
-      '副词条直接取自观测枢 wiki「推荐装备」表的精确值，推翻此前由 SUB_PRESETS 粗桶生成的双暴默认——珊瑚宫心海、久岐忍、多莉、砂糖、早柚、白术、瑶瑶、茜特菈莉、菈乌玛、阿罗夏、尼可、布伦妮 等 12 个角色的网页双暴显示已纠正为 wiki 真实值。',
-      '同角色的多组配装（如久岐忍的「精通流」与「副C流」、行秋的宗室4/绝缘4）现在分组保留，不再坍缩成一套；卡片与抽屉可切换查看不同流派的词条。',
-      '新增「流派」标签（主C / 副C / 辅助），由 wiki 主词条启发式推断，可在角色编辑器内手改。',
-      '修正解析 bug：可莉、烟绯、行秋、重云、旅行者·风 的 wiki 用「副词缀」而非「副词条」，此前被漏解析；现已兼容。',
-      '保留全部去重后的五星配装（不再截断为前 3 组）。自定义角色的副词条仍走 SUB_PRESETS 下拉，不受影响。',
-    ],
-  },
-  {
-    v: '2026.09.17', date: '2026-09-17',
-    title: '配装数据按米游社观测枢 wiki「推荐装备」整体核对',
-    items: [
-      '124 个角色条目的推荐圣遗物，改为从观测枢 wiki 角色词条的「推荐装备 → 圣遗物推荐」结构化数据抓取，替换此前人工整理的社区推荐。',
-      '主词条同步写入并按 wiki 原文顺序排序：时之沙 / 空之杯 / 理之冠（例：胡桃「时之沙：生命值/元素精通」→ 生命值%、元素精通）。',
-      '2+2 混搭识别并保留成一组配装（例：妮露「千岩牢固 2 + 花海甘露之光 2」）；四星过渡套（战狂 / 教官 / 流放者等）不再混入正式配装。',
-      '每个角色最多保留 3 组配装，第 1 组仍为主推。',
-      '攻略来源链接全部重写：第 1 条固定为观测枢词条页（真正的取数来源），后面挂筛选过的米游社攻略，卡片上直接显示作者名而不是「米游社」。',
-      '攻略按「作者白名单（Asgater / HoYo青枫）→ 专帖优先 → 较新优先 → 热度」挑选；124 个角色里 105 个拿到这两位的稿子，多角色合集帖（如「纳西妲/胡桃/行秋…」）不收。',
-      '副词条预设（双暴 / 生命 / 精通等）本轮未改：wiki 的副词条常按通用模板写，45 个角色与现有预设冲突，已全部列在 tools/out/report.md 待人工确认。',
-      '此前标注「通用推荐（暂无专属攻略来源）」的 6 个新角色（洛恩 / 尼可 / 布伦妮 / 莉奈娅 / 叶洛亚 / 雅珂达）已查到官方词条，备注清除。',
-    ],
-  },
-  {
-    v: '2026.09.16', date: '2026-09-16',
-    title: '语言开关合并为一个 + 修手机端配装编辑的横向滚动条',
-    items: [
-      '顶栏的「显示语言 / 数据语言」两个下拉合并成一个：选一次，界面文案与角色 / 套装 / 属性名一起切换，少点一步。',
-      '底层仍保留分别设置的能力（setLang 的 ui / data 两个入口），接口或脚本仍可单独调；只是界面上不再拆成两个开关。',
-      '修手机端「编辑配装」浮窗的横向滚动条：主要属性行原来会被最长的属性名（如「元素充能效率」）撑宽，把 ↑ ↓ × 按钮顶出容器，刚打开时看不到删除键。',
-      '现在属性行在窄屏自动折成两行——第一行「重要度 + 属性下拉框」，第二行「★ / ↑ / ↓ / ×」；下拉框可收缩，属性名再长也不会溢出，追加属性行同样修好。',
-    ],
-  },
-  {
-    v: '2026.09.15', date: '2026-09-15',
-    title: '中英文切换（显示语言 / 数据语言）+ 角色与圣遗物按图鉴核对',
-    items: [
-      '顶栏右上角新增两个独立开关：显示语言管界面文案，数据语言管角色 / 套装 / 属性等数据本身，两者可分别设置并记住。',
-      '数据语言切 English 后显示官方英文名（胡桃 → Hu Tao、逐影猎人 → Marechaussee Hunter），元素 / 国度 / 定位 / 部位 / 词条 / 预设同步跟随。',
-      '搜索框中英文都认：不管当前显示哪种，输入「胡桃」或「Hu Tao」、「Marechaussee」都能搜到。',
-      '复制 / 导出的文本始终保持中文，与游戏内锁定界面一致；更新日志是历史记录，保留中文不翻译。',
-      '按米游社图鉴核对圣遗物：五星套装由 45 套订正为 46 套，顺序改为网页顺序（最新版本在前，血红之证 → … → 冰风迷途的勇士）。',
-      '订正两个套装名：「水仙十字之圣遗物」→ 逐影猎人（2 件套同为普攻/重击+15%），「戍卫之誓」→ 角斗士的终幕礼（开服套装，攻击力+18%），并新增图鉴里的「水仙之梦」。',
-      '老存档里配装引用到的旧套装名会自动改成新名，你自己改过的配装不受影响。',
-      '按《原神全角色列表（按国度）》核对 124 条角色：数量一致，顺序改为图鉴顺序（国度 → 版本登场先后），兹白按实装版本 6.3 排到蓝砚之后；全部角色补录官方英文名。',
-      '② 方案页里混着数字 / 角色名的动态文案也跟着走英文：候选计数、「供 X 使用」、散件规则名（元素伤害杯 → Elemental DMG Goblet）、2 件套说明（攻击力+18% → ATK +18%）。',
-      '英文态窄屏不再被长套装名撑出横向滚动条：③ 表格自带横向滚动，手机宽度下还会自动让出「相对强度」那列。',
-    ],
-  },
-  {
-    v: '2026.09.14', date: '2026-09-14',
-    title: '套装列表可切换「图鉴 / 推荐」两种排序依据',
-    items: [
-      '② 锁定方案页和 ③「各套装推荐追加属性」表格都加了「图鉴 / 推荐」两档切换，和旁边的「↓ 正序 / ↑ 倒序」按钮配合使用。',
-      '图鉴顺序 = 套装库顺序（米游社图鉴），稳定不跳动；推荐顺序 = 用的人多的排前面，会随你勾选的角色变化。',
-      '说明文字跟着档位走：图鉴档显示「排序顺序来自米游社图鉴」，推荐档显示「按使用人数排序：用得多的在前」。',
-    ],
-  },
-  {
     v: '2026.09.13', date: '2026-09-13',
-    title: '列表可切正序 / 倒序，排序顺序来自米游社图鉴',
+    title: '数据按观测枢 wiki 整体重核对 + 中英文切换定稿 + 配装功能定位',
     items: [
-      '角色配置页、② 锁定方案页、③ 追加属性规则页都加了「↓ 正序 / ↑ 倒序」切换按钮，点一下换方向，选择会记住。',
-      '角色卡默认顺序改为按国度排列（蒙德 → 璃月 → 稻妻 → 须弥 → 枫丹 → 纳塔 → 挪德卡莱 → 至冬 → 其他·旅行者）。',
-      '② 方案页的套装顺序改为按套装库排列，不再随你勾选的角色多少来回跳动，翻找更稳。',
-      '每处排序按钮旁都标注了「排序顺序来自米游社图鉴」，说明这套顺序的出处。',
+      '中英文切换定稿：顶栏【单个按钮】外观「中 / EN」两段（当前语言金色高亮），点一下同时切界面文案与角色 / 套装 / 属性名；顶栏顺序「保存 → 语言切换 → 使用说明」；数据管理「关于数据」5 条说明补英文并补回动态计数（applyI18n 整段替换会重置计数，已修复）。',
+      '配装数据整体按米游社观测枢 wiki「推荐装备」结构化数据重核对：124 角色主词条按 wiki 原文顺序排序、2+2 混搭识别保留、四星过渡套不混入正式配装；攻略来源第 1 条固定观测枢词条（真数据源），后挂筛选过的米游社攻略并直接显示作者名。',
+      '每组配装独立携带 套装 + 三部位主词条 + 副词条 + 流派标签（主C/副C/辅助，由 wiki 启发式推断、可手改），推翻旧 SUB_PRESETS 粗桶——心海等 12 角色网页双暴显示纠正为 wiki 真实值；同角色多流派分组保留不再坍缩。',
+      '配装新增「功能定位」多选 + 自定义（输出 / 增伤 / 减抗 / 治疗 / 护盾 / 增幅反应 / 剧变反应…），跨角色共享自定义词表；全部 124 角色定位按 wiki 重新推断写入。',
+      '角色与圣遗物按图鉴核对：角色库补全到 124（新增挪德卡莱国度、旅行者按 6 元素形态拆分、补洛恩等 6 角色），圣遗物 45→46 套并订正两个套装名；数据语言切 English 显官方英文名、搜索中英文都认。',
+      '界面打磨：套装名与配装切换合并一行可点选、流派切换芯片去色点只留编号、详情「攻略来源」标注数据源 / 攻略、锁定方案按「重要属性」相似度自动合并 + 命中条数可调、手机端配装编辑横向滚动修复、② ③ 页加图鉴 / 推荐排序与正序 / 倒序切换。',
+      '修「中文模式出现英文」的误解：实为本地存储残留了之前切到的 en 状态；单按钮直接显示当前语言，看到 EN 点一下即切回。',
     ],
   },
   {
@@ -4004,6 +3918,12 @@ function applyI18n(root) {
     });
   });
 }
+/* applyI18n 会整段替换带 data-en 的元素（含其中的 <b id> 计数），
+ * 所以翻译之后要把这些动态计数再填一遍，否则会显示成模板里的 0 */
+function refreshStatCounts() {
+  const cc = $('#statCharCount'); if (cc) cc.textContent = state.characters.length;
+  const sc = $('#statSetCount'); if (sc) sc.textContent = state.sets.filter(s => !s.hidden).length;
+}
 /* 动态内容（浮窗 / 重渲染的列表）自动跟随当前语言：
  * 只处理「新增节点」，忽略自己改写文本 / 属性引起的回调，避免来回触发死循环。 */
 let _i18nQueue = [];
@@ -4045,11 +3965,26 @@ function setLang(kind, v) {
   renderDataChangelog();
   document.documentElement.lang = (langOf('ui') === 'en' ? 'en' : 'zh-CN');
   applyI18n();
-  // 界面上的下拉是一次切两边的，连着调两次时只在最后弹一次提示
+  refreshStatCounts();
+  // 单个语言按钮一次切两边（ui+data），连着调两次时只在最后弹一次提示
   if (kind === 'ui' && langOf('data') !== next) return;
   toast(kind === 'ui' || langOf('data') === next
     ? (next === 'en' ? '已切换为 English' : '已切换为中文')
     : (next === 'en' ? '数据语言已切换为 English' : '数据语言已切换为中文'));
+}
+/* 顶栏单个语言按钮，外观「中 / EN」两段：当前语言段高亮，点一下切到另一种 */
+function syncLangBtn() {
+  const btn = $('#btnLang');
+  if (!btn) return;
+  const cur = langOf('ui');
+  const zh = btn.querySelector('.lang-seg[data-seg="zh"]');
+  const en = btn.querySelector('.lang-seg[data-seg="en"]');
+  if (zh) zh.classList.toggle('active', cur === 'zh');
+  if (en) en.classList.toggle('active', cur === 'en');
+  btn.setAttribute('title', cur === 'en'
+    ? '界面与数据名当前为 English，点击切回中文'
+    : '界面与数据名当前为中文，点击切到 English');
+  btn.setAttribute('aria-label', cur === 'en' ? '切换语言（当前 English）' : '切换语言（当前中文）');
 }
 function isDesc(key) { return !!(state && state.sortPref && state.sortPref[key] === 'desc'); }
 function sortBy(key) { return (state && state.sortPref && state.sortPref[key + 'By']) || 'catalog'; }
@@ -7172,16 +7107,18 @@ function bind() {
     if (b) toggleSort(b.dataset.sort);
   });
 
-  // 语言切换：界面上只有一个下拉，一次把「界面文案」和「数据名」都切过去
-  // （后端仍保留 setLang('ui', …) / setLang('data', …) 两个独立入口）
-  const langSel = $('#langSel');
-  if (langSel) {
-    langSel.value = langOf('ui');
-    langSel.onchange = e => {
-      const v = e.target.value;
-      setLang('ui', v);
-      setLang('data', v);
+  // 语言切换：顶栏单个按钮，按钮上的文字即「当前语言」；
+  // 点击即切到另一种，并一次把「界面文案」和「数据名」都切过去
+  // （后端仍保留 setLang('ui'/'data') 两个独立入口）
+  const langBtn = $('#btnLang');
+  if (langBtn) {
+    langBtn.onclick = () => {
+      const next = langOf('ui') === 'en' ? 'zh' : 'en';
+      setLang('ui', next);
+      setLang('data', next);
+      syncLangBtn();
     };
+    syncLangBtn();
   }
 
   // 角色页筛选
@@ -7622,6 +7559,7 @@ function syncTopbarHeight() {
   renderDataChangelog();
   maybeShowNotice();
   applyI18n();                    // 按当前语言把整页文案过一遍
+  refreshStatCounts();            // applyI18n 会重置带 data-en 元素里的计数，这里补回真实值
   startI18nObserver();            // 之后动态插入的内容自动跟着走
   syncTopbarHeight();
   window.addEventListener('resize', syncTopbarHeight);
