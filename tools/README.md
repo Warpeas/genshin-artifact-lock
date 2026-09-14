@@ -8,10 +8,11 @@
 
 | 脚本 | 作用 | 输出 |
 |---|---|---|
-| `fetch_wiki_builds.py` | 抓角色词条的「推荐装备 → 圣遗物推荐」，解析出套装 / 主词条 / 副词条 | `out/wiki_builds.json` |
+| `fetch_wiki_builds.py` | 抓角色词条的「推荐装备 → 圣遗物推荐」，解析出套装 / 主词条 / 副词条 / 功能定位 | `out/wiki_builds.json` |
 | `fetch_guides.py` | 按作者白名单 + 热度为每个角色挑攻略链接 | `out/guides.json` |
-| `apply_wiki_builds.py` | 把上面两个结果写回 `src/data.js`（配装、主词条、来源链接） | `out/report.md` |
+| `apply_wiki_builds.py` | 把上面两个结果写回 `src/data.js`（配装、主词条、副词条、功能定位、来源链接） | `out/report.md` |
 | `gen_sources.py` | 生成人读的来源清单（可点开） | `out/sources.md`、`out/sources.html` |
+| `role_infer.py` | 提供 `infer_roles(text, mains, subs, label)`，从 wiki 描述前缀推断配装「功能定位」 | —（被上面两个脚本 import，不直接跑） |
 
 ## 标准流程
 
@@ -25,7 +26,12 @@ node build.js                              # 5. 打包成单文件 index.html
 ```
 
 `apply_wiki_builds.py` 默认会一并改来源链接；只想改配装就加 `--no-links`。
-副词条预设默认不动（wiki 的副词条常是通用模板），确认后加 `--preset` 才改写。
+脚本只有 `--apply` 和 `--no-links` 两个开关。
+
+**副词条直接写 wiki「推荐装备」里的精确值**：每组配装独立携带自己的 `subs`，`SUB_PRESETS` 只用于新建配装时的默认值与「套用预设」。
+
+**功能定位 `roles`**：由 `role_infer.py` 从 wiki 描述前缀推断（split("主词条")[0]），基础词表见 `src/data.js` 的 `BUILD_ROLES`。
+注意它与角色级「队伍定位」（主C/副C/辅助）是两回事，别混。
 
 单次调试：`python tools/fetch_wiki_builds.py 胡桃 钟离`（传角色名即只跑这些）。
 
