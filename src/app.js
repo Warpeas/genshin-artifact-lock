@@ -2762,9 +2762,11 @@ function drawMains(B, prefix) {
           : `<button type="button" class="op-btn ${m.op === '=' ? 'eq' : ''}" data-mop="${i}" title="与上一条的重要度关系：= 同为最想要，> 较次之">${m.op === '=' ? '=' : '>'}</button>`}
         <select data-msel="${i}">${MAIN_STATS[slot].map(s =>
           `<option value="${s.id}"${s.id === m.stat ? ' selected' : ''}>${s.name}</option>`).join('')}</select>
-        <button type="button" class="up" data-up="${i}">↑</button>
-        <button type="button" class="down" data-down="${i}">↓</button>
-        <button type="button" class="rm" data-rmm="${i}">×</button>
+        <span class="ms-ops">
+          <button type="button" class="up" data-up="${i}">↑</button>
+          <button type="button" class="down" data-down="${i}">↓</button>
+          <button type="button" class="rm" data-rmm="${i}">×</button>
+        </span>
       </div>`).join('') || '<p class="muted small">未设置</p>';
 
     box.querySelectorAll('[data-msel]').forEach(sel => {
@@ -2820,10 +2822,12 @@ function drawSubs(B, prefix) {
         : `<button type="button" class="op-btn ${s.op === '=' ? 'eq' : ''}" data-op="${i}" title="与上一条的重要度关系：= 同为最想要，> 较次之">${s.op === '=' ? '=' : '>'}</button>`}
       <select data-ssel="${i}">${SUB_STATS.map(t =>
         `<option value="${t.id}"${t.id === s.id ? ' selected' : ''}>${t.name}</option>`).join('')}</select>
-      <button type="button" class="star-btn ${s.req ? 'on' : ''}" data-st="${i}" title="★必须（游戏内锁定方案的「必须」）">${s.req ? '★' : '☆'}</button>
-      <button type="button" class="up" data-su="${i}">↑</button>
-      <button type="button" class="down" data-sd="${i}">↓</button>
-      <button type="button" class="rm" data-sr="${i}">×</button>
+      <span class="ms-ops">
+        <button type="button" class="star-btn ${s.req ? 'on' : ''}" data-st="${i}" title="★必须（游戏内锁定方案的「必须」）">${s.req ? '★' : '☆'}</button>
+        <button type="button" class="up" data-su="${i}">↑</button>
+        <button type="button" class="down" data-sd="${i}">↓</button>
+        <button type="button" class="rm" data-sr="${i}">×</button>
+      </span>
     </div>`).join('') || '<p class="muted small">未设置，可在下方添加</p>';
 
   // 已选的追加属性也能直接换（与主要属性一致），换到重复项会回滚提示

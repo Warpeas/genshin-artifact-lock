@@ -481,6 +481,8 @@ table.tbl tr:hover td{background:#1d242e;}
 .ms-item .op-btn.eq{background:#1d2f3a;border-color:#3aa0c8;color:#3aa0c8;}
 .ms-item .rm{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:15px;padding:0 3px;}
 .ms-item .rm:hover{color:var(--red);}
+/* 行尾操作按钮组：包成整体，手机端换行时作为一个单元掉到第二行，不会被拆散 */
+.ms-item .ms-ops{display:flex;align-items:center;gap:8px;flex:none;}
 .copy-row{margin-top:8px;}
 .copy-row select{
   width:100%;padding:6px 10px;border-radius:7px;border:1px solid var(--line);
@@ -772,22 +774,15 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .ms-item .up,.ms-item .down,.ms-item .rm{min-width:32px;min-height:32px;font-size:16px;}
   .ms-item .star-btn{min-height:32px;padding:4px 12px;font-size:16px;}
   .ms-item .op-btn{min-height:32px;padding:4px 12px;font-size:16px;}
-  /* 属性行：窄屏把「下拉框」和「操作按钮」分两行排，按钮再多也不会挤出去 */
+  /* 属性行：窄屏分两行排——第一行「序号 + 下拉框」，第二行「按钮组」整体靠右。
+     按钮已包在 .ms-ops 里，换行时整组掉下去，不会出现 ↑ 在第一行、↓ × 掉下去的拆散情况 */
   .ms-item{flex-wrap:wrap;gap:6px 8px;padding:8px 10px;}
-  .ms-item select{flex:1 1 auto;min-width:104px;}
-  /* 操作按钮整组靠右，排在第二行；换行时补齐整行宽度 */
-  .ms-item .ord{flex:1 1 auto;min-width:104px;width:auto;}
-  .ms-item .star-btn,.ms-item .op-btn{flex:none;margin-left:0;}
-  .ms-item .up,.ms-item .down,.ms-item .rm{flex:none;}
-  /* 行内第一个「弹性」元素（ord 或 op-btn）把下拉框后的空间吃掉，
-     使其后的按钮组自然换到第二行；这里用 order 强制顺序不变 */
-  .ms-item select{order:1;}
-  .ms-item .ord{order:0;}
-  .ms-item .op-btn{order:0;}
-  .ms-item .star-btn{order:2;}
-  .ms-item .up{order:3;}
-  .ms-item .down{order:4;}
-  .ms-item .rm{order:5;margin-left:auto;}
+  .ms-item select{flex:1 1 auto;min-width:60%;}
+  .ms-item .ord{flex:0 1 auto;min-width:34px;width:auto;}
+  .ms-item .ms-ops{gap:6px;}
+  .ms-item .up,.ms-item .down,.ms-item .rm{min-width:32px;min-height:32px;font-size:16px;}
+  .ms-item .star-btn{min-height:32px;padding:4px 12px;font-size:16px;}
+  .ms-item .op-btn{min-height:32px;padding:4px 12px;font-size:16px;}
 
   /* --- 抽屉 / 弹窗：占满宽度，底部按钮平铺 --- */
   .drawer{width:100vw;border-left:none;}
