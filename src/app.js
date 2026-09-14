@@ -702,6 +702,8 @@ function normalize(o) {
   // 配装功能定位的自定义词表（跨角色共享，用户可在编辑器里追加）
   o.customBuildRoles = Array.isArray(o.customBuildRoles)
     ? o.customBuildRoles.filter(s => typeof s === 'string' && s.trim()) : [];
+  // 角色卡片「默认展示的配装组」偏好：{ 角色id: 配装下标 }，切换即持久化
+  o.buildView = (o.buildView && typeof o.buildView === 'object') ? o.buildView : {};
 
   // 语言：ui = 界面文案，data = 角色 / 套装 / 属性等数据内容，两者独立
   o.lang = normalizeLang(o.lang);
@@ -1000,13 +1002,25 @@ function mainBuild(c) {
   return list.find(b => b.priority === 'main') || list[0] || { sets: [], main: {}, subs: [] };
 }
 
-/* 配装功能定位（多选）的小标签：统一中性配色，区别于角色级 .role-tag */
-function buildRoleBadges(roles) {
-  return (roles || []).map(r => `<span class="brole">${esc(r)}</span>`).join('');
+/* 配装功能定位的标准重要度顺序（与 BUILD_ROLES 基础词表对齐；自定义词表排在末尾）。
+ * 用于卡片 / 切换按钮上只展示「最重要的一两个」定位，避免长标签挤占角色名空间。 */
+const ROLE_RANK = new Map(BUILD_ROLES.map((r, i) => [r, i]));
+const ROLE_SHOW_MAX = 2;
+function rankBuildRoles(roles) {
+  return (roles || []).slice().sort((a, b) =>
+    ((ROLE_RANK.get(a) ?? 999) - (ROLE_RANK.get(b) ?? 999)) || String(a).localeCompare(String(b)));
 }
-/* 配装按钮后缀：把多个定位拼成「（输出·增伤）」 */
-function buildRoleInline(roles) {
-  const a = (roles || []).filter(Boolean);
+function topBuildRoles(roles, max) {
+  const r = rankBuildRoles(roles);
+  return typeof max === 'number' ? r.slice(0, max) : r;
+}
+/* 配装功能定位（多选）的小标签：统一中性配色，区别于角色级 .role-tag */
+function buildRoleBadges(roles, max) {
+  return topBuildRoles(roles, max).map(r => `<span class="brole">${esc(r)}</span>`).join('');
+}
+/* 配装按钮后缀：把「最重要的一两个」定位拼成「（输出·增伤）」 */
+function buildRoleInline(roles, max) {
+  const a = topBuildRoles(roles, max).filter(Boolean);
   return a.length ? `（${a.map(esc).join('·')}）` : '';
 }
 
@@ -1962,9 +1976,11 @@ function charCardHtml(c) {
   const rg = c.region;
   const roleTxt = (c.roles || []).map(r => ROLE_NAME[r] || r).join('·');
   const list = c.builds || [];
-  const hasView = typeof ui.charView[c.id] === 'number' && list[ui.charView[c.id]];
   const mainIdx = Math.max(0, list.findIndex(b => b.priority === 'main'));
-  const viewIdx = hasView ? ui.charView[c.id] : mainIdx;
+  const persisted = (state.buildView && typeof state.buildView[c.id] === 'number' && list[state.buildView[c.id]])
+    ? state.buildView[c.id] : null;
+  const viewIdx = (typeof ui.charView[c.id] === 'number' && list[ui.charView[c.id]])
+    ? ui.charView[c.id] : (persisted != null ? persisted : mainIdx);
   const mb = list[viewIdx] || mainBuild(c);
   const sets = mb.sets || [];
   const mainRow = (slot) => {
@@ -1979,7 +1995,7 @@ function charCardHtml(c) {
   const builds = list.length
     ? list.map((b, i) => {
         const stxt = (b.sets || []).map(s => esc(setName(s))).join('+');
-        const t = buildRoleInline(b.roles);
+        const t = buildRoleInline(b.roles, ROLE_SHOW_MAX);
         return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="配装 ${i + 1}${t ? ' · ' + (b.roles || []).join('/') : ''}">${i + 1} ${stxt}${t ? `<span class="cc-bp-tag">${t}</span>` : ''}</button>`;
       }).join('')
     : '<span class="set-tag">未配置套装</span>';
@@ -1988,7 +2004,7 @@ function charCardHtml(c) {
     <div class="cc-top">
       <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
       <span class="cc-name" title="${esc(c.name)}">${esc(c.name)}</span>
-      ${buildRoleBadges(mb.roles)}
+      ${buildRoleBadges(mb.roles, ROLE_SHOW_MAX)}
       ${charModified(c) ? '<span class="cc-mod" title="与内置数据不同；可在角色编辑里「还原为内置数据」">已修改</span>' : ''}
       <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
     </div>
@@ -2010,7 +2026,11 @@ function bindCard(card, c) {
     const chip = e.target.closest('[data-vi]');
     if (chip) {
       e.stopPropagation();
-      ui.charView[c.id] = +chip.dataset.vi;
+      const vi = +chip.dataset.vi;
+      ui.charView[c.id] = vi;
+      if (!state.buildView) state.buildView = {};
+      state.buildView[c.id] = vi;   // 切换即持久化为该角色的默认配装
+      save();
       const fresh = document.createElement('div');
       fresh.innerHTML = charCardHtml(c);
       const nc = fresh.firstElementChild;
@@ -2198,7 +2218,7 @@ function drawDrawer() {
       <button type="button" class="btn sm primary" id="edAddBuild">+ 添加一组配装</button>
       <label class="fld">📋 新增时套用…
         <select id="edAddFrom">
-          <option value="blank">空白（双暴默认词条）</option>
+          <option value="blank">空白（自行填写追加属性）</option>
           ${editing.builds.map((b, i) => `<option value="b${i}">复制配装${i + 1}（${esc((b.sets || []).filter(Boolean).map(setName).join(' + ') || '未选套装')}）</option>`).join('')}
         </select>
       </label>
@@ -2417,7 +2437,7 @@ function drawBuildCards() {
       <div class="bm-t">
         <span class="prio-tag ${b.priority}">${b.priority === 'main' ? '主推' : '备选'}</span>
         <span class="bm-name">配装 ${i + 1}　${esc(sets.map(setName).join(' + ') || '未选套装')}</span>
-        ${buildRoleBadges(b.roles)}
+        ${buildRoleBadges(b.roles, ROLE_SHOW_MAX)}
         <span class="bm-kind">${sets.length === 2 ? '2+2 组合' : (sets.length === 1 ? '4 件套' : '未选择套装')}</span>
         ${mod ? '<span class="bm-mod">已修改</span>' : ''}
       </div>
@@ -2819,7 +2839,7 @@ function freshBuild(priority) {
     priority: priority || 'main',
     roles: [],
     main: { sands: [], goblet: [], circlet: [] },
-    subs: toSubs(SUB_PRESETS.crit),
+    subs: [],
   };
 }
 

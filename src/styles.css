@@ -163,7 +163,7 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .char-card:hover{border-color:#3f4d61;transform:translateY(-1px);}
 .char-card.on{border-color:var(--gold);background:linear-gradient(180deg,#232c1f,#1a2029);}
 .char-card .cc-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-.cc-name{font-size:15px;font-weight:600;
+.cc-name{font-size:15px;font-weight:600;flex:1 1 auto;
   /* 英文名（如 Sangonomiya Kokomi）比中文长，放不下时省略而不是把 ☆ 挤出卡片 */
   min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cc-elem{
