@@ -26,6 +26,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # 需要完整历史，让 build.js 里的 `git log` 注入版本日期在 CI 也可靠
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -35,11 +38,18 @@ jobs:
       - name: Build index.html from src/
         run: node build.js
 
+      - name: Verify artifact
+        # 构建没产出 index.html 时立刻失败并给出明确信息，而不是把空产物传上去
+        run: test -f index.html && echo "index.html built ($(wc -c < index.html) bytes)" || (echo "ERROR: index.html not produced by build.js" && exit 1)
+
+      - name: Stage Pages artifact
+        # 放进独立目录再上传：避免单文件上传的边界问题，也确保 .gitignore 里的 index.html 不会被静默排除
+        run: mkdir -p _site && cp index.html _site/
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # 单文件：上传到站点根目录，作为 index.html 提供
-          path: ./index.html
+          path: ./_site
 
   deploy:
     needs: build
