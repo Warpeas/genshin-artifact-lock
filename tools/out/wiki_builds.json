@@ -63,7 +63,11 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "增幅反应"
+    ]
    },
    {
     "sets": [
@@ -91,7 +95,11 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -119,7 +127,10 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1627/detail"
@@ -185,7 +196,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -213,7 +227,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/75/detail"
@@ -275,7 +292,11 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -301,7 +322,11 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/55/detail"
@@ -368,7 +393,11 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -395,7 +424,10 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -422,7 +454,10 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/2124/detail"
@@ -487,7 +522,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -513,7 +551,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "护盾"
+    ]
    },
    {
     "sets": [
@@ -539,7 +580,9 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/6937/detail"
@@ -601,7 +644,12 @@
      "cr",
      "cd"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -627,7 +675,11 @@
      "cr",
      "cd"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/112/detail"
@@ -688,7 +740,12 @@
      "er",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "治疗",
+     "辅助",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/105/detail"
@@ -754,7 +811,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -783,7 +844,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/503613/detail"
@@ -853,7 +918,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -880,7 +948,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -907,7 +978,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -936,7 +1010,11 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "增幅反应"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/501157/detail"
@@ -1001,7 +1079,10 @@
      "cr",
      "cd"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -1024,7 +1105,11 @@
      "er",
      "em"
     ],
-    "tag": null
+    "roles": [
+     "输出",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -1050,7 +1135,9 @@
      "cr",
      "cd"
     ],
-    "tag": "辅助"
+    "roles": [
+     "护盾"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/2606/detail"
@@ -1122,7 +1209,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -1149,7 +1240,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -1176,7 +1271,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -1203,7 +1302,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1795/detail"
@@ -1286,7 +1389,10 @@
      "hpP",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -1315,7 +1421,10 @@
      "hpP",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -1343,7 +1452,9 @@
      "hpP",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -1372,7 +1483,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -1404,7 +1518,11 @@
      "hpP",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -1436,7 +1554,11 @@
      "hpP",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -1464,7 +1586,11 @@
      "hpP",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "护盾",
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/6180/detail"
@@ -1534,7 +1660,10 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -1560,7 +1689,11 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -1587,7 +1720,10 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -1614,7 +1750,10 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/500672/detail"
@@ -1687,7 +1826,9 @@
      "er",
      "defP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -1716,7 +1857,9 @@
      "er",
      "defP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -1744,7 +1887,11 @@
      "er",
      "defP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -1770,7 +1917,10 @@
      "cd",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "护盾",
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1291/detail"
@@ -1832,7 +1982,9 @@
      "cr",
      "em"
     ],
-    "tag": "辅助"
+    "roles": [
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -1859,7 +2011,9 @@
      "cr",
      "em"
     ],
-    "tag": "辅助"
+    "roles": [
+     "治疗"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/500605/detail"
@@ -1927,7 +2081,13 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -1956,7 +2116,12 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/241/detail"
@@ -2025,7 +2190,10 @@
      "er",
      "hpP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -2053,7 +2221,10 @@
      "er",
      "hpP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -2081,7 +2252,10 @@
      "er",
      "hpP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/4081/detail"
@@ -2146,7 +2320,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -2172,7 +2349,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -2198,7 +2378,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1220/detail"
@@ -2269,7 +2452,11 @@
      "er",
      "em"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "治疗",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -2295,7 +2482,10 @@
      "er",
      "em"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "治疗"
+    ]
    },
    {
     "sets": [
@@ -2321,7 +2511,10 @@
      "er",
      "em"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "治疗"
+    ]
    },
    {
     "sets": [
@@ -2347,7 +2540,11 @@
      "er",
      "em"
     ],
-    "tag": "辅助"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -2373,7 +2570,11 @@
      "er",
      "em"
     ],
-    "tag": "辅助"
+    "roles": [
+     "输出",
+     "精通",
+     "剧变反应"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/2403/detail"
@@ -2444,7 +2645,9 @@
      "cr",
      "cd"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -2473,7 +2676,10 @@
      "cr",
      "cd"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -2502,7 +2708,10 @@
      "cr",
      "cd"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1057/detail"
@@ -2568,7 +2777,10 @@
      "cr",
      "cd"
     ],
-    "tag": null
+    "roles": [
+     "输出",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -2597,7 +2809,11 @@
      "cd",
      "hpP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -2625,7 +2841,12 @@
      "cd",
      "hpP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/5020/detail"
@@ -2697,7 +2918,10 @@
      "hpP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -2725,7 +2949,10 @@
      "hpP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -2752,7 +2979,10 @@
      "hpP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -2780,7 +3010,10 @@
      "hpP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/500291/detail"
@@ -2844,7 +3077,10 @@
      "cd",
      "hpP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -2870,7 +3106,9 @@
      "cd",
      "hpP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -2897,7 +3135,9 @@
      "cd",
      "hpP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/500207/detail"
@@ -2962,7 +3202,9 @@
      "hpP",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "治疗"
+    ]
    },
    {
     "sets": [
@@ -2988,7 +3230,10 @@
      "hpP",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "输出",
+     "治疗"
+    ]
    },
    {
     "sets": [
@@ -3014,7 +3259,10 @@
      "hpP",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "输出",
+     "治疗"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/61/detail"
@@ -3083,7 +3331,11 @@
      "em",
      "cr"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -3111,7 +3363,11 @@
      "em",
      "cr"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -3139,7 +3395,10 @@
      "em",
      "cr"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/501625/detail"
@@ -3194,7 +3453,9 @@
      "hpP",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505418/detail"
@@ -3255,7 +3516,10 @@
      "hpP",
      "er"
     ],
-    "tag": "辅助"
+    "roles": [
+     "治疗",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -3279,7 +3543,10 @@
      "hpP",
      "er"
     ],
-    "tag": "辅助"
+    "roles": [
+     "治疗",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -3303,7 +3570,10 @@
      "hpP",
      "er"
     ],
-    "tag": "辅助"
+    "roles": [
+     "治疗",
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/501214/detail"
@@ -3370,7 +3640,12 @@
      "cd",
      "hpP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -3397,7 +3672,11 @@
      "cd",
      "hpP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -3425,7 +3704,10 @@
      "hpP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/4781/detail"
@@ -3501,7 +3783,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "增幅反应"
+    ]
    },
    {
     "sets": [
@@ -3528,7 +3814,12 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "充能",
+     "增幅反应"
+    ]
    },
    {
     "sets": [
@@ -3555,7 +3846,12 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "充能",
+     "增幅反应"
+    ]
    },
    {
     "sets": [
@@ -3582,7 +3878,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "增幅反应"
+    ]
    },
    {
     "sets": [
@@ -3609,7 +3909,12 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "增幅反应"
+    ]
    },
    {
     "sets": [
@@ -3635,7 +3940,10 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1433/detail"
@@ -3700,7 +4008,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -3726,7 +4037,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -3753,7 +4067,11 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/2123/detail"
@@ -3815,7 +4133,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -3841,7 +4162,9 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/2040/detail"
@@ -3904,7 +4227,9 @@
      "cr",
      "cd"
     ],
-    "tag": "副C"
+    "roles": [
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/3386/detail"
@@ -3975,7 +4300,11 @@
      "atkP",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -4001,7 +4330,12 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -4028,7 +4362,12 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -4056,7 +4395,11 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -4084,7 +4427,12 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/500286/detail"
@@ -4149,7 +4497,9 @@
      "hpP",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -4175,7 +4525,11 @@
      "hpP",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "治疗",
+     "护盾",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -4200,7 +4554,9 @@
      "er",
      "hpP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "治疗"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1221/detail"
@@ -4267,7 +4623,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -4294,7 +4652,10 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -4319,7 +4680,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1744/detail"
@@ -4382,7 +4746,10 @@
      "atkP",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -4407,7 +4774,10 @@
      "atkP",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "治疗"
+    ]
    },
    {
     "sets": [
@@ -4433,7 +4803,9 @@
      "atkP",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "治疗"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1056/detail"
@@ -4497,7 +4869,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -4524,7 +4898,10 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/504976/detail"
@@ -4589,7 +4966,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -4614,7 +4994,10 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -4640,7 +5023,9 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505417/detail"
@@ -4706,7 +5091,12 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -4734,7 +5124,12 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/644/detail"
@@ -4800,7 +5195,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -4827,7 +5224,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -4853,7 +5252,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/7257/detail"
@@ -4911,7 +5312,10 @@
      "cr",
      "atkP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "治疗",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -4935,7 +5339,9 @@
      "cr",
      "atkP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/500292/detail"
@@ -4999,7 +5405,9 @@
      "hpP",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -5026,7 +5434,10 @@
      "hpP",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "治疗",
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/6285/detail"
@@ -5088,7 +5499,10 @@
      "cd",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -5110,7 +5524,10 @@
     "subs": [
      "em"
     ],
-    "tag": null
+    "roles": [
+     "精通",
+     "剧变反应"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/2404/detail"
@@ -5181,7 +5598,11 @@
      "atkP",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -5207,7 +5628,9 @@
      "atkP",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -5233,7 +5656,11 @@
      "atkP",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -5261,7 +5688,11 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -5288,7 +5719,11 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "副C"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/3564/detail"
@@ -5363,7 +5798,10 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -5390,7 +5828,12 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "副C",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -5419,7 +5862,11 @@
      "er",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -5446,7 +5893,11 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -5471,7 +5922,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/382/detail"
@@ -5532,7 +5986,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1058/detail"
@@ -5603,7 +6061,10 @@
      "atkP",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -5631,7 +6092,12 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -5659,7 +6125,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -5687,7 +6156,13 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -5715,7 +6190,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/4780/detail"
@@ -5791,7 +6269,10 @@
      "hpP",
      "er"
     ],
-    "tag": null
+    "roles": [
+     "输出",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -5815,7 +6296,10 @@
      "hpP",
      "er"
     ],
-    "tag": null
+    "roles": [
+     "输出",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -5839,7 +6323,11 @@
      "hpP",
      "er"
     ],
-    "tag": null
+    "roles": [
+     "输出",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -5870,7 +6358,10 @@
      "hpP",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -5901,7 +6392,10 @@
      "hpP",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -5931,7 +6425,11 @@
      "hpP",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "治疗",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -5961,7 +6459,10 @@
      "hpP",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "治疗",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -5992,7 +6493,10 @@
      "hpP",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "治疗",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/4148/detail"
@@ -6058,7 +6562,10 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -6086,7 +6593,10 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/2402/detail"
@@ -6155,7 +6665,10 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -6183,7 +6696,12 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -6211,7 +6729,12 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/56/detail"
@@ -6284,7 +6807,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -6311,7 +6837,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -6337,7 +6866,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -6364,7 +6896,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -6391,7 +6926,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/501213/detail"
@@ -6457,7 +6995,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -6484,7 +7024,10 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/504570/detail"
@@ -6546,7 +7089,11 @@
      "atkP",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -6572,7 +7119,9 @@
      "atkP",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/504621/detail"
@@ -6618,7 +7167,12 @@
     "subs": [
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "副C",
+     "辅助",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -6641,7 +7195,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/502927/detail"
@@ -6709,7 +7266,11 @@
      "hpP",
      "er"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "治疗",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -6737,7 +7298,11 @@
      "cd",
      "cr"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -6763,7 +7328,11 @@
      "hpP",
      "er"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "治疗",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -6789,7 +7358,11 @@
      "cr",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/4736/detail"
@@ -6856,7 +7429,12 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "剧变反应"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/2142/detail"
@@ -6930,7 +7508,11 @@
      "em",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "辅助",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -6955,7 +7537,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -6980,7 +7565,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -7005,7 +7593,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/57/detail"
@@ -7060,7 +7651,11 @@
      "em",
      "er"
     ],
-    "tag": "辅助"
+    "roles": [
+     "减抗",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1055/detail"
@@ -7124,7 +7719,11 @@
      "cd",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "减抗",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -7151,7 +7750,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/59/detail"
@@ -7221,7 +7823,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -7248,7 +7852,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -7275,7 +7881,10 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -7302,7 +7911,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1498/detail"
@@ -7363,7 +7974,12 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通",
+     "剧变反应"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/4197/detail"
@@ -7439,7 +8055,11 @@
      "em",
      "atkP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "减抗",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -7469,7 +8089,10 @@
      "em",
      "atkP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -7499,7 +8122,11 @@
      "em",
      "atkP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -7529,7 +8156,10 @@
      "em",
      "atkP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/2125/detail"
@@ -7599,7 +8229,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -7626,7 +8260,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -7652,7 +8290,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -7678,7 +8320,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/5494/detail"
@@ -7752,7 +8398,12 @@
      "cr",
      "cd"
     ],
-    "tag": "辅助"
+    "roles": [
+     "减抗",
+     "辅助",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -7778,7 +8429,7 @@
      "cr",
      "cd"
     ],
-    "tag": "辅助"
+    "roles": []
    },
    {
     "sets": [
@@ -7804,7 +8455,10 @@
      "cr",
      "cd"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "治疗"
+    ]
    },
    {
     "sets": [
@@ -7830,7 +8484,9 @@
      "cr",
      "cd"
     ],
-    "tag": "辅助"
+    "roles": [
+     "治疗"
+    ]
    },
    {
     "sets": [
@@ -7856,7 +8512,9 @@
      "cr",
      "cd"
     ],
-    "tag": "辅助"
+    "roles": [
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -7884,7 +8542,10 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/500673/detail"
@@ -7942,7 +8603,10 @@
      "atkP",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -7966,7 +8630,9 @@
      "atkP",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/502928/detail"
@@ -8035,7 +8701,12 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -8063,7 +8734,12 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -8091,7 +8767,11 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/6938/detail"
@@ -8162,7 +8842,11 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -8191,7 +8875,11 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -8216,7 +8904,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/504977/detail"
@@ -8279,7 +8970,10 @@
      "er",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -8306,7 +9000,13 @@
      "er",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -8331,7 +9031,9 @@
      "er",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/504440/detail"
@@ -8400,7 +9102,11 @@
      "cr",
      "cd"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "护盾",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -8428,7 +9134,11 @@
      "cr",
      "cd"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -8456,7 +9166,11 @@
      "cr",
      "cd"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1290/detail"
@@ -8518,7 +9232,10 @@
      "cd",
      "cr"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -8544,7 +9261,10 @@
      "cd",
      "cr"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/1360/detail"
@@ -8609,7 +9329,9 @@
      "defP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -8635,7 +9357,11 @@
      "defP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "副C",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -8661,7 +9387,11 @@
      "defP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "护盾"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/3276/detail"
@@ -8726,7 +9456,10 @@
      "cr",
      "cd"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -8752,7 +9485,10 @@
      "cr",
      "cd"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -8778,7 +9514,10 @@
      "cr",
      "cd"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/111/detail"
@@ -8840,7 +9579,11 @@
      "defP",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "副C",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -8866,7 +9609,10 @@
      "defP",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/3275/detail"
@@ -8927,7 +9673,11 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/78/detail"
@@ -8991,7 +9741,11 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -9018,7 +9772,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/500419/detail"
@@ -9086,7 +9842,11 @@
      "er",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -9112,7 +9872,10 @@
      "er",
      "cr"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -9137,7 +9900,10 @@
      "cr",
      "defP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -9162,7 +9928,9 @@
      "cr",
      "defP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/502306/detail"
@@ -9226,7 +9994,10 @@
      "er",
      "defP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -9253,7 +10024,11 @@
      "er",
      "defP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "副C"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/501626/detail"
@@ -9315,7 +10090,7 @@
      "defP",
      "er"
     ],
-    "tag": "副C"
+    "roles": []
    },
    {
     "sets": [
@@ -9341,7 +10116,7 @@
      "defP",
      "er"
     ],
-    "tag": "副C"
+    "roles": []
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/3387/detail"
@@ -9411,7 +10186,14 @@
      "cd",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "减抗",
+     "辅助",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -9439,7 +10221,12 @@
      "cd",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -9468,7 +10255,12 @@
      "cd",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/5111/detail"
@@ -9538,7 +10330,11 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -9567,7 +10363,11 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -9595,7 +10395,12 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/5865/detail"
@@ -9661,7 +10466,11 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -9689,7 +10498,11 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "剧变反应"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/4334/detail"
@@ -9750,7 +10563,10 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -9776,7 +10592,9 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -9802,7 +10620,10 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "减抗"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/501624/detail"
@@ -9867,7 +10688,9 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -9893,7 +10716,11 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "减抗",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -9919,7 +10746,9 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/501441/detail"
@@ -9985,7 +10814,10 @@
      "er",
      "hpP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "输出",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -10010,7 +10842,11 @@
      "er",
      "hpP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "输出",
+     "治疗",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -10035,7 +10871,9 @@
      "er",
      "hpP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "治疗"
+    ]
    },
    {
     "sets": [
@@ -10060,7 +10898,9 @@
      "er",
      "hpP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "减抗"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/6489/detail"
@@ -10128,7 +10968,13 @@
      "er",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "治疗",
+     "辅助",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -10155,7 +11001,13 @@
      "er",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "治疗",
+     "辅助",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -10183,7 +11035,12 @@
      "er",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "治疗",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/5866/detail"
@@ -10249,7 +11106,14 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "减抗",
+     "辅助",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -10277,7 +11141,13 @@
      "em",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/4333/detail"
@@ -10343,7 +11213,12 @@
      "atkP",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "输出",
+     "减抗",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -10369,7 +11244,12 @@
      "atkP",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "输出",
+     "精通",
+     "充能",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -10396,7 +11276,11 @@
      "atkP",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "输出",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/6490/detail"
@@ -10461,7 +11345,12 @@
      "cr",
      "em"
     ],
-    "tag": null
+    "roles": [
+     "输出",
+     "护盾",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -10486,7 +11375,12 @@
      "cr",
      "em"
     ],
-    "tag": null
+    "roles": [
+     "输出",
+     "减抗",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -10511,7 +11405,12 @@
      "cr",
      "em"
     ],
-    "tag": null
+    "roles": [
+     "输出",
+     "辅助",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/6594/detail"
@@ -10573,7 +11472,10 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -10600,7 +11502,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/54/detail"
@@ -10663,7 +11569,11 @@
      "er",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/92/detail"
@@ -10726,7 +11636,10 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -10751,7 +11664,11 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -10775,7 +11692,10 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/76/detail"
@@ -10844,7 +11764,11 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -10871,7 +11795,12 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -10898,7 +11827,11 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/79/detail"
@@ -10958,7 +11891,9 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -10983,7 +11918,10 @@
      "cr",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/2415/detail"
@@ -11053,7 +11991,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -11080,7 +12020,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -11107,7 +12049,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -11134,7 +12078,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/3875/detail"
@@ -11201,7 +12147,10 @@
      "defP",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -11228,7 +12177,11 @@
      "defP",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "副C"
+    ]
    },
    {
     "sets": [
@@ -11255,7 +12208,11 @@
      "defP",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/500987/detail"
@@ -11322,7 +12279,12 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -11349,7 +12311,12 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -11376,7 +12343,14 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助",
+     "精通",
+     "充能",
+     "剧变反应"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/5493/detail"
@@ -11434,7 +12408,10 @@
      "hpP",
      "cr"
     ],
-    "tag": null
+    "roles": [
+     "护盾",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -11458,7 +12435,9 @@
      "hpP",
      "cr"
     ],
-    "tag": null
+    "roles": [
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/5297/detail"
@@ -11525,7 +12504,11 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -11552,7 +12535,11 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -11579,7 +12566,11 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "护盾",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/501212/detail"
@@ -11646,7 +12637,12 @@
      "cd",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通",
+     "剧变反应"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/503614/detail"
@@ -11707,7 +12703,11 @@
      "em",
      "er"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -11731,7 +12731,10 @@
      "em",
      "er"
     ],
-    "tag": "辅助"
+    "roles": [
+     "护盾",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -11755,7 +12758,9 @@
      "em",
      "er"
     ],
-    "tag": "辅助"
+    "roles": [
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/503612/detail"
@@ -11824,7 +12829,11 @@
      "em",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -11852,7 +12861,12 @@
      "em",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "副C",
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -11880,7 +12894,7 @@
      "em",
      "er"
     ],
-    "tag": "副C"
+    "roles": []
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505631/detail"
@@ -11941,7 +12955,11 @@
      "em",
      "er"
     ],
-    "tag": "辅助"
+    "roles": [
+     "辅助",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -11967,7 +12985,10 @@
      "em",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -11991,7 +13012,10 @@
      "em",
      "er"
     ],
-    "tag": "辅助"
+    "roles": [
+     "减抗",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505973/detail"
@@ -12055,7 +13079,11 @@
      "em",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -12082,7 +13110,9 @@
      "em",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505971/detail"
@@ -12146,7 +13176,10 @@
      "cr",
      "cd"
     ],
-    "tag": "副C"
+    "roles": [
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -12173,7 +13206,11 @@
      "cr",
      "cd"
     ],
-    "tag": "副C"
+    "roles": [
+     "辅助",
+     "精通",
+     "剧变反应"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505972/detail"
@@ -12235,7 +13272,11 @@
      "cr",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -12261,7 +13302,9 @@
      "cr",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/506676/detail"
@@ -12340,7 +13383,11 @@
      "em",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -12368,7 +13415,11 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -12396,7 +13447,10 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -12424,7 +13478,11 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "减抗",
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -12452,7 +13510,12 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通",
+     "剧变反应"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/507241/detail"
@@ -12523,7 +13586,11 @@
      "er",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "副C",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -12552,7 +13619,12 @@
      "er",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -12580,7 +13652,10 @@
      "er",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/507505/detail"
@@ -12648,7 +13723,10 @@
      "defP",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -12676,7 +13754,9 @@
      "defP",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/507503/detail"
@@ -12738,7 +13818,10 @@
      "atkP",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -12764,7 +13847,9 @@
      "atkP",
      "em"
     ],
-    "tag": "副C"
+    "roles": [
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/508841/detail"
@@ -12826,7 +13911,9 @@
      "cd",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -12852,7 +13939,9 @@
      "cd",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/509103/detail"
@@ -12904,7 +13993,11 @@
     "subs": [
      "atkP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -12925,7 +14018,9 @@
     "subs": [
      "atkP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/509104/detail"
@@ -12991,7 +14086,9 @@
      "cd",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出"
+    ]
    },
    {
     "sets": [
@@ -13016,7 +14113,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -13041,7 +14141,9 @@
      "cd",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "输出"
+    ]
    },
    {
     "sets": [
@@ -13066,7 +14168,9 @@
      "cd",
      "atkP"
     ],
-    "tag": "副C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/507995/detail"
@@ -13131,7 +14235,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -13157,7 +14264,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -13183,7 +14293,10 @@
      "cd",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/508598/detail"
@@ -13239,7 +14352,10 @@
      "atkP",
      "er"
     ],
-    "tag": null
+    "roles": [
+     "增伤",
+     "充能"
+    ]
    },
    {
     "sets": [
@@ -13262,7 +14378,9 @@
      "atkP",
      "er"
     ],
-    "tag": null
+    "roles": [
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/508596/detail"
@@ -13320,7 +14438,10 @@
      "er",
      "atkP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -13344,7 +14465,11 @@
      "er",
      "atkP"
     ],
-    "tag": "辅助"
+    "roles": [
+     "增伤",
+     "辅助",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/508597/detail"
@@ -13411,7 +14536,9 @@
      "defP",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -13438,7 +14565,7 @@
      "defP",
      "er"
     ],
-    "tag": "副C"
+    "roles": []
    },
    {
     "sets": [
@@ -13465,7 +14592,11 @@
      "defP",
      "er"
     ],
-    "tag": "副C"
+    "roles": [
+     "辅助",
+     "精通",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/508198/detail"
@@ -13520,7 +14651,11 @@
      "er",
      "cr"
     ],
-    "tag": null
+    "roles": [
+     "输出",
+     "辅助",
+     "精通"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/507504/detail"
@@ -13580,7 +14715,10 @@
      "atkP",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "精通",
+     "剧变反应"
+    ]
    },
    {
     "sets": [
@@ -13605,7 +14743,9 @@
      "atkP",
      "cr"
     ],
-    "tag": "辅助"
+    "roles": [
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/507287/detail"
@@ -13668,7 +14808,13 @@
      "er",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "减抗",
+     "辅助",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505499/detail"
@@ -13734,7 +14880,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -13762,7 +14910,11 @@
      "er",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "充能"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505501/detail"
@@ -13825,7 +14977,9 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505496/detail"
@@ -13888,7 +15042,12 @@
      "atkP",
      "er"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "减抗",
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505498/detail"
@@ -13958,7 +15117,9 @@
      "er",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -13987,7 +15148,9 @@
      "er",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    },
    {
     "sets": [
@@ -14015,7 +15178,9 @@
      "er",
      "atkP"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505500/detail"
@@ -14092,7 +15257,11 @@
      "atkP",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "增伤",
+     "辅助",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -14120,7 +15289,11 @@
      "cr",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -14149,7 +15322,11 @@
      "cr",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -14178,7 +15355,11 @@
      "cr",
      "em"
     ],
-    "tag": "主C"
+    "roles": [
+     "输出",
+     "增伤",
+     "精通"
+    ]
    },
    {
     "sets": [
@@ -14201,9 +15382,106 @@
      "cr",
      "er"
     ],
-    "tag": null
+    "roles": [
+     "输出",
+     "精通",
+     "剧变反应"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/4074/detail"
+ },
+ "旅行者·冰": {
+  "ok": true,
+  "entry_id": "509225",
+  "tab": "圣遗物推荐（冰元素）",
+  "query": "旅行者·冰",
+  "builds": [
+   [
+    "影中沉凝的幻灭"
+   ],
+   [
+    "炉火融炼之心"
+   ]
+  ],
+  "mains": {
+   "sands": [
+    "atkP"
+   ],
+   "goblet": [
+    "atkP"
+   ],
+   "circlet": [
+    "cd",
+    "cr"
+   ]
+  },
+  "subs": [
+   "cr",
+   "cd",
+   "atkP",
+   "em"
+  ],
+  "derived_preset": "crit",
+  "rows": [
+   {
+    "sets": [
+     "影中沉凝的幻灭"
+    ],
+    "label": "影中沉凝的幻灭",
+    "reason": "提高旅行者自身的星超导伤害，适合输出向玩法选择影中沉凝的幻灭4件套主词条时之沙：攻击力空之杯：攻击力理之冠：暴击伤害/暴击率副词条：暴击率/暴击伤害/百分比攻击力/元素精通",
+    "mains": {
+     "sands": [
+      "atkP"
+     ],
+     "goblet": [
+      "atkP"
+     ],
+     "circlet": [
+      "cd",
+      "cr"
+     ]
+    },
+    "subs": [
+     "cr",
+     "cd",
+     "atkP",
+     "em"
+    ],
+    "roles": [
+     "输出"
+    ]
+   },
+   {
+    "sets": [
+     "炉火融炼之心"
+    ],
+    "label": "炉火融炼之心",
+    "reason": "提高全队星烁反应伤害，适合辅助向玩法选择炉火融炼之心4件套主词条时之沙：攻击力空之杯：攻击力理之冠：暴击伤害/暴击率副词条：暴击率/暴击伤害/百分比攻击力/元素精通",
+    "mains": {
+     "sands": [
+      "atkP"
+     ],
+     "goblet": [
+      "atkP"
+     ],
+     "circlet": [
+      "cd",
+      "cr"
+     ]
+    },
+    "subs": [
+     "cr",
+     "cd",
+     "atkP",
+     "em"
+    ],
+    "roles": [
+     "辅助",
+     "精通"
+    ]
+   }
+  ],
+  "url": "https://baike.mihoyo.com/ys/obc/content/509225/detail"
  }
 }

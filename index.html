@@ -270,6 +270,7 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 }
 .set-head h3{font-size:15px;color:var(--gold2);}
 .set-head .set-bonus{font-size:11.5px;color:var(--txt3);}
+.set-head .set-bonus4{font-size:11.5px;color:var(--txt2);margin-left:8px;padding-left:8px;border-left:1px solid var(--line);}
 .set-head .set-users{margin-left:auto;font-size:12px;color:var(--txt2);display:flex;flex-wrap:wrap;gap:4px;max-width:62%;justify-content:flex-end;}
 .user-pill{font-size:11px;padding:1px 7px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--txt2);}
 .user-pill.alt{border-style:dashed;opacity:.8;}
@@ -500,6 +501,7 @@ table.tbl tr:hover td{background:#1d242e;}
   border-radius:8px;background:var(--panel);margin-bottom:6px;
 }
 .sm-row.sm-head{background:none;border:none;padding:2px 9px;font-size:12px;color:var(--txt3);}
+.sm-bonus4{grid-column:1 / -1;font-size:11.5px;color:var(--txt2);background:var(--panel2);border-radius:6px;padding:5px 8px;margin-top:2px;line-height:1.45;}
 .sm-row.off{opacity:.5;}
 .sm-no{color:var(--txt3);font-size:12px;text-align:center;}
 .sm-row input[type=text]{padding:6px 10px;font-size:13px;}
@@ -768,6 +770,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .sm-row input.sm-name{grid-column:2;grid-row:1;}
   .sm-row input.sm-bonus{grid-column:1 / -1;grid-row:2;}
   .sm-ops{grid-column:1 / -1;grid-row:3;justify-content:flex-start;}
+  .sm-bonus4{grid-row:4;}
   /* 排序 / ★ / 删除 这几个小按钮在手机端放大点击区域 */
   .ms-item .up,.ms-item .down,.ms-item .rm{min-width:32px;min-height:32px;font-size:16px;}
   .ms-item .star-btn{min-height:32px;padding:4px 12px;font-size:16px;}
@@ -1541,60 +1544,60 @@ const KEEP_RULE_EN = {
  */
 const SETS = [
   /* ---- 至冬 7.0「无神怜爱的雪国」 ---- */
-  { name: '血红之证',           en: 'Scarlet Proof',                        bonus: '攻击力+18%' },
-  { name: '炉火融炼之心',       en: 'Heart of the Furnace',                 bonus: '攻击力+18%' },
+  { name: '血红之证',           en: 'Scarlet Proof',                        bonus: '攻击力+18%' , bonus4: '装备者触发星扩散反应后的10秒内，暴击率提升16%，星扩散反应伤害提升40%' },
+  { name: '炉火融炼之心',       en: 'Heart of the Furnace',                 bonus: '攻击力+18%' , bonus4: '装备者触发星烁反应或造成星烁反应伤害后的12秒内，攻击力提升12%，队伍中附近的所有角色造成的星烁反应伤害提升50%' },
   /* ---- 6.6「虚空劫灰往世书」 ---- */
-  { name: '影中沉凝的幻灭',     en: 'Disenchantment in Deep Shadow',        bonus: '攻击力+18%' },
-  { name: '天之美赐',           en: 'Celestial Gift',                       bonus: '元素充能效率+20%' },
+  { name: '影中沉凝的幻灭',     en: 'Disenchantment in Deep Shadow',        bonus: '攻击力+18%' , bonus4: '超导反应造成的伤害提升80%，星超导反应造成的伤害提升40%；装备者攻击受到超导或星超导反应影响的敌人时，本次攻击的暴击率提高16%' },
+  { name: '天之美赐',           en: 'Celestial Gift',                       bonus: '元素充能效率+20%' , bonus4: '若装备者已经完成了魔女的课业，则施放元素战技后，还会获得「天光之引」效果:依据装备者的元素类型使队伍中附近的所有角色获得20%对应元素伤害加成，持续20秒；·队伍拥有「魔导·秘仪」效果时，「天光之引」效果将会升级为「凡世颂歌」，除装备者的元素类型外，还会依据队伍中自己的当前场上角色的元素类型，使队伍中附近的所有角色获得对应元素伤害加成，且上述两种元素伤害加成提升至40%，同元素类型的元素伤害加成效果无法叠加' },
   /* ---- 6.3「月之四」 ---- */
-  { name: '晨星与月的晓歌',     en: 'Aubade of Morningstar and Moon',       bonus: '元素精通+80' },
-  { name: '风起之日',           en: 'A Day Carved From Rising Winds',       bonus: '攻击力+18%' },
+  { name: '晨星与月的晓歌',     en: 'Aubade of Morningstar and Moon',       bonus: '元素精通+80' , bonus4: '装备者处于队伍后台时，造成的月曜反应伤害提升20%；队伍的月兆等级至少为满辉时，造成的月曜反应伤害进一步提升40%' },
+  { name: '风起之日',           en: 'A Day Carved From Rising Winds',       bonus: '攻击力+18%' , bonus4: '普通攻击、重击、元素战技或元素爆发命中敌人后，将获得持续6秒的「风与牧歌的眷怜」：攻击力提高25%；若装备者已经完成了「魔女的课业」，则「风与牧歌的眷怜」将会升级为「风与牧歌的决意」，额外使通过考验的装备者的暴击率提升20%' },
   /* ---- 6.0「月之一」挪德卡莱 ---- */
   { name: '穹境示现之夜',       en: "Night of the Sky's Unveiling",         bonus: '元素精通+80' },
   { name: '纺月的夜歌',         en: "Silken Moon's Serenade",               bonus: '元素充能效率+20%' },
   /* ---- 5.x 纳塔 ---- */
   { name: '长夜之誓',           en: "Long Night's Oath",                    bonus: '下落攻击伤害+25%' },
-  { name: '深廊终曲',           en: 'Finale of the Deep Galleries',         bonus: '冰元素伤害+15%' },
-  { name: '黑曜秘典',           en: 'Obsidian Codex',                       bonus: '夜魂加持下伤害+15%' },
-  { name: '烬城勇者绘卷',       en: 'Scroll of the Hero of Cinder City',    bonus: '元素战技/爆发伤害+15%' },
+  { name: '深廊终曲',           en: 'Finale of the Deep Galleries',         bonus: '冰元素伤害+15%' , bonus4: '装备者的元素能量为0时，普通攻击造成的伤害提升60%，元素爆发造成的伤害提升60%；装备者的普通攻击造成伤害后，上述元素爆发伤害提升效果将失效6秒；装备者的元素爆发造成伤害后，上述普通攻击伤害提升效果将失效6秒' },
+  { name: '黑曜秘典',           en: 'Obsidian Codex',                       bonus: '夜魂加持下伤害+15%' , bonus4: '装备者在场上消耗1点夜魂值后暴击率提高40%，持续6秒。该效果每1秒至多触发一次' },
+  { name: '烬城勇者绘卷',       en: 'Scroll of the Hero of Cinder City',    bonus: '元素战技/爆发伤害+15%' , bonus4: '装备者触发其对应元素类型的相关反应后，队伍中附近的所有角色的该元素反应相关的元素伤害加成提升12%，持续15秒；若触发该效果时，装备者处于夜魂加持状态下，还将使队伍中附近的所有角色的与该元素反应相关的元素伤害加成提升28%，持续20秒' },
   /* ---- 4.x 枫丹 ---- */
-  { name: '未竟的遐思',         en: 'Unfinished Reverie',                   bonus: '攻击力+18%' },
-  { name: '谐律异想断章',       en: 'Fragment of Harmonic Whimsy',          bonus: '攻击力+18%' },
-  { name: '回声之林夜话',       en: 'Nighttime Whispers in the Echoing Woods', bonus: '攻击力+18%' },
-  { name: '昔时之歌',           en: 'Song of Days Past',                    bonus: '治疗加成+15%' },
-  { name: '逐影猎人',           en: 'Marechaussee Hunter',                  bonus: '普通攻击/重击伤害+15%' },
-  { name: '黄金剧团',           en: 'Golden Troupe',                        bonus: '元素战技伤害+20%' },
+  { name: '未竟的遐思',         en: 'Unfinished Reverie',                   bonus: '攻击力+18%' , bonus4: '脱离战斗状态3秒后，造成的伤害提升50%；在战斗状态下，附近不存在处于燃烧状态下的敌人超过6秒后，上述伤害提升效果每秒降低10%直到降低至0%；存在处于燃烧状态下的敌人时，每秒提升10%，直到达到50%' },
+  { name: '谐律异想断章',       en: 'Fragment of Harmonic Whimsy',          bonus: '攻击力+18%' , bonus4: '生命之契的数值提升或降低时角色造成的伤害提升18%，该效果持续6秒，至多叠加3次' },
+  { name: '回声之林夜话',       en: 'Nighttime Whispers in the Echoing Woods', bonus: '攻击力+18%' , bonus4: '施放元素战技后的10秒内，岩元素伤害加成提升20%；若处于结晶反应产生的护盾庇护下，或附近存在月结晶反应形成的月笼，上述效果提高150%，进一步提高的效果将在不满足上面条件的1秒后移除' },
+  { name: '昔时之歌',           en: 'Song of Days Past',                    bonus: '治疗加成+15%' , bonus4: '装备者对队伍中的角色进行治疗时将产生持续6秒的渴盼效果，记录治疗的生命值回复量（包括溢出值）；持续时间结束时，渴盼效果将转变为「彼时的浪潮」效果：队伍中自己的当前场上角色的普通攻击、重击、下落攻击、元素战技与元素爆发命中敌人时，将基于渴盼效果所记录的回复量的8%提高造成的伤害，「彼时的浪潮」将在生效5次或10秒后移除；一次渴盼效果至多记录15000点回复量，同时至多存在一个能够记录多个装备者的产生的回复量' },
+  { name: '逐影猎人',           en: 'Marechaussee Hunter',                  bonus: '普通攻击/重击伤害+15%' , bonus4: '当前生命值提升或降低时，暴击率提升12%，该效果持续5秒，至多叠加3次' },
+  { name: '黄金剧团',           en: 'Golden Troupe',                        bonus: '元素战技伤害+20%' , bonus4: '元素战技造成的伤害提升25%；此外，处于队伍后台时，元素战技造成的伤害还将进一步提升25%，该效果将在登场后2秒移除' },
   /* ---- 3.x 须弥 ---- */
   { name: '花海甘露之光',       en: "Vourukasha's Glow",                    bonus: '生命值+20%' },
   { name: '水仙之梦',           en: "Nymph's Dream",                        bonus: '水元素伤害+15%' },
-  { name: '乐园遗落之花',       en: 'Flower of Paradise Lost',              bonus: '元素精通+80' },
-  { name: '沙上楼阁史话',       en: 'Desert Pavilion Chronicle',            bonus: '风元素伤害+15%' },
-  { name: '深林的记忆',         en: 'Deepwood Memories',                    bonus: '草元素伤害+15%' },
-  { name: '饰金之梦',           en: 'Gilded Dreams',                        bonus: '元素精通+80' },
+  { name: '乐园遗落之花',       en: 'Flower of Paradise Lost',              bonus: '元素精通+80' , bonus4: '装备者绽放、超绽放、烈绽放反应造成的伤害提升40%，造成的月绽放反应伤害提升10%；此外，装备者触发绽放、超绽放、烈绽放、月绽放后，上述效果带来的加成提升25%，该效果持续10秒，至多叠加4次，每1秒至多触发一次' },
+  { name: '沙上楼阁史话',       en: 'Desert Pavilion Chronicle',            bonus: '风元素伤害+15%' , bonus4: '重击命中敌人后，该角色的普通攻击速度提升10%，普通攻击、重击与下落攻击造成的伤害提升40%，持续15秒' },
+  { name: '深林的记忆',         en: 'Deepwood Memories',                    bonus: '草元素伤害+15%' , bonus4: '元素战技或元素爆发命中敌人后，使命中目标的草元素抗性降低30%，持续8秒' },
+  { name: '饰金之梦',           en: 'Gilded Dreams',                        bonus: '元素精通+80' , bonus4: '触发元素反应后的8秒内，会根据队伍内其他角色的元素类型，使装备者获得强化：队伍中每存在1个和装备者同类元素的角色，攻击力提升14%；每存在1个和装备者不同元素类型的角色，元素精通提升50点' },
   /* ---- 2.x 稻妻 / 璃月 ---- */
-  { name: '辰砂往生录',         en: 'Vermillion Hereafter',                 bonus: '攻击力+18%' },
-  { name: '来歆余响',           en: 'Echoes of an Offering',                bonus: '攻击力+18%' },
-  { name: '华馆梦醒形骸记',     en: 'Husk of Opulent Dreams',               bonus: '防御力+30%' },
-  { name: '海染砗磲',           en: 'Ocean-Hued Clam',                      bonus: '治疗加成+15%' },
-  { name: '绝缘之旗印',         en: 'Emblem of Severed Fate',               bonus: '元素充能效率+20%' },
+  { name: '辰砂往生录',         en: 'Vermillion Hereafter',                 bonus: '攻击力+18%' , bonus4: '施放元素爆发后，将产生持续16秒的「潜光」效果：攻击力提升8%；并在角色的生命值降低时，攻击力进一步提升10%，至多通过这种方式提升4次，每0.8秒至多触发一次' },
+  { name: '来歆余响',           en: 'Echoes of an Offering',                bonus: '攻击力+18%' , bonus4: '普通攻击命中敌人时，有36%概率触发「幽谷祝祀」：普通攻击造成的伤害提高，伤害提高值为攻击力的70%，该效果将在普通攻击造成伤害后的0.05秒后清除；普通攻击未触发「幽谷祝祀」时，会使下次触发概率提升20%' },
+  { name: '华馆梦醒形骸记',     en: 'Husk of Opulent Dreams',               bonus: '防御力+30%' , bonus4: '装备此圣遗物套装的角色在以下情况下，将获得「问答」效果：在场上用岩元素攻击命中敌人后获得一层，每0.3秒至多触发一次；在队伍后台中，每3秒获得一层；问答至多叠加4层，每层能提供6%防御力与6%岩元素伤害加成；每6秒，若未获得问答效果，将损失一层' },
+  { name: '海染砗磲',           en: 'Ocean-Hued Clam',                      bonus: '治疗加成+15%' , bonus4: '装备此圣遗物套装的角色对队伍中的角色进行治疗时，将产生持续3秒的海染泡沫，记录治疗的生命值回复量（包括溢出值）；持续时间结束时，海染泡沫将会爆炸，对周围的敌人造成90%累计回复量的伤害（该伤害结算方式同感电、超导等元素反应，但不受元素精通、等级或反应伤害加成效果影响）；海染泡沫至多记录30000点回复量，含溢出部分的治疗量' },
+  { name: '绝缘之旗印',         en: 'Emblem of Severed Fate',               bonus: '元素充能效率+20%' , bonus4: '基于元素充能效率的25%，提高元素爆发造成的伤害。至多通过这种方式获得75%提升' },
   { name: '追忆之注连',         en: "Shimenawa's Reminiscence",             bonus: '攻击力+18%' },
   /* ---- 1.x 开服系列（含 1.5） ---- */
-  { name: '千岩牢固',           en: 'Tenacity of the Millelith',            bonus: '生命值+20%' },
-  { name: '苍白之火',           en: 'Pale Flame',                           bonus: '物理伤害+25%' },
-  { name: '平息鸣雷的尊者',     en: 'Thundersoother',                       bonus: '受到的雷元素伤害-40%' },
-  { name: '炽烈的炎之魔女',     en: 'Crimson Witch of Flames',              bonus: '火元素伤害+15%' },
+  { name: '千岩牢固',           en: 'Tenacity of the Millelith',            bonus: '生命值+20%' , bonus4: '元素战技命中敌人后，使队伍中附近的所有角色攻击力提升20%，护盾强效提升30%，持续3秒' },
+  { name: '苍白之火',           en: 'Pale Flame',                           bonus: '物理伤害+25%' , bonus4: '元素战技命中敌人后，攻击力提升9%；叠满2层时，2件套的效果提升100%' },
+  { name: '平息鸣雷的尊者',     en: 'Thundersoother',                       bonus: '受到的雷元素伤害-40%' , bonus4: '对处于雷元素影响下的敌人造成的伤害提升35%' },
+  { name: '炽烈的炎之魔女',     en: 'Crimson Witch of Flames',              bonus: '火元素伤害+15%' , bonus4: '超载、燃烧、烈绽放反应造成的伤害提升40%，蒸发、融化反应的加成系数提高15%；施放元素战技后的10秒内，2件套的效果提高50%，该效果最多叠加3次' },
   { name: '流浪大地的乐团',     en: "Wanderer's Troupe",                    bonus: '元素精通+80' },
-  { name: '染血的骑士道',       en: 'Bloodstained Chivalry',                bonus: '物理伤害+25%' },
-  { name: '被怜爱的少女',       en: 'Maiden Beloved',                       bonus: '治疗加成+15%' },
+  { name: '染血的骑士道',       en: 'Bloodstained Chivalry',                bonus: '物理伤害+25%' , bonus4: '击败敌人后的10秒内，施放重击时不消耗体力，且重击造成的伤害提升50%' },
+  { name: '被怜爱的少女',       en: 'Maiden Beloved',                       bonus: '治疗加成+15%' , bonus4: '施放元素战技或元素爆发后的10秒内，队伍中所有角色受治疗效果加成提高20%' },
   { name: '角斗士的终幕礼',     en: "Gladiator's Finale",                   bonus: '攻击力+18%' },
-  { name: '渡过烈火的贤人',     en: 'Lavawalker',                           bonus: '受到的火元素伤害-40%' },
-  { name: '悠古的磐岩',         en: 'Archaic Petra',                        bonus: '岩元素伤害+15%' },
-  { name: '如雷的盛怒',         en: 'Thundering Fury',                      bonus: '雷元素伤害+15%' },
-  { name: '沉沦之心',           en: 'Heart of Depth',                       bonus: '水元素伤害+15%' },
-  { name: '逆飞的流星',         en: 'Retracing Bolide',                     bonus: '护盾强效+35%' },
-  { name: '昔日宗室之仪',       en: 'Noblesse Oblige',                      bonus: '元素爆发伤害+20%' },
-  { name: '翠绿之影',           en: 'Viridescent Venerer',                  bonus: '风元素伤害+15%' },
-  { name: '冰风迷途的勇士',     en: 'Blizzard Strayer',                     bonus: '冰元素伤害+15%' },
+  { name: '渡过烈火的贤人',     en: 'Lavawalker',                           bonus: '受到的火元素伤害-40%' , bonus4: '对处于火元素影响下的敌人造成的伤害提升35%' },
+  { name: '悠古的磐岩',         en: 'Archaic Petra',                        bonus: '岩元素伤害+15%' , bonus4: '获得结晶反应形成的晶片或触发月结晶反应时，队伍中所有角色获得35%对应元素伤害加成，持续10秒；同时只能通过该效果获得一种元素伤害加成' },
+  { name: '如雷的盛怒',         en: 'Thundering Fury',                      bonus: '雷元素伤害+15%' , bonus4: '超载、感电、超导、超绽放反应造成的伤害提升40%，超激化反应带来的伤害提升提高20%，月感电、星超导反应造成的伤害提升20%；触发上述元素反应或原激化反应时，元素战技冷却时间减少1秒' },
+  { name: '沉沦之心',           en: 'Heart of Depth',                       bonus: '水元素伤害+15%' , bonus4: '施放元素战技后的15秒内，普通攻击与重击造成的伤害提高30%' },
+  { name: '逆飞的流星',         en: 'Retracing Bolide',                     bonus: '护盾强效+35%' , bonus4: '处于护盾庇护下时，额外获得40%普通攻击和重击伤害加成' },
+  { name: '昔日宗室之仪',       en: 'Noblesse Oblige',                      bonus: '元素爆发伤害+20%' , bonus4: '释放元素爆发后，队伍中所有角色攻击力提升20％，持续12秒，该效果不可叠加' },
+  { name: '翠绿之影',           en: 'Viridescent Venerer',                  bonus: '风元素伤害+15%' , bonus4: '扩散反应造成的伤害提升60%，星扩散反应造成的伤害提升20%；根据扩散的元素类型，降低受到影响的敌人40%的对应元素抗性，持续10秒；对敌人触发星扩散反应时，也会降低其40%的冰元素抗性' },
+  { name: '冰风迷途的勇士',     en: 'Blizzard Strayer',                     bonus: '冰元素伤害+15%' , bonus4: '攻击处于冰元素影响下的敌人时，暴击率提高20%；若敌人处于冻结状态下，则暴击率额外提高20%' },
 ];
 const SET_NAMES = SETS.map(s => s.name);
 const SET_BONUS = Object.fromEntries(SETS.map(s => [s.name, s.bonus]));
@@ -2062,58 +2065,58 @@ const CH_META = {
 
 const RAW_CHARS = [
   /* ---------- 火 ---------- */
-  ['胡桃',    'pyro', [
+  ['胡桃',      'pyro', [
     {sets:['炽烈的炎之魔女'], sands:['hpP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'em', 'atkP'], roles:['增伤', '精通', '增幅反应']},
     {sets:['追忆之注连'], sands:['hpP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'em', 'atkP'], roles:['增伤', '精通', '充能']},
     {sets:['沙上楼阁史话'], sands:['hpP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'em', 'atkP'], roles:['增伤', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1627/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/4762213', 'Asgater'], ['https://www.miyoushe.com/ys/article/58957682', 'HoYo青枫']], ''],
-  ['迪卢克',    'pyro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/1627/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/58957682', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/59760224', '因为邪王真眼是最强的']],   ''],
+  ['迪卢克',      'pyro', [
     {sets:['炽烈的炎之魔女'], sands:['atkP', 'em'], goblet:['pyro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤', '精通']},
     {sets:['长夜之誓'], sands:['atkP', 'em'], goblet:['pyro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/75/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2089934', 'Asgater'], ['https://www.miyoushe.com/ys/article/73900753', 'HoYo青枫']], ''],
-  ['可莉',    'pyro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/75/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73900753', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/69811876', '风伤幽冥']],   ''],
+  ['可莉',      'pyro', [
     {sets:['风起之日'], sands:['atkP'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '充能']},
     {sets:['逐影猎人'], sands:['atkP'], goblet:['pyro'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/55/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/6675887', 'Asgater'], ['https://www.miyoushe.com/ys/article/73738502', 'HoYo青枫']], ''],
-  ['宵宫',    'pyro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/55/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73738502', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/73525061', '风伤幽冥']],   ''],
+  ['宵宫',      'pyro', [
     {sets:['追忆之注连'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤', '精通']},
     {sets:['沙上楼阁史话'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤', '精通']},
     {sets:['来歆余响'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/2124/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64575893', 'Asgater'], ['https://www.miyoushe.com/ys/article/47752227', 'Asgater']], ''],
-  ['林尼',    'pyro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/2124/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64575893', 'Asgater'], ['https://www.miyoushe.com/ys/article/64629774', '风伤幽冥']],   ''],
+  ['林尼',      'pyro', [
     {sets:['逐影猎人'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
     {sets:['逆飞的流星'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤', '护盾']},
     {sets:['未竟的遐思'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/6937/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/42419524', 'Asgater'], ['https://www.miyoushe.com/ys/article/74678199', 'HoYo青枫']], ''],
-  ['香菱',    'pyro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/6937/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/42419524', 'Asgater'], ['https://www.miyoushe.com/ys/article/74678199', 'HoYo青枫']],   ''],
+  ['香菱',      'pyro', [
     {sets:['炽烈的炎之魔女'], sands:['er', 'atkP'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['er', 'cr', 'cd'], roles:['输出', '增伤', '精通', '充能']},
     {sets:['绝缘之旗印'], sands:['er', 'atkP'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['er', 'cr', 'cd'], roles:['输出', '增伤', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/112/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/1845835', 'Asgater'], ['https://www.miyoushe.com/ys/article/75875081', 'HoYo青枫']], ''],
-  ['班尼特',    'pyro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/112/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75875081', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/53677077', '风扬帆影']],   ''],
+  ['班尼特',      'pyro', [
     {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP', 'cr'], subs:['hpP', 'er', 'cr'], roles:['输出', '治疗', '辅助', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/105/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2785371', 'Asgater'], ['https://www.miyoushe.com/ys/article/71497654', 'HoYo青枫']], ''],
-  ['玛薇卡',    'pyro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/105/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71497654', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/62847331', '风伤幽冥']],   ''],
+  ['玛薇卡',      'pyro', [
     {sets:['黑曜秘典'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['烬城勇者绘卷'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤', '辅助', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/503613/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75883027', 'Asgater'], ['https://www.miyoushe.com/ys/article/75777988', 'HoYo青枫']], ''],
-  ['阿蕾奇诺',    'pyro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/503613/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75883027', 'Asgater'], ['https://www.miyoushe.com/ys/article/75777988', 'HoYo青枫']],   ''],
+  ['阿蕾奇诺',      'pyro', [
     {sets:['谐律异想断章'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
     {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
     {sets:['逐影猎人'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
     {sets:['饰金之梦'], sands:['em', 'atkP'], goblet:['em', 'pyro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'em', 'atkP'], roles:['增伤', '精通', '增幅反应']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/501157/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77185586', 'Asgater'], ['https://www.miyoushe.com/ys/article/77156164', 'HoYo青枫']], ''],
-  ['托马',    'pyro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/501157/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77185586', 'Asgater'], ['https://www.miyoushe.com/ys/article/77156164', 'HoYo青枫']],   ''],
+  ['托马',      'pyro', [
     {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP', 'cr', 'cd'], roles:['增伤', '辅助']},
     {sets:['乐园遗落之花'], sands:['em'], goblet:['em'], circlet:['em'], subs:['er', 'em'], roles:['输出', '精通', '剧变反应']},
     {sets:['绝缘之旗印'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP', 'cr', 'cd'], roles:['护盾']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/2606/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/11543853', 'Asgater'], ['https://www.miyoushe.com/ys/article/45620252', 'HoYo青枫']], ''],
-  ['烟绯',    'pyro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/2606/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/45620252', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/57703960', '风伤幽冥']],   ''],
+  ['烟绯',      'pyro', [
     {sets:['炽烈的炎之魔女'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['逐影猎人'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['流浪大地的乐团'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['角斗士的终幕礼'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1795/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/10183681', 'Asgater'], ['https://www.miyoushe.com/ys/article/25075070', '嗔痴ovo']], ''],
-  ['迪希雅',    'pyro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/1795/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/50810071', '风伤幽冥'], ['https://www.miyoushe.com/ys/article/63436414', '风伤幽冥']],   ''],
+  ['迪希雅',      'pyro', [
     {sets:['绝缘之旗印'], sands:['er', 'atkP', 'hpP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'atkP'], roles:['增伤', '充能']},
     {sets:['花海甘露之光'], sands:['er', 'atkP', 'hpP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'atkP'], roles:['输出', '增伤']},
     {sets:['炽烈的炎之魔女'], sands:['er', 'atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'atkP'], roles:['增伤']},
@@ -2121,191 +2124,191 @@ const RAW_CHARS = [
     {sets:['饰金之梦'], sands:['em', 'er', 'atkP'], goblet:['em', 'pyro', 'atkP'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'hpP', 'atkP'], roles:['增伤', '精通', '剧变反应']},
     {sets:['乐园遗落之花'], sands:['em', 'er', 'atkP'], goblet:['em', 'pyro', 'atkP'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'hpP', 'atkP'], roles:['增伤', '精通', '剧变反应']},
     {sets:['千岩牢固'], sands:['er', 'atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'atkP'], roles:['增伤', '护盾', '辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/6180/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/36343000', 'Asgater'], ['https://www.miyoushe.com/ys/article/36342244', '饭桶绢']], ''],
-  ['嘉明',    'pyro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/6180/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/36343971', '新剪刀k'], ['https://www.miyoushe.com/ys/article/69819573', '风伤幽冥']],   ''],
+  ['嘉明',      'pyro', [
     {sets:['长夜之誓'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '精通']},
     {sets:['逐影猎人'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '精通']},
     {sets:['炽烈的炎之魔女'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '精通']},
     {sets:['辰砂往生录'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/500672/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/48532329', 'Asgater'], ['https://www.miyoushe.com/ys/article/71813629', 'HoYo青枫']], ''],
-  ['辛焱',    'pyro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/500672/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/48532329', 'Asgater'], ['https://www.miyoushe.com/ys/article/71813629', 'HoYo青枫']],   ''],
+  ['辛焱',      'pyro', [
     {sets:['苍白之火'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er', 'defP'], roles:['增伤']},
     {sets:['染血的骑士道', '苍白之火'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er', 'defP'], roles:['增伤']},
     {sets:['追忆之注连'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er', 'defP'], roles:['输出', '增伤', '充能']},
     {sets:['昔日宗室之仪'], sands:['defP'], goblet:['defP'], circlet:['defP', 'cd'], subs:['defP', 'er', 'cd', 'cr'], roles:['护盾', '辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1291/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/14848049', 'Asgater'], ['https://www.miyoushe.com/ys/article/49461187', 'HoYo青枫']], ''],
-  ['夏沃蕾',    'pyro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/1291/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/49461187', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/57070050', '风伤幽冥']],   ''],
+  ['夏沃蕾',      'pyro', [
     {sets:['昔日宗室之仪'], sands:['hpP', 'er'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'er', 'cr', 'em'], roles:['辅助']},
     {sets:['昔时之歌'], sands:['hpP', 'er'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['hpP', 'er', 'cr', 'em'], roles:['治疗']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/500605/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62961015', 'Asgater'], ['https://www.miyoushe.com/ys/article/71769196', 'HoYo青枫']], ''],
+  ],     [['https://baike.mihoyo.com/ys/obc/content/500605/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62961015', 'Asgater'], ['https://www.miyoushe.com/ys/article/71769196', 'HoYo青枫']],   ''],
 
   /* ---------- 水 ---------- */
-  ['行秋',    'hydro', [
+  ['行秋',      'hydro', [
     {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '辅助', '精通', '充能']},
     {sets:['绝缘之旗印'], sands:['er', 'atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/241/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2552072', 'Asgater'], ['https://www.miyoushe.com/ys/article/75141780', 'HoYo青枫']], ''],
-  ['夜兰',    'hydro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/241/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75141780', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/22007968', '流曳']],   ''],
+  ['夜兰',      'hydro', [
     {sets:['绝缘之旗印'], sands:['hpP', 'er'], goblet:['hydro', 'hpP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'er', 'hpP'], roles:['增伤', '充能']},
     {sets:['昔日宗室之仪'], sands:['hpP', 'er'], goblet:['hydro', 'hpP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'er', 'hpP'], roles:['增伤', '辅助']},
     {sets:['逐影猎人'], sands:['hpP', 'er'], goblet:['hydro', 'hpP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'er', 'hpP'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/4081/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/69095833', 'Asgater'], ['https://www.miyoushe.com/ys/article/69055107', 'HoYo青枫']], ''],
-  ['达达利亚',    'hydro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/4081/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/69095833', 'Asgater'], ['https://www.miyoushe.com/ys/article/69055107', 'HoYo青枫']],   ''],
+  ['达达利亚',      'hydro', [
     {sets:['水仙之梦'], sands:['atkP'], goblet:['hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
     {sets:['沉沦之心'], sands:['atkP'], goblet:['hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
     {sets:['沙上楼阁史话'], sands:['atkP'], goblet:['hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1220/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61585425', 'Asgater'], ['https://www.miyoushe.com/ys/article/5346426', 'Asgater']], ''],
-  ['珊瑚宫心海',    'hydro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/1220/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61585425', 'Asgater'], ['https://www.miyoushe.com/ys/article/43187652', '七月的休']],   ''],
+  ['珊瑚宫心海',      'hydro', [
     {sets:['海染砗磲'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['heal'], subs:['hpP', 'er', 'em'], roles:['增伤', '治疗', '辅助']},
     {sets:['昔时之歌'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['heal'], subs:['hpP', 'er', 'em'], roles:['增伤', '治疗']},
     {sets:['被怜爱的少女'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['heal'], subs:['hpP', 'er', 'em'], roles:['增伤', '治疗']},
     {sets:['千岩牢固'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['heal'], subs:['hpP', 'er', 'em'], roles:['输出', '增伤', '辅助']},
     {sets:['乐园遗落之花'], sands:['hpP', 'er'], goblet:['hpP', 'em'], circlet:['heal'], subs:['hpP', 'er', 'em'], roles:['输出', '精通', '剧变反应']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/2403/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64666544', 'Asgater'], ['https://www.miyoushe.com/ys/article/41647205', 'Asgater']], ''],
-  ['莫娜',    'hydro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/2403/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64666544', 'Asgater'], ['https://www.miyoushe.com/ys/article/9832329', '流曳']],   ''],
+  ['莫娜',      'hydro', [
     {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'atkP', 'em', 'cr', 'cd'], roles:['增伤']},
     {sets:['千岩牢固'], sands:['er', 'atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'atkP', 'em', 'cr', 'cd'], roles:['增伤', '辅助']},
     {sets:['绝缘之旗印'], sands:['er', 'atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'atkP', 'em', 'cr', 'cd'], roles:['增伤', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1057/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71353241', 'Asgater'], ['https://www.miyoushe.com/ys/article/71337189', '猫冬']], ''],
-  ['妮露',    'hydro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/1057/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71353241', 'Asgater'], ['https://www.miyoushe.com/ys/article/50283916', '风伤幽冥']],   ''],
+  ['妮露',      'hydro', [
     {sets:['千岩牢固', '花海甘露之光'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['em', 'hpP', 'cr', 'cd'], roles:['输出', '精通']},
     {sets:['沉沦之心', '水仙之梦'], sands:['hpP'], goblet:['hydro', 'hpP'], circlet:['cr', 'cd', 'hpP'], subs:['em', 'cr', 'cd', 'hpP'], roles:['输出', '增伤', '精通']},
     {sets:['深林的记忆'], sands:['hpP'], goblet:['hydro', 'hpP'], circlet:['cr', 'cd', 'hpP'], subs:['em', 'cr', 'cd', 'hpP'], roles:['输出', '增伤', '辅助', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/5020/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68590672', 'Asgater'], ['https://www.miyoushe.com/ys/article/55223165', 'HoYo青枫']], ''],
-  ['芙宁娜',    'hydro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/5020/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68590672', 'Asgater'], ['https://www.miyoushe.com/ys/article/55223165', 'HoYo青枫']],   ''],
+  ['芙宁娜',      'hydro', [
     {sets:['黄金剧团'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'er'], roles:['输出', '增伤']},
     {sets:['千岩牢固'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'er'], roles:['增伤', '辅助']},
     {sets:['昔日宗室之仪'], sands:['hpP'], goblet:['hpP', 'hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'er'], roles:['增伤', '辅助']},
     {sets:['逐影猎人'], sands:['hpP', 'er'], goblet:['hpP', 'hydro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'hpP', 'er'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/500291/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70375033', 'Asgater'], ['https://www.miyoushe.com/ys/article/69782038', 'HoYo青枫']], ''],
-  ['那维莱特',    'hydro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/500291/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70375033', 'Asgater'], ['https://www.miyoushe.com/ys/article/69782038', 'HoYo青枫']],   ''],
+  ['那维莱特',      'hydro', [
     {sets:['逐影猎人'], sands:['hpP'], goblet:['hydro'], circlet:['cd', 'hpP'], subs:['cr', 'cd', 'hpP'], roles:['输出', '增伤']},
     {sets:['沉沦之心'], sands:['hpP'], goblet:['hydro'], circlet:['cr', 'cd', 'hpP'], subs:['cr', 'cd', 'hpP'], roles:['增伤']},
     {sets:['水仙之梦', '沉沦之心'], sands:['hpP'], goblet:['hydro'], circlet:['cr', 'cd', 'hpP'], subs:['cr', 'cd', 'hpP'], roles:['增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/500207/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72892872', 'Asgater'], ['https://www.miyoushe.com/ys/article/72778260', 'HoYo青枫']], ''],
-  ['芭芭拉',    'hydro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/500207/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72892872', 'Asgater'], ['https://www.miyoushe.com/ys/article/72778260', 'HoYo青枫']],   ''],
+  ['芭芭拉',      'hydro', [
     {sets:['被怜爱的少女'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP', 'cr'], roles:['治疗']},
     {sets:['海染砗磲'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP', 'cr'], roles:['输出', '治疗']},
     {sets:['昔时之歌'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP', 'cr'], roles:['输出', '治疗']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/61/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68736041', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/45449320', 'HoYo青枫']], ''],
-  ['玛拉妮',    'hydro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/61/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68736041', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/50809699', '风伤幽冥']],   ''],
+  ['玛拉妮',      'hydro', [
     {sets:['黑曜秘典'], sands:['hpP', 'em'], goblet:['hydro', 'hpP'], circlet:['cd', 'hpP'], subs:['cd', 'hpP', 'em', 'cr'], roles:['输出', '增伤', '精通']},
     {sets:['饰金之梦'], sands:['hpP', 'em'], goblet:['hydro', 'hpP'], circlet:['cd', 'hpP'], subs:['cd', 'hpP', 'em', 'cr'], roles:['增伤', '辅助', '精通']},
     {sets:['沉沦之心'], sands:['hpP', 'em'], goblet:['hydro', 'hpP'], circlet:['cd', 'hpP'], subs:['cd', 'hpP', 'em', 'cr'], roles:['增伤', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/501625/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/67646572', 'Asgater'], ['https://www.miyoushe.com/ys/article/67669637', 'HoYo青枫']], ''],
-  ['塔利雅',    'hydro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/501625/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/67646572', 'Asgater'], ['https://www.miyoushe.com/ys/article/67669637', 'HoYo青枫']],   ''],
+  ['塔利雅',      'hydro', [
     {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'cr'], roles:['辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/505418/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/65404405', 'Asgater'], ['https://www.miyoushe.com/ys/article/74011159', 'HoYo青枫']], ''],
-  ['希格雯',    'hydro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/505418/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/65404405', 'Asgater'], ['https://www.miyoushe.com/ys/article/74011159', 'HoYo青枫']],   ''],
+  ['希格雯',      'hydro', [
     {sets:['昔时之歌'], sands:['hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['hpP', 'er'], roles:['治疗', '辅助']},
     {sets:['海染砗磲'], sands:['hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['hpP', 'er'], roles:['治疗', '辅助']},
     {sets:['千岩牢固'], sands:['hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['hpP', 'er'], roles:['治疗', '辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/501214/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61942325', 'Asgater'], ['https://www.miyoushe.com/ys/article/74923340', 'HoYo青枫']], ''],
-  ['坎蒂丝',    'hydro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/501214/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61942325', 'Asgater'], ['https://www.miyoushe.com/ys/article/74923340', 'HoYo青枫']],   ''],
+  ['坎蒂丝',      'hydro', [
     {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hydro', 'hpP'], circlet:['hpP', 'cr'], subs:['cr', 'cd', 'hpP'], roles:['输出', '增伤', '辅助', '充能']},
     {sets:['绝缘之旗印'], sands:['er', 'hpP'], goblet:['hydro', 'hpP'], circlet:['hpP', 'cr'], subs:['cr', 'cd', 'hpP'], roles:['输出', '增伤', '充能']},
     {sets:['角斗士的终幕礼'], sands:['er', 'hpP'], goblet:['hydro', 'hpP'], circlet:['hpP', 'cr'], subs:['cr', 'cd', 'hpP', 'er'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/4781/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74049148', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/29481187', '猫冬']], ''],
+  ],  [['https://baike.mihoyo.com/ys/obc/content/4781/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74049148', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/65397318', '风伤幽冥']],   ''],
 
   /* ---------- 冰 ---------- */
-  ['甘雨',    'cryo', [
+  ['甘雨',      'cryo', [
     {sets:['流浪大地的乐团'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通', '增幅反应']},
     {sets:['追忆之注连'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通', '充能', '增幅反应']},
     {sets:['沙上楼阁史话'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通', '充能', '增幅反应']},
     {sets:['未竟的遐思'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通', '增幅反应']},
     {sets:['逐影猎人'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤', '精通', '增幅反应']},
     {sets:['冰风迷途的勇士'], sands:['atkP', 'er'], goblet:['cryo'], circlet:['cd'], subs:['cd', 'cr', 'atkP', 'er'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1433/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61529617', 'Asgater'], ['https://www.miyoushe.com/ys/article/38956966', 'Asgater']], ''],
-  ['神里绫华',    'cryo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/1433/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61529617', 'Asgater'], ['https://www.miyoushe.com/ys/article/15060332', '流曳']],   ''],
+  ['神里绫华',      'cryo', [
     {sets:['冰风迷途的勇士'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd', 'atkP'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
     {sets:['逐影猎人'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd', 'atkP'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
     {sets:['绝缘之旗印'], sands:['atkP', 'er'], goblet:['cryo', 'atkP'], circlet:['cd', 'atkP'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/2123/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64527638', 'Asgater'], ['https://www.miyoushe.com/ys/article/37017728', 'Asgater']], ''],
-  ['优菈',    'cryo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/2123/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64527638', 'Asgater'], ['https://www.miyoushe.com/ys/article/21035507', '流曳']],   ''],
+  ['优菈',      'cryo', [
     {sets:['苍白之火'], sands:['atkP'], goblet:['phys', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
     {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['phys', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/2040/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/40951883', 'Asgater'], ['https://www.miyoushe.com/ys/article/73861985', 'HoYo青枫']], ''],
-  ['申鹤',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/2040/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/40951883', 'Asgater'], ['https://www.miyoushe.com/ys/article/73861985', 'HoYo青枫']],   ''],
+  ['申鹤',      'cryo', [
     {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['atkP'], circlet:['atkP', 'cr', 'cd'], subs:['atkP', 'er', 'cr', 'cd'], roles:['辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/3386/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/65404318', 'Asgater'], ['https://www.miyoushe.com/ys/article/65464845', 'HoYo青枫']], ''],
-  ['莱欧斯利',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/3386/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/65404318', 'Asgater'], ['https://www.miyoushe.com/ys/article/65464845', 'HoYo青枫']],   ''],
+  ['莱欧斯利',      'cryo', [
     {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '辅助']},
     {sets:['逐影猎人'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '辅助', '精通']},
     {sets:['辰砂往生录'], sands:['em', 'atkP'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '辅助', '精通']},
     {sets:['沙上楼阁史话'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '辅助', '精通']},
     {sets:['追忆之注连'], sands:['atkP', 'em'], goblet:['cryo'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '辅助', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/500286/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62418468', 'Asgater'], ['https://www.miyoushe.com/ys/article/76302270', 'HoYo青枫']], ''],
-  ['迪奥娜',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/500286/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62418468', 'Asgater'], ['https://www.miyoushe.com/ys/article/76302270', 'HoYo青枫']],   ''],
+  ['迪奥娜',      'cryo', [
     {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP', 'cr'], roles:['辅助']},
     {sets:['千岩牢固'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP', 'cr'], roles:['治疗', '护盾', '充能']},
     {sets:['被怜爱的少女'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP'], roles:['治疗']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1221/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76347079', 'Asgater'], ['https://www.miyoushe.com/ys/article/76479642', 'HoYo青枫']], ''],
-  ['罗莎莉亚',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/1221/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76347079', 'Asgater'], ['https://www.miyoushe.com/ys/article/76479642', 'HoYo青枫']],   ''],
+  ['罗莎莉亚',      'cryo', [
     {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
     {sets:['冰风迷途的勇士'], sands:['er', 'atkP'], goblet:['cryo'], circlet:['cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤']},
     {sets:['苍白之火'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1744/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/11126959', 'Asgater'], ['https://www.miyoushe.com/ys/article/70615140', 'HoYo青枫']], ''],
-  ['七七',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/1744/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/11126959', 'Asgater'], ['https://www.miyoushe.com/ys/article/70615140', 'HoYo青枫']],   ''],
+  ['七七',      'cryo', [
     {sets:['千岩牢固'], sands:['atkP'], goblet:['atkP'], circlet:['heal', 'cr'], subs:['er', 'atkP', 'cr'], roles:['输出', '辅助']},
     {sets:['海染砗磲'], sands:['atkP'], goblet:['atkP'], circlet:['heal', 'cr'], subs:['er', 'atkP', 'cr'], roles:['输出', '治疗']},
     {sets:['昔时之歌'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal', 'cr'], subs:['er', 'atkP', 'cr'], roles:['治疗']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1056/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61557727', 'Asgater'], ['https://www.miyoushe.com/ys/article/76326299', 'HoYo青枫']], ''],
-  ['爱可菲',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/1056/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61557727', 'Asgater'], ['https://www.miyoushe.com/ys/article/76326299', 'HoYo青枫']],   ''],
+  ['爱可菲',      'cryo', [
     {sets:['黄金剧团'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
     {sets:['千岩牢固'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/504976/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73899692', 'Asgater'], ['https://www.miyoushe.com/ys/article/73987299', 'HoYo青枫']], ''],
-  ['丝柯克',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/504976/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73899692', 'Asgater'], ['https://www.miyoushe.com/ys/article/73987299', 'HoYo青枫']],   ''],
+  ['丝柯克',      'cryo', [
     {sets:['深廊终曲'], sands:['atkP'], goblet:['atkP', 'cryo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
     {sets:['逐影猎人'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤']},
     {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['atkP', 'cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/505417/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73966901', 'Asgater'], ['https://www.miyoushe.com/ys/article/73965211', 'HoYo青枫']], ''],
-  ['重云',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/505417/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73966901', 'Asgater'], ['https://www.miyoushe.com/ys/article/73965211', 'HoYo青枫']],   ''],
+  ['重云',      'cryo', [
     {sets:['昔日宗室之仪'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通', '充能']},
     {sets:['绝缘之旗印'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/644/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2994955', 'Asgater'], ['https://www.miyoushe.com/ys/article/45409890', 'HoYo青枫']], ''],
-  ['菲米尼',    'cryo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/644/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/45409890', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/44713435', '风伤幽冥']],   ''],
+  ['菲米尼',      'cryo', [
     {sets:['苍白之火'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
     {sets:['染血的骑士道', '苍白之火'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
     {sets:['冰风迷途的勇士'], sands:['atkP'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/7257/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/43154250', 'Asgater'], ['https://www.miyoushe.com/ys/article/76548802', 'HoYo青枫']], ''],
-  ['夏洛蒂',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/7257/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/43154250', 'Asgater'], ['https://www.miyoushe.com/ys/article/76548802', 'HoYo青枫']],   ''],
+  ['夏洛蒂',      'cryo', [
     {sets:['昔时之歌'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal'], subs:['cr', 'atkP'], roles:['治疗', '辅助']},
     {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal'], subs:['cr', 'atkP'], roles:['辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/500292/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/45238643', 'Asgater'], ['https://www.miyoushe.com/ys/article/74068739', 'HoYo青枫']], ''],
-  ['米卡',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/500292/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/45238643', 'Asgater'], ['https://www.miyoushe.com/ys/article/74068739', 'HoYo青枫']],   ''],
+  ['米卡',      'cryo', [
     {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP', 'cr'], subs:['er', 'hpP', 'cr'], roles:['辅助']},
     {sets:['海染砗磲'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP', 'cr'], subs:['er', 'hpP', 'cr'], roles:['治疗', '辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/6285/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/37055160', 'Asgater'], ['https://www.miyoushe.com/ys/article/75831154', 'HoYo青枫']], ''],
+  ],     [['https://baike.mihoyo.com/ys/obc/content/6285/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/37055160', 'Asgater'], ['https://www.miyoushe.com/ys/article/75831154', 'HoYo青枫']],   ''],
 
   /* ---------- 雷 ---------- */
-  ['雷电将军',    'electro', [
+  ['雷电将军',      'electro', [
     {sets:['绝缘之旗印'], sands:['er'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er'], roles:['增伤', '充能']},
     {sets:['乐园遗落之花'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em'], roles:['精通', '剧变反应']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/2404/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76824456', 'Asgater'], ['https://www.miyoushe.com/ys/article/76739565', 'HoYo青枫']], ''],
-  ['八重神子',    'electro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/2404/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76824456', 'Asgater'], ['https://www.miyoushe.com/ys/article/76739565', 'HoYo青枫']],   ''],
+  ['八重神子',      'electro', [
     {sets:['炉火融炼之心'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤', '辅助', '精通']},
     {sets:['千岩牢固'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['辅助']},
     {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['饰金之梦'], sands:['atkP', 'em'], goblet:['atkP', 'electro'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '辅助', '精通']},
     {sets:['黄金剧团'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '副C']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/3564/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76347725', 'Asgater'], ['https://www.miyoushe.com/ys/article/76435138', 'HoYo青枫']], ''],
-  ['菲谢尔',    'electro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/3564/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76347725', 'Asgater'], ['https://www.miyoushe.com/ys/article/76435138', 'HoYo青枫']],   ''],
+  ['菲谢尔',      'electro', [
     {sets:['风起之日'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤']},
     {sets:['黄金剧团'], sands:['atkP', 'em'], goblet:['electro'], circlet:['cr'], subs:['cd', 'cr', 'atkP', 'em', 'er'], roles:['输出', '增伤', '副C', '精通']},
     {sets:['千岩牢固'], sands:['atkP', 'er'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er', 'em'], roles:['输出', '增伤', '辅助']},
     {sets:['如雷的盛怒'], sands:['atkP', 'em'], goblet:['electro'], circlet:['cr'], subs:['cd', 'cr', 'atkP', 'em', 'er'], roles:['增伤', '精通', '剧变反应']},
     {sets:['苍白之火'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/382/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72463227', 'Asgater'], ['https://www.miyoushe.com/ys/article/72528522', 'HoYo青枫']], ''],
-  ['刻晴',    'electro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/382/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72463227', 'Asgater'], ['https://www.miyoushe.com/ys/article/72528522', 'HoYo青枫']],   ''],
+  ['刻晴',      'electro', [
     {sets:['如雷的盛怒'], sands:['atkP', 'em'], goblet:['electro'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1058/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61418035', 'Asgater'], ['https://www.miyoushe.com/ys/article/1787731', 'Asgater']], ''],
-  ['赛诺',    'electro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/1058/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61418035', 'Asgater'], ['https://www.miyoushe.com/ys/article/69883014', '风伤幽冥']],   ''],
+  ['赛诺',      'electro', [
     {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
     {sets:['如雷的盛怒'], sands:['em', 'atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['em', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '精通', '充能']},
     {sets:['饰金之梦'], sands:['em', 'atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['em', 'cr', 'cd', 'atkP'], roles:['增伤', '精通']},
     {sets:['穹境示现之夜'], sands:['em', 'atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['em', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '精通', '剧变反应']},
     {sets:['角斗士的终幕礼'], sands:['atkP', 'em'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['em', 'cr', 'cd', 'atkP'], roles:['增伤', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/4780/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76480300', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/29481308', '猫冬']], ''],
-  ['久岐忍',    'electro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/4780/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76480300', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/76282139', '风伤幽冥']],   ''],
+  ['久岐忍',      'electro', [
     {sets:['饰金之梦'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em', 'hpP', 'er'], roles:['输出', '精通']},
     {sets:['如雷的盛怒'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em', 'hpP', 'er'], roles:['输出', '精通']},
     {sets:['乐园遗落之花'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em', 'hpP', 'er'], roles:['输出', '精通', '剧变反应']},
@@ -2314,380 +2317,380 @@ const RAW_CHARS = [
     {sets:['海染砗磲'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'hpP', 'cr'], subs:['cr', 'em', 'hpP', 'er'], roles:['输出', '治疗', '精通']},
     {sets:['被怜爱的少女'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'hpP', 'cr'], subs:['cr', 'em', 'hpP', 'er'], roles:['治疗', '精通']},
     {sets:['被怜爱的少女'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['cr', 'em', 'hpP', 'er'], roles:['治疗', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/4148/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/32513206', 'Asgater'], ['https://www.miyoushe.com/ys/article/68674152', 'HoYo青枫']], ''],
-  ['九条裟罗',    'electro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/4148/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68674152', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/58831154', '风伤幽冥']],   ''],
+  ['九条裟罗',      'electro', [
     {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '辅助']},
     {sets:['绝缘之旗印'], sands:['atkP', 'er'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/2402/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/9131930', 'Asgater'], ['https://www.miyoushe.com/ys/article/25074355', '嗔痴ovo']], ''],
-  ['雷泽',    'electro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/2402/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/9131930', 'Asgater'], ['https://www.miyoushe.com/ys/article/9380133', '流曳']],   ''],
+  ['雷泽',      'electro', [
     {sets:['风起之日'], sands:['atkP'], goblet:['phys', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤']},
     {sets:['苍白之火'], sands:['atkP'], goblet:['phys', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通', '充能']},
     {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['phys', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/56/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2178005', 'Asgater'], ['https://www.miyoushe.com/ys/article/75508081', 'HoYo青枫']], ''],
-  ['克洛琳德',    'electro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/56/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75508081', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/71180154', '风伤幽冥']],   ''],
+  ['克洛琳德',      'electro', [
     {sets:['谐律异想断章'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤']},
     {sets:['如雷的盛怒'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通']},
     {sets:['逐影猎人'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤']},
     {sets:['来歆余响'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤']},
     {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'atkP', 'em'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/501213/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75166713', 'Asgater'], ['https://www.miyoushe.com/ys/article/74324480', 'HoYo青枫']], ''],
-  ['瓦雷莎',    'electro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/501213/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75166713', 'Asgater'], ['https://www.miyoushe.com/ys/article/74324480', 'HoYo青枫']],   ''],
+  ['瓦雷莎',      'electro', [
     {sets:['长夜之誓'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
     {sets:['黑曜秘典'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'atkP'], subs:['cd', 'cr', 'atkP', 'er'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/504570/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71719330', 'Asgater'], ['https://www.miyoushe.com/ys/article/71622492', 'HoYo青枫']], ''],
-  ['伊安珊',    'electro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/504570/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71719330', 'Asgater'], ['https://www.miyoushe.com/ys/article/71622492', 'HoYo青枫']],   ''],
+  ['伊安珊',      'electro', [
     {sets:['烬城勇者绘卷'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP', 'cr'], subs:['er', 'atkP', 'cr'], roles:['增伤', '辅助', '精通']},
     {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP', 'cr'], subs:['er', 'atkP', 'cr'], roles:['辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/504621/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62890274', 'Asgater'], ['https://www.miyoushe.com/ys/article/71744341', 'HoYo青枫']], ''],
-  ['欧洛伦',    'electro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/504621/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62890274', 'Asgater'], ['https://www.miyoushe.com/ys/article/71744341', 'HoYo青枫']],   ''],
+  ['欧洛伦',      'electro', [
     {sets:['烬城勇者绘卷'], sands:[], goblet:[], circlet:['cr'], subs:['cr'], roles:['输出', '副C', '辅助', '充能']},
     {sets:['烬城勇者绘卷'], sands:['atkP'], goblet:[], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/502927/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/59513932', 'Asgater'], ['https://www.miyoushe.com/ys/article/76822394', 'HoYo青枫']], ''],
-  ['多莉',    'electro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/502927/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/59513932', 'Asgater'], ['https://www.miyoushe.com/ys/article/76822394', 'HoYo青枫']],   ''],
+  ['多莉',      'electro', [
     {sets:['海染砗磲'], sands:['er', 'hpP'], goblet:['hpP', 'electro'], circlet:['heal', 'hpP'], subs:['hpP', 'er'], roles:['增伤', '治疗', '充能']},
     {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['electro', 'hpP'], circlet:['hpP', 'cd', 'cr'], subs:['hpP', 'cd', 'cr'], roles:['输出', '增伤', '充能']},
     {sets:['被怜爱的少女'], sands:['er', 'hpP'], goblet:['hpP', 'electro'], circlet:['heal', 'hpP'], subs:['hpP', 'er'], roles:['增伤', '治疗', '充能']},
     {sets:['如雷的盛怒'], sands:['atkP', 'er'], goblet:['electro'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'er'], roles:['输出', '增伤', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/4736/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/28690959', 'Asgater'], ['https://www.miyoushe.com/ys/article/69337526', 'HoYo青枫']], ''],
+  ],     [['https://baike.mihoyo.com/ys/obc/content/4736/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/28690959', 'Asgater'], ['https://www.miyoushe.com/ys/article/69337526', 'HoYo青枫']],   ''],
 
   /* ---------- 风 ---------- */
-  ['枫原万叶',    'anemo', [
+  ['枫原万叶',      'anemo', [
     {sets:['翠绿之影'], sands:['em', 'atkP'], goblet:['em', 'anemo'], circlet:['em', 'cr', 'cd'], subs:['em', 'er', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '精通', '剧变反应']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/2142/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64697921', 'Asgater'], ['https://www.miyoushe.com/ys/article/57050468', 'HoYo青枫']], ''],
-  ['温迪',    'anemo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/2142/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64697921', 'Asgater'], ['https://www.miyoushe.com/ys/article/57050468', 'HoYo青枫']],   ''],
+  ['温迪',      'anemo', [
     {sets:['翠绿之影'], sands:['atkP', 'em'], goblet:['em'], circlet:['cr', 'cd', 'em'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['辅助', '精通', '剧变反应']},
     {sets:['沙上楼阁史话'], sands:['atkP'], goblet:['anemo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
     {sets:['来歆余响'], sands:['atkP'], goblet:['anemo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
     {sets:['风起之日'], sands:['atkP'], goblet:['anemo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/57/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71128239', 'Asgater'], ['https://www.miyoushe.com/ys/article/71164926', 'HoYo青枫']], ''],
-  ['砂糖',    'anemo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/57/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71128239', 'Asgater'], ['https://www.miyoushe.com/ys/article/71164926', 'HoYo青枫']],   ''],
+  ['砂糖',      'anemo', [
     {sets:['翠绿之影'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['减抗', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1055/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/8687340', 'Asgater'], ['https://www.miyoushe.com/ys/article/73607818', 'HoYo青枫']], ''],
-  ['琴',    'anemo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/1055/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73607818', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/68934829', '风伤幽冥']],   ''],
+  ['琴',      'anemo', [
     {sets:['翠绿之影'], sands:['atkP', 'er'], goblet:['atkP'], circlet:['heal', 'cr'], subs:['cr', 'er', 'cd', 'atkP'], roles:['输出', '减抗', '辅助']},
     {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['atkP'], circlet:['heal', 'cr'], subs:['cr', 'er', 'cd', 'atkP'], roles:['输出', '辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/59/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/2439886', 'Asgater'], ['https://www.miyoushe.com/ys/article/73882906', 'HoYo青枫']], ''],
-  ['魈',    'anemo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/59/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73882906', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/55245347', '要和我一起去炸鱼吗m']],   ''],
+  ['魈',      'anemo', [
     {sets:['长夜之誓'], sands:['atkP'], goblet:['atkP', 'anemo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
     {sets:['辰砂往生录'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
     {sets:['逐影猎人'], sands:['atkP'], goblet:['atkP', 'anemo'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤']},
     {sets:['沙上楼阁史话'], sands:['atkP'], goblet:['atkP', 'anemo'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1498/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61486523', 'Asgater'], ['https://www.miyoushe.com/ys/article/49581298', 'HoYo青枫']], ''],
-  ['鹿野院平藏',    'anemo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/1498/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61486523', 'Asgater'], ['https://www.miyoushe.com/ys/article/49581298', 'HoYo青枫']],   ''],
+  ['鹿野院平藏',      'anemo', [
     {sets:['翠绿之影'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '辅助', '精通', '剧变反应']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/4197/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/25488733', 'Asgater'], ['https://www.miyoushe.com/ys/article/45911850', 'HoYo青枫']], ''],
-  ['早柚',    'anemo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/4197/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/25488733', 'Asgater'], ['https://www.miyoushe.com/ys/article/45911850', 'HoYo青枫']],   ''],
+  ['早柚',      'anemo', [
     {sets:['翠绿之影'], sands:['er', 'em', 'atkP'], goblet:['em', 'atkP', 'anemo'], circlet:['heal', 'em', 'atkP'], subs:['er', 'em', 'atkP'], roles:['增伤', '减抗', '精通']},
     {sets:['被怜爱的少女'], sands:['er', 'em', 'atkP'], goblet:['em', 'atkP', 'anemo'], circlet:['heal', 'em', 'atkP'], subs:['er', 'em', 'atkP'], roles:['增伤', '精通']},
     {sets:['昔日宗室之仪'], sands:['er', 'em', 'atkP'], goblet:['em', 'atkP', 'anemo'], circlet:['heal', 'em', 'atkP'], subs:['er', 'em', 'atkP'], roles:['增伤', '辅助', '精通']},
     {sets:['流浪大地的乐团'], sands:['er', 'em', 'atkP'], goblet:['em', 'atkP', 'anemo'], circlet:['heal', 'em', 'atkP'], subs:['er', 'em', 'atkP'], roles:['增伤', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/2125/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/8360257', 'Asgater'], ['https://www.miyoushe.com/ys/article/45698695', 'HoYo青枫']], ''],
-  ['流浪者',    'anemo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/2125/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/45698695', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/43236960', '风伤幽冥']],   ''],
+  ['流浪者',      'anemo', [
     {sets:['沙上楼阁史话'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['来歆余响'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['追忆之注连'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['逐影猎人'], sands:['atkP'], goblet:['anemo', 'atkP'], circlet:['cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/5494/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/32506738', 'Asgater'], ['https://www.miyoushe.com/ys/article/32509992', '饭桶绢']], ''],
-  ['闲云',    'anemo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/5494/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/38627094', '流曳'], ['https://www.miyoushe.com/ys/article/52853674', '荧岁镇太辰']],   ''],
+  ['闲云',      'anemo', [
     {sets:['翠绿之影'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP', 'cr', 'cd'], roles:['减抗', '辅助', '精通', '剧变反应']},
     {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP', 'cr', 'cd'], roles:[]},
     {sets:['昔时之歌'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP', 'cr', 'cd'], roles:['增伤', '治疗']},
     {sets:['海染砗磲'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP', 'cr', 'cd'], roles:['治疗']},
     {sets:['角斗士的终幕礼'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP', 'cr', 'cd'], roles:['充能']},
     {sets:['长夜之誓'], sands:['er', 'atkP'], goblet:['anemo', 'atkP'], circlet:['cr', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/500673/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62923290', 'Asgater'], ['https://www.miyoushe.com/ys/article/62920755', 'HoYo青枫']], ''],
-  ['恰斯卡',    'anemo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/500673/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62923290', 'Asgater'], ['https://www.miyoushe.com/ys/article/62920755', 'HoYo青枫']],   ''],
+  ['恰斯卡',      'anemo', [
     {sets:['黑曜秘典'], sands:['atkP'], goblet:['atkP'], circlet:['cd'], subs:['cd', 'atkP', 'cr'], roles:['输出', '增伤']},
     {sets:['逐影猎人'], sands:['atkP'], goblet:['atkP'], circlet:['cd'], subs:['cd', 'atkP', 'cr'], roles:['输出']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/502928/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74448954', 'Asgater'], ['https://www.miyoushe.com/ys/article/74429071', 'HoYo青枫']], ''],
-  ['琳妮特',    'anemo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/502928/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74448954', 'Asgater'], ['https://www.miyoushe.com/ys/article/74429071', 'HoYo青枫']],   ''],
+  ['琳妮特',      'anemo', [
     {sets:['翠绿之影'], sands:['atkP', 'er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'er', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '充能']},
     {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'er', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '充能']},
     {sets:['逐影猎人'], sands:['atkP', 'er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'er', 'cd', 'atkP'], roles:['输出', '增伤', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/6938/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/42420011', 'Asgater'], ['https://www.miyoushe.com/ys/article/77532016', 'HoYo青枫']], ''],
-  ['伊法',    'anemo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/6938/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/42420011', 'Asgater'], ['https://www.miyoushe.com/ys/article/77532016', 'HoYo青枫']],   ''],
+  ['伊法',      'anemo', [
     {sets:['翠绿之影'], sands:['em', 'atkP'], goblet:['em', 'anemo'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'atkP'], roles:['增伤', '精通', '剧变反应']},
     {sets:['烬城勇者绘卷'], sands:['em', 'atkP'], goblet:['em', 'anemo'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'atkP'], roles:['增伤', '辅助', '精通']},
     {sets:['黑曜秘典'], sands:['atkP'], goblet:['anemo'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/504977/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64215763', 'Asgater'], ['https://www.miyoushe.com/ys/article/64215506', 'HoYo青枫']], ''],
-  ['梦见月瑞希',    'anemo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/504977/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64215763', 'Asgater'], ['https://www.miyoushe.com/ys/article/64215506', 'HoYo青枫']],   ''],
+  ['梦见月瑞希',      'anemo', [
     {sets:['翠绿之影'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er', 'cr'], roles:['精通', '剧变反应']},
     {sets:['血红之证'], sands:['em', 'er'], goblet:['em'], circlet:['cr', 'cd', 'em'], subs:['em', 'er', 'cr'], roles:['输出', '增伤', '辅助', '精通', '剧变反应']},
     {sets:['饰金之梦'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er', 'cr'], roles:['精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/504440/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77540856', 'Asgater'], ['https://www.miyoushe.com/ys/article/76206764', 'HoYo青枫']], ''],
+  ],     [['https://baike.mihoyo.com/ys/obc/content/504440/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77540856', 'Asgater'], ['https://www.miyoushe.com/ys/article/76206764', 'HoYo青枫']],   ''],
 
   /* ---------- 岩 ---------- */
-  ['钟离',    'geo', [
+  ['钟离',      'geo', [
     {sets:['千岩牢固'], sands:['hpP', 'er'], goblet:['hpP', 'geo'], circlet:['hpP', 'cr'], subs:['hpP', 'er', 'cr', 'cd'], roles:['增伤', '护盾', '辅助']},
     {sets:['悠古的磐岩'], sands:['hpP', 'er'], goblet:['hpP', 'geo'], circlet:['hpP', 'cr'], subs:['hpP', 'er', 'cr', 'cd'], roles:['输出', '增伤', '辅助']},
     {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP', 'geo'], circlet:['hpP', 'cr'], subs:['er', 'hpP', 'cr', 'cd'], roles:['增伤', '辅助', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1290/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70478147', 'Asgater'], ['https://www.miyoushe.com/ys/article/60064315', 'HoYo青枫']], ''],
-  ['阿贝多',    'geo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/1290/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70478147', 'Asgater'], ['https://www.miyoushe.com/ys/article/60064315', 'HoYo青枫']],   ''],
+  ['阿贝多',      'geo', [
     {sets:['华馆梦醒形骸记'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd'], subs:['defP', 'er', 'cd', 'cr'], roles:['输出', '增伤']},
     {sets:['黄金剧团'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd'], subs:['defP', 'er', 'cd', 'cr'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/1360/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71574894', 'Asgater'], ['https://www.miyoushe.com/ys/article/73555470', 'HoYo青枫']], ''],
-  ['荒泷一斗',    'geo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/1360/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71574894', 'Asgater'], ['https://www.miyoushe.com/ys/article/73555470', 'HoYo青枫']],   ''],
+  ['荒泷一斗',      'geo', [
     {sets:['华馆梦醒形骸记'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'defP', 'er'], roles:['增伤']},
     {sets:['回声之林夜话'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'defP', 'er'], roles:['增伤', '副C', '精通']},
     {sets:['逆飞的流星'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'defP', 'er'], roles:['输出', '增伤', '护盾']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/3276/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64666521', 'Asgater'], ['https://www.miyoushe.com/ys/article/50245580', 'HoYo青枫']], ''],
-  ['诺艾尔',    'geo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/3276/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64666521', 'Asgater'], ['https://www.miyoushe.com/ys/article/50245580', 'HoYo青枫']],   ''],
+  ['诺艾尔',      'geo', [
     {sets:['华馆梦醒形骸记'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd', 'defP'], subs:['defP', 'cr', 'cd'], roles:['输出', '增伤']},
     {sets:['逐影猎人'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd', 'defP'], subs:['defP', 'cr', 'cd'], roles:['输出', '增伤']},
     {sets:['角斗士的终幕礼'], sands:['defP'], goblet:['geo'], circlet:['cr', 'cd', 'defP'], subs:['defP', 'cr', 'cd'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/111/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/6159886', 'Asgater'], ['https://www.miyoushe.com/ys/article/74472429', 'HoYo青枫']], ''],
-  ['五郎',    'geo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/111/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74472429', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/54232496', '风伤幽冥']],   ''],
+  ['五郎',      'geo', [
     {sets:['华馆梦醒形骸记'], sands:['defP', 'er'], goblet:['defP'], circlet:['cr', 'defP'], subs:['cr', 'defP', 'er'], roles:['输出', '副C', '辅助']},
     {sets:['昔日宗室之仪'], sands:['defP', 'er'], goblet:['defP'], circlet:['cr', 'defP'], subs:['cr', 'defP', 'er'], roles:['输出', '辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/3275/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/13047127', 'Asgater'], ['https://www.miyoushe.com/ys/article/72730171', 'HoYo青枫']], ''],
-  ['凝光',    'geo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/3275/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72730171', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/13306375', '流曳']],   ''],
+  ['凝光',      'geo', [
     {sets:['回声之林夜话'], sands:['atkP'], goblet:['geo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/78/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/3645665', 'Asgater'], ['https://www.miyoushe.com/ys/article/49459379', 'HoYo青枫']], ''],
-  ['娜维娅',    'geo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/78/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/49459379', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/34885085', '陈皮泡水er']],   ''],
+  ['娜维娅',      'geo', [
     {sets:['回声之林夜话'], sands:['atkP'], goblet:['geo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '辅助']},
     {sets:['黄金剧团'], sands:['atkP'], goblet:['geo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/500419/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64215722', 'Asgater'], ['https://www.miyoushe.com/ys/article/64212556', 'HoYo青枫']], ''],
-  ['希诺宁',    'geo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/500419/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64215722', 'Asgater'], ['https://www.miyoushe.com/ys/article/64212556', 'HoYo青枫']],   ''],
+  ['希诺宁',      'geo', [
     {sets:['烬城勇者绘卷'], sands:['defP'], goblet:['defP'], circlet:['defP', 'heal', 'cr'], subs:['defP', 'er', 'cr'], roles:['输出', '增伤', '精通']},
     {sets:['悠古的磐岩'], sands:['defP'], goblet:['defP'], circlet:['defP', 'heal', 'cr'], subs:['defP', 'er', 'cr'], roles:['输出', '辅助']},
     {sets:['黑曜秘典'], sands:['defP'], goblet:['defP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'defP'], roles:['输出', '增伤']},
     {sets:['华馆梦醒形骸记'], sands:['defP'], goblet:['defP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'defP'], roles:['输出']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/502306/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71701174', 'Asgater'], ['https://www.miyoushe.com/ys/article/71693771', 'HoYo青枫']], ''],
-  ['卡齐娜',    'geo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/502306/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71701174', 'Asgater'], ['https://www.miyoushe.com/ys/article/71693771', 'HoYo青枫']],   ''],
+  ['卡齐娜',      'geo', [
     {sets:['烬城勇者绘卷'], sands:['er', 'defP'], goblet:['geo', 'defP'], circlet:['cr', 'defP'], subs:['cd', 'er', 'defP'], roles:['增伤', '辅助']},
     {sets:['黄金剧团'], sands:['er', 'defP'], goblet:['geo', 'defP'], circlet:['cr', 'defP'], subs:['cd', 'er', 'defP'], roles:['输出', '增伤', '副C']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/501626/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/57054661', 'Asgater'], ['https://www.miyoushe.com/ys/article/57054342', 'HoYo青枫']], ''],
-  ['云堇',    'geo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/501626/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/57054661', 'Asgater'], ['https://www.miyoushe.com/ys/article/57054342', 'HoYo青枫']],   ''],
+  ['云堇',      'geo', [
     {sets:['华馆梦醒形骸记'], sands:['defP', 'er'], goblet:['defP'], circlet:['cr', 'defP'], subs:['cr', 'defP', 'er'], roles:[]},
     {sets:['昔日宗室之仪'], sands:['defP', 'er'], goblet:['defP'], circlet:['cr', 'defP'], subs:['cr', 'defP', 'er'], roles:[]},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/3387/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/40126329', 'Asgater'], ['https://www.miyoushe.com/ys/article/70590053', 'HoYo青枫']], ''],
+  ],     [['https://baike.mihoyo.com/ys/obc/content/3387/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/40126329', 'Asgater'], ['https://www.miyoushe.com/ys/article/70590053', 'HoYo青枫']],   ''],
 
   /* ---------- 草 ---------- */
-  ['纳西妲',    'dendro', [
+  ['纳西妲',      'dendro', [
     {sets:['深林的记忆'], sands:['em'], goblet:['em', 'dendro'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'er'], roles:['输出', '增伤', '减抗', '辅助', '精通', '充能']},
     {sets:['黄金剧团'], sands:['em'], goblet:['em', 'dendro'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'er'], roles:['输出', '增伤', '精通', '充能']},
     {sets:['深林的记忆', '饰金之梦'], sands:['em'], goblet:['em', 'dendro'], circlet:['em', 'cr', 'cd'], subs:['em', 'cr', 'cd', 'er'], roles:['输出', '增伤', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/5111/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68365889', 'Asgater'], ['https://www.miyoushe.com/ys/article/68333843', 'HoYo青枫']], ''],
-  ['艾尔海森',    'dendro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/5111/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68365889', 'Asgater'], ['https://www.miyoushe.com/ys/article/68333843', 'HoYo青枫']],   ''],
+  ['艾尔海森',      'dendro', [
     {sets:['饰金之梦'], sands:['em', 'atkP'], goblet:['dendro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '精通']},
     {sets:['深林的记忆', '饰金之梦'], sands:['em', 'atkP'], goblet:['dendro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '精通']},
     {sets:['深林的记忆'], sands:['em', 'atkP'], goblet:['dendro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'atkP'], roles:['输出', '增伤', '辅助', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/5865/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/40275921', 'Asgater'], ['https://www.miyoushe.com/ys/article/53490437', 'HoYo青枫']], ''],
-  ['提纳里',    'dendro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/5865/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/53490437', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/53493972', '风伤幽冥']],   ''],
+  ['提纳里',      'dendro', [
     {sets:['流浪大地的乐团'], sands:['em', 'atkP'], goblet:['dendro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '精通', '剧变反应']},
     {sets:['饰金之梦'], sands:['em', 'atkP'], goblet:['dendro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'em', 'atkP'], roles:['增伤', '精通', '剧变反应']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/4334/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/27853308', 'Asgater'], ['https://www.miyoushe.com/ys/article/40773364', 'O丶Ha丶Yo']], ''],
-  ['基尼奇',    'dendro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/4334/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/69888834', '风伤幽冥'], ['https://www.miyoushe.com/ys/article/28276046', '流曳']],   ''],
+  ['基尼奇',      'dendro', [
     {sets:['黑曜秘典'], sands:['atkP'], goblet:['dendro'], circlet:['cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤']},
     {sets:['未竟的遐思'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤']},
     {sets:['深林的记忆'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤', '减抗']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/501624/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64759482', 'Asgater'], ['https://www.miyoushe.com/ys/article/64752081', 'HoYo青枫']], ''],
-  ['艾梅莉埃',    'dendro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/501624/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64759482', 'Asgater'], ['https://www.miyoushe.com/ys/article/64752081', 'HoYo青枫']],   ''],
+  ['艾梅莉埃',      'dendro', [
     {sets:['未竟的遐思'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤']},
     {sets:['深林的记忆'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤', '减抗', '辅助']},
     {sets:['渡过烈火的贤人'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/501441/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/66196228', 'Asgater'], ['https://www.miyoushe.com/ys/article/74340680', 'HoYo青枫']], ''],
-  ['白术',    'dendro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/501441/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/66196228', 'Asgater'], ['https://www.miyoushe.com/ys/article/74340680', 'HoYo青枫']],   ''],
+  ['白术',      'dendro', [
     {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP'], roles:['输出', '辅助']},
     {sets:['海染砗磲'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP'], roles:['输出', '治疗', '辅助']},
     {sets:['昔时之歌'], sands:['hpP', 'er'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP'], roles:['治疗']},
     {sets:['深林的记忆'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP'], roles:['减抗']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/6489/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61386859', 'Asgater'], ['https://www.miyoushe.com/ys/article/39043255', 'HoYo青枫']], ''],
-  ['瑶瑶',    'dendro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/6489/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61386859', 'Asgater'], ['https://www.miyoushe.com/ys/article/39022726', '潇小渔']],   ''],
+  ['瑶瑶',      'dendro', [
     {sets:['深林的记忆'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP', 'cr'], subs:['em', 'er', 'atkP'], roles:['输出', '治疗', '辅助', '精通', '充能']},
     {sets:['千岩牢固'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal', 'cr'], subs:['em', 'er', 'atkP'], roles:['输出', '治疗', '辅助', '精通', '充能']},
     {sets:['海染砗磲', '被怜爱的少女'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal', 'cr'], subs:['em', 'er', 'atkP'], roles:['输出', '治疗', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/5866/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70045506', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/49457300', 'HoYo青枫']], ''],
-  ['柯莱',    'dendro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/5866/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70045506', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/49545157', '风伤幽冥']],   ''],
+  ['柯莱',      'dendro', [
     {sets:['深林的记忆'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['cr', 'atkP'], subs:['cr', 'er', 'em', 'atkP'], roles:['输出', '增伤', '减抗', '辅助', '精通', '充能']},
     {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['cr', 'atkP'], subs:['cr', 'er', 'em', 'atkP'], roles:['输出', '增伤', '辅助', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/4333/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/27844043', 'Asgater'], ['https://www.miyoushe.com/ys/article/70046336', 'HoYo青枫']], ''],
-  ['卡维',    'dendro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/4333/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70046336', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/42740346', '风伤幽冥']],   ''],
+  ['卡维',      'dendro', [
     {sets:['深林的记忆'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subs:['er', 'em', 'atkP', 'cr'], roles:['输出', '减抗', '精通', '充能']},
     {sets:['乐园遗落之花'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subs:['er', 'em', 'atkP', 'cr'], roles:['输出', '精通', '充能', '剧变反应']},
     {sets:['饰金之梦', '流浪大地的乐团'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subs:['er', 'em', 'atkP', 'cr'], roles:['输出', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/6490/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/38867337', 'Asgater'], ['https://www.miyoushe.com/ys/article/68699830', 'HoYo青枫']], ''],
-  ['绮良良',    'dendro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/6490/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68699830', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/39132970', '一波哥哥']],   ''],
+  ['绮良良',      'dendro', [
     {sets:['花海甘露之光', '千岩牢固'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'er', 'cr', 'em'], roles:['输出', '护盾', '精通', '充能']},
     {sets:['深林的记忆'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'er', 'cr', 'em'], roles:['输出', '减抗', '精通', '充能']},
     {sets:['昔日宗室之仪'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'er', 'cr', 'em'], roles:['输出', '辅助', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/6594/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75118187', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/39658042', 'O丶Ha丶Yo']], ''],
+  ],  [['https://baike.mihoyo.com/ys/obc/content/6594/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75118187', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/39305155', '风伤幽冥']],   ''],
 
   /* ---------- 补遗：2.x–4.x 老角色（初始库未收录） ---------- */
-  ['安柏',    'pyro', [
+  ['安柏',      'pyro', [
     {sets:['流浪大地的乐团'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通']},
     {sets:['追忆之注连'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em'], roles:['增伤', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/54/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/37742112', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/51535868', 'Sattle']], ''],
-  ['丽莎',    'electro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/54/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/42570254', '风伤幽冥'], ['https://www.miyoushe.com/ys/article/11926703', '纪伊酱']],   ''],
+  ['丽莎',      'electro', [
     {sets:['如雷的盛怒'], sands:['er', 'atkP'], goblet:['electro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er', 'em'], roles:['增伤', '精通', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/92/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/37742112', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/51617580', 'Sattle']], ''],
-  ['凯亚',    'cryo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/92/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/39680217', '风伤幽冥'], ['https://www.miyoushe.com/ys/article/45737796', '落羽师兄']],   ''],
+  ['凯亚',      'cryo', [
     {sets:['苍白之火'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤']},
     {sets:['绝缘之旗印'], sands:['atkP'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤', '充能']},
     {sets:['冰风迷途的勇士'], sands:['atkP'], goblet:['cryo'], circlet:['cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/76/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/15434494', 'Asgater'], ['https://www.miyoushe.com/ys/article/46046481', 'HoYo青枫']], ''],
-  ['北斗',    'electro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/76/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/46046481', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/42223270', '七月的休']],   ''],
+  ['北斗',      'electro', [
     {sets:['绝缘之旗印'], sands:['er', 'atkP'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '充能']},
     {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['electro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '辅助', '充能']},
     {sets:['如雷的盛怒'], sands:['er', 'atkP'], goblet:['electro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '充能']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/79/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76326682', 'Asgater'], ['https://www.miyoushe.com/ys/article/76458044', 'HoYo青枫']], ''],
-  ['埃洛伊',    'cryo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/79/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76458044', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/76265302', '风伤幽冥']],   ''],
+  ['埃洛伊',      'cryo', [
     {sets:['冰风迷途的勇士'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd'], subs:['cd', 'cr', 'atkP'], roles:['增伤']},
     {sets:['追忆之注连'], sands:['atkP'], goblet:['cryo'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], roles:['输出', '增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/2415/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/10800364', 'Asgater'], ['https://www.miyoushe.com/ys/article/22236845', '嗔痴ovo']], ''],
-  ['神里绫人',    'hydro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/2415/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/11394064', '暴躁的土土土'], ['https://www.miyoushe.com/ys/article/49845902', '风伤幽冥']],   ''],
+  ['神里绫人',      'hydro', [
     {sets:['沉沦之心'], sands:['atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
     {sets:['水仙之梦'], sands:['atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
     {sets:['来歆余响'], sands:['atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
     {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/3875/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64552586', 'Asgater'], ['https://www.miyoushe.com/ys/article/33794608', '坤易']], ''],
-  ['千织',    'geo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/3875/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64552586', 'Asgater'], ['https://www.miyoushe.com/ys/article/45936049', '闲摆花团扇']],   ''],
+  ['千织',      'geo', [
     {sets:['华馆梦醒形骸记'], sands:['defP'], goblet:['geo', 'defP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'defP', 'atkP'], roles:['输出', '增伤']},
     {sets:['黄金剧团'], sands:['defP'], goblet:['geo', 'defP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'defP', 'atkP'], roles:['输出', '增伤', '副C']},
     {sets:['千岩牢固'], sands:['defP'], goblet:['geo', 'defP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'defP', 'atkP'], roles:['输出', '增伤', '辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/500987/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64606530', 'Asgater'], ['https://www.miyoushe.com/ys/article/58421614', 'HoYo青枫']], ''],
-  ['珐露珊',    'anemo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/500987/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64606530', 'Asgater'], ['https://www.miyoushe.com/ys/article/58421614', 'HoYo青枫']],   ''],
+  ['珐露珊',      'anemo', [
     {sets:['千岩牢固'], sands:['er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '充能']},
     {sets:['昔日宗室之仪'], sands:['er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '充能']},
     {sets:['翠绿之影'], sands:['er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['er', 'cr', 'cd', 'atkP'], roles:['输出', '增伤', '辅助', '精通', '充能', '剧变反应']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/5493/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/32504999', 'Asgater'], ['https://www.miyoushe.com/ys/article/71373526', 'HoYo青枫']], ''],
-  ['莱依拉',    'cryo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/5493/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71373526', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/32553943', '风伤幽冥']],   ''],
+  ['莱依拉',      'cryo', [
     {sets:['千岩牢固'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP', 'cr'], roles:['护盾', '辅助']},
     {sets:['昔日宗室之仪'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP', 'cr'], roles:['辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/5297/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/45987202', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/37943311', 'HoYo青枫']], ''],
-  ['赛索斯',    'electro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/5297/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/45987202', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/64192812', '风伤幽冥']],   ''],
+  ['赛索斯',      'electro', [
     {sets:['流浪大地的乐团'], sands:['em'], goblet:['electro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'er'], roles:['输出', '增伤', '精通']},
     {sets:['饰金之梦'], sands:['em'], goblet:['electro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'er'], roles:['输出', '增伤', '精通']},
     {sets:['逆飞的流星'], sands:['em'], goblet:['electro', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'em', 'er'], roles:['增伤', '护盾', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/501212/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/53493547', 'Asgater'], ['https://www.miyoushe.com/ys/article/72499518', 'HoYo青枫']], ''],
-  ['蓝砚',    'anemo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/501212/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/53493547', 'Asgater'], ['https://www.miyoushe.com/ys/article/72499518', 'HoYo青枫']],   ''],
+  ['蓝砚',      'anemo', [
     {sets:['翠绿之影'], sands:['atkP', 'er'], goblet:['atkP', 'anemo'], circlet:['atkP', 'cr', 'cd'], subs:['atkP', 'er', 'cr', 'cd', 'em'], roles:['输出', '增伤', '精通', '剧变反应']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/503614/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61128886', 'Asgater'], ['https://www.miyoushe.com/ys/article/77813912', 'HoYo青枫']], ''],
-  ['茜特菈莉',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/503614/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/61128886', 'Asgater'], ['https://www.miyoushe.com/ys/article/77813912', 'HoYo青枫']],   ''],
+  ['茜特菈莉',      'cryo', [
     {sets:['烬城勇者绘卷'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['增伤', '精通', '充能']},
     {sets:['千岩牢固'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['护盾', '精通']},
     {sets:['昔日宗室之仪'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/503612/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76171935', 'Asgater'], ['https://www.miyoushe.com/ys/article/76168720', 'HoYo青枫']], ''],
+  ],     [['https://baike.mihoyo.com/ys/obc/content/503612/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76171935', 'Asgater'], ['https://www.miyoushe.com/ys/article/76168720', 'HoYo青枫']],   ''],
 
   /* ---------- 补遗：5.8 伊涅芙 + 6.0–6.5 挪德卡莱 ---------- */
-  ['伊涅芙',    'electro', [
+  ['伊涅芙',      'electro', [
     {sets:['纺月的夜歌'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '辅助', '精通']},
     {sets:['晨星与月的晓歌'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '副C', '精通', '剧变反应']},
     {sets:['千岩牢固'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:[]},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/505631/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77883619', 'Asgater'], ['https://www.miyoushe.com/ys/article/72311458', 'HoYo青枫']], ''],
-  ['菈乌玛',    'dendro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/505631/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77883619', 'Asgater'], ['https://www.miyoushe.com/ys/article/72311458', 'HoYo青枫']],   ''],
+  ['菈乌玛',      'dendro', [
     {sets:['纺月的夜歌'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['辅助', '精通', '充能']},
     {sets:['穹境示现之夜'], sands:['em'], goblet:['em'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'em', 'er'], roles:['输出', '精通']},
     {sets:['深林的记忆'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er'], roles:['减抗', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/505973/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74866766', 'Asgater'], ['https://www.miyoushe.com/ys/article/74959885', 'HoYo青枫']], ''],
-  ['菲林斯',    'electro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/505973/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74866766', 'Asgater'], ['https://www.miyoushe.com/ys/article/74959885', 'HoYo青枫']],   ''],
+  ['菲林斯',      'electro', [
     {sets:['穹境示现之夜'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通']},
     {sets:['饰金之梦'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em', 'er'], roles:['精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/505971/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77795408', 'Asgater'], ['https://www.miyoushe.com/ys/article/73472412', 'HoYo青枫']], ''],
-  ['爱诺',    'hydro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/505971/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77795408', 'Asgater'], ['https://www.miyoushe.com/ys/article/73472412', 'HoYo青枫']],   ''],
+  ['爱诺',      'hydro', [
     {sets:['纺月的夜歌'], sands:['er', 'em'], goblet:['em'], circlet:['em', 'cr'], subs:['em', 'er', 'cr', 'cd'], roles:['增伤', '精通']},
     {sets:['昔日宗室之仪'], sands:['er', 'em'], goblet:['em'], circlet:['em', 'cr'], subs:['em', 'er', 'cr', 'cd'], roles:['辅助', '精通', '剧变反应']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/505972/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68366413', 'Asgater'], ['https://www.miyoushe.com/ys/article/72688435', 'HoYo青枫']], ''],
-  ['奈芙尔',    'dendro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/505972/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68366413', 'Asgater'], ['https://www.miyoushe.com/ys/article/72688435', 'HoYo青枫']],   ''],
+  ['奈芙尔',      'dendro', [
     {sets:['穹境示现之夜'], sands:['em'], goblet:['em'], circlet:['cd', 'em', 'cr'], subs:['cd', 'cr', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['饰金之梦'], sands:['em'], goblet:['em'], circlet:['cd', 'cr', 'em'], subs:['cd', 'cr', 'em'], roles:['精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/506676/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74962160', 'Asgater'], ['https://www.miyoushe.com/ys/article/74983763', 'HoYo青枫']], ''],
-  ['杜林',    'pyro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/506676/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74962160', 'Asgater'], ['https://www.miyoushe.com/ys/article/74983763', 'HoYo青枫']],   ''],
+  ['杜林',      'pyro', [
     {sets:['风起之日'], sands:['atkP', 'em'], goblet:['pyro', 'atkP', 'em'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP', 'em', 'er'], roles:['输出', '增伤', '精通']},
     {sets:['天之美赐'], sands:['atkP', 'er'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '辅助']},
     {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '辅助']},
     {sets:['深林的记忆'], sands:['atkP', 'er'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '减抗', '辅助']},
     {sets:['纺月的夜歌'], sands:['atkP', 'er'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '辅助', '精通', '剧变反应']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/507241/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75443427', 'Asgater'], ['https://www.miyoushe.com/ys/article/71125651', 'HoYo青枫']], ''],
-  ['哥伦比娅',    'hydro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/507241/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75443427', 'Asgater'], ['https://www.miyoushe.com/ys/article/71125651', 'HoYo青枫']],   ''],
+  ['哥伦比娅',      'hydro', [
     {sets:['晨星与月的晓歌'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['cr', 'cd', 'hpP'], subs:['cd', 'cr', 'hpP', 'er', 'em'], roles:['输出', '副C', '精通']},
     {sets:['纺月的夜歌'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['cr', 'cd', 'hpP'], subs:['cd', 'cr', 'hpP', 'er', 'em'], roles:['增伤', '辅助', '精通', '充能']},
     {sets:['穹境示现之夜'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['cd', 'hpP'], subs:['cd', 'cr', 'hpP', 'er', 'em'], roles:['输出', '精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/507505/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76665391', 'Asgater'], ['https://www.miyoushe.com/ys/article/72301009', 'HoYo青枫']], ''],
-  ['兹白',    'geo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/507505/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76665391', 'Asgater'], ['https://www.miyoushe.com/ys/article/72301009', 'HoYo青枫']],   ''],
+  ['兹白',      'geo', [
     {sets:['穹境示现之夜'], sands:['defP', 'em'], goblet:['defP', 'em'], circlet:['cd', 'cr', 'defP'], subs:['cr', 'cd', 'defP', 'em'], roles:['输出', '精通']},
     {sets:['华馆梦醒形骸记'], sands:['defP', 'em'], goblet:['defP', 'em'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'defP', 'em'], roles:['精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/507503/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72899669', 'Asgater'], ['https://www.miyoushe.com/ys/article/72891550', 'HoYo青枫']], ''],
+  ],     [['https://baike.mihoyo.com/ys/obc/content/507503/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72899669', 'Asgater'], ['https://www.miyoushe.com/ys/article/72891550', 'HoYo青枫']],   ''],
 
   /* ---------- 补遗：6.6–7.0（新版本，配装可能随环境微调） ---------- */
-  ['桑多涅',    'cryo', [
+  ['桑多涅',      'cryo', [
     {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出', '增伤']},
     {sets:['饰金之梦'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['精通']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/508841/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76348139', 'Asgater'], ['https://www.miyoushe.com/ys/article/76345204', 'HoYo青枫']], ''],
-  ['奥黛塔',    'cryo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/508841/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76348139', 'Asgater'], ['https://www.miyoushe.com/ys/article/76345204', 'HoYo青枫']],   ''],
+  ['奥黛塔',      'cryo', [
     {sets:['炉火融炼之心'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP'], roles:['辅助']},
     {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr', 'atkP'], subs:['cr', 'cd', 'atkP'], roles:['输出']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/509103/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77367319', 'Asgater'], ['https://www.miyoushe.com/ys/article/77363319', 'HoYo青枫']], ''],
-  ['阿罗夏',    'electro', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/509103/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77367319', 'Asgater'], ['https://www.miyoushe.com/ys/article/77363319', 'HoYo青枫']],   ''],
+  ['阿罗夏',      'electro', [
     {sets:['炉火融炼之心'], sands:[], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['atkP'], roles:['增伤', '辅助', '精通']},
     {sets:['昔日宗室之仪'], sands:[], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['atkP'], roles:['辅助']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/509104/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77367254', 'Asgater'], ['https://www.miyoushe.com/ys/article/77363224', 'HoYo青枫']], ''],
-  ['法尔伽',    'anemo', [
+  ],     [['https://baike.mihoyo.com/ys/obc/content/509104/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77367254', 'Asgater'], ['https://www.miyoushe.com/ys/article/77363224', 'HoYo青枫']],   ''],
+  ['法尔伽',      'anemo', [
     {sets:['风起之日'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP'], roles:['输出']},
     {sets:['沙上楼阁史话'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
     {sets:['来歆余响'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['输出']},
     {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤']},
-  ],   [['https://baike.mihoyo.com/ys/obc/content/507995/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73524547', 'Asgater'], ['https://www.miyoushe.com/ys/article/73521348', 'HoYo青枫']], ''],
+  ],     [['https://baike.mihoyo.com/ys/obc/content/507995/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73524547', 'Asgater'], ['https://www.miyoushe.com/ys/article/73521348', 'HoYo青枫']],   ''],
 
   /* ---------- 补遗：蒙德 5.x 群角色（洛恩 / 尼可 / 布伦妮） ---------- */
-  ['洛恩',    'cryo', [
+  ['洛恩',      'cryo', [
     {sets:['风起之日'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
     {sets:['逐影猎人'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
     {sets:['冰风迷途的勇士'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP'], roles:['输出', '增伤']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/508598/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75904223', 'Asgater'], ['https://www.miyoushe.com/ys/article/75898105', 'HoYo青枫']],    ''],
-  ['尼可',    'pyro', [
+  ],      [['https://baike.mihoyo.com/ys/obc/content/508598/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75904223', 'Asgater'], ['https://www.miyoushe.com/ys/article/75898105', 'HoYo青枫']],      ''],
+  ['尼可',      'pyro', [
     {sets:['天之美赐'], sands:['atkP'], goblet:['atkP'], circlet:['atkP'], subs:['atkP', 'er'], roles:['增伤', '充能']},
     {sets:['昔日宗室之仪'], sands:['atkP'], goblet:['atkP'], circlet:['atkP'], subs:['atkP', 'er'], roles:['辅助']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/508596/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75443707', 'Asgater'], ['https://www.miyoushe.com/ys/article/75440644', 'HoYo青枫']],    ''],
-  ['布伦妮',    'anemo', [
+  ],      [['https://baike.mihoyo.com/ys/obc/content/508596/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75443707', 'Asgater'], ['https://www.miyoushe.com/ys/article/75440644', 'HoYo青枫']],      ''],
+  ['布伦妮',      'anemo', [
     {sets:['翠绿之影'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP'], roles:['精通', '剧变反应']},
     {sets:['天之美赐'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP'], roles:['增伤', '辅助', '充能']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/508597/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75443677', 'Asgater'], ['https://www.miyoushe.com/ys/article/75442988', 'HoYo青枫']],    ''],
+  ],      [['https://baike.mihoyo.com/ys/obc/content/508597/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75443677', 'Asgater'], ['https://www.miyoushe.com/ys/article/75442988', 'HoYo青枫']],      ''],
 
   /* ---------- 补遗：挪德卡莱（莉奈娅 / 叶洛亚 / 雅珂达） ---------- */
-  ['莉奈娅',    'geo', [
+  ['莉奈娅',      'geo', [
     {sets:['晨星与月的晓歌'], sands:['defP', 'er'], goblet:['defP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'defP', 'er'], roles:['精通']},
     {sets:['华馆梦醒形骸记'], sands:['defP', 'er'], goblet:['defP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'defP', 'er'], roles:[]},
     {sets:['纺月的夜歌'], sands:['defP', 'er'], goblet:['defP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'defP', 'er'], roles:['辅助', '精通', '充能']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/508198/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74448955', 'Asgater'], ['https://www.miyoushe.com/ys/article/74409707', 'Asgater']],    ''],
-  ['叶洛亚',    'geo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/508198/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74409707', 'Asgater'], ['https://www.miyoushe.com/ys/article/74473481', '关蝎']],      ''],
+  ['叶洛亚',      'geo', [
     {sets:['纺月的夜歌'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em', 'er', 'cr'], roles:['输出', '辅助', '精通']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/507504/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72899643', 'Asgater'], ['https://www.miyoushe.com/ys/article/72869570', 'HoYo青枫']],    ''],
-  ['雅珂达',    'anemo', [
+  ],      [['https://baike.mihoyo.com/ys/obc/content/507504/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72899643', 'Asgater'], ['https://www.miyoushe.com/ys/article/72869570', 'HoYo青枫']],      ''],
+  ['雅珂达',      'anemo', [
     {sets:['翠绿之影'], sands:['er'], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['er', 'atkP', 'cr'], roles:['精通', '剧变反应']},
     {sets:['纺月的夜歌'], sands:['er'], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['er', 'atkP', 'cr'], roles:['充能']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/507287/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71128393', 'Asgater'], ['https://www.miyoushe.com/ys/article/70977150', 'Asgater']],    ''],
+  ],  [['https://baike.mihoyo.com/ys/obc/content/507287/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71128393', 'Asgater'], ['https://www.miyoushe.com/ys/article/71325029', '关蝎']],      ''],
 
   /* ---------- 旅行者：按「元素形态」各设一个条目，各自独立配装 ---------- */
-  ['旅行者·风',    'anemo', [
+  ['旅行者·风',      'anemo', [
     {sets:['翠绿之影'], sands:['er', 'atkP'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], roles:['输出', '增伤', '减抗', '辅助', '充能']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/505499/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/21131045', '猫冬']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
-  ['旅行者·岩',    'geo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/505499/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/58423640', 'Sattle'], ['https://www.miyoushe.com/ys/article/43149246', '我真的好困t']],      '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·岩',      'geo', [
     {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['geo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
     {sets:['悠古的磐岩'], sands:['er', 'atkP'], goblet:['geo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], roles:['输出', '增伤', '充能']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/505501/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/21129731', '猫冬']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
-  ['旅行者·雷',    'electro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/505501/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/21129731', '猫冬'], ['https://www.miyoushe.com/ys/article/43553143', '我真的好困t']],      '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·雷',      'electro', [
     {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/505496/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/21133391', '猫冬'], ['https://www.miyoushe.com/ys/article/15010965', '紫月居士']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
-  ['旅行者·草',    'dendro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/505496/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/43796537', '我真的好困t'], ['https://www.miyoushe.com/ys/article/58555607', 'Sattle']],      '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·草',      'dendro', [
     {sets:['深林的记忆'], sands:['atkP', 'er'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['输出', '增伤', '减抗', '辅助']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/505498/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/27855840', '猫冬'], ['https://www.miyoushe.com/ys/article/29509842', '紫月居士']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
-  ['旅行者·水',    'hydro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/505498/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/28276210', '流曳'], ['https://www.miyoushe.com/ys/article/58933632', 'Sattle']],      '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·水',      'hydro', [
     {sets:['黄金剧团'], sands:['atkP', 'er'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], roles:['增伤']},
     {sets:['水仙之梦', '沉沦之心'], sands:['atkP', 'er'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], roles:['增伤']},
     {sets:['辰砂往生录'], sands:['atkP', 'er'], goblet:['hydro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], roles:['增伤']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/505500/detail', '观测枢词条']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
-  ['旅行者·火',    'pyro', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/505500/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/42652540', '幕陵'], ['https://www.miyoushe.com/ys/article/58933661', 'Sattle']],      '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·火',      'pyro', [
     {sets:['烬城勇者绘卷'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤', '辅助', '精通']},
     {sets:['黑曜秘典'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cd', 'atkP'], subs:['cd', 'atkP', 'cr', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['长夜之誓'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cd', 'atkP', 'cr', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['角斗士的终幕礼'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cd', 'atkP', 'cr', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['乐园遗落之花'], sands:['em'], goblet:['em'], circlet:['em'], subs:['cr', 'er'], roles:['输出', '精通', '剧变反应']},
-  ],    [['https://baike.mihoyo.com/ys/obc/content/4074/detail', '观测枢词条']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
-  ['旅行者·冰',     'cryo', [
+  ],  [['https://baike.mihoyo.com/ys/obc/content/4074/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/60699036', '风伤幽冥'], ['https://www.miyoushe.com/ys/article/61101854', '猫冬']],      '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·冰',       'cryo', [
     {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出']},
     {sets:['炉火融炼之心'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['辅助', '精通']},
-  ], [['https://baike.mihoyo.com/ys/obc/content/509225/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77260008', 'Asgater']],     '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ],  [['https://baike.mihoyo.com/ys/obc/content/509225/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77260008', 'Asgater'], ['https://www.miyoushe.com/ys/article/77341480', 'HoYo青枫']],       '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
 ];
 
 /* ---------- 展开为完整结构 ---------- */
@@ -3800,7 +3803,7 @@ function load() {
 
 /* 默认套装列表（内置套装 + 空自定义列表） */
 function defaultSets() {
-  return SETS.map(s => ({ name: s.name, bonus: s.bonus, builtin: true, hidden: false }));
+  return SETS.map(s => ({ name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '', builtin: true, hidden: false }));
 }
 
 /* ---------- 列表排序：排序依据 + 正序 / 倒序 ----------
@@ -4112,19 +4115,23 @@ function normalize(o) {
   o.sets = o.sets.filter(s => s && s.name).map(s => ({
     name: s.name,
     bonus: s.bonus || '',
+    bonus4: s.bonus4 || '',
     builtin: !!s.builtin,
     hidden: !!s.hidden,
   }));
-  // 内置套装若被旧版本删过（列表中缺失），补回来并标记为隐藏
+  // 内置套装：缺失则补回；已存在但缺 4 件套描述则从图鉴补齐
   SETS.forEach(s => {
-    if (!o.sets.some(x => x.name === s.name)) {
-      o.sets.push({ name: s.name, bonus: s.bonus, builtin: true, hidden: false });
+    const ex = o.sets.find(x => x.name === s.name);
+    if (ex) {
+      if (ex.builtin && !ex.bonus4) ex.bonus4 = s.bonus4 || '';
+    } else {
+      o.sets.push({ name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '', builtin: true, hidden: false });
     }
   });
   // 旧存档的自定义套装
   legacyCustom.forEach(s => {
     if (s && s.name && !o.sets.some(x => x.name === s.name)) {
-      o.sets.push({ name: s.name, bonus: s.bonus || '', builtin: false, hidden: false });
+      o.sets.push({ name: s.name, bonus: s.bonus || '', bonus4: s.bonus4 || '', builtin: false, hidden: false });
     }
   });
   delete o.customSets;
@@ -4368,6 +4375,11 @@ function allSets() {
 function allSetBonus() {
   const o = {};
   state.sets.forEach(s => { o[s.name] = s.bonus || ''; });
+  return o;
+}
+function allSetBonus4() {
+  const o = {};
+  state.sets.forEach(s => { o[s.name] = s.bonus4 || ''; });
   return o;
 }
 /* 内置套装名集合（用于判断能否硬删除） */
@@ -6430,6 +6442,7 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
   const bonusRaw = allSetBonus()[name] || '';
   // 内置 2 件套说明跟着数据语言走；你自己改过的那条原样显示
   const bonus = (SET_BONUS[name] && SET_BONUS[name] === bonusRaw) ? setBonusText(name) : bonusRaw;
+  const bonus4 = allSetBonus4()[name] || '';
   const users = Array.from(b.users.entries());
   const unused = users.length === 0;
 
@@ -6491,6 +6504,7 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
     <div class="set-head">
       <h3>${esc(setName(name))}</h3>
       <span class="set-bonus">${esc(bonus)}</span>
+      ${bonus4 ? `<span class="set-bonus4">4件套：${esc(bonus4)}</span>` : ''}
       <span class="set-users">
         ${unused
           ? '<span class="tier-tag fodder">无角色需要 · 可整套清理</span>'
@@ -6916,6 +6930,7 @@ function renderSets() {
             ? `<button class="btn sm" data-smshow="${i}">恢复</button>`
             : `<button class="btn sm ${s.builtin ? '' : 'danger'}" data-smhide="${i}">${s.builtin ? '隐藏' : '删除'}</button>`}
         </span>
+        ${s.bonus4 ? `<div class="sm-bonus4">4件套：${esc(s.bonus4)}</div>` : ''}
       </div>`).join('');
 
   box.innerHTML = `

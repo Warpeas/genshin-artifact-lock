@@ -370,7 +370,7 @@ function load() {
 
 /* 默认套装列表（内置套装 + 空自定义列表） */
 function defaultSets() {
-  return SETS.map(s => ({ name: s.name, bonus: s.bonus, builtin: true, hidden: false }));
+  return SETS.map(s => ({ name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '', builtin: true, hidden: false }));
 }
 
 /* ---------- 列表排序：排序依据 + 正序 / 倒序 ----------
@@ -682,19 +682,23 @@ function normalize(o) {
   o.sets = o.sets.filter(s => s && s.name).map(s => ({
     name: s.name,
     bonus: s.bonus || '',
+    bonus4: s.bonus4 || '',
     builtin: !!s.builtin,
     hidden: !!s.hidden,
   }));
-  // 内置套装若被旧版本删过（列表中缺失），补回来并标记为隐藏
+  // 内置套装：缺失则补回；已存在但缺 4 件套描述则从图鉴补齐
   SETS.forEach(s => {
-    if (!o.sets.some(x => x.name === s.name)) {
-      o.sets.push({ name: s.name, bonus: s.bonus, builtin: true, hidden: false });
+    const ex = o.sets.find(x => x.name === s.name);
+    if (ex) {
+      if (ex.builtin && !ex.bonus4) ex.bonus4 = s.bonus4 || '';
+    } else {
+      o.sets.push({ name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '', builtin: true, hidden: false });
     }
   });
   // 旧存档的自定义套装
   legacyCustom.forEach(s => {
     if (s && s.name && !o.sets.some(x => x.name === s.name)) {
-      o.sets.push({ name: s.name, bonus: s.bonus || '', builtin: false, hidden: false });
+      o.sets.push({ name: s.name, bonus: s.bonus || '', bonus4: s.bonus4 || '', builtin: false, hidden: false });
     }
   });
   delete o.customSets;
@@ -938,6 +942,11 @@ function allSets() {
 function allSetBonus() {
   const o = {};
   state.sets.forEach(s => { o[s.name] = s.bonus || ''; });
+  return o;
+}
+function allSetBonus4() {
+  const o = {};
+  state.sets.forEach(s => { o[s.name] = s.bonus4 || ''; });
   return o;
 }
 /* 内置套装名集合（用于判断能否硬删除） */
@@ -3000,6 +3009,7 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
   const bonusRaw = allSetBonus()[name] || '';
   // 内置 2 件套说明跟着数据语言走；你自己改过的那条原样显示
   const bonus = (SET_BONUS[name] && SET_BONUS[name] === bonusRaw) ? setBonusText(name) : bonusRaw;
+  const bonus4 = allSetBonus4()[name] || '';
   const users = Array.from(b.users.entries());
   const unused = users.length === 0;
 
@@ -3061,6 +3071,7 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
     <div class="set-head">
       <h3>${esc(setName(name))}</h3>
       <span class="set-bonus">${esc(bonus)}</span>
+      ${bonus4 ? `<span class="set-bonus4">4件套：${esc(bonus4)}</span>` : ''}
       <span class="set-users">
         ${unused
           ? '<span class="tier-tag fodder">无角色需要 · 可整套清理</span>'
@@ -3486,6 +3497,7 @@ function renderSets() {
             ? `<button class="btn sm" data-smshow="${i}">恢复</button>`
             : `<button class="btn sm ${s.builtin ? '' : 'danger'}" data-smhide="${i}">${s.builtin ? '隐藏' : '删除'}</button>`}
         </span>
+        ${s.bonus4 ? `<div class="sm-bonus4">4件套：${esc(s.bonus4)}</div>` : ''}
       </div>`).join('');
 
   box.innerHTML = `

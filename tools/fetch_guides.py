@@ -3,10 +3,10 @@
 为每个角色挑出「值得放进 data.js」的攻略链接。
 
 选取规则（优先级从高到低）：
-  1. 作者白名单（默认 Asgater / HoYo青枫）—— 主人指定信任的两位
-  2. 专帖（标题里用「」或【】单独引出该角色）优先于多角色合集帖
-  3. 同档内按 查看数 × 收藏数 排序，取较新、热度高的
-  4. 白名单凑不满 2 篇时，回退到观测枢词条「攻略推荐」挂的文章
+  1. 作者白名单（Asgater / HoYo青枫）优先——信任的两位，各取一篇
+  2. 白名单凑不满时，按可信度（查看/收藏/点赞）从其余作者的攻略里挑，补齐到 2 篇
+  3. 专帖（标题里用「」或【】单独引出该角色）优先于多角色合集帖；同档内较新优先
+  4. 仍不够，回退到观测枢词条「攻略推荐」挂的文章
 
 数据源：
   搜索  https://bbs-api.mihoyo.com/post/wapi/searchPosts?keyword=<k>&forum_id=43&page=1&size=30
@@ -49,6 +49,7 @@ ALIAS = {
     "旅行者·草": ["草主", "旅行者(草)", "旅行者（草）"],
     "旅行者·水": ["水主", "旅行者(水)", "旅行者（水）"],
     "旅行者·火": ["火主", "旅行者(火)", "旅行者（火）"],
+    "旅行者·冰": ["冰主", "旅行者(冰)", "旅行者（冰）", "冰·旅行者", "旅行者冰"],
 }
 # 多角色合集帖里常见的干扰名，命中即降权
 NOISE = re.compile(r"卡池|合集|一图看懂|祈愿|加强角色")
@@ -155,7 +156,7 @@ def pick(name, wiki_arts):
                 r = norm(it)
                 if not r["id"] or r["id"] in seen:
                     continue
-                if r["uid"] not in AUTHORS or not mentions(r["title"], name):
+                if not mentions(r["title"], name):
                     continue
                 seen.add(r["id"])
                 r["dedicated"] = is_dedicated(r["title"], name)
@@ -163,6 +164,7 @@ def pick(name, wiki_arts):
                 # 合集帖（纳西妲/胡桃/行秋…）对单角色参考价值低，直接不收
                 if r["noisy"]:
                     continue
+                r["whitelisted"] = r["uid"] in AUTHORS   # 白名单作者=信任优先，其余按热度回退
                 r["from"] = "search"
                 pool.append(r)
 
@@ -171,7 +173,7 @@ def pick(name, wiki_arts):
                ["%s %s" % (name, nick) for nick in AUTHORS.values()]:
         harvest(kw, (1,))
     # 阶段 2：还不够就翻第二页 + 试简称 + 换关键词（只影响难找的角色）
-    if len({r["uid"] for r in pool}) < min(WANT_N, len(AUTHORS)):
+    if len(pool) < WANT_N:   # 候选太少（含非白名单），翻页/换词再搜一轮
         for kw in ["%s 一图流" % name, "%s 攻略" % name] + \
                    ["%s %s" % (name, nick) for nick in AUTHORS.values()]:
             harvest(kw, (2,))
@@ -185,16 +187,16 @@ def pick(name, wiki_arts):
         return sorted(sub, key=lambda r: -r["created"])
 
     chosen = []
-    # 先每位作者各取一篇，保证视角不重样
+    # 先白名单作者各取一篇（优先保证信任视角）
     for uid in AUTHORS:
-        cand = [r for r in pool if r["uid"] == uid]
+        cand = [r for r in pool if r.get("whitelisted") and r["uid"] == uid]
         if not cand:
             continue
         grp = newest_first([r for r in cand if r.get("dedicated")]) or newest_first(cand)
         chosen.append(grp[0])
-    # 还差就补：专帖优先、较新优先
-    rest = [r for r in pool if all(r is not c for c in chosen)]
-    rest.sort(key=lambda r: (0 if r.get("dedicated") else 1, -r["created"]))
+    # 还差就按可信度（热度）从其余作者攻略里挑，补齐到 WANT_N
+    rest = [r for r in pool if r not in chosen and not r.get("whitelisted")]
+    rest.sort(key=lambda r: (0 if r.get("dedicated") else 1, -score(r)))
     for r in rest:
         if len(chosen) >= WANT_N:
             break
@@ -267,15 +269,15 @@ def main():
             "wiki_url": ("https://baike.mihoyo.com/ys/obc/content/%s/detail" % eid) if eid else "",
             "guides": chosen,
         }
-        n_au = sum(1 for r in chosen if r["uid"] in AUTHORS)
+        n_wl = sum(1 for r in chosen if r.get("whitelisted"))
         if not chosen:
             stat["empty"] += 1
-        elif n_au < len(chosen):
-            stat["wiki_fallback"] += 1
-        else:
+        elif n_wl == len(chosen):
             stat["authors"] += 1
-        print("[%s] %-8s %s" % ("作者" if n_au == len(chosen) and chosen else
-                                ("混合" if chosen else "空"), name,
+        else:
+            stat["wiki_fallback"] += 1
+        label = "白名单" if (n_wl == len(chosen) and chosen) else ("混合" if chosen else "空")
+        print("[%s] %-8s %s" % (label, name,
                                 " | ".join("%s/%.0fw" % (r["author"] or "?", r["view"] / 1000)
                                            for r in chosen)))
 
