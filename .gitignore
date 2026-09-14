@@ -3,3 +3,9 @@ tools/out/*cache*/
 
 # index.html 由 CI（GitHub Pages）从 src/ 构建产出，不入库
 index.html
+
+# 临时诊断产物（tools/check_data.js 等脚本自动生成，可随时重跑）
+tools/out/_*
+
+# WorkBuddy 项目数据，不入库
+.workbuddy/

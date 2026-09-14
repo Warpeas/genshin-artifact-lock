@@ -201,6 +201,49 @@ node build.js                              # 5. 打包
 - 单次调试：`python tools/fetch_wiki_builds.py 胡桃 钟离`。
 - 详见 `tools/README.md`。
 
+### 5.1 属性别名表 `STAT_ALIAS`（踩过坑，改前必读）
+
+`fetch_wiki_builds.py` 靠 `STAT_ALIAS` 把 wiki 原文的中文属性名映射成 id。
+wiki 编辑**大量使用简写**，简写没收录就会**静默**丢属性——不报错，只是主词条悄悄少一项或变空。
+
+历史 bug（已修）：只收了「元素充能效率 / 雷元素伤害加成 / 治疗加成」，
+于是原文写「充能效率」「雷伤加成」「治疗量加成」的条目全部漏解析，
+导致欧洛伦时之沙与空之杯变空、阿罗夏时之沙变空、希诺宁漏充能/岩伤杯、温迪漏风伤杯等 8 角色 18 处。
+
+规则：
+- **全称与简写都要收**。长别名优先（`_ALIAS_RE` 按长度倒序），所以共存安全。
+- **别收太短的泛词**——「精通」在描述和 roles 里到处都是，收了会大面积误判。
+- 改完别名**不用重新联网抓**，走离线重解析：
+
+```bash
+python tools/fetch_wiki_builds.py --reparse --dry   # 预览变更
+python tools/fetch_wiki_builds.py --reparse         # 写回 out/wiki_builds.json
+python tools/apply_wiki_builds.py --apply
+node build.js
+```
+
+`--reparse` 读 `out/wiki_builds.json` 里已保存的 `rows[].reason` 原文重算，几秒完成。
+
+### 5.2 数据自检 `check_data.js`
+
+```bash
+node tools/check_data.js   # 结果写 tools/out/_scan_result.md
+```
+
+扫 `RAW_CHARS`，报主词条空 / 缺字段 / 值不在 `MAIN_STATS` 里、副词条非法、套装为空。
+**动过数据或抓取脚本后必跑。**
+
+⚠️ 主词条为空**不一定**是 bug——wiki 写「空之杯：不强求」时空就是正确结果
+（当前仅欧洛伦 #0 辅助向配装属此类）。判断真漏要回看 `out/wiki_builds.json` 的 `reason` 原文。
+
+### 5.3 回写格式的坑
+
+`apply_wiki_builds.py` 重建条目时，`items[1]/src/note` 都带着原文前导空格，
+用 `", "` 拼接会各多出 1 个空格 → 全表 diff。代码里已用「记住原 pad 再还原」处理，
+`--apply` 后 `git diff src/data.js` 应**只有真正变了的字段**。若发现满屏空白 diff，就是这里坏了。
+
+`--reparse` 写 `wiki_builds.json` 必须 `indent=1`（与 fetch 输出一致），否则 diff 炸成几万行。
+
 ---
 
 ## 6. 红线（不要做）
@@ -220,6 +263,7 @@ node build.js                              # 5. 打包
 - [ ] `node --check src/data.js && node --check src/app.js` 通过
 - [ ] `node build.js` 成功，输出里出现「版本号 / 日期已由 git 提交时间注入：…」
 - [ ] 打开 `index.html`：四个页面都能正常渲染，控制台无报错
+- [ ] 若动了数据：`node tools/check_data.js` 无异常项（允许 wiki 原文写「不强求」导致的空主词条）
 - [ ] 若动了数据：角色数 / 套装数符合预期（当前 125 / 46）
 - [ ] 若动了合并或阈值：确认「② 锁定方案」输出仍合理（重要属性相同的能合并、不同的被拆开）
 - [ ] 若动了 i18n：中英文各切一遍，动态计数没被 `applyI18n` 清掉；英文下无残留中文（含卡片配装按钮的定位标签、部位名、来源「数据源 / 攻略」标注），英文长词不撑破卡片（角色卡 `.cc-top` 可换行、沙杯冠标签不写死宽度）

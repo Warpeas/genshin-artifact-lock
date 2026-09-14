@@ -13,6 +13,7 @@
 | `apply_wiki_builds.py` | 把上面两个结果写回 `src/data.js`（配装、主词条、副词条、功能定位、来源链接） | `out/report.md` |
 | `gen_sources.py` | 生成人读的来源清单（可点开） | `out/sources.md`、`out/sources.html` |
 | `role_infer.py` | 提供 `infer_roles(text, mains, subs, label)`，从 wiki 描述前缀推断配装「功能定位」 | —（被上面两个脚本 import，不直接跑） |
+| `check_data.js` | 数据自检：主词条空 / 缺字段 / 非法值，配装组完整性 | `out/_scan_result.md` |
 
 ## 标准流程
 
@@ -27,6 +28,34 @@ node build.js                              # 5. 打包成单文件 index.html
 
 `apply_wiki_builds.py` 默认会一并改来源链接；只想改配装就加 `--no-links`。
 脚本只有 `--apply` 和 `--no-links` 两个开关。
+
+## 改了别名表？用 `--reparse` 离线重解析
+
+`fetch_wiki_builds.py` 靠 `STAT_ALIAS` 把 wiki 原文里的中文属性名映射成 id。
+wiki 编辑大量使用简写，**简写必须一并收录**，否则会**静默**解析为空或少解析
+（不会报错，只会让主词条悄悄少一项）。
+
+```bash
+python tools/fetch_wiki_builds.py --reparse --dry   # 预览变更
+python tools/fetch_wiki_builds.py --reparse         # 写回 out/wiki_builds.json
+python tools/apply_wiki_builds.py --apply
+node build.js
+```
+
+`--reparse` 直接读 `out/wiki_builds.json` 里已保存的 `rows[].reason` 原文重算，
+**不联网**，几秒完成；改别名表后不必重跑 3 分钟的抓取。
+
+## 数据自检
+
+```bash
+node tools/check_data.js
+```
+
+扫 `src/data.js` 的 `RAW_CHARS`，报出主词条为空 / 字段缺失 / 值不在 `MAIN_STATS` 里的配装组。
+结果写 `out/_scan_result.md`。**每次改完数据或升级抓取脚本后跑一次。**
+
+注意：主词条为空**不一定**是 bug——wiki 原文写「空之杯：不强求」时，空就是正确结果
+（如欧洛伦辅助向配装）。判断是否真漏，要回看 `wiki_builds.json` 里的 `reason` 原文。
 
 **副词条直接写 wiki「推荐装备」里的精确值**：每组配装独立携带自己的 `subs`，`SUB_PRESETS` 只用于新建配装时的默认值与「套用预设」。
 

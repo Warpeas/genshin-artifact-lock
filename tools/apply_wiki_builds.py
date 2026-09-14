@@ -251,7 +251,21 @@ def main():
             note_text = "''"
             n_note += 1
 
-        new_inner = items[0] + ", " + items[1] + ", " + builds_block + ", " + src_text + ", " + note_text
+        # 拼接：items[1]/src/note 都带原文前导空格，直接用 ", " 拼会各多出 1 空格。
+        # data.js 里各条目的对齐列并不统一（历史遗留），所以逐条「记住原 pad 再还原」，
+        # 保证只改动真正变了的字段，diff 里不掺空白噪音。
+        def _pad(s, default):
+            m = re.match(r"^\s*", s)
+            return (m.group(0) if m and m.group(0) else default) or default
+
+        pad_elem = _pad(items[1], " " * 6)
+        pad_src = _pad(old_src, " " * 2)
+        pad_note = _pad(old_note, " " * 3)
+        new_inner = (items[0].rstrip() + "," + pad_elem
+                     + items[1].strip() + ", "
+                     + builds_block + "," + pad_src
+                     + src_text.strip() + "," + pad_note
+                     + note_text.strip())
         new_entry = indent + "[" + new_inner + "]" + tail
         out.extend(new_entry.split("\n"))
         i = end_idx + 1

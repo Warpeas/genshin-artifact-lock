@@ -40,21 +40,27 @@ CACHE = os.path.join(OUT, "cache")
 # 只认五星套装（与 src/data.js 的 SETS 对齐）；四星过渡套（战狂、教官等）丢弃
 FIVE_STAR_SETS = None  # 运行时从 data.js 读取
 
+# 注意：wiki 原文存在大量简写（如「充能效率」「雷伤加成」「治疗量加成」），
+# 简写必须一并收录，否则会静默解析为空/少解析（历史 bug：欧洛伦、阿罗夏、希诺宁等）。
+# 长别名优先（_ALIAS_RE 按长度倒序），故全称与简写共存安全。
 STAT_ALIAS = {
-    "攻击力": "atkP", "攻击力%": "atkP",
-    "生命值": "hpP",  "生命值%": "hpP",
+    "攻击力": "atkP", "攻击力%": "atkP", "百分比攻击力": "atkP",
+    "生命值": "hpP",  "生命值%": "hpP",  "百分比生命值": "hpP",
     "防御力": "defP", "防御力%": "defP",
+    "百分比防御力": "defP",
     "元素精通": "em",
-    "元素充能效率": "er",
-    "火元素伤害加成": "pyro", "火元素伤害": "pyro",
-    "水元素伤害加成": "hydro", "水元素伤害": "hydro",
-    "冰元素伤害加成": "cryo", "冰元素伤害": "cryo",
-    "雷元素伤害加成": "electro", "雷元素伤害": "electro",
-    "风元素伤害加成": "anemo", "风元素伤害": "anemo",
-    "岩元素伤害加成": "geo", "岩元素伤害": "geo",
-    "草元素伤害加成": "dendro", "草元素伤害": "dendro",
-    "物理伤害加成": "phys", "物理伤害": "phys",
-    "暴击率": "cr", "暴击伤害": "cd", "治疗加成": "heal",
+    # 注：不收「精通」独字——roles 与描述里到处是「精通」，会大面积误判。
+    "元素充能效率": "er", "充能效率": "er", "元素充能": "er",
+    "火元素伤害加成": "pyro", "火元素伤害": "pyro", "火伤加成": "pyro",
+    "水元素伤害加成": "hydro", "水元素伤害": "hydro", "水伤加成": "hydro",
+    "冰元素伤害加成": "cryo", "冰元素伤害": "cryo", "冰伤加成": "cryo",
+    "雷元素伤害加成": "electro", "雷元素伤害": "electro", "雷伤加成": "electro",
+    "风元素伤害加成": "anemo", "风元素伤害": "anemo", "风伤加成": "anemo",
+    "岩元素伤害加成": "geo", "岩元素伤害": "geo", "岩伤加成": "geo",
+    "草元素伤害加成": "dendro", "草元素伤害": "dendro", "草伤加成": "dendro",
+    "物理伤害加成": "phys", "物理伤害": "phys", "物伤加成": "phys",
+    "暴击伤害": "cd", "暴伤": "cd", "暴击率": "cr",
+    "治疗量加成": "heal", "治疗加成": "heal",
 }
 
 
@@ -251,10 +257,54 @@ def pick_preset(subs):
     return {"em": "em", "hpP": "hp", "defP": "def", "er": "er", "atkP": "atk"}.get(head)
 
 
+def reparse(wb_path, dry=False):
+    """离线重解析：读已有 wiki_builds.json 的 rows[].reason 原文，
+    用当前 STAT_ALIAS 重算 mains/subs/roles/preset 并写回。
+    改了别名表后无需重新联网抓取（3 分钟）即可刷新解析结果。"""
+    wb = json.load(open(wb_path, encoding="utf-8"))
+    changed = []
+    for name, d in wb.items():
+        if not d.get("ok") or not d.get("rows"):
+            continue
+        for i, r in enumerate(d["rows"]):
+            reason = r.get("reason", "")
+            old_m, old_s = r.get("mains"), r.get("subs")
+            new_m = parse_mains(reason)
+            new_s = parse_subs(reason)
+            roles = infer_roles(reason, new_m, new_s, r.get("label", ""))
+            if old_m != new_m or old_s != new_s or r.get("roles") != roles:
+                changed.append((name, i, old_m, new_m, old_s, new_s))
+            r["mains"], r["subs"], r["roles"] = new_m, new_s, roles
+        # 顶层 mains/subs/derived_preset 跟随第 0 组
+        m0 = d["rows"][0]
+        d["mains"], d["subs"] = m0["mains"], m0["subs"]
+        derived = pick_preset(m0["subs"])
+        if "heal" in (m0["mains"].get("circlet") or []) and derived in ("hp", "atk", "er"):
+            derived = "heal"
+        d["derived_preset"] = derived
+    print("重解析完成，变更 %d 处：" % len(changed))
+    for name, i, om, nm, os_, ns in changed:
+        print("  %s #%d  mains %s -> %s   subs %s -> %s"
+              % (name, i, om, nm, os_, ns))
+    if not dry:
+        # indent=1：与 fetch 写出的原始格式保持一致，否则 diff 会炸成几万行
+        with open(wb_path, "w", encoding="utf-8") as f:
+            json.dump(wb, f, ensure_ascii=False, indent=1)
+        print("已写回 %s" % wb_path)
+    return changed
+
+
 def main():
+    args = sys.argv[1:]
+    # --reparse：离线重解析已有 wiki_builds.json（改别名表后用它，不联网）
+    if args and args[0] == "--reparse":
+        wb = os.path.join(OUT, "wiki_builds.json")
+        reparse(wb, dry="--dry" in args)
+        return
+
     sets, names = load_sets_and_names()
     os.makedirs(CACHE, exist_ok=True)
-    targets = sys.argv[1:] or names
+    targets = args or names
     if targets and targets[0] == "--all":
         targets = names
 
