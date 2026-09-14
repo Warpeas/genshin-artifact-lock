@@ -162,7 +162,8 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 }
 .char-card:hover{border-color:#3f4d61;transform:translateY(-1px);}
 .char-card.on{border-color:var(--gold);background:linear-gradient(180deg,#232c1f,#1a2029);}
-.char-card .cc-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.char-card .cc-top{display:flex;align-items:center;gap:4px 8px;row-gap:4px;flex-wrap:wrap;margin-bottom:8px;}
+/* 定位标签（.brole）不收缩：放不下时整行换行，避免英文长词把卡片顶宽、把 ☆ 挤出去 */
 .cc-name{font-size:15px;font-weight:600;flex:1 1 auto;
   /* 英文名（如 Sangonomiya Kokomi）比中文长，放不下时省略而不是把 ☆ 挤出卡片 */
   min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -178,9 +179,12 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .set-tag{font-size:11px;padding:2px 7px;border-radius:5px;background:var(--panel2);color:var(--txt2);border:1px solid var(--line);}
 .set-tag.main{background:#2f3a24;color:#cfe6a8;border-color:#4a5c34;}
 .cc-main{display:flex;flex-direction:column;gap:3px;}
-.cc-main-row{display:flex;gap:6px;font-size:11.5px;color:var(--txt3);}
-.cc-main-row span:first-child{color:var(--txt3);flex:none;width:26px;}
-.cc-main-row .ms{color:var(--txt2);}
+.cc-main-row{display:flex;align-items:baseline;gap:6px;font-size:11.5px;color:var(--txt3);min-width:0;}
+/* 部位名（沙/杯/冠，英文下 Sands / Goblet / Circlet）不固定宽度，按内容自适应；
+   主要属性允许收缩换行，避免英文长词把卡片撑出边界、与相邻卡片文字重叠。
+   注意用「直接子元素」选择器，别让内层 .ms 词条也命中 :first-child 而被强制定宽。 */
+.cc-main-row > span:first-child{color:var(--txt3);flex:none;min-width:26px;}
+.cc-main-row .ms{color:var(--txt2);flex:1 1 auto;min-width:0;overflow-wrap:anywhere;}
 
 /* 配装功能定位小标签：统一中性配色（区别于角色级 .role-tag 的旧分色方案） */
 .brole{display:inline-flex;align-items:center;font-size:10.5px;padding:1px 7px;border-radius:5px;font-weight:600;flex:none;border:1px solid rgba(120,160,210,.35);background:rgba(120,160,210,.12);color:#a9c8ef;line-height:1.5;white-space:nowrap;}

@@ -10,8 +10,23 @@
  * CHANGELOG：新在前，CHANGELOG[0].v 必须等于 APP_VERSION。items 为纯文本（渲染时会 esc）。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.13';
+const APP_VERSION = '2026.09.14';
 const CHANGELOG = [
+  {
+    v: '2026.09.14', date: '2026-09-14',
+    title: '旅行者·冰 + 抓取管线整改与文档三件套 + GitHub Pages 自动构建 + 英文残留 / 复制定位修复',
+    items: [
+      '角色卡片：配装芯片只显示最重要的 1–2 个功能定位；在卡片上切换配装 = 把这一套设为主推（其余降为备选）并持久化，与内置排布不同时自动标「已修改」，切回原主推即恢复。',
+      '新增「旅行者·冰」形态配装数据（观测枢 wiki 推荐装备 + 攻略来源）。',
+      '抓取管线整改：攻略来源第 1 条固定为观测枢词条（真数据源），其余为作者攻略（延伸阅读，本项目从不读取）；圣遗物四件套效果并入套装数据展示。',
+      '建立文档三件套：README（使用）、docs/DESIGN.md（设计）、AGENTS.md（开发约定），并校准为与当前实现一致。',
+      '改用 GitHub Actions 从 src/ 自动构建 index.html 并部署到 GitHub Pages，index.html 不再手工提交进仓库。',
+      '修：新增配装 / 套用其他配装组时未复制「功能定位」，现已一并复制。',
+      '修：英文模式下残留的中文——右上角「已保存到本机」、「功能定位」标签、「（不限套装）」、复制配装下拉、来源页「数据源 / 攻略」标识、配装编辑器的沙 / 杯 / 冠标签等。',
+      '修：英文（数据语言）下角色卡片沙 / 杯 / 冠部位名变长后与主要属性文字重叠，改为按内容自适应排版。',
+      '更新日志日期改按 git 提交的实际日期归位：09.13 的更新不再被并到 09.14。',
+    ],
+  },
   {
     v: '2026.09.13', date: '2026-09-13',
     title: '角色库补全124 + wiki数据重核对 + 中英文切换定稿 + 配装功能定位 + 手机端适配 + 英文套装名 + 公告改小卡片',
@@ -359,7 +374,7 @@ function toSubs(list) {
  * ============================================================ */
 /* ---------- 角色英文名 ----------
  * 采用米哈游官方英文本地化名（核对自 Genshin Impact Wiki / 萌娘百科角色模块）。
- * 旅行者按元素形态分别给出：Traveler (Anemo) / (Geo) / (Electro) / (Dendro) / (Hydro) / (Pyro)。
+ * 旅行者按元素形态分别给出：Traveler (Anemo) / (Geo) / (Electro) / (Dendro) / (Hydro) / (Pyro) / (Cryo)。
  */
 const CH_EN = {
   '安柏': 'Amber',
@@ -1633,7 +1648,14 @@ const T_DATA_EN = Object.assign(
     MAIN_STATS[slot].forEach(s => { acc[s.id] = s.name; });
     return acc;
   }, {}), STAT_EN),
-  { '其他': 'Other', '不限': 'Any' },
+  {
+    '其他': 'Other', '不限': 'Any',
+    /* 配装「功能定位」词表（数据语言 = English 时随数据切换；角色级 主C/副C/辅助 已由 ROLE_EN 覆盖）。
+       用社区常用缩写，避免长词把角色卡片顶宽 —— 卡片上的定位标签空间很小。 */
+    '输出': 'DPS', '增伤': 'Buff', '减抗': 'Shred', '治疗': 'Heal', '护盾': 'Shield',
+    '精通': 'EM', '充能': 'ER',
+    '聚怪/控制': 'CC', '增幅反应': 'Amplify', '剧变反应': 'Transform',
+  },
 );
 
 /* ---------- 界面文案（显示语言 = English 时启用） ---------- */
@@ -1853,6 +1875,48 @@ const T_UI_EN = {
   '（2+2 可选）': '(optional for 2+2)',
   '（不改，保持当前）': '(keep current)',
 
+  /* 英文残留修复（2026.09.14）：来源标注 / 功能定位 / 配装下拉 / 沙杯冠标签等 */
+  '已保存到本机': 'Saved locally',
+  '配装': 'Build',
+  '2+2 组合': '2+2 mix',
+  '4 件套': '4-piece',
+  '未选择套装': 'No set chosen',
+  '功能定位': 'Build role',
+  '可多选；可自定义（跨角色共享），如 输出 / 增伤 / 治疗 / 护盾':
+    'Multi-select; custom tags allowed (shared across all characters), e.g. DPS / DMG Buff / Heal / Shield',
+  '自定义定位，如 增幅反应': 'Custom tag, e.g. Amplifying Reaction',
+  '（不限套装）': '(any set)',
+  '复制配装': 'Copy build',
+  '空白（自行填写追加属性）': 'Blank (fill in substats yourself)',
+  '（选择一个已删除的预置组）': '(pick a deleted preset group)',
+  '数据源': 'Data source',
+  '攻略': 'Guide',
+  '配装数据实际取自这里': 'The build data is taken from here',
+  '米游社攻略，延伸阅读，非数据源': 'HoYoLAB guide — further reading, not a data source',
+  '配装数据的实际来源（真数据源）': 'Where the build data actually comes from (the real data source)',
+  '延伸阅读，非数据源': 'Further reading, not a data source',
+  '与内置数据不同；可在角色编辑里「还原为内置数据」':
+    'Differs from the built-in data; use "Restore built-in" in the character editor',
+  '已改过，点「恢复默认」可还原': 'Edited — use "Restore default" to revert',
+  '每行标注来源：「米游社wiki」词条是配装数据的实际来源（数据源），作者攻略为延伸阅读（非数据源，本项目从不读取）；URL 可直接点击跳转；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源。留空表示暂无来源':
+    'One source per line: the HoYoLAB wiki entry is where the build data actually comes from (data source); author guides are further reading (not a data source — this project never reads them). The URL is clickable; on the right ✎ edit, ✓ confirm, × cancel, − delete; multiple sources are supported. Leave empty for none.',
+  '时之沙主要属性': 'Sands main stat',
+  '空之杯主要属性': 'Goblet main stat',
+  '理之冠主要属性': 'Circlet main stat',
+  '添加时之沙主要属性': 'Add Sands main stat',
+  '添加空之杯主要属性': 'Add Goblet main stat',
+  '添加理之冠主要属性': 'Add Circlet main stat',
+  '添加追加属性': 'Add substat',
+  '只列出还没添加过的属性；点一个即可加入。': 'Only stats not yet added are listed; tap one to add it.',
+  '+ 添加': '+ Add',
+  '当前版本': 'Current version',
+  '保存修改': 'Save changes',
+  '✏️ 正在编辑：': '✏️ Editing: ',
+  '已切换为 English': 'Switched to English',
+  '已切换为中文': 'Switched to Chinese',
+  '数据语言已切换为 English': 'Data language switched to English',
+  '数据语言已切换为中文': 'Data language switched to Chinese',
+
   /* 配装编辑浮窗 */
   '编辑配装': 'Edit build',
   '关闭': 'Close',
@@ -1947,11 +2011,11 @@ const I18N_HTML = {
   help: [
     '<h4>How it works</h4>',
     '<ol>',
-    '<li><b>① Characters</b>: filter by <b>element / region / role</b> at the top (they stack, and combine with the search box and "Enabled only"); when a filter is on, the top right shows "matched N / total". Next to it <b>↓ Ascending / ↑ Descending</b> flips the whole list (your choice is remembered). Tick the characters you actually build. Tap a card to open the <b>edit popup</b>: character info on top, build cards below — each card shows the set, the three main stats and the substats at a glance; <b>"✎ Edit"</b> on a card opens a second <b>build editor popup</b>. Stats only apply after you hit <b>"Save"</b>; "Cancel" / closing / clicking outside warns about unsaved changes first. A character can have several builds (4-piece / 2+2) and <b>each build keeps its own stat needs</b>; when adding one you can start blank or copy an existing build, and deleted <b>built-in presets</b> can be picked back up from "＋ Add from presets".</li>',
+    '<li><b>① Characters</b>: filter by <b>element / region / role</b> at the top (they stack, and combine with the search box and "Enabled only"); when a filter is on, the top right shows "matched N / total". Next to it <b>↓ Ascending / ↑ Descending</b> flips the whole list (your choice is remembered). Tick the characters you actually build. Tap a card to open the <b>edit popup</b>: character info on top, build cards below — each card shows the set, the three main stats and the substats at a glance; <b>"✎ Edit"</b> on a card opens a second <b>build editor popup</b>. Stats only apply after you hit <b>"Save"</b>; "Cancel" / closing / clicking outside warns about unsaved changes first. A character can have several builds (4-piece / 2+2) and <b>each build keeps its own stat needs</b>; when adding one you can start blank or copy an existing build, and deleted <b>built-in presets</b> can be picked back up from "＋ Add from presets". The <b>build buttons</b> on a character card (number + set name + function) both switch the view and <b>set that build as the character main build</b> (the rest become alternates) — if that differs from the built-in arrangement the card shows a "Modified" badge; click the original main build to clear it.</li>',
     '<li><b>Made a mess?</b>: both build cards and character cards can show a <b>"Modified"</b> badge — that item now differs from the built-in data. One group gone wrong → <b>"Restore this group"</b> on the card (set + stats + main flag all back to built-in). Only tangled up which build is main → a <b>"↩ Restore main build"</b> button appears above the builds (touches the main flag only). Whole character a mess → <b>"Restore built-in"</b> at the bottom left of the popup (name / element / region / role / note / sources / every build at once). Deleted built-in builds can be re-added from "＋ Add from presets".</li>',
     '<li><b>Built-in data follows game updates</b>: builds you have <b>not touched</b> automatically pick up new data from the repo; anything <b>you edited</b> is left alone (tagged "Modified") — hit restore if you want the new version.</li>',
     '<li><b>② Lock Plans</b>: every set gets "in-game lock plan <b>candidates</b>" — clustered automatically by each character\'s <b>substat needs</b>. All <b>five slots in one plan share the same substat condition</b>; main stats are listed per slot, so you can just copy them into the game. <b>No slot limit</b>: there can be many candidates — merge them by hand with "Merge into…" or untick "Adopt" to drop the ones you do not want, then narrow it down to the 3 presets the game allows per set. The <b>"🧩 Off-piece / Transitional Keep Rules"</b> block at the top is character-independent: artifacts worth keeping purely because the main stat is rare (an elemental DMG goblet, say). Each enabled rule produces a candidate plan that joins the character clusters with <b>equal weight</b> for merging and adoption.</li>',
-    '<li><b>Traveler</b> is split into 6 separate entries by element (Traveler · Anemo / Geo / Electro / Dendro / Hydro / Pyro): each form has a different element and different builds, so they can be enabled and edited separately. Likewise <b>Nod-Krai</b> is now its own region (separate from Snezhnaya); if your save is from an older version, regions and roles are corrected once on open — after that your own edits are never overwritten.</li>',
+    '<li><b>Traveler</b> is split into 7 separate entries by element (Traveler · Anemo / Geo / Electro / Dendro / Hydro / Pyro / Cryo): each form has a different element and different builds, so they can be enabled and edited separately. Likewise <b>Nod-Krai</b> is now its own region (separate from Snezhnaya); if your save is from an older version, regions and roles are corrected once on open — after that your own edits are never overwritten.</li>',
     '<li><b>List sorting</b>: the ① character cards, the ② set blocks and the ③ "Recommended substats per set" table at the bottom all have a <b>↓ Ascending / ↑ Descending</b> button — one tap flips the direction and the choice is saved locally. Set lists (②③) also get a <b>"Catalog / Usage" toggle</b>: <b>Catalog</b> = the order in the set library (which follows the HoYoLAB catalog), stable and never jumping around; <b>Usage</b> = most used first, which changes with the characters you tick. The character list is ordered by region (Mondstadt → Liyue → … → Other·Traveler).</li>',
     '<li><b>③ Substat Rules</b>: tier rules plus an artifact scorer, answering "the main stat is right, but are the substats worth keeping?".</li>',
     '<li><b>④ Data → Set Manager (popup)</b>: hit "Open set manager" to add or remove sets, edit the 2-piece text and reorder; built-in sets are only "hidden" and can be restored any time.</li>',

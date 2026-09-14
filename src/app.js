@@ -537,9 +537,9 @@ function setLang(kind, v) {
   refreshStatCounts();
   // 单个语言按钮一次切两边（ui+data），连着调两次时只在最后弹一次提示
   if (kind === 'ui' && langOf('data') !== next) return;
-  toast(kind === 'ui' || langOf('data') === next
+  toast(t(kind === 'ui' || langOf('data') === next
     ? (next === 'en' ? '已切换为 English' : '已切换为中文')
-    : (next === 'en' ? '数据语言已切换为 English' : '数据语言已切换为中文'));
+    : (next === 'en' ? '数据语言已切换为 English' : '数据语言已切换为中文')));
 }
 /* 顶栏单个语言按钮，外观「中 / EN」两段：当前语言段高亮，点一下切到另一种 */
 function syncLangBtn() {
@@ -928,11 +928,17 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.add('hidden'), 2200);
 }
+let flashTimer = null;
 function flash(msg) {
   const el = $('#saveHint');
   if (!el) return;
   el.textContent = msg;
-  setTimeout(() => { if (el.textContent === msg) el.textContent = '数据保存在本机浏览器'; }, 1800);
+  applyI18n(el);   // 立即按当前语言翻译（如「已保存到本机」→ EN），避免闪烁中文
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => {
+    el.textContent = '数据保存在本机浏览器';
+    applyI18n(el);
+  }, 1800);
 }
 
 /* 套装列表以 state.sets 为准（可在「⑤ 套装管理」里增删排序），未隐藏的按顺序返回 */
@@ -1027,10 +1033,15 @@ function topBuildRoles(roles, max) {
 function buildRoleBadges(roles, max) {
   return topBuildRoles(roles, max).map(r => `<span class="brole">${esc(r)}</span>`).join('');
 }
-/* 配装按钮后缀：把「最重要的一两个」定位拼成「（输出·增伤）」 */
+/* 配装按钮后缀：把「最重要的一两个」定位拼成「（输出·增伤）」。
+ * 定位名属于「数据语言」，按当前语言翻译（英文下为 (DPS · Buff)），否则会残留中文。 */
 function buildRoleInline(roles, max) {
   const a = topBuildRoles(roles, max).filter(Boolean);
-  return a.length ? `（${a.map(esc).join('·')}）` : '';
+  if (!a.length) return '';
+  const names = a.map(r => t(r));
+  return (typeof isDataEn === 'function' && isDataEn())
+    ? ` (${names.join(' · ')})`
+    : `（${names.map(esc).join('·')}）`;
 }
 
 /* ============================================================
@@ -1966,7 +1977,7 @@ function renderChars() {
   if (fc) {
     if (charsFiltering()) {
       fc.classList.remove('hidden');
-      fc.innerHTML = `筛出 <b>${list.length}</b> / ${state.characters.length} 个`;
+      fc.innerHTML = t('筛出') + ` <b>${list.length}</b> / ${state.characters.length}` + (isUiEn() ? '' : ' 个');
     } else {
       fc.classList.add('hidden');
     }
@@ -1995,7 +2006,8 @@ function charCardHtml(c) {
   const mainRow = (slot) => {
     const arr = (mb.main && mb.main[slot]) || [];
     if (!arr.length) return '';
-    return `<div class="cc-main-row"><span>${SLOTS.find(s => s.id === slot).short}</span><span class="ms">${
+    // 部位名按「数据语言」取（英文下 Sands / Goblet / Circlet），不再依赖 DOM 事后翻译
+    return `<div class="cc-main-row"><span>${esc(slotShortName(slot))}</span><span class="ms">${
       arr.map(m => `<span class="ms r${m.rank}">${esc(mainStatName(slot, m.stat))}</span>`).join(' / ')
     }</span></div>`;
   };
@@ -2004,17 +2016,18 @@ function charCardHtml(c) {
   const builds = list.length
     ? list.map((b, i) => {
         const stxt = (b.sets || []).map(s => esc(setName(s))).join('+');
-        const t = buildRoleInline(b.roles, ROLE_SHOW_MAX);
-        return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="配装 ${i + 1}${t ? ' · ' + (b.roles || []).join('/') : ''}">${i + 1} ${stxt}${t ? `<span class="cc-bp-tag">${t}</span>` : ''}</button>`;
+        const rInline = buildRoleInline(b.roles, ROLE_SHOW_MAX);
+        const rTitle = (b.roles || []).map(r => t(r)).join('/');
+        return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="${t('配装')} ${i + 1}${rTitle ? ' · ' + rTitle : ''}">${i + 1} ${stxt}${rInline ? `<span class="cc-bp-tag">${rInline}</span>` : ''}</button>`;
       }).join('')
-    : '<span class="set-tag">未配置套装</span>';
+    : `<span class="set-tag">${t('未配置套装')}</span>`;
   return `
   <div class="char-card ${c.enabled ? 'on' : ''}" data-id="${c.id}">
     <div class="cc-top">
       <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
       <span class="cc-name" title="${esc(c.name)}">${esc(c.name)}</span>
       ${buildRoleBadges(mb.roles, ROLE_SHOW_MAX)}
-      ${charModified(c) ? '<span class="cc-mod" title="与内置数据不同；可在角色编辑里「还原为内置数据」">已修改</span>' : ''}
+      ${charModified(c) ? `<span class="cc-mod" title="${t('与内置数据不同；可在角色编辑里「还原为内置数据」')}">${t('已修改')}</span>` : ''}
       <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
     </div>
     <div class="cc-meta">
@@ -2039,12 +2052,18 @@ function bindCard(card, c) {
       ui.charView[c.id] = vi;
       if (!state.buildView) state.buildView = {};
       state.buildView[c.id] = vi;   // 切换即持久化为该角色的默认配装
+      // 卡片上选中哪套 = 把「主推」一并切到这套，其余降为备选。
+      // 排布与出厂不一致时由 charModified 自动标「已修改」；切回出厂主推即恢复无标。
+      if (c.builds && c.builds[vi]) {
+        c.builds.forEach((b, i) => { b.priority = i === vi ? 'main' : 'alt'; });
+      }
       save();
       const fresh = document.createElement('div');
       fresh.innerHTML = charCardHtml(c);
       const nc = fresh.firstElementChild;
       card.replaceWith(nc);
       bindCard(nc, c);
+      renderPlan(); renderSubs();   // 主推变了，锁定方案 / 追加属性页跟着刷新
       return;
     }
     const tog = e.target.closest('[data-toggle]');
@@ -2146,7 +2165,7 @@ function openDrawer(id) {
   editing = JSON.parse(JSON.stringify(src));
   editingIsNew = false;
   ui.buildIdx = 0;
-  $('#drawerTitle').textContent = '编辑 ' + src.name;
+  $('#drawerTitle').textContent = t('编辑') + ' ' + d(src.name, CH_EN[src.name] || src.name);
   $('#btnDeleteChar').classList.remove('hidden');
   // 自定义角色没有出厂数据，不给「还原为内置数据」
   $('#btnRestoreChar').classList.toggle('hidden', !charCanRestore(editing));
@@ -2163,7 +2182,7 @@ function openNewChar() {
   };
   editingIsNew = true;
   ui.buildIdx = 0;
-  $('#drawerTitle').textContent = '新增角色';
+  $('#drawerTitle').textContent = t('新增角色');
   $('#btnDeleteChar').classList.add('hidden');
   $('#btnRestoreChar').classList.add('hidden');
   drawDrawer();
@@ -2220,20 +2239,20 @@ function drawDrawer() {
   </div>
 
   <div class="fgroup">
-    <span class="glabel">圣遗物配装 <span class="hint">第 1 组为主推，其余为备选；单套=4件套，双套=2+2</span></span>
+    <span class="glabel">${t('圣遗物配装')} <span class="hint">${t('第 1 组为主推，其余为备选；单套=4件套，双套=2+2')}</span></span>
     <p class="muted small" style="margin:-2px 0 10px">下面每组是一张<b>只读卡片</b>：要看 / 改词条（三部位主要属性与追加属性）请点「✎ 编辑」，在弹出窗口里点「保存」才生效。</p>
     <div id="edBuilds"></div>
     <div class="bm-row">
       <button type="button" class="btn sm primary" id="edAddBuild">+ 添加一组配装</button>
       <label class="fld">📋 新增时套用…
         <select id="edAddFrom">
-          <option value="blank">空白（自行填写追加属性）</option>
-          ${editing.builds.map((b, i) => `<option value="b${i}">复制配装${i + 1}（${esc((b.sets || []).filter(Boolean).map(setName).join(' + ') || '未选套装')}）</option>`).join('')}
+          <option value="blank">${t('空白（自行填写追加属性）')}</option>
+          ${editing.builds.map((b, i) => `<option value="b${i}">${t('复制配装')} ${i + 1}（${esc((b.sets || []).filter(Boolean).map(setName).join(' + ') || t('未选套装'))}）</option>`).join('')}
         </select>
       </label>
       ${factoryPresetOptions(editing).length ? `<label class="fld">＋ 从预置添加
         <select id="edAddPreset">
-          <option value="">（选择一个已删除的预置组）</option>
+          <option value="">${t('（选择一个已删除的预置组）')}</option>
           ${factoryPresetOptions(editing).map(b => `<option value="${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).map(setName).join(' + '))}</option>`).join('')}
         </select>
       </label>` : ''}
@@ -2245,7 +2264,7 @@ function drawDrawer() {
     <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
   </div>
   <div class="fgroup">
-    <label>攻略来源 <span class="hint">每行标注来源：「米游社wiki」词条是配装数据的实际来源（数据源），作者攻略为延伸阅读（非数据源，本项目从不读取）；URL 可直接点击跳转；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源。留空表示暂无来源</span></label>
+    <label>${t('攻略来源')} <span class="hint">${t('每行标注来源：「米游社wiki」词条是配装数据的实际来源（数据源），作者攻略为延伸阅读（非数据源，本项目从不读取）；URL 可直接点击跳转；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源。留空表示暂无来源')}</span></label>
     <div id="edSrcList" class="src-list"></div>
     <button type="button" class="btn sm" id="edAddSrc">+ 添加链接</button>
   </div>`;
@@ -2300,11 +2319,11 @@ function drawDrawer() {
       const meta = srcMeta(it);
       const isData = meta.kind === 'data';
       const badge = isData
-        ? '<span class="src-badge" title="配装数据实际取自这里">数据源</span>'
-        : '<span class="src-badge guide" title="米游社攻略，延伸阅读，非数据源">攻略</span>';
+        ? `<span class="src-badge" title="${t('配装数据实际取自这里')}">${t('数据源')}</span>`
+        : `<span class="src-badge guide" title="${t('米游社攻略，延伸阅读，非数据源')}">${t('攻略')}</span>`;
       return `
       <div class="src-row" data-i="${i}">
-        <span class="src-kind ${isData ? 'is-data' : ''}" title="${isData ? '配装数据的实际来源（真数据源）' : '延伸阅读，非数据源'}">${esc(meta.label)}</span>
+        <span class="src-kind ${isData ? 'is-data' : ''}" title="${isData ? t('配装数据的实际来源（真数据源）') : t('延伸阅读，非数据源')}">${esc(meta.label)}</span>
         ${badge}
         ${on
           ? `<input type="text" class="src-url" data-i="${i}" value="${esc(u)}" placeholder="https://..." spellcheck="false">
@@ -2378,6 +2397,7 @@ function drawDrawer() {
       if (src) {
         nb.main = JSON.parse(JSON.stringify(src.main || {}));
         nb.subs = JSON.parse(JSON.stringify(src.subs || []));
+        nb.roles = JSON.parse(JSON.stringify(src.roles || []));   // 定位（功能定位）一并复制
       }
     }
     editing.builds.push(nb);
@@ -2444,15 +2464,15 @@ function drawBuildCards() {
     return `
     <div class="bm-card" data-bi="${i}">
       <div class="bm-t">
-        <span class="prio-tag ${b.priority}">${b.priority === 'main' ? '主推' : '备选'}</span>
-        <span class="bm-name">配装 ${i + 1}　${esc(sets.map(setName).join(' + ') || '未选套装')}</span>
+        <span class="prio-tag ${b.priority}">${b.priority === 'main' ? t('主推') : t('备选')}</span>
+        <span class="bm-name">${t('配装')} ${i + 1}　${esc(sets.map(setName).join(' + ') || t('未选套装'))}</span>
         ${buildRoleBadges(b.roles, ROLE_SHOW_MAX)}
-        <span class="bm-kind">${sets.length === 2 ? '2+2 组合' : (sets.length === 1 ? '4 件套' : '未选择套装')}</span>
-        ${mod ? '<span class="bm-mod">已修改</span>' : ''}
+        <span class="bm-kind">${sets.length === 2 ? t('2+2 组合') : (sets.length === 1 ? t('4 件套') : t('未选择套装'))}</span>
+        ${mod ? `<span class="bm-mod">${t('已修改')}</span>` : ''}
       </div>
       <div class="bm-sum">
         ${buildMainBrief(b).map(m => `<div><span class="k">${m.name}</span>${esc(m.txt)}</div>`).join('')}
-        <div><span class="k">追加属性</span>${esc(buildSubBrief(b) || '未设置')}</div>
+        <div><span class="k">${t('追加属性')}</span>${esc(buildSubBrief(b) || t('未设置'))}</div>
       </div>
       <div class="bm-ops">
         <button type="button" class="btn sm primary" data-bed="${i}">✎ 编辑</button>
@@ -2599,7 +2619,8 @@ function drawBuildForm() {
       B.sets = (src.sets || []).filter(Boolean).slice();
       B.main = JSON.parse(JSON.stringify(src.main || {}));
       B.subs = JSON.parse(JSON.stringify(src.subs || []));
-      toast('已复制配装' + (+v.slice(1) + 1) + '的套装与词条');
+      B.roles = JSON.parse(JSON.stringify(src.roles || []));   // 定位一并套用
+      toast('已复制配装' + (+v.slice(1) + 1) + '的套装、词条与定位');
     } else if (v[0] === 'f') {
       const key = v.slice(1);
       const fc = factoryCharOf(editing);
@@ -2610,6 +2631,7 @@ function drawBuildForm() {
       B.bkey = fb.bkey;
       B.main = fb.main;
       B.subs = fb.subs;
+      B.roles = (fb.roles || []).slice();   // 预置的定位一并套用
       toast('已套用出厂预置：' + B.sets.join(' + '));
       $('#bmRestore').classList.remove('hidden');
     } else {
@@ -2622,7 +2644,7 @@ function drawBuildForm() {
   const mbox = $('#bmMainBox');
   mbox.innerHTML = ['sands', 'goblet', 'circlet'].map(slot => `
     <div class="fgroup">
-      <span class="glabel">${SLOTS.find(s => s.id === slot).name}主要属性 <span class="hint">越靠前优先级越高</span></span>
+      <span class="glabel">${t(SLOTS.find(s => s.id === slot).name + '主要属性')} <span class="hint">${t('越靠前优先级越高')}</span></span>
       <div class="ms-list" id="bmMain_${slot}"></div>
       <button type="button" class="btn sm" id="bmAdd_${slot}">+ 添加主要属性</button>
     </div>`).join('');
@@ -2986,7 +3008,7 @@ function renderKeepRules() {
         <input type="checkbox" data-kr-toggle="${esc(r.id)}"${on ? ' checked' : ''}>
         <span class="kr-name">${esc(keepRuleName(r.name))}</span>
         <span class="kr-slot">${esc(slotTxt)}</span>
-        ${modified ? '<span class="kr-mod" title="已改过，点「恢复默认」可还原">已修改</span>' : ''}
+        ${modified ? `<span class="kr-mod" title="${t('已改过，点「恢复默认」可还原')}">${t('已修改')}</span>` : ''}
         <span class="kr-cond">${t('主要属性：')}${esc(mainsTxt)}${poolTxt ? `　·　${t('追加属性：')}${esc(poolTxt)}` : ''}${reqTxt ? `　·　${t('★必须：')}${esc(reqTxt)}` : ''}</span>
         ${r.desc ? `<span class="kr-desc">${esc(r.desc)}</span>` : ''}
         <span class="kr-btns">
@@ -3331,7 +3353,7 @@ function renderSubs() {
   const sS = $('#scoreSet'), sL = $('#scoreSlot');
   {
     const cur = sS.value;
-    sS.innerHTML = '<option value="">（不限套装）</option>' + allSets().map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    sS.innerHTML = `<option value="">${t('（不限套装）')}</option>` + allSets().map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
     sS.value = cur;
   }
   if (!sL.options.length) {
@@ -3655,7 +3677,7 @@ function renderChangelog(box, list) {
 /* 数据管理页：版本号 + 全部日志 */
 function renderDataChangelog() {
   const v = $('#appVersion');
-  if (v) v.textContent = '当前版本 ' + APP_VERSION;
+  if (v) v.textContent = t('当前版本') + ' ' + APP_VERSION;
   renderChangelog($('#chgLog'));
 }
 
@@ -3810,8 +3832,8 @@ function bind() {
     $('#krDesc').value = r.desc || '';
     $('#krSlot').value = r.slot || 'goblet';
     renderKrMains(r.mains); renderKrPool(r.pool); renderKrRequired(r.required);
-    $('#krFormTitle').textContent = `✏️ 正在编辑：${r.name}`;
-    $('#btnKrAdd').textContent = '保存修改';
+    $('#krFormTitle').textContent = t('✏️ 正在编辑：') + r.name;
+    $('#btnKrAdd').textContent = t('保存修改');
     $('#btnKrCancel').hidden = false;
     openKrForm();
     const nm = $('#krName');
