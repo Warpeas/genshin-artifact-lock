@@ -486,6 +486,7 @@ const CH_EN = {
   '旅行者·草': 'Traveler (Dendro)',
   '旅行者·水': 'Traveler (Hydro)',
   '旅行者·火': 'Traveler (Pyro)',
+  '旅行者·冰': 'Traveler (Cryo)',
 };
 
 /* 图鉴顺序（= 米游社观测枢角色索引：按国度 → 版本登场先后（旧→新））
@@ -615,6 +616,7 @@ const CH_CATALOG = [
   '旅行者·草',
   '旅行者·水',
   '旅行者·火',
+  '旅行者·冰',
 ];
 const CH_CATALOG_IDX = Object.fromEntries(CH_CATALOG.map((n, i) => [n, i]));
 
@@ -752,6 +754,7 @@ const CH_META = {
   '旅行者·草': ['other', ['subdps']],
   '旅行者·水': ['other', ['subdps']],
   '旅行者·火': ['other', ['maindps']],
+  '旅行者·冰': ['other', ['subdps']],
 };
 
 const RAW_CHARS = [
@@ -1378,6 +1381,10 @@ const RAW_CHARS = [
     {sets:['角斗士的终幕礼'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cd', 'atkP', 'cr', 'em'], roles:['输出', '增伤', '精通']},
     {sets:['乐园遗落之花'], sands:['em'], goblet:['em'], circlet:['em'], subs:['cr', 'er'], roles:['输出', '精通', '剧变反应']},
   ],    [['https://baike.mihoyo.com/ys/obc/content/4074/detail', '观测枢词条']],    '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
+  ['旅行者·冰',     'cryo', [
+    {sets:['影中沉凝的幻灭'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['输出']},
+    {sets:['炉火融炼之心'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['辅助', '精通']},
+  ], [['https://baike.mihoyo.com/ys/obc/content/509225/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77260008', 'Asgater']],     '旅行者按元素形态分别启用、分别配装，各形态互相独立'],
 ];
 
 /* ---------- 展开为完整结构 ---------- */
