@@ -2536,7 +2536,13 @@ function openPicker(title, opts, hint, onPick) {
     list.innerHTML = opts.map(o =>
       `<button type="button" class="pick-opt" data-pk="${esc(o.value)}">${esc(t(o.label))}</button>`).join('');
     list.querySelectorAll('[data-pk]').forEach(b => {
-      b.onclick = () => { const v = b.dataset.pk; closePicker(); if (pickHandler) pickHandler(v); };
+      b.onclick = () => {
+        /* 先接住回调再关窗：closePicker() 会把 pickHandler 置空，
+         * 若关窗后再读 pickHandler，回调永远拿不到 → 选了属性却加不进去 */
+        const v = b.dataset.pk, h = pickHandler;
+        closePicker();
+        if (h) h(v);
+      };
     });
   }
   $('#pickMask').classList.remove('hidden');
