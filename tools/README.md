@@ -50,13 +50,13 @@ blackboard 那套 `common/blackboard/ys_strategy` 已失效。
 
 ## 选稿规则（fetch_guides.py）
 
-1. 作者白名单优先 —— 见脚本里的 `AUTHORS`，当前是 Asgater / HoYo青枫（按 uid 匹配，比昵称可靠）
+1. 作者白名单优先 —— 见脚本里的 `AUTHORS`（按 uid 匹配，比昵称可靠）。当前为 Asgater / HoYo青枫 / 幕陵 / 风伤幽冥 / 猫冬 / Sattle，对所有角色**统一**适用同一套选取逻辑。早期只有前两位时，水/火旅行者拉不到白名单稿、只能走热度回退（与冰不一致），已把覆盖水/火的作者并入同一白名单修正。
 2. 尽量每位作者各一篇，视角不重样
 3. 专帖（标题用「」或【】单独引出该角色）优先于多角色合集；合集帖直接不收
 4. 同档内**较新优先**（配装随版本变），热度（`view + bookmark×20 + like×2`）作为次要参考
 5. 白名单凑不满 2 篇才回退到观测枢词条「攻略推荐」挂的文章
 
-换作者改 `AUTHORS` 字典即可；uid 用
+换作者直接改 `AUTHORS` 字典即可（对所有角色统一生效，无需按角色特判）；uid 用
 `bbs-api.mihoyo.com/user/wapi/searchUser?keyword=<昵称>` 查。
 
 ## 缓存
