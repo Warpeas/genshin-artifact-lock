@@ -1985,6 +1985,11 @@ function subHitPlain(sub) {
   if (!n) return '';
   return `至少${'一二三四'[n - 1]}条`;
 }
+/* 命中条数的【界面】文案：数字拼出来的整串查不到词典，必须在这里就 t() 包掉。
+ * 注意与 subHitPlain 分工：那个给复制 / 导出用，恒中文（游戏内锁定界面是中文）。 */
+function hitLabel(n) {
+  return t(`至少${'一二三四'[(n | 0) - 1] || '一'}条`);
+}
 function subHitText(sub) {
   const t = subHitPlain(sub);
   return t ? `<b>${t}</b>` : '<span class="gp-fixed">不限</span>';
@@ -3317,10 +3322,11 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
           const cur = Math.min(p.sub.minHit || SUB_MIN_HIT_DEFAULT, max);
           let opts = '';
           for (let n = 1; n <= max; n++) {
-            opts += `<option value="${n}"${n === cur ? ' selected' : ''}>至少${'一二三四'[n - 1]}条</option>`;
+            opts += `<option value="${n}"${n === cur ? ' selected' : ''}>${esc(hitLabel(n))}</option>`;
           }
+          const hitTitle = t('追加属性池里命中任意 N 条就锁定（★计入）。默认「至少两条」；调大可做更细的筛选');
           return `<select class="gp-hitsel" data-gp-minhit="${esc(setName)}|${esc(p.key)}"` +
-                 ` title="追加属性池里命中任意 N 条就锁定（★计入）。默认「至少两条」；调大可做更细的筛选">${opts}</select>`;
+                 ` title="${esc(hitTitle)}">${opts}</select>`;
         })()
       : '<span class="gp-fixed">不限</span>';
 
@@ -4199,7 +4205,7 @@ function bind() {
       const cfg = planCfgOf(setName);
       cfg.minHit[key] = clampHit(hs.value);
       save(); renderPlan();
-      toast(`命中条数已设为「至少${'一二三四'[clampHit(hs.value) - 1]}条」`);
+      toast(tf('命中条数已设为「{v}」', { v: hitLabel(clampHit(hs.value)) }));
     }
   });
 

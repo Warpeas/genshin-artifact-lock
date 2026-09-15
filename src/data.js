@@ -2015,6 +2015,14 @@ const T_UI_EN = {
   '🎮 游戏内锁定方案候选': '🎮 In-game lock plan candidates',
   '追加属性（五部位相同）': 'Substats (same for all five slots)',
   '包含（★计入）': 'Include (★ counts)',
+  /* 命中条数下拉（JS 按数字拼出来的，必须进词典才翻得动） */
+  '至少一条': 'At least 1',
+  '至少二条': 'At least 2',
+  '至少三条': 'At least 3',
+  '至少四条': 'At least 4',
+  '追加属性池里命中任意 N 条就锁定（★计入）。默认「至少两条」；调大可做更细的筛选':
+    'Lock when any N substats in the pool hit (★ counts). Defaults to "at least 2"; raise it for a stricter filter.',
+  '命中条数已设为「{v}」': 'Hit count set to "{v}"',
   '个候选方案': 'candidates',
   '个候选（角色组': 'candidates (character group',
   '个预设': 'presets',
