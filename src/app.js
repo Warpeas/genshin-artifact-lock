@@ -2657,27 +2657,23 @@ function drawBuildForm() {
   ['sands', 'goblet', 'circlet'].forEach(slot => {
     $('#bmAdd_' + slot).onclick = () => {
       const used = new Set(B.main[slot].map(m => m.stat));
-      const slotName = SLOTS.find(s => s.id === slot).name;
-      openPicker('添加' + slotName + '主要属性',
-        MAIN_STATS[slot].filter(s => !used.has(s.id)).map(s => ({ value: s.id, label: s.name })),
-        '只列出还没添加过的属性；点一个即可加入。',
-        id => {
-          B.main[slot].push({ stat: id, rank: B.main[slot].length + 1, op: '>' });
-          renank(B, slot); drawMains(B, 'bm');
-        });
+      const next = MAIN_STATS[slot].find(s => !used.has(s.id));
+      if (!next) return toast('该部位已添加全部主要属性');
+      B.main[slot].push({ stat: next.id, rank: B.main[slot].length + 1, op: '>' });
+      renank(B, slot); drawMains(B, 'bm');
     };
   });
   drawMains(B, 'bm');
   // 功能定位（多选 + 自定义）：单独渲染，不打断上面的表单状态
   drawBuildRoles();
-  // 追加属性：弹窗里挑一个还没加过的
+  // 追加属性：按属性库顺序直接加入第一个尚未使用的属性，之后可在行内修改
   const add = $('#bmAddSub');
   add.onclick = () => {
     const used = new Set(B.subs.map(s => s.id));
-    openPicker('添加追加属性',
-      SUB_STATS.filter(s => !used.has(s.id)).map(s => ({ value: s.id, label: s.name })),
-      '只列出还没添加过的属性；点一个即可加入。',
-      id => { B.subs.push({ id, req: false, op: '>' }); drawSubs(B, 'bm'); });
+    const next = SUB_STATS.find(s => !used.has(s.id));
+    if (!next) return toast('已添加全部追加属性');
+    B.subs.push({ id: next.id, req: false, op: '>' });
+    drawSubs(B, 'bm');
   };
   drawSubs(B, 'bm');
 }
