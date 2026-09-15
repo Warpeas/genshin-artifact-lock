@@ -2206,6 +2206,22 @@ function setOptions(sel) {
   return allSets().map(n => `<option value="${esc(n)}"${n === sel ? ' selected' : ''}>${esc(n)}</option>`).join('');
 }
 
+function syncCharMeta() {
+  if (!editing) return;
+  let target = state.characters.find(c => c.id === editing.id);
+  if (!target) {
+    if (!editingIsNew || !editing.name.trim()) return;
+    target = { ...editing, builds: [freshBuild()] };
+    state.characters.push(target);
+    $('#btnDeleteChar').classList.remove('hidden');
+  }
+  ['name', 'element', 'region', 'roles', 'note', 'src'].forEach(key => {
+    target[key] = Array.isArray(editing[key]) ? editing[key].slice() : editing[key];
+  });
+  save();
+  renderChars(); renderPlan(); renderSubs();
+}
+
 function drawDrawer() {
   const c = editing;
   const body = $('#drawerBody');
@@ -2240,7 +2256,7 @@ function drawDrawer() {
 
   <div class="fgroup">
     <span class="glabel">${t('圣遗物配装')} <span class="hint">${t('第 1 组为主推，其余为备选；单套=4件套，双套=2+2')}</span></span>
-    <p class="muted small" style="margin:-2px 0 10px">下面每组是一张<b>只读卡片</b>：要看 / 改词条（三部位主要属性与追加属性）请点「✎ 编辑」，在弹出窗口里点「保存」才生效。</p>
+    <p class="muted small" style="margin:-2px 0 10px">角色基础信息修改后立即生效；下面每组是一张<b>只读卡片</b>，要看 / 改词条（三部位主要属性与追加属性）请点「✎ 编辑」，在弹出窗口里点「保存」才生效。</p>
     <div id="edBuilds"></div>
     <div class="bm-row">
       <button type="button" class="btn sm primary" id="edAddBuild">+ 添加一组配装</button>
@@ -2274,6 +2290,7 @@ function drawDrawer() {
     b.onclick = () => {
       editing.element = b.dataset.elem;
       body.querySelectorAll('#edElem .seg-btn').forEach(x => x.classList.toggle('active', x === b));
+      syncCharMeta();
     };
   });
 
@@ -2282,6 +2299,7 @@ function drawDrawer() {
     b.onclick = () => {
       editing.region = b.dataset.region;
       body.querySelectorAll('#edRegion .seg-btn').forEach(x => x.classList.toggle('active', x === b));
+      syncCharMeta();
     };
   });
   // 定位（多选）
@@ -2291,12 +2309,13 @@ function drawDrawer() {
       if (cb.checked) set.add(cb.dataset.role); else set.delete(cb.dataset.role);
       editing.roles = ROLES.map(r => r.id).filter(id => set.has(id));
       if (!editing.roles.length) { editing.roles = ['maindps']; cb.checked = true; toast('至少保留一个定位'); }
+      syncCharMeta();
     };
   });
 
   // 名称
-  body.querySelector('#edName').oninput = e => { editing.name = e.target.value; };
-  body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; };
+  body.querySelector('#edName').oninput = e => { editing.name = e.target.value; syncCharMeta(); };
+  body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; syncCharMeta(); };
 
   // 攻略来源：一行一链接 = 可点击直接跳转(锚) + 可编辑 + 可删除(−)，可加多源
   let srcEditIdx = null;   // 当前正在编辑的来源行；null = 全部为「可跳转链接」态
@@ -2309,6 +2328,7 @@ function drawDrawer() {
     else list[i] = { url, title: '' };
     srcEditIdx = null;
     renderSrcRows();
+    syncCharMeta();
   }
   function renderSrcRows() {
     const wrap = body.querySelector('#edSrcList');
@@ -2375,6 +2395,7 @@ function drawDrawer() {
         (editing.src = editing.src || []).splice(+btn.dataset.i, 1);
         if (srcEditIdx === +btn.dataset.i) srcEditIdx = null;
         renderSrcRows();
+        syncCharMeta();
       };
     });
   }
@@ -2928,12 +2949,9 @@ function saveChar() {
     .filter((v, i, a) => a.findIndex(z => z.url === v.url) === i);  // 按 url 去重
   delete c.main; delete c.subs;   // 词条需求已完全下沉到配装组
 
-  if (editingIsNew) {
-    state.characters.push(c);
-  } else {
-    const i = state.characters.findIndex(x => x.id === c.id);
-    if (i >= 0) state.characters[i] = c;
-  }
+  const i = state.characters.findIndex(x => x.id === c.id);
+  if (i >= 0) state.characters[i] = c;
+  else state.characters.push(c);
   save(); showDrawer(false);
   renderChars(); renderPlan(); renderSubs();
   toast('已保存 ' + c.name);
