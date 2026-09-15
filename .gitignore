@@ -9,3 +9,6 @@ tools/out/_*
 
 # WorkBuddy 项目数据，不入库
 .workbuddy/
+
+# Qoder 编辑器本地数据，不入库
+.qoder/
