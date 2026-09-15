@@ -2763,8 +2763,7 @@ function drawMains(B, prefix) {
         <select data-msel="${i}">${MAIN_STATS[slot].map(s =>
           `<option value="${s.id}"${s.id === m.stat ? ' selected' : ''}>${s.name}</option>`).join('')}</select>
         <span class="ms-ops">
-          <button type="button" class="up" data-up="${i}">↑</button>
-          <button type="button" class="down" data-down="${i}">↓</button>
+          <button type="button" class="drag-handle" title="拖动调整顺序" aria-label="拖动调整顺序">☷</button>
           <button type="button" class="rm" data-rmm="${i}">×</button>
         </span>
       </div>`).join('') || '<p class="muted small">未设置</p>';
@@ -2788,16 +2787,9 @@ function drawMains(B, prefix) {
       it.op = it.op === '=' ? '>' : '=';
       drawMains(B, prefix);
     });
-    box.querySelectorAll('[data-up]').forEach(b => b.onclick = () => {
-      const i = +b.dataset.up;
-      if (i === 0) return;
-      [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
-      renank(B, slot); drawMains(B, prefix);
-    });
-    box.querySelectorAll('[data-down]').forEach(b => b.onclick = () => {
-      const i = +b.dataset.down;
-      if (i === arr.length - 1) return;
-      [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]];
+    bindDragSort(box, '.ms-item', row => +row.dataset.mi, (from, to) => {
+      const [item] = arr.splice(from, 1);
+      arr.splice(to, 0, item);
       renank(B, slot); drawMains(B, prefix);
     });
     box.querySelectorAll('[data-rmm]').forEach(b => b.onclick = () => {
@@ -2807,6 +2799,49 @@ function drawMains(B, prefix) {
   });
 }
 function renank(B, slot) { (B || curBuild()).main[slot].forEach((m, i) => { m.rank = i + 1; }); }
+
+function bindDragSort(box, rowSelector, getIndex, move) {
+  box.querySelectorAll('.drag-handle').forEach(handle => {
+    let drag = null;
+    const clear = () => {
+      if (!drag) return;
+      drag.row.classList.remove('dragging');
+      box.querySelectorAll('.drag-over').forEach(row => row.classList.remove('drag-over'));
+      drag = null;
+    };
+    handle.onpointerdown = event => {
+      if (event.button !== 0) return;
+      const row = handle.closest(rowSelector);
+      drag = { row, from: getIndex(row), target: null };
+      row.classList.add('dragging');
+      handle.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    };
+    handle.onpointermove = event => {
+      if (!drag) return;
+      const target = [...box.querySelectorAll(rowSelector)].find(row => {
+        const rect = row.getBoundingClientRect();
+        return event.clientY >= rect.top && event.clientY <= rect.bottom;
+      });
+      box.querySelectorAll('.drag-over').forEach(row => row.classList.remove('drag-over'));
+      if (target && target !== drag.row) {
+        target.classList.add('drag-over');
+        drag.target = target;
+      }
+    };
+    handle.onpointerup = () => {
+      if (!drag) return;
+      const target = drag.target;
+      if (target) {
+        const from = drag.from;
+        const to = getIndex(target);
+        if (from !== to) move(from, to);
+      }
+      clear();
+    };
+    handle.onpointercancel = clear;
+  });
+}
 
 /* 追加属性：与主要属性一致的「排序」编辑器，外加 ★必选 开关 */
 function drawSubs(B, prefix) {
@@ -2824,8 +2859,7 @@ function drawSubs(B, prefix) {
         `<option value="${t.id}"${t.id === s.id ? ' selected' : ''}>${t.name}</option>`).join('')}</select>
       <span class="ms-ops">
         <button type="button" class="star-btn ${s.req ? 'on' : ''}" data-st="${i}" title="★必须（游戏内锁定方案的「必须」）">${s.req ? '★' : '☆'}</button>
-        <button type="button" class="up" data-su="${i}">↑</button>
-        <button type="button" class="down" data-sd="${i}">↓</button>
+        <button type="button" class="drag-handle" title="拖动调整顺序" aria-label="拖动调整顺序">☷</button>
         <button type="button" class="rm" data-sr="${i}">×</button>
       </span>
     </div>`).join('') || '<p class="muted small">未设置，可在下方添加</p>';
@@ -2853,16 +2887,9 @@ function drawSubs(B, prefix) {
     subs[i].op = subs[i].op === '=' ? '>' : '=';
     drawSubs(B, prefix);
   });
-  box.querySelectorAll('[data-su]').forEach(b => b.onclick = () => {
-    const i = +b.dataset.su;
-    if (i === 0) return;
-    [subs[i - 1], subs[i]] = [subs[i], subs[i - 1]];
-    drawSubs(B, prefix);
-  });
-  box.querySelectorAll('[data-sd]').forEach(b => b.onclick = () => {
-    const i = +b.dataset.sd;
-    if (i === subs.length - 1) return;
-    [subs[i + 1], subs[i]] = [subs[i], subs[i + 1]];
+  bindDragSort(box, '.ms-item', row => +row.dataset.si, (from, to) => {
+    const [item] = subs.splice(from, 1);
+    subs.splice(to, 0, item);
     drawSubs(B, prefix);
   });
   box.querySelectorAll('[data-sr]').forEach(b => b.onclick = () => {
