@@ -111,7 +111,7 @@ html[lang="en"] .i18n-en-only{display:list-item;}
 }
 .toolbar input[type=search]:focus{outline:none;border-color:var(--gold);}
 .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;
-     max-width:100%;flex-wrap:wrap;}   /* 英文态文案更长，放不下时换行而不是撑破页面 */
+     width:fit-content;max-width:100%;flex-wrap:wrap;}   /* 轨道贴合按钮宽度，浮窗内不留空白描边死区；英文态文案更长时换行而不是撑破页面 */
 .seg-btn{padding:6px 12px;background:var(--panel);border:none;border-right:1px solid var(--line);color:var(--txt2);cursor:pointer;font-size:13px;}
 .seg-btn:last-child{border-right:none;}
 .seg-btn:hover{background:var(--panel2);color:var(--txt);}
@@ -310,9 +310,14 @@ html[lang="en"] .i18n-en-only{display:list-item;}
 /* ---------- subs ---------- */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 @media (max-width:1000px){.two-col{grid-template-columns:1fr;}}
+/* 宽屏：数据管理四张卡改双列，避免全宽堆叠留下大片横向留白 */
+@media (min-width:1000px){
+  #tab-data{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+  #tab-data .card{margin-bottom:0;}
+}
 .sub-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:10px 0;}
 .sub-input{display:flex;align-items:center;gap:6px;font-size:12.5px;}
-.sub-input label{flex:none;width:74px;color:var(--txt2);}
+.sub-input label{flex:none;width:88px;color:var(--txt2);}
 .sub-input input{
   width:100%;padding:4px 8px;border-radius:6px;border:1px solid var(--line);
   background:var(--panel2);color:var(--txt);font-size:12.5px;
@@ -720,7 +725,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .sort-bar{gap:6px;}
   .sort-note{display:none;}   /* 窄屏只留切换按钮，说明移到按钮 title 里 */
   .fld select,.fld input{min-width:0;width:100%;}
-  .seg{overflow-x:auto;max-width:100%;scrollbar-width:none;}
+  .seg{flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none;}
   .seg::-webkit-scrollbar{display:none;}
   .seg-btn{flex:none;padding:8px 13px;}
 
@@ -760,7 +765,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 
   /* --- 追加属性页 --- */
   .sub-inputs{grid-template-columns:1fr;}
-  .sub-input label{width:84px;}
+  .sub-input label{width:88px;}
   table.tbl th,table.tbl td{padding:6px 5px;font-size:11.5px;}
   /* 窄屏：让出宽度给「套装 + 追加属性排序」，强度条列隐藏、套装名可换行 */
   table.tbl .col-str{display:none;}
