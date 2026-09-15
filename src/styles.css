@@ -310,10 +310,11 @@ html[lang="en"] .i18n-en-only{display:list-item;}
 /* ---------- subs ---------- */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 @media (max-width:1000px){.two-col{grid-template-columns:1fr;}}
-/* 宽屏：数据管理四张卡改双列，避免全宽堆叠留下大片横向留白 */
+/* 宽屏：数据管理四张卡改双列，避免全宽堆叠留下大片横向留白。
+   必须带 .active：裸 id 选择器优先级高于 .tabpane{display:none}，会让数据页在所有标签下常驻显示 */
 @media (min-width:1000px){
-  #tab-data{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
-  #tab-data .card{margin-bottom:0;}
+  #tab-data.active{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+  #tab-data.active .card{margin-bottom:0;}
 }
 .sub-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:10px 0;}
 .sub-input{display:flex;align-items:center;gap:6px;font-size:12.5px;}
