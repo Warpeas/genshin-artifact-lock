@@ -10,8 +10,19 @@
  * CHANGELOG：新在前，CHANGELOG[0].v 必须等于 APP_VERSION。items 为纯文本（渲染时会 esc）。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.15.5';
+const APP_VERSION = '2026.09.15.6';
 const CHANGELOG = [
+  {
+    v: '2026.09.15.6', date: '2026-09-15',
+    title: '调整套装管理与角色卡片显示',
+    items: [
+      '新增：英文界面增加提示，说明英文文案由 AI 生成、未经完整校对，且尚未覆盖所有界面。',
+      '修：4 件套效果改为与 2 件套一致的直接编辑文本框，修改后立即保存；新增套装改为弹窗填写并插入列表第一项。',
+      '新增：可恢复内置套装顺序，自定义套装固定排在内置套装前；「恢复全部内置套装」改为「恢复全部内置套装显示」。',
+      '修：角色卡片移除配装右上角的功能定位标签。',
+      '修：自定义配装功能定位改为仅属于当前配装；修改配装定位会显示「已修改」，点击配装窗口「保存」后立即生效。',
+    ],
+  },
   {
     v: '2026.09.15.5', date: '2026-09-15',
     title: '完善套装效果编辑与用户数据备份',
@@ -74,7 +85,7 @@ const CHANGELOG = [
       '中英文切换定稿：顶栏单按钮「中 / EN」两段（当前金色高亮），点一下同时切界面文案与角色/套装/属性名；顺序「保存→语言切换→使用说明」；数据管理「关于数据」补英文并补回动态计数。',
       '配装数据整体按观测枢 wiki「推荐装备」结构化数据重核对：124 角色主词条按原文排序、2+2 混搭保留、四星过渡套不混入；攻略来源第 1 条固定观测枢词条（真数据源）。',
       '推翻旧 SUB_PRESETS 粗桶：每组配装独立携带套装+三部位主词条+副词条+流派标签，心海等 12 角色双暴纠正为 wiki 真实值；同角色多流派分组保留。',
-      '配装新增「功能定位」多选+自定义（输出/增伤/减抗/治疗/护盾/增幅反应/剧变反应…），跨角色共享词表；全部 124 角色定位按 wiki 重新推断。',
+      '配装新增「功能定位」多选+自定义（输出/增伤/减抗/治疗/护盾/增幅反应/剧变反应…）；全部 124 角色定位按 wiki 重新推断。',
       '角色与圣遗物按图鉴核对：补全到 124 角色、圣遗物 45→46 套并订正套装名；数据语言切 English 显官方英文名、中英文搜索都认。',
       '界面打磨：套装名与配装切换合并一行可点选、流派切换芯片去色点只留编号、详情「攻略来源」标注数据源/攻略、锁定方案按「重要属性」相似度自动合并+命中条数可调、手机端配装编辑横向滚动修复、②③ 页加图鉴/推荐排序与正倒序切换。',
       '修「中文模式出现英文」误解：实为本地存储残留 en 状态；单按钮直接显示当前语言，见 EN 点一下即切回。',
@@ -160,10 +171,10 @@ const ROLES = [
 ];
 const ROLE_NAME = Object.fromEntries(ROLES.map(r => [r.id, r.name]));
 
-/* ---------- 配装功能定位（一个配装可有多个；可自定义，跨角色共享） ----------
+/* ---------- 配装功能定位（一个配装可有多个；可自定义，仅当前配装使用） ----------
  * 与角色级「队伍定位」(ROLES：主C/副C/辅助) 是两回事：
  * 这里是「这套配装拿来干嘛用」——输出 / 增伤 / 减抗 / 治疗 / 护盾 ……
- * 基础词表在下面，用户还能在编辑器里追加自定义定位（存 state.customBuildRoles）。 */
+ * 基础词表在下面，用户还能在编辑器里追加仅属于当前配装的自定义定位。 */
 const BUILD_ROLES = [
   '输出', '增伤', '减抗', '治疗', '护盾',
   '副C', '辅助', '精通', '充能', '聚怪/控制',
@@ -299,10 +310,10 @@ const SETS = [
   { name: '晨星与月的晓歌',     en: 'Aubade of Morningstar and Moon',       bonus: '元素精通+80' , bonus4: '装备者处于队伍后台时，造成的月曜反应伤害提升20%；队伍的月兆等级至少为满辉时，造成的月曜反应伤害进一步提升40%' },
   { name: '风起之日',           en: 'A Day Carved From Rising Winds',       bonus: '攻击力+18%' , bonus4: '普通攻击、重击、元素战技或元素爆发命中敌人后，将获得持续6秒的「风与牧歌的眷怜」：攻击力提高25%；若装备者已经完成了「魔女的课业」，则「风与牧歌的眷怜」将会升级为「风与牧歌的决意」，额外使通过考验的装备者的暴击率提升20%' },
   /* ---- 6.0「月之一」挪德卡莱 ---- */
-  { name: '穹境示现之夜',       en: "Night of the Sky's Unveiling",         bonus: '元素精通+80' },
-  { name: '纺月的夜歌',         en: "Silken Moon's Serenade",               bonus: '元素充能效率+20%' },
+  { name: '穹境示现之夜',       en: "Night of the Sky's Unveiling",         bonus: '元素精通+80' , bonus4: '队伍中附近的角色触发月曜反应时，若装备者在场上，将获得持续4秒的「月辉明光·蓄念」效果：队伍的月兆为初辉/满辉时，暴击率提升15%/30%；队伍中的角色每拥有一种不同的「月辉明光」效果，队伍中的所有角色触发的月曜反应造成的伤害提升10%' },
+  { name: '纺月的夜歌',         en: "Silken Moon's Serenade",               bonus: '元素充能效率+20%' , bonus4: '造成元素伤害时，获得持续8秒的「月辉明光·崇信」效果：队伍的月兆为初辉/满辉时，队伍中的所有角色的元素精通提高60点/120点；队伍中的角色每拥有一种不同的「月辉明光」效果，队伍中的所有角色触发的月曜反应造成的伤害提升10%' },
   /* ---- 5.x 纳塔 ---- */
-  { name: '长夜之誓',           en: "Long Night's Oath",                    bonus: '下落攻击伤害+25%' },
+  { name: '长夜之誓',           en: "Long Night's Oath",                    bonus: '下落攻击伤害+25%' , bonus4: '装备者的下落攻击/重击/元素战技命中敌人后，获得1/2/2层「永照的流辉」，由下落攻击、重击或元素战技产生的该效果分别每秒至多触发一次；永照的流辉：下落攻击造成的伤害提升15%，持续6秒，至多叠加5层，每层持续时间独立计算' },
   { name: '深廊终曲',           en: 'Finale of the Deep Galleries',         bonus: '冰元素伤害+15%' , bonus4: '装备者的元素能量为0时，普通攻击造成的伤害提升60%，元素爆发造成的伤害提升60%；装备者的普通攻击造成伤害后，上述元素爆发伤害提升效果将失效6秒；装备者的元素爆发造成伤害后，上述普通攻击伤害提升效果将失效6秒' },
   { name: '黑曜秘典',           en: 'Obsidian Codex',                       bonus: '夜魂加持下伤害+15%' , bonus4: '装备者在场上消耗1点夜魂值后暴击率提高40%，持续6秒。该效果每1秒至多触发一次' },
   { name: '烬城勇者绘卷',       en: 'Scroll of the Hero of Cinder City',    bonus: '元素战技/爆发伤害+15%' , bonus4: '装备者触发其对应元素类型的相关反应后，队伍中附近的所有角色的该元素反应相关的元素伤害加成提升12%，持续15秒；若触发该效果时，装备者处于夜魂加持状态下，还将使队伍中附近的所有角色的与该元素反应相关的元素伤害加成提升28%，持续20秒' },
@@ -314,8 +325,8 @@ const SETS = [
   { name: '逐影猎人',           en: 'Marechaussee Hunter',                  bonus: '普通攻击/重击伤害+15%' , bonus4: '当前生命值提升或降低时，暴击率提升12%，该效果持续5秒，至多叠加3次' },
   { name: '黄金剧团',           en: 'Golden Troupe',                        bonus: '元素战技伤害+20%' , bonus4: '元素战技造成的伤害提升25%；此外，处于队伍后台时，元素战技造成的伤害还将进一步提升25%，该效果将在登场后2秒移除' },
   /* ---- 3.x 须弥 ---- */
-  { name: '花海甘露之光',       en: "Vourukasha's Glow",                    bonus: '生命值+20%' },
-  { name: '水仙之梦',           en: "Nymph's Dream",                        bonus: '水元素伤害+15%' },
+  { name: '花海甘露之光',       en: "Vourukasha's Glow",                    bonus: '生命值+20%' , bonus4: '元素战技与元素爆发造成的伤害提升10%；装备者受到伤害后的5秒内，上述伤害提升效果提高80%；该提高效果至多叠加5层' },
+  { name: '水仙之梦',           en: "Nymph's Dream",                        bonus: '水元素伤害+15%' , bonus4: '普通攻击、重击、下落攻击、元素战技或元素爆发命中敌人后，将产生1层持续8秒的「镜中水仙」效果；处于1/2/3层及以上「镜中水仙」效果下时，攻击力 将提高7%/16%/25%，水元素伤害加成提升4%/9%/15%' },
   { name: '乐园遗落之花',       en: 'Flower of Paradise Lost',              bonus: '元素精通+80' , bonus4: '装备者绽放、超绽放、烈绽放反应造成的伤害提升40%，造成的月绽放反应伤害提升10%；此外，装备者触发绽放、超绽放、烈绽放、月绽放后，上述效果带来的加成提升25%，该效果持续10秒，至多叠加4次，每1秒至多触发一次' },
   { name: '沙上楼阁史话',       en: 'Desert Pavilion Chronicle',            bonus: '风元素伤害+15%' , bonus4: '重击命中敌人后，该角色的普通攻击速度提升10%，普通攻击、重击与下落攻击造成的伤害提升40%，持续15秒' },
   { name: '深林的记忆',         en: 'Deepwood Memories',                    bonus: '草元素伤害+15%' , bonus4: '元素战技或元素爆发命中敌人后，使命中目标的草元素抗性降低30%，持续8秒' },
@@ -326,16 +337,16 @@ const SETS = [
   { name: '华馆梦醒形骸记',     en: 'Husk of Opulent Dreams',               bonus: '防御力+30%' , bonus4: '装备此圣遗物套装的角色在以下情况下，将获得「问答」效果：在场上用岩元素攻击命中敌人后获得一层，每0.3秒至多触发一次；在队伍后台中，每3秒获得一层；问答至多叠加4层，每层能提供6%防御力与6%岩元素伤害加成；每6秒，若未获得问答效果，将损失一层' },
   { name: '海染砗磲',           en: 'Ocean-Hued Clam',                      bonus: '治疗加成+15%' , bonus4: '装备此圣遗物套装的角色对队伍中的角色进行治疗时，将产生持续3秒的海染泡沫，记录治疗的生命值回复量（包括溢出值）；持续时间结束时，海染泡沫将会爆炸，对周围的敌人造成90%累计回复量的伤害（该伤害结算方式同感电、超导等元素反应，但不受元素精通、等级或反应伤害加成效果影响）；海染泡沫至多记录30000点回复量，含溢出部分的治疗量' },
   { name: '绝缘之旗印',         en: 'Emblem of Severed Fate',               bonus: '元素充能效率+20%' , bonus4: '基于元素充能效率的25%，提高元素爆发造成的伤害。至多通过这种方式获得75%提升' },
-  { name: '追忆之注连',         en: "Shimenawa's Reminiscence",             bonus: '攻击力+18%' },
+  { name: '追忆之注连',         en: "Shimenawa's Reminiscence",             bonus: '攻击力+18%' , bonus4: '释放元素战技时，如果角色的元素能量高于或等于15点，则会流失15点元素能量，使接下来的10秒内，普通攻击、重击、下落攻击造成的伤害提高50%，持续期间内效果不会再次触发' },
   /* ---- 1.x 开服系列（含 1.5） ---- */
   { name: '千岩牢固',           en: 'Tenacity of the Millelith',            bonus: '生命值+20%' , bonus4: '元素战技命中敌人后，使队伍中附近的所有角色攻击力提升20%，护盾强效提升30%，持续3秒' },
   { name: '苍白之火',           en: 'Pale Flame',                           bonus: '物理伤害+25%' , bonus4: '元素战技命中敌人后，攻击力提升9%；叠满2层时，2件套的效果提升100%' },
   { name: '平息鸣雷的尊者',     en: 'Thundersoother',                       bonus: '受到的雷元素伤害-40%' , bonus4: '对处于雷元素影响下的敌人造成的伤害提升35%' },
   { name: '炽烈的炎之魔女',     en: 'Crimson Witch of Flames',              bonus: '火元素伤害+15%' , bonus4: '超载、燃烧、烈绽放反应造成的伤害提升40%，蒸发、融化反应的加成系数提高15%；施放元素战技后的10秒内，2件套的效果提高50%，该效果最多叠加3次' },
-  { name: '流浪大地的乐团',     en: "Wanderer's Troupe",                    bonus: '元素精通+80' },
+  { name: '流浪大地的乐团',     en: "Wanderer's Troupe",                    bonus: '元素精通+80' , bonus4: '装备该圣遗物套装的角色为法器、弓箭角色时，角色重击造成的伤害提高35%' },
   { name: '染血的骑士道',       en: 'Bloodstained Chivalry',                bonus: '物理伤害+25%' , bonus4: '击败敌人后的10秒内，施放重击时不消耗体力，且重击造成的伤害提升50%' },
   { name: '被怜爱的少女',       en: 'Maiden Beloved',                       bonus: '治疗加成+15%' , bonus4: '施放元素战技或元素爆发后的10秒内，队伍中所有角色受治疗效果加成提高20%' },
-  { name: '角斗士的终幕礼',     en: "Gladiator's Finale",                   bonus: '攻击力+18%' },
+  { name: '角斗士的终幕礼',     en: "Gladiator's Finale",                   bonus: '攻击力+18%' , bonus4: '装备该圣遗物套装的角色为单手剑、双手剑、长柄武器角色时，角色普通攻击造成的伤害提高35%' },
   { name: '渡过烈火的贤人',     en: 'Lavawalker',                           bonus: '受到的火元素伤害-40%' , bonus4: '对处于火元素影响下的敌人造成的伤害提升35%' },
   { name: '悠古的磐岩',         en: 'Archaic Petra',                        bonus: '岩元素伤害+15%' , bonus4: '获得结晶反应形成的晶片或触发月结晶反应时，队伍中所有角色获得35%对应元素伤害加成，持续10秒；同时只能通过该效果获得一种元素伤害加成' },
   { name: '如雷的盛怒',         en: 'Thundering Fury',                      bonus: '雷元素伤害+15%' , bonus4: '超载、感电、超导、超绽放反应造成的伤害提升40%，超激化反应带来的伤害提升提高20%，月感电、星超导反应造成的伤害提升20%；触发上述元素反应或原激化反应时，元素战技冷却时间减少1秒' },
@@ -1849,6 +1860,18 @@ const T_UI_EN = {
   '恢复': 'Restore',
   '内置': 'Built-in',
   '自定义': 'Custom',
+  '内置套装': 'Built-in set',
+  '套装名称': 'Set name',
+  '2 / 4 件套效果': '2 / 4-piece bonus',
+  '操作': 'Actions',
+  '2 件套效果': '2-piece bonus',
+  '4 件套效果': '4-piece bonus',
+  '没有可显示的套装。': 'No sets to display.',
+  '共 {n} 个套装': '{n} sets total',
+  '已隐藏 {n} 个': '{n} hidden',
+  '改名会自动同步到所有角色的配装。': 'Renaming syncs to every character build.',
+  '已启用 {n} 条 · 生成 {n} 个候选方案': '{n} enabled · {n} candidate plans generated',
+  '未启用': 'None enabled',
   '新套装名称，例：某某之梦': 'New set name, e.g. Some Set',
   '2件套效果，例：攻击力+18%': '2-piece bonus, e.g. ATK +18%',
   '+ 添加套装': '+ Add set',
@@ -1919,8 +1942,8 @@ const T_UI_EN = {
   '4 件套': '4-piece',
   '未选择套装': 'No set chosen',
   '功能定位': 'Build role',
-  '可多选；可自定义（跨角色共享），如 输出 / 增伤 / 治疗 / 护盾':
-    'Multi-select; custom tags allowed (shared across all characters), e.g. DPS / DMG Buff / Heal / Shield',
+  '可多选；可自定义（仅当前配装），如 输出 / 增伤 / 治疗 / 护盾':
+    'Multi-select; custom tags apply to this build only, e.g. DPS / DMG Buff / Heal / Shield',
   '自定义定位，如 增幅反应': 'Custom tag, e.g. Amplifying Reaction',
   '（不限套装）': '(any set)',
   '复制配装': 'Copy build',
@@ -1948,6 +1971,10 @@ const T_UI_EN = {
   '+ 添加': '+ Add',
   '当前版本': 'Current version',
   '保存修改': 'Save changes',
+  '界面与数据名当前为 English，点击切回中文': 'UI and data names: English. Click to switch to Chinese',
+  '界面与数据名当前为中文，点击切到 English': 'UI and data names: Chinese. Click to switch to English',
+  '切换语言（当前 English）': 'Switch language (currently English)',
+  '切换语言（当前中文）': 'Switch language (currently Chinese)',
   '✏️ 正在编辑：': '✏️ Editing: ',
   '已切换为 English': 'Switched to English',
   '已切换为中文': 'Switched to Chinese',
@@ -2042,6 +2069,12 @@ function t(zh) {
   const m = currentDict();
   return (m[zh] != null ? m[zh] : zh);
 }
+/* 动态 UI 文案统一走这里，避免各处重复 split / replace 占位符。 */
+function tf(zh, vars) {
+  let out = t(zh);
+  Object.keys(vars || {}).forEach(k => { out = out.split('{' + k + '}').join(String(vars[k])); });
+  return out;
+}
 
 /* 使用说明的整段英文版（避免被 <b> 切碎后没法逐句匹配） */
 const I18N_HTML = {
@@ -2084,7 +2117,7 @@ const I18N_HTML = {
   ].join(''),
 };
 
-/* ---------- 界面文案补充（含带数字的句式；逐句收录，避免翻出半吊子英文） ---------- */
+/* ---------- 界面文案补充（按页面归类；所有 UI 英文集中维护） ---------- */
 Object.assign(T_UI_EN, {
   /* 排序 */
   '排序顺序来自米游社图鉴': 'Order follows the HoYoLAB catalog',
@@ -2159,6 +2192,36 @@ Object.assign(T_UI_EN, {
     'Stat picker popup + restore split into three levels + built-in data auto-follow',
   '角色编辑浮窗化 + 两层还原 + 更新公告与日志':
     'Character editing in a popup + two levels of restore + update notice and changelog',
+  '国度': 'Region',
+  '★必须：': '★Required: ',
+  '当前配装用不上': 'not used by the current build',
+  '尚未启用角色，评分器暂用「双暴输出」默认排序。':
+    'No character enabled yet — the scorer falls back to the default "CRIT" ordering.',
+  '当前等级': 'Current level',
+  'C 狗粮': 'C · Feed it',
+  '未选择套装，只做追加属性评分': 'No set selected — scoring substats only',
+  '尚未填写追加属性': 'No substats entered yet',
+  '建议：直接喂，别浪费资源。': 'Verdict: feed it, do not waste resources.',
+  '启用角色后这里会显示每个套装的追加属性需求排序。':
+    'Enable some characters and the substat priority for every set shows up here.',
+  '当前版本': 'Current version',
+  '有效权重': 'Effective weight',
+  '（主推）': ' (main)',
+  '（备选）': ' (alt)',
+  /* ② 锁定方案页：候选卡 / 计数 / 提示 */
+  '散件 / 过渡保留：': 'Off-piece / transitional keep: ',
+  '供 {x} 使用': 'For {x}',
+  '备选': 'Alt',
+  '次选': '2nd',
+  '共 {n} 个候选（角色组 {c} · 散件规则 {r}）': '{n} candidates ({c} character group(s) · {r} off-piece rule(s))',
+  '等 {n} 人': '+{n} more',
+  '共 {n} 人': '{n} total',
+  '已采纳 {p} / 游戏上限 {m}': 'Adopted {p} / in-game cap {m}',
+  '（未指定角色）': '(no character assigned)',
+  '不限': 'Any',
+  '选择主要属性': 'Choose a main stat',
+  '选择追加属性': 'Choose a substat',
+  '挑一个还没加过的属性：': 'Pick one you have not added yet: ',
 });
 
 /* ---------- 带数字的句式：词典装不下的，用正则兜底 ----------
@@ -2186,41 +2249,3 @@ function trByRules(zh) {
   }
   return null;
 }
-
-/* ---------- 界面文案补充二：评分器 / 规则卡 / 零碎标签 ---------- */
-Object.assign(T_UI_EN, {
-  '国度': 'Region',
-  '★必须：': '★Required: ',
-  '当前配装用不上': 'not used by the current build',
-  '尚未启用角色，评分器暂用「双暴输出」默认排序。':
-    'No character enabled yet — the scorer falls back to the default "CRIT" ordering.',
-  '当前等级': 'Current level',
-  'C 狗粮': 'C · Feed it',
-  '未选择套装，只做追加属性评分': 'No set selected — scoring substats only',
-  '尚未填写追加属性': 'No substats entered yet',
-  '建议：直接喂，别浪费资源。': 'Verdict: feed it, do not waste resources.',
-  '启用角色后这里会显示每个套装的追加属性需求排序。':
-    'Enable some characters and the substat priority for every set shows up here.',
-  '当前版本': 'Current version',
-  '有效权重': 'Effective weight',
-});
-
-/* ---------- 界面文案补充三：动态写入浮窗的标题 / 标签 ---------- */
-Object.assign(T_UI_EN, {
-  '（主推）': ' (main)',
-  '（备选）': ' (alt)',
-  /* ② 锁定方案页：候选卡 / 计数 / 提示 */
-  '散件 / 过渡保留：': 'Off-piece / transitional keep: ',
-  '供 {x} 使用': 'For {x}',
-  '备选': 'Alt',
-  '次选': '2nd',
-  '共 {n} 个候选（角色组 {c} · 散件规则 {r}）': '{n} candidates ({c} character group(s) · {r} off-piece rule(s))',
-  '等 {n} 人': '+{n} more',
-  '共 {n} 人': '{n} total',
-  '已采纳 {p} / 游戏上限 {m}': 'Adopted {p} / in-game cap {m}',
-  '（未指定角色）': '(no character assigned)',
-  '不限': 'Any',
-  '选择主要属性': 'Choose a main stat',
-  '选择追加属性': 'Choose a substat',
-  '挑一个还没加过的属性：': 'Pick one you have not added yet: ',
-});

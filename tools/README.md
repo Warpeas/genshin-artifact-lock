@@ -9,6 +9,7 @@
 | 脚本 | 作用 | 输出 |
 |---|---|---|
 | `fetch_wiki_builds.py` | 抓角色词条的「推荐装备 → 圣遗物推荐」，解析出套装 / 主词条 / 副词条 / 功能定位 | `out/wiki_builds.json` |
+| `fetch_set_effects.py` | 抓套装「基础信息」中的 2 件套 / 4 件套效果，并把 4 件套效果写回 `src/data.js` | `out/set_effects.json` |
 | `fetch_guides.py` | 按作者白名单 + 热度为每个角色挑攻略链接 | `out/guides.json` |
 | `apply_wiki_builds.py` | 把上面两个结果写回 `src/data.js`（配装、主词条、副词条、功能定位、来源链接） | `out/report.md` |
 | `gen_sources.py` | 生成人读的来源清单（可点开） | `out/sources.md`、`out/sources.html` |
@@ -22,8 +23,11 @@ python tools/fetch_wiki_builds.py          # 1. 抓配装（约 3 分钟）
 python tools/fetch_guides.py               # 2. 挑攻略链接（约 15 分钟）
 python tools/apply_wiki_builds.py          # 3. 先出报告，确认无误再加 --apply
 python tools/apply_wiki_builds.py --apply  #    写回 src/data.js（同时更新链接）
-python tools/gen_sources.py                # 4. 生成来源清单
-node build.js                              # 5. 打包成单文件 index.html
+python tools/fetch_set_effects.py         # 4. 抓套装 2 / 4 件套效果（带缓存）
+python tools/fetch_set_effects.py --apply  #    确认后写回 src/data.js 的 bonus4
+python tools/gen_sources.py                # 5. 生成来源清单
+node tools/check_data.js                   # 6. 数据自检
+node build.js                              # 7. 打包成单文件 index.html
 ```
 
 `apply_wiki_builds.py` 默认会一并改来源链接；只想改配装就加 `--no-links`。
@@ -63,6 +67,22 @@ node tools/check_data.js
 注意它与角色级「队伍定位」（主C/副C/辅助）是两回事，别混。
 
 单次调试：`python tools/fetch_wiki_builds.py 胡桃 钟离`（传角色名即只跑这些）。
+
+## 套装效果抓取（fetch_set_effects.py）
+
+`fetch_set_effects.py` 从观测枢 wiki 的「基础信息」模块读取结构化的 2 件套 / 4 件套效果：
+
+```bash
+python tools/fetch_set_effects.py
+python tools/fetch_set_effects.py --apply
+python tools/fetch_set_effects.py --probe "冰风迷途的勇士"
+```
+
+- `bonus` 保存 2 件套效果，`bonus4` 保存 4 件套效果；两者都是 `SETS` 的内置数据字段。
+- 抓取结果保留 `bonus4_raw` 原文，同时用 `simplify_four()` 去掉纯上限 / 冷却 / 失效条款，生成较短的 `bonus4`。
+- `--apply` 只改写 `SETS` 对象中的 `bonus4`，不会改角色配装或来源链接；写回按单个套装行处理，避免长文本触发正则内存问题。
+- 套装英文名可能使用单引号或双引号，工具两种格式都能读取；新增字段后要保留这个兼容性。
+- 当前内置套装应达到 46 套，抓取输出应显示 `46/46` 成功；写回后运行 `node build.js`。
 
 ## 数据源
 

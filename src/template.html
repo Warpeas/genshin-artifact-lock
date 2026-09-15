@@ -212,6 +212,7 @@
         <li data-en="Recommended keep count = the number of characters for which this main stat is the best choice (a character with multiple builds is counted once), ranging 1–4.">建议保留件数 = 以该主要属性为最优解的角色数（同一角色多套配装不重复计数），区间 1–4。</li>
         <li data-en="A 2+2 build needs fewer pieces per set, so when aggregated it is counted at a 0.6 factor.">2+2 配装对单套的件数需求更低，汇总时按 0.6 系数折算。</li>
         <li data-en="Main-stat / sub-stat requirements are saved per build group, so a single character can have different stat needs when switching sets.">主要属性 / 追加属性需求<b>按配装组</b>分别保存：同一角色换套装时可以有不同的词条需求。</li>
+        <li class="i18n-en-only" data-en="English translations are AI-generated, not fully proofread, and may not cover every piece of the interface. Please excuse any omissions or awkward wording."></li>
       </ul>
     </div>
   </section>
@@ -230,7 +231,6 @@
     <button id="btnRestoreChar" class="btn hidden" title="把名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装一次性还原成内置数据">还原内置</button>
     <span class="spacer"></span>
     <button id="btnCancelEdit" class="btn ghost">关闭</button>
-    <button id="btnSaveChar" class="btn primary">保存配装修改</button>
   </div>
 </div>
 
@@ -257,7 +257,7 @@
       </label>
     </div>
     <div class="fgroup">
-      <span class="glabel">功能定位 <span class="hint">可多选；可自定义（跨角色共享），如 输出 / 增伤 / 治疗 / 护盾</span></span>
+      <span class="glabel">功能定位 <span class="hint">可多选；可自定义（仅当前配装），如 输出 / 增伤 / 治疗 / 护盾</span></span>
       <div id="bmRoles" class="role-chks"></div>
       <div class="bm-addrole">
         <input id="bmNewRole" type="text" placeholder="自定义定位，如 增幅反应" maxlength="12" />
@@ -395,16 +395,39 @@
     <button id="btnCloseSetMgr" class="icon-btn">×</button>
   </div>
   <div class="modal-body">
-    <p class="muted small" data-en="The <b>order</b> here is the order used by every dropdown and by the plan page; you can also edit the 2-piece text. &quot;Hide&quot; on a built-in set only stops it from showing (references from character builds are kept) — &quot;Restore&quot; puts it back. &quot;Delete&quot; on a custom set really removes it and clears it from character builds too.">这里的<b>顺序</b>就是各处下拉与方案页的展示顺序；可改 2 件套效果说明。内置套装点「隐藏」只是不显示（角色配装里的引用会保留），点「恢复」即可放回；自定义套装点「删除」会真正移除，并同步清掉角色配装里的引用。</p>
+    <p class="muted small" data-en="The <b>order</b> here is the order used by every dropdown and by the plan page; edit the 2-piece and 4-piece effects directly. Built-in sets can be hidden without removing character references; custom sets can be deleted. Restore the built-in order to place custom sets first and built-in sets in system order.">这里的<b>顺序</b>就是各处下拉与方案页的展示顺序；2 件套和 4 件套效果都可直接修改并保存。内置套装点「隐藏」只是不显示（角色配装里的引用会保留），自定义套装点「删除」会真正移除；可用「恢复内置顺序」将自定义套装置于前面、内置套装恢复系统顺序。</p>
     <div class="toolbar wrap">
-      <input id="newSetName" placeholder="新套装名称，例：某某之梦">
-      <input id="newSetBonus" placeholder="2件套效果，例：攻击力+18%">
       <button id="btnAddSet" class="btn primary">+ 添加套装</button>
       <span class="spacer"></span>
       <label class="chk"><input type="checkbox" id="setShowHidden"> 显示已隐藏的内置套装</label>
-      <button id="btnRestoreSets" class="btn">恢复全部内置套装</button>
+      <button id="btnRestoreSetOrder" class="btn">恢复内置顺序</button>
+      <button id="btnRestoreSets" class="btn">恢复全部内置套装显示</button>
     </div>
     <div id="setManager"></div>
+  </div>
+</div>
+
+<div id="setAddMask" class="modal-mask hidden"></div>
+<div id="setAddBox" class="modal hidden">
+  <div class="drawer-head">
+    <h2>添加自定义套装</h2>
+    <button id="btnCloseSetAdd" class="icon-btn" title="关闭">×</button>
+  </div>
+  <div class="modal-body">
+    <label class="fld">套装名称
+      <input id="newSetName" placeholder="例：某某之梦">
+    </label>
+    <label class="fld">2件套效果
+      <input id="newSetBonus" placeholder="例：攻击力+18%">
+    </label>
+    <label class="fld">4件套效果
+      <textarea id="newSetBonus4" placeholder="可选，填写完整效果描述"></textarea>
+    </label>
+  </div>
+  <div class="drawer-foot">
+    <span class="spacer"></span>
+    <button id="btnCancelSetAdd" class="btn">取消</button>
+    <button id="btnConfirmSetAdd" class="btn primary">确定添加</button>
   </div>
 </div>
 

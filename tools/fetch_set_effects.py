@@ -73,8 +73,8 @@ def load_sets():
     """从 src/data.js 读出 (name, en) 列表"""
     src = open(os.path.join(ROOT, "src", "data.js"), encoding="utf-8").read()
     blk = src[src.index("const SETS = ["): src.index("const SET_NAMES")]
-    return [(m.group(1), m.group(2))
-            for m in re.finditer(r"\{ name: '([^']+)',\s*en: '([^']+)'", blk)]
+    return [(m.group(1), m.group(3))
+            for m in re.finditer(r"\{ name: '([^']+)',\s*en: ([\"'])(.*?)\2", blk)]
 
 
 def search_set_entry(name):
@@ -243,23 +243,27 @@ def apply_to_data_js(effects):
     sets_blk_start = src.index("const SETS = [")
     sets_blk_end = src.index("const SET_NAMES")
     blk = src[sets_blk_start:sets_blk_end]
+    lines = blk.splitlines(keepends=True)
     n_written = 0
     for name, eff in effects.items():
         if not eff.get("ok") or not eff.get("bonus4"):
             continue
         b4 = eff["bonus4"].replace("\\", "\\\\").replace("'", "\\'")
-        # 匹配 { name: '<name>', ... } 这个对象，在其内插入 bonus4
-        pat = re.compile(r"\{ name: '%s'([^}]*)\}" % re.escape(name))
-        m = pat.search(blk)
-        if not m:
-            continue
-        obj = m.group(0)
-        if "bonus4" in obj:
-            blk = blk[:m.start()] + pat.sub(lambda mm: re.sub(r"bonus4: '[^']*'", "bonus4: '%s'" % b4, mm.group(0)), blk, count=1)
-        else:
-            new_obj = obj[:-1] + (", " if not obj.rstrip().endswith(",") else "") + "bonus4: '%s' }" % b4
-            blk = blk[:m.start()] + new_obj + blk[m.end():]
-        n_written += 1
+        name_pat = re.compile(r"\{\s*name:\s*'%s'," % re.escape(name))
+        field_pat = re.compile(r"bonus4:\s*'(?:\\.|[^'])*'")
+        for i, line in enumerate(lines):
+            if not name_pat.search(line):
+                continue
+            if "bonus4:" in line:
+                lines[i] = field_pat.sub("bonus4: '%s'" % b4, line, count=1)
+            else:
+                end = re.search(r"\s*\}\s*,?\s*$", line)
+                if not end:
+                    continue
+                lines[i] = line[:end.start()] + ", bonus4: '%s'" % b4 + line[end.start():]
+            n_written += 1
+            break
+    blk = ''.join(lines)
     new_src = src[:sets_blk_start] + blk + src[sets_blk_end:]
     open(path, "w", encoding="utf-8").write(new_src)
     return n_written

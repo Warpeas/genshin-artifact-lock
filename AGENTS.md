@@ -57,6 +57,7 @@ genshin-artifact-lock/
 └── tools/              Python 抓取/回写工具链（仅维护内置数据用，运行时不参与）
     ├── fetch_wiki_builds.py   抓观测枢 wiki 配装
     ├── fetch_guides.py        挑米游社攻略链接
+    ├── fetch_set_effects.py   抓套装 2 / 4 件套效果并回写 bonus4
     ├── apply_wiki_builds.py   回写 src/data.js
     ├── role_infer.py          从 wiki 描述推断「配装功能定位」
     ├── gen_sources.py         生成人读的来源清单
@@ -145,6 +146,8 @@ genshin-artifact-lock/
 - 配装编辑必须继续遵守草稿机制：第二层浮窗使用 `bmDraft`，套装、主推、主要属性、追加属性和功能定位只有点击配装浮窗的「保存」才生效；取消 / 关闭 / 点击遮罩会放弃未保存修改。
 - 角色浮窗底部「保存配装修改」用于写回配装草稿；不要把角色基础字段重新改回统一的“点保存才生效”。
 - 配装浮窗内新增主要属性 / 追加属性时，直接取对应属性库中第一个未使用项；不要恢复成打开选择浮窗的流程。用户随后可用行内下拉框改成目标属性，重复项必须继续拦截。
+- 套装管理中的 2 件套 / 4 件套效果都直接在列表行内编辑并即时保存；新增自定义套装通过弹窗填写后使用 `unshift` 放到列表第一项。
+- `恢复内置顺序` 必须保持自定义套装在前、内置套装按 `SETS` 顺序在后；`恢复全部内置套装显示` 只取消隐藏状态，不负责重排或覆盖用户修改。
 
 ### 4.3 三个锚点：改坏了还能还原
 
@@ -199,8 +202,11 @@ python tools/fetch_wiki_builds.py          # 1. 抓配装（约 3 分钟）
 python tools/fetch_guides.py               # 2. 挑攻略链接（约 15 分钟）
 python tools/apply_wiki_builds.py          # 3. 先出报告预览
 python tools/apply_wiki_builds.py --apply  #    确认后写回 src/data.js
-python tools/gen_sources.py                # 4. 生成来源清单
-node build.js                              # 5. 打包
+python tools/fetch_set_effects.py          # 4. 抓套装 2 / 4 件套效果
+python tools/fetch_set_effects.py --apply  #    确认后写回 src/data.js 的 bonus4
+python tools/gen_sources.py                # 5. 生成来源清单
+node tools/check_data.js                   # 6. 数据自检
+node build.js                              # 7. 打包
 ```
 
 - `apply_wiki_builds.py` 只有两个开关：`--apply`（写回）、`--no-links`（不同步来源链接）。

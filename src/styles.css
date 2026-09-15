@@ -96,6 +96,8 @@ main{padding:20px 22px 60px;max-width:1500px;margin:0 auto;}
 .muted{color:var(--txt2);}
 .small{font-size:12.5px;}
 .hidden{display:none !important;}
+.i18n-en-only{display:none;}
+html[lang="en"] .i18n-en-only{display:list-item;}
 
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px;}
 .card h3{font-size:15px;margin-bottom:6px;color:var(--gold2);}
@@ -503,9 +505,8 @@ table.tbl tr:hover td{background:#1d242e;}
   border-radius:8px;background:var(--panel);margin-bottom:6px;
 }
 .sm-row.sm-head{background:none;border:none;padding:2px 9px;font-size:12px;color:var(--txt3);}
-.sm-bonus4-wrap{grid-column:1 / -1;display:grid;gap:4px;margin-top:2px;}
-.sm-bonus4-preview{font-size:11.5px;color:var(--txt2);background:var(--panel2);border-radius:6px;padding:5px 8px;line-height:1.45;}
-.sm-bonus4{width:100%;min-height:58px;box-sizing:border-box;resize:vertical;font-size:12px;line-height:1.45;}
+.sm-bonus4{grid-column:1 / -1;width:100%;min-height:58px;box-sizing:border-box;resize:vertical;padding:7px 11px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);color:var(--txt);font-family:inherit;font-size:13px;line-height:1.45;}
+.sm-bonus4:focus{outline:none;border-color:var(--gold);}
 .sm-row.off{opacity:.5;}
 .sm-no{color:var(--txt3);font-size:12px;text-align:center;}
 .sm-row input[type=text]{padding:6px 10px;font-size:13px;}
@@ -774,7 +775,7 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .sm-row input.sm-name{grid-column:2;grid-row:1;}
   .sm-row input.sm-bonus{grid-column:1 / -1;grid-row:2;}
   .sm-ops{grid-column:1 / -1;grid-row:3;justify-content:flex-start;}
-  .sm-bonus4-wrap{grid-row:4;}
+  .sm-bonus4{grid-row:4;}
     /* 排序 / ★ / 删除 这几个小按钮在手机端放大点击区域 */
     .ms-item .drag-handle,.ms-item .rm{min-width:32px;min-height:32px;font-size:16px;}
   .ms-item .star-btn{min-height:32px;padding:4px 12px;font-size:16px;}
