@@ -179,13 +179,13 @@
   <section id="tab-data" class="tabpane">
     <div class="card">
       <h3>圣遗物套装管理</h3>
-      <p class="muted small" data-en="Add or remove sets, edit the 2-piece text, move entries up and down. Built-in sets are only &quot;hidden&quot; and can be restored any time. Hit the button below to work in a popup.">增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。点下面按钮在浮窗里操作。</p>
+      <p class="muted small" data-en="Add or remove sets, edit the 2-piece and 4-piece effects, move entries up and down. Built-in sets are only &quot;hidden&quot; and can be restored any time. Long 4-piece effects are shown as a shortened summary; the full text remains editable below it. Hit the button below to work in a popup.">增删套装、改 2 件套 / 4 件套效果、上下移排序；内置套装只是「隐藏」，可随时恢复。过长的 4 件套效果会先展示重点摘要，完整文本仍可在下方编辑。点下面按钮在浮窗里操作。</p>
       <button id="btnOpenSetMgr" class="btn primary">打开套装管理</button>
     </div>
     <div class="card">
       <h3>备份与恢复</h3>
-      <p class="muted small" data-en="Your config lives in this browser&#39;s local storage — export a copy before switching devices or clearing the cache. <br><b>&quot;Restore built-in defaults&quot;</b> overwrites your local save with the built-in library and erases every custom edit you&#39;ve made; it works like a hard reset. A normal browser refresh only reloads the page and does <b>not</b> clear local storage, so any stale or corrupted data would otherwise keep lingering.">配置保存在浏览器的本地存储中，换设备或清缓存前请先导出。<br>
-        <b>「恢复内置默认库」</b>＝用内置默认库覆盖本机存档、清除你的全部自定义修改，相当于一次硬刷新；浏览器普通「刷新」只重载页面、<b>不会</b>清本地存档，所以旧数据 / 乱码会一直留着。</p>
+      <p class="muted small" data-en="Your config lives in this browser&#39;s local storage — export a user-data backup before switching devices or clearing the cache. The backup contains only your custom data and edits to built-in data; the built-in system library itself is not included. Import merges that user data into the current system library. <br><b>&quot;Restore built-in defaults&quot;</b> still resets the local save to the current built-in library and clears all custom edits. A normal browser refresh only reloads the page and does <b>not</b> clear local storage.">配置保存在浏览器的本地存储中，换设备或清缓存前请先导出。备份只包含用户自定义数据和对内置数据的修改，不包含内置系统库本身；导入时会把用户数据合并到当前系统库。<br>
+        <b>「恢复内置默认库」</b>仍会把本机存档重置为当前内置库并清除全部自定义修改；浏览器普通「刷新」只重载页面、<b>不会</b>清本地存档。</p>
       <div class="btn-row">
         <button id="btnExportJson" class="btn primary" data-en="Export config (JSON)">导出配置 JSON</button>
         <button id="btnImportJson" class="btn" data-en="Import config (JSON)">导入配置 JSON</button>

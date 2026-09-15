@@ -370,7 +370,88 @@ function load() {
 
 /* 默认套装列表（内置套装 + 空自定义列表） */
 function defaultSets() {
-  return SETS.map(s => ({ name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '', builtin: true, hidden: false }));
+  return SETS.map(s => ({ skey: s.name, name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '', builtin: true, hidden: false }));
+}
+
+function sameJson(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+function userBackup() {
+  const customCharacters = [];
+  const characterOverrides = [];
+  const characterPrefs = [];
+  state.characters.forEach(c => {
+    const key = c.skey || c.id;
+    characterPrefs.push({ key, enabled: !!c.enabled, buildView: state.buildView && state.buildView[c.id] });
+    if (c.custom) {
+      customCharacters.push(JSON.parse(JSON.stringify(c)));
+      return;
+    }
+    const factory = factoryCharOf(c);
+    if (!factory) return;
+    const patch = {};
+    ['name', 'element', 'region', 'roles', 'note', 'src', 'builds'].forEach(k => {
+      if (!sameJson(c[k], factory[k])) patch[k] = JSON.parse(JSON.stringify(c[k]));
+    });
+    if (Object.keys(patch).length) characterOverrides.push({ key, patch });
+  });
+  const customSets = state.sets.filter(s => !s.builtin).map(s => JSON.parse(JSON.stringify(s)));
+  const setOverrides = state.sets.filter(s => s.builtin && s.skey).map(s => {
+    const factory = SETS.find(x => x.name === s.skey);
+    if (!factory) return null;
+    const patch = {};
+    ['name', 'bonus', 'bonus4', 'hidden'].forEach(k => {
+      const baseline = k === 'hidden' ? false : (factory[k] || '');
+      if (!sameJson(s[k], baseline)) patch[k] = s[k];
+    });
+    return Object.keys(patch).length ? { key: s.skey, patch } : null;
+  }).filter(Boolean);
+  return {
+    format: 'genshin-artifact-lock-user-data', version: 1,
+    customCharacters, characterOverrides, characterPrefs,
+    customSets, setOverrides,
+    customBuildRoles: state.customBuildRoles || [],
+    planCfg: state.planCfg || {},
+    keepRules: {
+      enabled: (state.keepRules && state.keepRules.enabled) || [],
+      custom: (state.keepRules && state.keepRules.custom) || [],
+      overrides: (state.keepRules && state.keepRules.overrides) || {},
+    },
+    lang: state.lang, sortPref: state.sortPref,
+  };
+}
+function restoreUserBackup(data) {
+  if (!data || data.format !== 'genshin-artifact-lock-user-data') throw new Error('不是用户数据备份');
+  (data.characterOverrides || []).forEach(item => {
+    const c = state.characters.find(x => (x.skey || x.id) === item.key);
+    if (c && item.patch) Object.assign(c, JSON.parse(JSON.stringify(item.patch)));
+  });
+  (data.customCharacters || []).forEach(raw => {
+    const copy = JSON.parse(JSON.stringify(raw));
+    copy.custom = true;
+    const i = state.characters.findIndex(c => c.id === copy.id || (c.custom && c.name === copy.name));
+    if (i >= 0) state.characters[i] = copy; else state.characters.push(copy);
+  });
+  (data.setOverrides || []).forEach(item => {
+    const s = state.sets.find(x => x.builtin && x.skey === item.key);
+    if (s && item.patch) Object.assign(s, JSON.parse(JSON.stringify(item.patch)));
+  });
+  (data.customSets || []).forEach(raw => {
+    const copy = JSON.parse(JSON.stringify(raw));
+    copy.builtin = false;
+    const i = state.sets.findIndex(s => !s.builtin && s.name === copy.name);
+    if (i >= 0) state.sets[i] = copy; else state.sets.push(copy);
+  });
+  if (Array.isArray(data.characterPrefs)) data.characterPrefs.forEach(p => {
+    const c = state.characters.find(x => (x.skey || x.id) === p.key);
+    if (!c) return;
+    c.enabled = !!p.enabled;
+    if (p.buildView != null) state.buildView[c.id] = p.buildView;
+  });
+  state.customBuildRoles = Array.isArray(data.customBuildRoles) ? data.customBuildRoles : [];
+  state.planCfg = data.planCfg || {};
+  state.keepRules = normalizeKeepRules(data.keepRules || {});
+  state.lang = normalizeLang(data.lang);
+  state.sortPref = normalizeSortPref(data.sortPref);
+  state = normalize(state);
 }
 
 /* ---------- 列表排序：排序依据 + 正序 / 倒序 ----------
@@ -680,6 +761,7 @@ function normalize(o) {
     o.sets = defaultSets();
   }
   o.sets = o.sets.filter(s => s && s.name).map(s => ({
+    skey: typeof s.skey === 'string' ? s.skey : (s.builtin ? s.name : ''),
     name: s.name,
     bonus: s.bonus || '',
     bonus4: s.bonus4 || '',
@@ -692,13 +774,13 @@ function normalize(o) {
     if (ex) {
       if (ex.builtin && !ex.bonus4) ex.bonus4 = s.bonus4 || '';
     } else {
-      o.sets.push({ name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '', builtin: true, hidden: false });
+      o.sets.push({ skey: s.name, name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '', builtin: true, hidden: false });
     }
   });
   // 旧存档的自定义套装
   legacyCustom.forEach(s => {
     if (s && s.name && !o.sets.some(x => x.name === s.name)) {
-      o.sets.push({ name: s.name, bonus: s.bonus || '', bonus4: s.bonus4 || '', builtin: false, hidden: false });
+      o.sets.push({ skey: '', name: s.name, bonus: s.bonus || '', bonus4: s.bonus4 || '', builtin: false, hidden: false });
     }
   });
   delete o.customSets;
@@ -954,6 +1036,24 @@ function allSetBonus4() {
   const o = {};
   state.sets.forEach(s => { o[s.name] = s.bonus4 || ''; });
   return o;
+}
+function briefSetBonus4(text, max) {
+  const raw = String(text || '').trim();
+  if (!raw) return '';
+  max = max || 100;
+  if (raw.length <= max) return raw;
+  const parts = raw.split(/[；;。]/).map(x => x.trim()).filter(Boolean);
+  const key = /提升|提高|增加|获得|降低|伤害|暴击|治疗|护盾|抗性|回复/;
+  const picked = parts.filter(x => key.test(x));
+  const source = picked.length ? picked : parts;
+  let out = '';
+  for (const part of source) {
+    const next = out ? out + '；' + part : part;
+    if (next.length > max) break;
+    out = next;
+  }
+  if (!out) out = raw.slice(0, max);
+  return out.length < raw.length ? out.replace(/[；;。]$/, '') + '…' : out;
 }
 /* 内置套装名集合（用于判断能否硬删除） */
 function isBuiltinSet(name) {
@@ -3144,7 +3244,7 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
     <div class="set-head">
       <h3>${esc(setName(name))}</h3>
       <span class="set-bonus">${esc(bonus)}</span>
-      ${bonus4 ? `<span class="set-bonus4">4件套：${esc(bonus4)}</span>` : ''}
+      ${bonus4 ? `<span class="set-bonus4" title="${esc(bonus4)}">4件套：${esc(briefSetBonus4(bonus4))}</span>` : ''}
       <span class="set-users">
         ${unused
           ? '<span class="tier-tag fodder">无角色需要 · 可整套清理</span>'
@@ -3570,12 +3670,15 @@ function renderSets() {
             ? `<button class="btn sm" data-smshow="${i}">恢复</button>`
             : `<button class="btn sm ${s.builtin ? '' : 'danger'}" data-smhide="${i}">${s.builtin ? '隐藏' : '删除'}</button>`}
         </span>
-        ${s.bonus4 ? `<div class="sm-bonus4">4件套：${esc(s.bonus4)}</div>` : ''}
+        <div class="sm-bonus4-wrap">
+          <div class="sm-bonus4-preview" title="${esc(s.bonus4 || '')}">4件套：${esc(briefSetBonus4(s.bonus4) || '未填写')}</div>
+          <textarea class="sm-bonus4" data-smbonus4="${i}" placeholder="4 件套效果">${esc(s.bonus4 || '')}</textarea>
+        </div>
       </div>`).join('');
 
   box.innerHTML = `
     <div class="sm-row sm-head">
-      <span class="sm-no">#</span><span>套装名称</span><span>2 件套效果</span><span class="sm-ops">操作</span>
+      <span class="sm-no">#</span><span>套装名称</span><span>2 / 4 件套效果</span><span class="sm-ops">操作</span>
     </div>
     ${rows || '<p class="muted small">没有可显示的套装。</p>'}
     <p class="muted small" style="margin-top:10px">
@@ -3593,6 +3696,15 @@ function renderSets() {
       if (!s) return;
       s.bonus = inp.value.trim();
       save(); renderPlan();
+    };
+  });
+  // 改 4 件套效果
+  box.querySelectorAll('[data-smbonus4]').forEach(inp => {
+    inp.onchange = () => {
+      const s = state.sets[+inp.dataset.smbonus4];
+      if (!s) return;
+      s.bonus4 = inp.value.trim();
+      save(); renderPlan(); renderSets();
     };
   });
   // 上移 / 下移
@@ -4105,8 +4217,8 @@ function bind() {
 
   // 数据页
   $('#btnExportJson').onclick = () => {
-    download('圣遗物配置备份.json', JSON.stringify(state, null, 2), 'application/json');
-    toast('已导出配置');
+    download('圣遗物用户数据备份.json', JSON.stringify(userBackup(), null, 2), 'application/json');
+    toast('已导出用户数据（不含系统内置库）');
   };
   $('#btnImportJson').onclick = () => $('#fileImport').click();
   $('#fileImport').onchange = e => {
@@ -4116,10 +4228,10 @@ function bind() {
     r.onload = () => {
       try {
         const o = JSON.parse(r.result);
-        state = normalize(o);
+        restoreUserBackup(o);
         save();
         renderChars(); renderPlan(); renderSubs(); renderSets();
-        toast('导入成功：' + state.characters.length + ' 个角色');
+        toast('用户数据导入成功：' + state.characters.length + ' 个角色');
       } catch (err) { toast('导入失败：文件格式不正确'); }
     };
     r.readAsText(f);
@@ -4154,7 +4266,7 @@ function bind() {
     SETS.forEach(s => {
       const cur = state.sets.find(x => x.name === s.name);
       if (cur) { if (cur.hidden) { cur.hidden = false; n++; } }
-      else { state.sets.push({ name: s.name, bonus: s.bonus, builtin: true, hidden: false }); n++; }
+      else { state.sets.push({ skey: s.name, name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '', builtin: true, hidden: false }); n++; }
     });
     save(); renderSets(); renderPlan(); renderChars();
     toast(n ? `已恢复 ${n} 个内置套装` : '内置套装已全部在列表中');
