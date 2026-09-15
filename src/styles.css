@@ -549,7 +549,8 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
 .gp-title{font-size:13px;font-weight:700;color:var(--gold,#e8c88a);}
 .gp-meta{font-size:11px;color:#7d8798;}
-.gp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px;}
+/* minmax(min(320px,100%),…)：320 下限不能比容器还宽，否则窄屏轨道被顶开 */
+.gp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:10px;}
 /* 散件 / 过渡 保留规则生成的方案卡（与主流程的「供谁使用」区分开） */
 .gp-card-rule{background:#1d2634;border-color:#3d4a3a;box-shadow:inset 3px 0 0 #7fbf6a;}
 .gp-rule-for{color:#a9d69b;font-weight:600;}
@@ -558,9 +559,16 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-main{display:inline-block;background:#233447;color:#bcd8f5;border:1px solid #33506e;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
 .gp-star{display:inline-block;background:#3d2f18;color:#f0c674;border:1px solid #6b5326;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;font-weight:600;}
 .gp-sub{display:inline-block;background:#232a33;color:#93a1b3;border:1px solid #333d4a;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
-/* 分组专属的追加属性：与需要它的角色同色，一眼看出这条该给谁 */
-.gp-sub-g{background:color-mix(in srgb,var(--tc,#33506e) 16%,#232a33);color:var(--tc,#93a1b3);
-  border-color:var(--tc,#333d4a);cursor:help;}
+/* 分组专属的追加属性：与需要它的角色同色，一眼看出这条该给谁。
+   同色底会吃掉文字对比度，所以文字混入 45% 白（11px 小字仍约 5.7:1）；
+   加粗 + 22% 底色，避免和普通主属性 chip（蓝灰底）看混 */
+.gp-sub-g{background:color-mix(in srgb,var(--tc,#33506e) 22%,#1c242e);
+  color:color-mix(in srgb,#fff 45%,var(--tc,#93a1b3));
+  border-color:color-mix(in srgb,var(--tc,#333d4a) 60%,#333d4a);
+  font-weight:600;cursor:help;}
+/* 色点：角色名与追加属性两处同形同色，不靠色相单通道也能配对 */
+.gp-char-tag::before,.gp-sub-g::before{content:"";display:inline-block;width:7px;height:7px;
+  border-radius:50%;background:var(--tc,#8a94a6);margin-right:5px;vertical-align:1px;}
 .gp-fixed{color:#6f7b8c;font-size:11px;font-style:italic;}
 .gp-tip{margin:9px 0 0;font-size:11px;color:#6f7b8c;line-height:1.65;}
 
@@ -757,7 +765,9 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 
   /* --- 游戏内方案：候选卡在窄屏下堆叠，操作区换行铺满 --- */
   .gp-wrap{padding:10px 12px 12px;}
-  .gp-cards{grid-template-columns:1fr;gap:10px;}
+  /* minmax(0,1fr)：1fr 的 auto 下限=卡片 min-content（约 344px），比 360 屏内容盒还宽，
+     会把整排方案卡顶出屏幕右缘；放开下限后内部 chip 正常换行 */
+  .gp-cards{grid-template-columns:minmax(0,1fr);gap:10px;}
   .gp-ctitle{gap:6px;}
   .gp-for{min-width:0;flex-basis:100%;order:3;}
   .gp-acts{width:100%;margin-left:0;justify-content:flex-end;flex-wrap:wrap;}
