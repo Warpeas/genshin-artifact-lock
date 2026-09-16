@@ -930,7 +930,7 @@ function normalizeKeepRules(raw) {
   return {
     enabled: Array.isArray(r.enabled)
       ? r.enabled.filter(x => typeof x === 'string')
-      : ['goblet_elem'],
+      : [],
     custom: (Array.isArray(r.custom) ? r.custom : [])
       .filter(x => x && x.id && validSlot(x.slot) && !builtinIds.has(String(x.id)))
       .map(x => ({
