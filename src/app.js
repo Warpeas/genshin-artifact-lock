@@ -241,7 +241,9 @@ function syncFactoryUpdates() {
       if (cur !== b.fcanon) return;      // 用户改过 → 一律不动
       if (cur === fac) return;           // 已经是最新出厂
       const copy = factoryBuildCopy(f, c);
+      const manualRules = b.subRules && b.subRules.source === 'manual' ? b.subRules : null;
       b.sets = copy.sets; b.main = copy.main; b.subs = copy.subs;
+      b.subRules = manualRules || copy.subRules;
       b.fcanon = canonBuild(b);
       n++;
     });
@@ -301,6 +303,9 @@ function migrateFromDefaults(o) {
       const preset = toSubs(SUB_PRESETS[sp]);
       const presetIds = preset.map(s => s.id).sort().join(',');
       (c.builds || []).forEach(b => {
+        const hasExplicitRules = b.subRules &&
+          (b.subRules.source === 'manual' || b.subRules.source === 'heuristic');
+        if (hasExplicitRules) return;
         if (!Array.isArray(b.subs) || !b.subs.length) { b.subs = JSON.parse(JSON.stringify(preset)); return; }
         const curIds = b.subs.map(s => s.id).sort().join(',');
         if (curIds === presetIds) b.subs = JSON.parse(JSON.stringify(preset));  // 集合未改→刷新排序/算子
@@ -837,6 +842,7 @@ function normalizeBuild(b, c) {
     // fcanon = 上次与出厂同步时的内容指纹；内容还等于它 → 说明用户没动过，可以自动跟随出厂更新
     fcanon: (b.fcanon == null ? null : String(b.fcanon)),
     priority: b.priority === 'alt' ? 'alt' : 'main',
+    subRules: normalizeSubRules(b.subRules),
     // 功能定位：输出 / 增伤 / 减抗 / 治疗 / 护盾 ……（多选，可在编辑器里改，也支持自定义）
     roles: Array.isArray(b.roles) ? b.roles.filter(s => typeof s === 'string' && s) : [],
   };

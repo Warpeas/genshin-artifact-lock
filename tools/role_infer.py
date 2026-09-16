@@ -80,6 +80,40 @@ def infer_roles(text, mains=None, subs=None, label=""):
     return sorted(roles, key=lambda x: ROLE_ORDER.get(x, 99))
 
 
+def infer_subrules(roles, subs):
+    """按配装功能定位生成保守的 subRules；只使用本地已解析的 roles/subs。
+
+    角色定位只能提供启发式证据，所以不把通用的首项自动标成必需：
+    只有精通、充能、治疗/护盾等明确定位才会在词条存在时加入 required，
+    双暴同时存在时则标记为同等优先。返回 None 表示没有足够证据生成规则。
+    """
+    roles = set(roles or [])
+    available = set(subs or [])
+    required = []
+
+    def add_required(stat):
+        if stat in available and stat not in required:
+            required.append(stat)
+
+    if roles & {"精通", "增幅反应", "剧变反应"}:
+        add_required("em")
+    if "充能" in roles:
+        add_required("er")
+    if "治疗" in roles:
+        add_required("hpP")
+    if "护盾" in roles:
+        add_required("hpP")
+        add_required("defP")
+
+    equal = []
+    if {"cr", "cd"}.issubset(available):
+        equal.append(["cr", "cd"])
+
+    if not required and not equal:
+        return None
+    return {"required": required, "equal": equal, "source": "heuristic"}
+
+
 # 供其它脚本 `from role_infer import infer_roles` 时自动把本目录加入搜索路径
 _THIS = os.path.dirname(os.path.abspath(__file__))
 if _THIS not in sys.path:
