@@ -79,6 +79,7 @@ genshin-artifact-lock/
     { sets:['炽烈的炎之魔女'],                       // 1 个 = 4件套；2 个 = 2+2
       sands:['hpP','em'], goblet:['pyro'], circlet:['cr','cd'],   // 各部位主词条，按优先级降序
       subs:['cr','cd','hpP','em','atkP'],            // 追加属性（来自 wiki 精确值）
+      subRules:{required:['cr'], equal:[['cr','cd']], source:'manual'}, // 语义校准
       roles:['增伤','精通','增幅反应'] },             // 配装级「功能定位」，多选
     { sets:['追忆之注连'], ... },                    // 第 0 组 = 主推
   ],
@@ -91,6 +92,8 @@ genshin-artifact-lock/
 - `src` 第 1 条固定是**观测枢词条**（真数据源），后 1–2 条是米游社攻略（title = 作者名）。
 - 元素取值：`pyro/hydro/cryo/electro/anemo/geo/dendro`。
 - 回写脚本与 `buildDefaultCharacters` 都按这个格式读写。
+- `subs` 是 wiki 原始顺序，不自动表示必需；`subRules.required/equal` 才表达 ★必需和 `=` 同等优先。
+- `source:'manual'` 的规则由人工维护，离线回写不会覆盖；`source:'heuristic'` 是根据定位生成的可重算规则。
 - 当前：**125 个角色**（118 具名 + 旅行者 7 形态）、**46 套**圣遗物。
 
 ### 3.2 其他数据位置（`src/data.js`）
@@ -98,7 +101,7 @@ genshin-artifact-lock/
 | 想改什么 | 常量 |
 |---|---|
 | 套装清单（含官方英文名 `en`、2 件套 `bonus`） | `SETS`（`SET_NAMES`/`SET_BONUS` 自动派生，**别手改**） |
-| 角色国度 / 队伍定位 | `CH_META`：`'角色名': [国度, [定位...]]` |
+| 角色英文名 / 国度 / 队伍定位 | `CHAR_META`：`'角色名': { en, region, roles, catalog }` |
 | 主要属性可选范围（按部位） | `MAIN_STATS` |
 | 追加属性种类 | `SUB_STATS` |
 | 追加属性预设（fallback） | `SUB_PRESETS` |

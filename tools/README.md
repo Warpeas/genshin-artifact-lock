@@ -13,7 +13,7 @@
 | `fetch_guides.py` | 按作者白名单 + 热度为每个角色挑攻略链接 | `out/guides.json` |
 | `apply_wiki_builds.py` | 把上面两个结果写回 `src/data.js`（配装、主词条、副词条、功能定位、来源链接） | `out/report.md` |
 | `gen_sources.py` | 生成人读的来源清单（可点开） | `out/sources.md`、`out/sources.html` |
-| `role_infer.py` | 提供 `infer_roles(text, mains, subs, label)`，从 wiki 描述前缀推断配装「功能定位」 | —（被上面两个脚本 import，不直接跑） |
+| `role_infer.py` | 提供 `infer_roles(...)` 推断功能定位、`infer_subrules(roles, subs)` 生成追加属性语义 | —（被上面两个脚本 import，不直接跑） |
 | `check_data.js` | 数据自检：主词条空 / 缺字段 / 非法值，配装组完整性 | `out/_scan_result.md` |
 
 ## 标准流程
@@ -48,6 +48,24 @@ node build.js
 
 `--reparse` 直接读 `out/wiki_builds.json` 里已保存的 `rows[].reason` 原文重算，
 **不联网**，几秒完成；改别名表后不必重跑 3 分钟的抓取。
+
+## 根据定位生成 subRules（离线）
+
+wiki 的追加属性列表没有稳定的必需/同等优先语义，`role_infer.py` 会基于已有的
+`roles` 与 `subs` 做保守推断。它不会把第一项自动标成必需；双暴同时存在时只生成
+`equal`，精通/反应、充能、治疗、护盾等定位在对应词条存在时才生成 `required`。
+
+```bash
+python tools/apply_wiki_builds.py --no-links
+python tools/apply_wiki_builds.py --apply --no-links
+```
+
+这两个命令只读取已有的 `out/wiki_builds.json`，不会重新请求远程 wiki。回写规则：
+
+- `source:'manual'` 或没有 `source` 的旧规则按人工规则保留；
+- `source:'heuristic'` 是派生规则，允许后续再次计算；
+- 预览报告会统计自动生成的规则组数量；
+- 写回后运行 `node tools/check_data.js` 和 `node build.js`。
 
 ## 数据自检
 

@@ -127,10 +127,10 @@ genshin-artifact-lock/
 |---|---|---|---|
 | **内置套装清单 / 2、4 件套文案** | `src/data.js` | `SETS` | 格式 `{ name, en, bonus, bonus4 }`（`en` 是官方英文名，切 English 时显示），`SET_NAMES` 和 `SET_BONUS` 由它自动派生，**不用手改**。日常增删改名、修改 2 / 4 件套效果也可在 **④ 数据管理 → 打开套装管理（浮窗）** 里做 |
 | **改角色的配装、主要属性优先级** | `src/data.js` | `RAW_CHARS` | 见下方格式说明 |
-| **改角色的国度 / 队伍定位** | `src/data.js` | `CH_META` | 格式 `'角色名': [国度, [定位...]]` |
+| **改角色的英文名 / 国度 / 队伍定位** | `src/data.js` | `CHAR_META` | 格式 `'角色名': { en, region, roles, catalog }`；新增角色只维护这一处 |
 | 主要属性可选范围（如新增某种杯） | `src/data.js` | `MAIN_STATS` | 按部位分组 |
 | 追加属性种类 | `src/data.js` | `SUB_STATS` | — |
-| 追加属性需求预设（双暴/精通流等） | `src/data.js` | `SUB_PRESETS` | **有序数组**，每项 `[词条id, 是否必选]`，越靠前越想要；名字见 `SUB_PRESET_NAMES` |
+| 追加属性需求预设（双暴/精通流等） | `src/data.js` | `SUB_PRESETS` | 新建配装时的 fallback 预设；内置配装优先使用 `subRules` |
 | 元素 / 国度 / 定位枚举 | `src/data.js` | `ELEMENTS` / `REGIONS` / `ROLES` | 新增国度或定位时改这里，批量栏按钮会自动生成 |
 | 汇总权重、分级阈值、保留件数上限 | `src/app.js` | 文件顶部常量区 | 见「权重模型」一节 |
 | 追加属性名次权重、追加属性池上限、命中条数 | `src/app.js` | `SUB_RANK_DECAY` / `SUB_POOL_TOP` / `SUB_POOL_MAX` / `SUB_MIN_HIT_DEFAULT` / `SUB_MIN_HIT_MAX` | 见「追加属性排序模型」一节 |
@@ -146,6 +146,7 @@ genshin-artifact-lock/
     { sets:['炽烈的炎之魔女'],                                  // 1 个=4件套，2 个=2+2
       sands:['hpP','em'], goblet:['pyro'], circlet:['cr','cd'], // 各部位主要属性，按优先级降序
       subs:['cr','cd','hpP','em','atkP'],                       // 追加属性（wiki 精确值）
+      subRules:{required:['em'], equal:[['cr','cd']], source:'heuristic'},
       roles:['增伤','精通','增幅反应'] },                        // 配装「功能定位」，可多选
   ],
   [['https://baike.mihoyo.com/ys/obc/content/1627/detail', '观测枢词条'],
@@ -155,10 +156,26 @@ genshin-artifact-lock/
 
 - **配装组**：第 0 项是主推，其余为备选；`sets` 含 1 个套装名 = 4 件套，含 2 个 = 2+2
 - **主要属性数组**：按优先级从高到低排列，**第 1 项即最优解**
+- **追加属性语义**：`subs` 保存 wiki 原始顺序；`subRules` 单独保存必需属性与同等优先关系。`required` 中的词条显示为 ★，`equal` 中的词条编译为 `op:'='`。
+- `subRules.source:'manual'` 表示人工校准，后续 wiki 回写和定位启发式生成都会保留；`source:'heuristic'` 表示可由本地规则重新生成。
 - `roles` 是**配装级功能定位**（输出 / 增伤 / 减抗 / 治疗 / 护盾 / 副C / 辅助 / 精通 / 充能 / 聚怪 / 增幅反应 / 剧变反应），与角色级「队伍定位」(主C/副C/辅助) 是两回事
 - 元素取值：`pyro` / `hydro` / `cryo` / `electro` / `anemo` / `geo` / `dendro`
 
 改完后跑 `node build.js` 重新构建。注意构建脚本只校验 `</script` 与内联签名、**不做数据完整性校验**，数据写错请在页面里核对（非法主要属性会被运行时兜底过滤）。
+
+### 追加属性规则的来源与更新
+
+wiki 表格通常只给出追加属性列表，没有明确的「必需」或「同等优先」语义。因此维护工具分两层处理：
+
+1. `tools/role_infer.py` 根据本地已有的配装定位和 `subs` 生成保守的 `subRules`：双暴同时存在时标记为同等优先；精通、反应、充能、治疗、护盾定位只在对应词条确实存在时标记为必需。
+2. `tools/apply_wiki_builds.py --apply --no-links` 读取已有的 `tools/out/wiki_builds.json` 离线回写，不会重新请求远程 wiki。人工规则 `source:'manual'` 优先保留，启发式规则可重复生成。
+
+```bash
+python tools/apply_wiki_builds.py --no-links
+python tools/apply_wiki_builds.py --apply --no-links
+node tools/check_data.js
+node build.js
+```
 
 ---
 
