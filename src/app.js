@@ -2033,11 +2033,12 @@ function filteredChars() {
     if (ui.role !== 'all' && !(c.roles || []).includes(ui.role)) return false;
     if (ui.onlyEnabled && !c.enabled) return false;
     if (kw) {
-      /* 搜索同时吃中文与英文：角色英文名（CH_EN）、套装英文名（SET_EN）、
+      /* 搜索同时搜中文与英文：角色英文名（CHAR_META）、套装英文名（SET_EN）、
          国度 / 定位的英文名都进检索池，数据语言切成英文后照样能搜到 */
       const hay = [
         c.name,
-        CH_EN[c.skey] || CH_EN[c.name] || '',
+        (CHAR_META[c.skey] && CHAR_META[c.skey].en) ||
+          (CHAR_META[c.name] && CHAR_META[c.name].en) || '',
         c.builds.map(b => b.sets.join(' ')).join(' '),
         c.builds.map(b => b.sets.map(s => SET_EN[s] || '').join(' ')).join(' '),
         REGION_NAME[c.region] || '', REGION_EN[c.region] || '',
@@ -2061,9 +2062,9 @@ function sortedCharList(list) {
   REGIONS.forEach((r, i) => { ri[r.id] = i; });
   /* 图鉴位次：用出厂名（改名后仍准）或当前名查；不在图鉴里的自定义角色排最后 */
   const catalogIdx = (c) => {
-    const n = CH_CATALOG_IDX[c.skey] != null ? c.skey : c.name;
-    const i = CH_CATALOG_IDX[n];
-    return i == null ? 1e8 : i;
+    const n = CHAR_META[c.skey] ? c.skey : c.name;
+    const meta = CHAR_META[n];
+    return meta ? meta.catalog : 1e8;
   };
   return applySort(list, 'char', (a, b) => {
     const ra = ri[a.region] == null ? 99 : ri[a.region];
@@ -2275,7 +2276,7 @@ function openDrawer(id) {
   editing = JSON.parse(JSON.stringify(src));
   editingIsNew = false;
   ui.buildIdx = 0;
-  $('#drawerTitle').textContent = t('编辑') + ' ' + d(src.name, CH_EN[src.name] || src.name);
+  $('#drawerTitle').textContent = t('编辑') + ' ' + d(src.name, (CHAR_META[src.name] && CHAR_META[src.name].en) || src.name);
   $('#btnDeleteChar').classList.remove('hidden');
   // 自定义角色没有出厂数据，不给「还原为内置数据」
   $('#btnRestoreChar').classList.toggle('hidden', !charCanRestore(editing));
