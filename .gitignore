@@ -12,3 +12,6 @@ tools/out/_*
 
 # Qoder 编辑器本地数据，不入库
 .qoder/
+
+# 其他机器生成的 Git 辅助脚本，不入库
+tools/_gitrun.js
