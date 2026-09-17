@@ -80,15 +80,43 @@ def infer_roles(text, mains=None, subs=None, label=""):
     return sorted(roles, key=lambda x: ROLE_ORDER.get(x, 99))
 
 
+def _core_prefix(subs, equal):
+    """复刻 data.js 的 subIdsToSubs + corePrefixOf 口径：
+    按 subs 顺序展开，equal 组里除最靠前的项外都标 op='='，再从第 0 项
+    沿 op='=' 延伸，得到「= 首位核心块」（该配装的身份/倍率级词条）。
+    """
+    n = len(subs)
+    op = ['>'] * n
+    pos = {}
+    for i, sid in enumerate(subs):
+        pos.setdefault(sid, i)
+    for group in equal:
+        idxs = sorted(pos[s] for s in group if s in pos)
+        for i in idxs[1:]:
+            op[i] = '='
+    prefix = set()
+    for i in range(n):
+        prefix.add(subs[i])
+        if i + 1 >= n or op[i + 1] != '=':
+            break
+    return prefix
+
+
 def infer_subrules(roles, subs):
     """按配装功能定位生成保守的 subRules；只使用本地已解析的 roles/subs。
 
     角色定位只能提供启发式证据，所以不把通用的首项自动标成必需：
     只有精通、充能、治疗/护盾等明确定位才会在词条存在时加入 required，
     双暴同时存在时则标记为同等优先。返回 None 表示没有足够证据生成规则。
+
+    ★ 收紧：role 注入的 required 只是「候选必需」，最终只保留落在
+    「= 首位核心块」内的词条（与运行时 subIdsToSubs 同口径）。这样胡桃的
+    精通（排在双暴之后）、尼可的充能（排在攻击之后）等「非身份词条」不会被
+    误标成 ★必需，而香菱的充能、心海的生命等首位倍率词条仍会保留。
     """
     roles = set(roles or [])
-    available = set(subs or [])
+    subs = list(subs or [])
+    available = set(subs)
     required = []
 
     def add_required(stat):
@@ -108,6 +136,10 @@ def infer_subrules(roles, subs):
     equal = []
     if {"cr", "cd"}.issubset(available):
         equal.append(["cr", "cd"])
+
+    # 收紧：required 只保留「= 首位核心块」内的词条
+    prefix = _core_prefix(subs, equal)
+    required = [r for r in required if r in prefix]
 
     if not required and not equal:
         return None

@@ -15,3 +15,6 @@ tools/out/_*
 
 # 其他机器生成的 Git 辅助脚本，不入库
 tools/_gitrun.js
+
+# Python 字节码缓存（运行 tools/*.py 时自动生成，可随时删除）
+__pycache__/
