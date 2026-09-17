@@ -1185,6 +1185,17 @@ const RAW_CHARS = [
    兼容手工数据格式：[id, req, op?]，例如：
    subs: [['cr', 1], ['cd', 1, '='], ['atkP']]
    字符串写法不再自动标记首位；只有显式元组或 subRules 的 required 才会成为 ★必选。 */
+/* 「= 首位核心块」：从第 1 条起沿 op='=' 延伸的前缀块（与 app.js coreSetOf 的前缀口径一致）。
+ * 代表这条配装「身份/倍率」级别的词条，用于收紧 heuristic 的 ★必需判据。 */
+function corePrefixOf(list) {
+  const s = new Set();
+  for (let i = 0; i < (list || []).length; i++) {
+    s.add(list[i].id);
+    if (i + 1 >= list.length || list[i + 1].op !== '=') break;
+  }
+  return s;
+}
+
 function subIdsToSubs(ids, subRules) {
   const out = toSubs((ids || []).map((item, i) => {
     if (Array.isArray(item)) return [item[0], item[1], item[2]];
@@ -1201,6 +1212,13 @@ function subIdsToSubs(ids, subRules) {
     const positions = group.map(id => out.findIndex(item => item.id === id)).filter(i => i >= 0);
     positions.sort((a, b) => a - b).slice(1).forEach(i => { out[i].op = '='; });
   });
+  /* 收紧 ★：heuristic 来源时，只有落在「= 首位核心块」内的词条才允许是 ★必需；
+   * 块外的（如胡桃/甘雨/安柏因「精通」定位被加上的元素精通）判为误标，去掉。
+   * manual 来源是人工校准锚点，一律不动。 */
+  if (rules.source === 'heuristic') {
+    const prefix = corePrefixOf(out);
+    out.forEach(item => { if (item.req && !prefix.has(item.id)) item.req = false; });
+  }
   return out;
 }
 
