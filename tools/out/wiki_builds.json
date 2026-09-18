@@ -63,6 +63,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -95,6 +97,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -127,6 +131,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -196,6 +202,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -227,6 +235,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -292,6 +302,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -322,6 +334,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -393,6 +407,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -424,6 +440,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -454,6 +472,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -522,6 +542,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -551,6 +573,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "护盾"
@@ -580,8 +604,11 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
-     "增伤"
+     "增伤",
+     "辅助"
     ]
    }
   ],
@@ -644,6 +671,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -675,6 +704,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -740,6 +771,8 @@
      "er",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "治疗",
@@ -811,6 +844,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -844,6 +879,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -918,6 +955,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -948,6 +987,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -978,6 +1019,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -1010,6 +1053,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -1079,6 +1124,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助"
@@ -1105,6 +1152,8 @@
      "er",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通",
@@ -1135,6 +1184,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "护盾"
     ]
@@ -1209,6 +1260,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -1240,6 +1293,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -1271,6 +1326,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -1302,6 +1359,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -1389,6 +1448,8 @@
      "hpP",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "充能"
@@ -1421,6 +1482,8 @@
      "hpP",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -1452,6 +1515,8 @@
      "hpP",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -1483,6 +1548,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -1518,6 +1585,8 @@
      "hpP",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -1554,6 +1623,8 @@
      "hpP",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -1586,6 +1657,8 @@
      "hpP",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "护盾",
@@ -1660,6 +1733,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -1689,6 +1764,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -1720,6 +1797,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -1750,6 +1829,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -1795,10 +1876,9 @@
    "cr",
    "cd",
    "atkP",
-   "er",
-   "defP"
+   "er"
   ],
-  "derived_preset": "critDef",
+  "derived_preset": "crit",
   "rows": [
    {
     "sets": [
@@ -1823,9 +1903,21 @@
      "cr",
      "cd",
      "atkP",
-     "er",
-     "defP"
+     "er"
     ],
+    "conditional": [
+     {
+      "where": "sands",
+      "stat": "defP",
+      "note": "六命可选防御力"
+     },
+     {
+      "where": "subs",
+      "stat": "defP",
+      "note": "六命可选防御力"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -1854,9 +1946,21 @@
      "cr",
      "cd",
      "atkP",
-     "er",
-     "defP"
+     "er"
     ],
+    "conditional": [
+     {
+      "where": "sands",
+      "stat": "defP",
+      "note": "六命可选防御力"
+     },
+     {
+      "where": "subs",
+      "stat": "defP",
+      "note": "六命可选防御力"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -1884,9 +1988,21 @@
      "cr",
      "cd",
      "atkP",
-     "er",
-     "defP"
+     "er"
     ],
+    "conditional": [
+     {
+      "where": "sands",
+      "stat": "defP",
+      "note": "六命可选防御力"
+     },
+     {
+      "where": "subs",
+      "stat": "defP",
+      "note": "六命可选防御力"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -1917,6 +2033,8 @@
      "cd",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "护盾",
      "辅助"
@@ -1984,6 +2102,8 @@
      "cr",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -2013,8 +2133,11 @@
      "cr",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
-     "治疗"
+     "治疗",
+     "辅助"
     ]
    }
   ],
@@ -2083,6 +2206,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -2118,6 +2243,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -2192,6 +2319,8 @@
      "er",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "充能"
@@ -2223,6 +2352,8 @@
      "er",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助"
@@ -2254,6 +2385,8 @@
      "er",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -2322,6 +2455,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -2351,6 +2486,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -2380,6 +2517,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -2454,6 +2593,8 @@
      "er",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "治疗",
@@ -2484,6 +2625,8 @@
      "er",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "治疗"
@@ -2513,6 +2656,8 @@
      "er",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "治疗"
@@ -2542,6 +2687,8 @@
      "er",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -2572,6 +2719,8 @@
      "er",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通",
@@ -2647,8 +2796,11 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
-     "增伤"
+     "增伤",
+     "辅助"
     ]
    },
    {
@@ -2678,6 +2830,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助"
@@ -2710,6 +2864,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "充能"
@@ -2779,6 +2935,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通"
@@ -2811,6 +2969,8 @@
      "cd",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -2843,6 +3003,8 @@
      "cd",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -2920,6 +3082,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -2951,6 +3115,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助"
@@ -2981,6 +3147,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助"
@@ -3012,6 +3180,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -3079,6 +3249,8 @@
      "cd",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -3108,6 +3280,8 @@
      "cd",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -3137,6 +3311,8 @@
      "cd",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -3175,8 +3351,7 @@
   },
   "subs": [
    "er",
-   "hpP",
-   "cr"
+   "hpP"
   ],
   "derived_preset": "heal",
   "rows": [
@@ -3201,9 +3376,16 @@
     },
     "subs": [
      "er",
-     "hpP",
-     "cr"
+     "hpP"
     ],
+    "conditional": [
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "携带西风秘典时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "治疗"
     ]
@@ -3229,9 +3411,16 @@
     },
     "subs": [
      "er",
-     "hpP",
-     "cr"
+     "hpP"
     ],
+    "conditional": [
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "携带西风秘典时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "治疗"
@@ -3258,9 +3447,16 @@
     },
     "subs": [
      "er",
-     "hpP",
-     "cr"
+     "hpP"
     ],
+    "conditional": [
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "携带西风秘典时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "治疗"
@@ -3333,6 +3529,8 @@
      "em",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -3365,6 +3563,8 @@
      "em",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -3397,6 +3597,8 @@
      "em",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -3457,6 +3659,8 @@
      "hpP",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -3520,6 +3724,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "治疗",
      "辅助"
@@ -3547,6 +3753,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "治疗",
      "辅助"
@@ -3574,6 +3782,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "治疗",
      "辅助"
@@ -3646,6 +3856,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -3679,6 +3891,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -3711,6 +3925,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -3790,6 +4006,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -3821,6 +4039,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -3853,6 +4073,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -3885,8 +4107,11 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
+     "辅助",
      "精通",
      "增幅反应"
     ]
@@ -3916,6 +4141,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -3947,6 +4174,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -4015,6 +4244,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -4044,6 +4275,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -4075,6 +4308,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -4143,6 +4378,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -4173,6 +4410,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -4238,6 +4477,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -4311,6 +4552,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -4341,6 +4584,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -4373,6 +4618,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -4406,6 +4653,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -4438,6 +4687,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -4479,8 +4730,7 @@
   },
   "subs": [
    "er",
-   "hpP",
-   "cr"
+   "hpP"
   ],
   "derived_preset": "heal",
   "rows": [
@@ -4505,9 +4755,16 @@
     },
     "subs": [
      "er",
-     "hpP",
-     "cr"
+     "hpP"
     ],
+    "conditional": [
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "西风猎弓"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -4533,9 +4790,16 @@
     },
     "subs": [
      "er",
-     "hpP",
-     "cr"
+     "hpP"
     ],
+    "conditional": [
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "西风猎弓"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "治疗",
      "护盾",
@@ -4565,6 +4829,8 @@
      "er",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "治疗"
     ]
@@ -4634,8 +4900,11 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
-     "增伤"
+     "增伤",
+     "辅助"
     ]
    },
    {
@@ -4663,6 +4932,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -4691,6 +4962,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -4757,6 +5030,14 @@
      "atkP",
      "cr"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "辅助"
@@ -4785,6 +5066,14 @@
      "atkP",
      "cr"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "治疗"
@@ -4814,8 +5103,17 @@
      "atkP",
      "cr"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
-     "治疗"
+     "治疗",
+     "辅助"
     ]
    }
   ],
@@ -4880,6 +5178,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -4909,6 +5209,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助"
@@ -4977,6 +5279,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -5005,6 +5309,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -5034,6 +5340,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -5102,6 +5410,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -5135,6 +5445,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -5206,6 +5518,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -5235,6 +5549,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -5263,6 +5579,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -5296,11 +5614,10 @@
    ]
   },
   "subs": [
-   "cr",
    "er",
    "atkP"
   ],
-  "derived_preset": "crit",
+  "derived_preset": "heal",
   "rows": [
    {
     "sets": [
@@ -5321,10 +5638,17 @@
      ]
     },
     "subs": [
-     "cr",
      "er",
      "atkP"
     ],
+    "conditional": [
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "西风秘典"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "治疗",
      "辅助"
@@ -5349,10 +5673,17 @@
      ]
     },
     "subs": [
-     "cr",
      "er",
      "atkP"
     ],
+    "conditional": [
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "西风秘典"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -5419,6 +5750,8 @@
      "hpP",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -5448,6 +5781,8 @@
      "hpP",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "治疗",
      "辅助"
@@ -5513,6 +5848,8 @@
      "cd",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "充能"
@@ -5538,6 +5875,8 @@
     "subs": [
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "精通",
      "剧变反应"
@@ -5612,6 +5951,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -5642,6 +5983,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -5670,6 +6013,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -5702,6 +6047,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -5733,6 +6080,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -5812,6 +6161,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -5842,6 +6193,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -5876,6 +6229,8 @@
      "er",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -5907,6 +6262,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -5936,6 +6293,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -6000,6 +6359,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -6075,6 +6436,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -6106,6 +6469,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -6139,6 +6504,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -6170,6 +6537,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -6204,6 +6573,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -6283,6 +6654,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通"
@@ -6310,6 +6683,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通"
@@ -6337,6 +6712,8 @@
      "hpP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通",
@@ -6367,11 +6744,23 @@
      ]
     },
     "subs": [
-     "cr",
      "em",
      "hpP",
      "er"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     },
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "辅助",
      "精通"
@@ -6401,11 +6790,23 @@
      ]
     },
     "subs": [
-     "cr",
      "em",
      "hpP",
      "er"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     },
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "辅助",
      "精通"
@@ -6434,11 +6835,23 @@
      ]
     },
     "subs": [
-     "cr",
      "em",
      "hpP",
      "er"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     },
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "治疗",
@@ -6468,11 +6881,23 @@
      ]
     },
     "subs": [
-     "cr",
      "em",
      "hpP",
      "er"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     },
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "治疗",
      "精通"
@@ -6502,11 +6927,23 @@
      ]
     },
     "subs": [
-     "cr",
      "em",
      "hpP",
      "er"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     },
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "携带西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "治疗",
      "精通"
@@ -6576,6 +7013,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助"
@@ -6607,6 +7046,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "充能"
@@ -6679,6 +7120,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -6710,6 +7153,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -6743,6 +7188,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -6821,6 +7268,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -6851,6 +7300,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -6880,6 +7331,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -6910,6 +7363,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -6940,6 +7395,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -7009,6 +7466,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -7038,6 +7497,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -7103,6 +7564,14 @@
      "atkP",
      "cr"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风长枪时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -7133,6 +7602,14 @@
      "atkP",
      "cr"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风长枪时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -7163,8 +7640,7 @@
    ]
   },
   "subs": [
-   "er",
-   "cr"
+   "er"
   ],
   "derived_preset": "er",
   "rows": [
@@ -7184,9 +7660,21 @@
      ]
     },
     "subs": [
-     "er",
-     "cr"
+     "er"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "仅西风猎弓"
+     },
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "仅西风猎弓"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "副C",
@@ -7219,6 +7707,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -7263,7 +7753,8 @@
   },
   "subs": [
    "hpP",
-   "er"
+   "er",
+   "em"
   ],
   "derived_preset": "heal",
   "rows": [
@@ -7289,11 +7780,15 @@
     },
     "subs": [
      "hpP",
-     "er"
+     "er",
+     "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "治疗",
+     "辅助",
      "充能"
     ]
    },
@@ -7323,9 +7818,12 @@
      "cd",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
+     "辅助",
      "充能"
     ]
    },
@@ -7351,8 +7849,11 @@
     },
     "subs": [
      "hpP",
-     "er"
+     "er",
+     "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "治疗",
@@ -7383,6 +7884,8 @@
      "cr",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -7454,9 +7957,12 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
+     "辅助",
      "精通",
      "剧变反应"
     ]
@@ -7537,6 +8043,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -7567,6 +8075,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -7595,6 +8105,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -7623,6 +8135,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -7681,6 +8195,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "减抗",
      "精通",
@@ -7749,6 +8265,14 @@
      "cd",
      "atkP"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "使用西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "减抗",
@@ -7780,6 +8304,14 @@
      "cd",
      "atkP"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "使用西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "辅助"
@@ -7853,6 +8385,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -7882,6 +8416,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -7911,6 +8447,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -7941,6 +8479,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -8004,6 +8544,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -8085,6 +8627,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "减抗",
@@ -8119,6 +8663,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -8152,6 +8698,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -8186,6 +8734,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -8259,6 +8809,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -8290,6 +8842,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -8320,6 +8874,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -8350,6 +8906,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -8428,6 +8986,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "减抗",
      "辅助",
@@ -8459,7 +9019,11 @@
      "cr",
      "cd"
     ],
-    "roles": []
+    "conditional": [],
+    "unknown": [],
+    "roles": [
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -8485,6 +9049,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "治疗"
@@ -8514,6 +9080,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "治疗"
     ]
@@ -8542,6 +9110,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "充能"
     ]
@@ -8572,6 +9142,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -8633,6 +9205,8 @@
      "atkP",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -8660,6 +9234,8 @@
      "atkP",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出"
     ]
@@ -8731,6 +9307,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -8764,6 +9342,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -8797,6 +9377,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -8872,6 +9454,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -8905,6 +9489,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -8934,6 +9520,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -9000,6 +9588,8 @@
      "er",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "精通",
      "剧变反应"
@@ -9030,6 +9620,8 @@
      "er",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -9061,6 +9653,8 @@
      "er",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "精通"
     ]
@@ -9132,6 +9726,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "护盾",
@@ -9164,6 +9760,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -9196,6 +9794,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -9232,9 +9832,9 @@
   },
   "subs": [
    "defP",
-   "er",
    "cd",
-   "cr"
+   "cr",
+   "er"
   ],
   "derived_preset": "def",
   "rows": [
@@ -9243,7 +9843,7 @@
      "华馆梦醒形骸记"
     ],
     "label": "华馆梦醒形骸记",
-    "reason": "提供高额防御力加成和岩伤加成，有效提升元素战技输出华馆4件套主词条时之沙：防御力 空之杯：岩元素伤害加成 理之冠：暴击率/暴击伤害副词条：防御力 元素充能效率 暴击伤害 暴击率",
+    "reason": "提供高额防御力加成和岩伤加成，有效提升元素战技输出华馆4件套主词条时之沙：防御力 空之杯：岩元素伤害加成 理之冠：暴击率/暴击伤害副词条：防御力/暴击伤害/暴击率/元素充能效率",
     "mains": {
      "sands": [
       "defP"
@@ -9258,10 +9858,12 @@
     },
     "subs": [
      "defP",
-     "er",
      "cd",
-     "cr"
+     "cr",
+     "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -9272,7 +9874,7 @@
      "黄金剧团"
     ],
     "label": "黄金剧团",
-    "reason": "提供高额元素战技伤害加成，有效提升元素战技输出剧团4件套主词条时之沙：防御力空之杯：岩元素伤害加成理之冠：暴击率/暴击伤害副词条：防御力 元素充能效率 暴击伤害 暴击率",
+    "reason": "提供高额元素战技伤害加成，有效提升元素战技输出剧团4件套主词条时之沙：防御力空之杯：岩元素伤害加成理之冠：暴击率/暴击伤害副词条：防御力/暴击伤害/暴击率/元素充能效率",
     "mains": {
      "sands": [
       "defP"
@@ -9287,10 +9889,12 @@
     },
     "subs": [
      "defP",
-     "er",
      "cd",
-     "cr"
+     "cr",
+     "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -9359,6 +9963,8 @@
      "defP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -9387,9 +9993,12 @@
      "defP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "副C",
+     "辅助",
      "精通"
     ]
    },
@@ -9417,6 +10026,8 @@
      "defP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -9486,6 +10097,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -9515,6 +10128,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -9544,6 +10159,8 @@
      "cr",
      "cd"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -9574,8 +10191,8 @@
     "defP"
    ],
    "circlet": [
-    "cr",
-    "defP"
+    "defP",
+    "cr"
    ]
   },
   "subs": [
@@ -9600,8 +10217,8 @@
       "defP"
      ],
      "circlet": [
-      "cr",
-      "defP"
+      "defP",
+      "cr"
      ]
     },
     "subs": [
@@ -9609,6 +10226,14 @@
      "defP",
      "er"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "一般仅在携带西风猎弓时使用"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "副C",
@@ -9630,8 +10255,8 @@
       "defP"
      ],
      "circlet": [
-      "cr",
-      "defP"
+      "defP",
+      "cr"
      ]
     },
     "subs": [
@@ -9639,6 +10264,14 @@
      "defP",
      "er"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "一般仅在携带西风猎弓时使用"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "辅助"
@@ -9703,6 +10336,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -9771,6 +10406,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -9802,6 +10439,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -9844,8 +10483,7 @@
   },
   "subs": [
    "defP",
-   "er",
-   "cr"
+   "er"
   ],
   "derived_preset": "def",
   "rows": [
@@ -9871,9 +10509,21 @@
     },
     "subs": [
      "defP",
-     "er",
-     "cr"
+     "er"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "西风剑推荐"
+     },
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "西风剑推荐"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -9902,9 +10552,21 @@
     },
     "subs": [
      "defP",
-     "er",
-     "cr"
+     "er"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "西风剑推荐"
+     },
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "西风剑推荐"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "辅助"
@@ -9934,6 +10596,8 @@
      "cr",
      "defP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -9963,6 +10627,8 @@
      "cr",
      "defP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -9999,6 +10665,7 @@
    ]
   },
   "subs": [
+   "cr",
    "cd",
    "er",
    "defP"
@@ -10026,10 +10693,13 @@
      ]
     },
     "subs": [
+     "cr",
      "cd",
      "er",
      "defP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助"
@@ -10056,10 +10726,13 @@
      ]
     },
     "subs": [
+     "cr",
      "cd",
      "er",
      "defP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -10091,8 +10764,8 @@
     "defP"
    ],
    "circlet": [
-    "cr",
-    "defP"
+    "defP",
+    "cr"
    ]
   },
   "subs": [
@@ -10117,8 +10790,8 @@
       "defP"
      ],
      "circlet": [
-      "cr",
-      "defP"
+      "defP",
+      "cr"
      ]
     },
     "subs": [
@@ -10126,7 +10799,17 @@
      "defP",
      "er"
     ],
-    "roles": []
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "一般仅在携带西风长枪时使用"
+     }
+    ],
+    "unknown": [],
+    "roles": [
+     "辅助"
+    ]
    },
    {
     "sets": [
@@ -10143,8 +10826,8 @@
       "defP"
      ],
      "circlet": [
-      "cr",
-      "defP"
+      "defP",
+      "cr"
      ]
     },
     "subs": [
@@ -10152,7 +10835,17 @@
      "defP",
      "er"
     ],
-    "roles": []
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "一般仅在携带西风长枪时使用"
+     }
+    ],
+    "unknown": [],
+    "roles": [
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/3387/detail"
@@ -10222,6 +10915,8 @@
      "cd",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -10257,6 +10952,8 @@
      "cd",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -10291,6 +10988,8 @@
      "cd",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -10366,6 +11065,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -10399,6 +11100,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -10431,6 +11134,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -10502,6 +11207,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -10534,6 +11241,8 @@
      "em",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -10599,6 +11308,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -10628,6 +11339,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -10656,6 +11369,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "减抗"
@@ -10724,6 +11439,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -10752,6 +11469,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "减抗",
@@ -10782,6 +11501,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -10850,6 +11571,8 @@
      "er",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "辅助"
@@ -10878,6 +11601,8 @@
      "er",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "治疗",
@@ -10907,8 +11632,11 @@
      "er",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
-     "治疗"
+     "治疗",
+     "辅助"
     ]
    },
    {
@@ -10934,8 +11662,11 @@
      "er",
      "hpP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
-     "减抗"
+     "减抗",
+     "辅助"
     ]
    }
   ],
@@ -10975,6 +11706,7 @@
   "subs": [
    "em",
    "er",
+   "hpP",
    "atkP"
   ],
   "derived_preset": "em",
@@ -11002,8 +11734,17 @@
     "subs": [
      "em",
      "er",
+     "hpP",
      "atkP"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风长枪时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "治疗",
@@ -11035,8 +11776,17 @@
     "subs": [
      "em",
      "er",
+     "hpP",
      "atkP"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风枪时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "治疗",
@@ -11069,8 +11819,17 @@
     "subs": [
      "em",
      "er",
+     "hpP",
      "atkP"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风长枪时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "治疗",
@@ -11104,17 +11863,16 @@
     "dendro"
    ],
    "circlet": [
-    "cr",
-    "atkP"
+    "atkP",
+    "cr"
    ]
   },
   "subs": [
-   "cr",
    "er",
    "em",
    "atkP"
   ],
-  "derived_preset": "crit",
+  "derived_preset": "er",
   "rows": [
    {
     "sets": [
@@ -11132,16 +11890,28 @@
       "dendro"
      ],
      "circlet": [
-      "cr",
-      "atkP"
+      "atkP",
+      "cr"
      ]
     },
     "subs": [
-     "cr",
      "er",
      "em",
      "atkP"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风弓时"
+     },
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "携带西风弓时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -11167,16 +11937,28 @@
       "dendro"
      ],
      "circlet": [
-      "cr",
-      "atkP"
+      "atkP",
+      "cr"
      ]
     },
     "subs": [
-     "cr",
      "er",
      "em",
      "atkP"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "携带西风弓时"
+     },
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "携带西风弓时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -11249,6 +12031,8 @@
      "atkP",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "减抗",
@@ -11280,6 +12064,8 @@
      "atkP",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通",
@@ -11312,6 +12098,8 @@
      "atkP",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通",
@@ -11381,6 +12169,8 @@
      "cr",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "护盾",
@@ -11411,6 +12201,8 @@
      "cr",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "减抗",
@@ -11441,6 +12233,8 @@
      "cr",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "辅助",
@@ -11508,6 +12302,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通"
@@ -11538,6 +12334,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -11605,6 +12403,8 @@
      "er",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "精通",
@@ -11672,6 +12472,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -11700,6 +12502,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -11728,6 +12532,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -11800,6 +12606,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -11831,6 +12639,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -11863,6 +12673,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -11927,6 +12739,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -11954,6 +12768,8 @@
      "cr",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -12027,6 +12843,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -12056,6 +12874,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -12085,6 +12905,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -12114,6 +12936,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -12183,6 +13007,8 @@
      "defP",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -12213,6 +13039,8 @@
      "defP",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -12244,6 +13072,8 @@
      "defP",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -12315,6 +13145,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -12347,6 +13179,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -12379,6 +13213,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -12417,8 +13253,7 @@
   },
   "subs": [
    "er",
-   "hpP",
-   "cr"
+   "hpP"
   ],
   "derived_preset": "er",
   "rows": [
@@ -12441,9 +13276,16 @@
     },
     "subs": [
      "er",
-     "hpP",
-     "cr"
+     "hpP"
     ],
+    "conditional": [
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "搭配西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "护盾",
      "辅助"
@@ -12468,9 +13310,16 @@
     },
     "subs": [
      "er",
-     "hpP",
-     "cr"
+     "hpP"
     ],
+    "conditional": [
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "搭配西风剑时"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -12540,6 +13389,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -12571,6 +13422,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -12602,6 +13455,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "护盾",
@@ -12673,9 +13528,12 @@
      "cd",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
+     "辅助",
      "精通",
      "剧变反应"
     ]
@@ -12739,8 +13597,11 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
+     "辅助",
      "精通",
      "充能"
     ]
@@ -12767,8 +13628,11 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "护盾",
+     "辅助",
      "精通"
     ]
    },
@@ -12794,7 +13658,10 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
+     "辅助",
      "精通"
     ]
    }
@@ -12865,6 +13732,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "辅助",
@@ -12897,6 +13766,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "副C",
@@ -12930,7 +13801,11 @@
      "em",
      "er"
     ],
-    "roles": []
+    "conditional": [],
+    "unknown": [],
+    "roles": [
+     "辅助"
+    ]
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/505631/detail"
@@ -12991,6 +13866,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "辅助",
      "精通",
@@ -13021,6 +13898,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通"
@@ -13048,8 +13927,11 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "减抗",
+     "辅助",
      "精通"
     ]
    }
@@ -13115,6 +13997,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -13146,7 +14030,10 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
+     "辅助",
      "精通"
     ]
    }
@@ -13212,8 +14099,17 @@
      "cr",
      "cd"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "用以触发西风大剑特效"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "增伤",
+     "辅助",
      "精通"
     ]
    },
@@ -13242,6 +14138,14 @@
      "cr",
      "cd"
     ],
+    "conditional": [
+     {
+      "where": "circlet",
+      "stat": "cr",
+      "note": "用以触发西风大剑特效"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "辅助",
      "精通",
@@ -13308,6 +14212,8 @@
      "cr",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -13338,6 +14244,8 @@
      "cr",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "精通"
     ]
@@ -13419,6 +14327,8 @@
      "em",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -13451,6 +14361,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -13483,6 +14395,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助"
@@ -13514,6 +14428,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "减抗",
@@ -13546,6 +14462,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -13622,6 +14540,8 @@
      "er",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "副C",
@@ -13655,6 +14575,8 @@
      "er",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -13688,6 +14610,8 @@
      "er",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通"
@@ -13759,6 +14683,8 @@
      "defP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通"
@@ -13790,6 +14716,8 @@
      "defP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "精通"
     ]
@@ -13854,6 +14782,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -13883,6 +14813,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "精通"
     ]
@@ -13947,6 +14879,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -13975,6 +14909,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出"
     ]
@@ -14035,6 +14971,8 @@
      "er",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -14063,6 +15001,8 @@
      "er",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -14131,6 +15071,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出"
     ]
@@ -14158,6 +15100,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -14186,6 +15130,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出"
     ]
@@ -14213,6 +15159,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -14280,6 +15228,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -14309,6 +15259,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -14338,6 +15290,8 @@
      "cd",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤"
@@ -14397,6 +15351,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "充能"
@@ -14423,6 +15379,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "辅助"
     ]
@@ -14483,6 +15441,8 @@
      "er",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "精通",
      "剧变反应"
@@ -14510,6 +15470,8 @@
      "er",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -14581,6 +15543,8 @@
      "defP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "精通"
     ]
@@ -14610,7 +15574,11 @@
      "defP",
      "er"
     ],
-    "roles": []
+    "conditional": [],
+    "unknown": [],
+    "roles": [
+     "副C"
+    ]
    },
    {
     "sets": [
@@ -14637,6 +15605,8 @@
      "defP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "辅助",
      "精通",
@@ -14696,6 +15666,8 @@
      "er",
      "cr"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "辅助",
@@ -14732,8 +15704,7 @@
   },
   "subs": [
    "er",
-   "atkP",
-   "cr"
+   "atkP"
   ],
   "derived_preset": "heal",
   "rows": [
@@ -14757,9 +15728,16 @@
     },
     "subs": [
      "er",
-     "atkP",
-     "cr"
+     "atkP"
     ],
+    "conditional": [
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "西风猎弓"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "精通",
      "剧变反应"
@@ -14785,9 +15763,16 @@
     },
     "subs": [
      "er",
-     "atkP",
-     "cr"
+     "atkP"
     ],
+    "conditional": [
+     {
+      "where": "subs",
+      "stat": "cr",
+      "note": "西风猎弓"
+     }
+    ],
+    "unknown": [],
     "roles": [
      "充能"
     ]
@@ -14853,6 +15838,8 @@
      "er",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -14925,8 +15912,11 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
-     "增伤"
+     "增伤",
+     "辅助"
     ]
    },
    {
@@ -14955,9 +15945,12 @@
      "er",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
+     "辅助",
      "充能"
     ]
    }
@@ -15022,8 +16015,11 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
-     "增伤"
+     "增伤",
+     "辅助"
     ]
    }
   ],
@@ -15087,6 +16083,8 @@
      "atkP",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -15162,6 +16160,8 @@
      "er",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -15193,6 +16193,8 @@
      "er",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -15223,6 +16225,8 @@
      "er",
      "atkP"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤"
     ]
@@ -15302,6 +16306,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "增伤",
      "辅助",
@@ -15334,6 +16340,8 @@
      "cr",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -15367,6 +16375,8 @@
      "cr",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -15400,6 +16410,8 @@
      "cr",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "增伤",
@@ -15427,6 +16439,8 @@
      "cr",
      "er"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出",
      "精通",
@@ -15493,6 +16507,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "输出"
     ]
@@ -15521,6 +16537,8 @@
      "atkP",
      "em"
     ],
+    "conditional": [],
+    "unknown": [],
     "roles": [
      "辅助",
      "精通"

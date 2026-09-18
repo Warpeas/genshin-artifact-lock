@@ -11,8 +11,14 @@
   tools/out/report.md          —— 人读的变更报告
 
 用法：
-  python tools/fetch_wiki_builds.py            # 全量
+  python tools/fetch_wiki_builds.py            # 全量联网抓取
   python tools/fetch_wiki_builds.py 胡桃 甘雨   # 只跑指定角色（调试用）
+  python tools/fetch_wiki_builds.py --merge    # 抓取失败的角色保留快照里的旧数据
+  python tools/fetch_wiki_builds.py --reparse  # 不联网：用当前解析规则重放 tools/out/wiki_builds.json
+                                               # （--dry 只预览；--allow-unrecognized 允许带未识别片段落盘）
+
+抓取与解析共用同一套 parse_fields/infer_roles，所以「联网抓取」与「快照重放」
+（--reparse）产出的结果一致；别名表/推断逻辑改动后无需重抓即可刷新数据。
 """
 import json
 import os
@@ -20,7 +26,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from role_infer import infer_roles
+from role_infer import CHAR_ROLES, infer_roles
 import time
 import urllib.parse
 import urllib.request
@@ -62,6 +68,40 @@ STAT_ALIAS = {
     "暴击伤害": "cd", "暴伤": "cd", "暴击率": "cr",
     "治疗量加成": "heal", "治疗加成": "heal",
 }
+
+# 仅用于「词条清单 token」语境的补丁别名。
+# STAT_ALIAS 里的条目会在长句上做正则扫描（scope 大），所以不能收「精通」「暴击」
+# 这种会大面积误判的短词；而词条段已经被切成 token（每个 token 就是一个属性名），
+# 此时「精通」只可能是元素精通、「暴击」只可能是暴击率，可以安全补全。
+# （历史 bug：多莉/卡齐娜/瑶瑶的推荐理由写的是「精通 / 暴击 / 生命加成」，不在
+#   STAT_ALIAS 里 → 静默丢词条，导致 7 处副词条缺失。）
+TOKEN_ALIAS = {
+    "精通": "em",
+    "暴击": "cr",
+    "暴击几率": "cr",
+    "生命加成": "hpP",
+    "攻击加成": "atkP",
+    "防御加成": "defP",
+    "攻击力百分比": "atkP",
+    "生命值百分比": "hpP",
+    "防御力百分比": "defP",
+    "攻击百分比": "atkP",
+    "生命百分比": "hpP",
+    "防御百分比": "defP",
+    "元素充能": "er",
+    "充能": "er",
+    "治疗量": "heal",
+}
+
+# 括号说明里的「条件」线索：出现这些字样的词条只在该条件下才需要
+# （如「暴击率（携带西风剑时）」「防御力（六命可选防御力）」），
+# 不能当成无条件推荐词条；而括号里只是流派出处的（输出/辅助/通用）按常规词条处理。
+COND_CLUES = ("西风", "命", "可选", "携带", "触发", "特效", "推荐", "限定",
+              "队伍中有", "视情况", "平时")
+VARIANT_MARKS = {"输出", "辅助", "治疗", "副C", "主C", "通用", "物理", "站场", "后台", "散搭", "满命"}
+# 整段都是噪音词（非属性名）时不算「未识别片段」，避免误报
+NOISE_TOKENS = {"不强求", "推荐", "副词条", "主词条", "副词缀", "副词性", "无", "以上",
+                "-", "—", "·", "等", "起"}
 
 
 def get(url, retries=3):
@@ -157,8 +197,11 @@ def parse_sets_from_label(label, sets):
     return out
 
 
-def parse_artifact_tab(module, sets):
-    """返回 (rows, raw_tab_name)。rows 已过滤掉无五星套装的过渡行。"""
+def parse_artifact_tab(module, sets, char_roles=None):
+    """返回 (rows, raw_tab_name)。rows 已过滤掉无五星套装的过渡行。
+
+    char_roles：该角色的基础定位（CHAR_META），仅在理由文本推不出定位时兜底。
+    """
     if not module:
         return [], None
     for c in module.get("components", []):
@@ -177,13 +220,16 @@ def parse_artifact_tab(module, sets):
                 combos = parse_sets_from_label(name_cell, sets)
                 if not combos:
                     continue  # 四星 / 过渡套，不进正式配装
+                mains, subs, cond, unknown = parse_fields(reason)
                 rows.append({
                     "sets": combos,
                     "label": name_cell,
                     "reason": reason,
-                    "mains": parse_mains(reason),
-                    "subs": parse_subs(reason),
-                    "roles": infer_roles(reason, parse_mains(reason), parse_subs(reason), name_cell),
+                    "mains": mains,
+                    "subs": subs,
+                    "conditional": cond,
+                    "unknown": unknown,
+                    "roles": infer_roles(reason, mains, subs, name_cell, char_roles),
                 })
             # 去重：仅当「套装组合 + 主词条 + 副词条」完全一致才算重复
             # （同一套装不同流派/主词条的情况要保留，如 久岐忍 少女套的副C/辅助两种）
@@ -191,7 +237,8 @@ def parse_artifact_tab(module, sets):
             for r in rows:
                 k = (tuple(r["sets"]),
                      tuple(r["mains"]["sands"]), tuple(r["mains"]["goblet"]),
-                     tuple(r["mains"]["circlet"]), tuple(r["subs"]))
+                     tuple(r["mains"]["circlet"]), tuple(r["subs"]),
+                     tuple((c["where"], c["stat"]) for c in r.get("conditional") or []))
                 if k in seen:
                     continue
                 seen.add(k)
@@ -215,32 +262,130 @@ def _slice_slot(text, key):
 
 _ALIAS_RE = re.compile("|".join(sorted((re.escape(a) for a in STAT_ALIAS), key=len, reverse=True)))
 
+# 词条切分符：/、顿号、逗号、分号、冒号、空白（含全角），以及「或者」
+_SPLIT_RE = re.compile(r"[/／、,，;；:：\s]+|或者")
+# 「副词条推荐：」这类前缀整体当分隔符，避免把「推荐」当成词条
+_SUBS_HEAD_RE = re.compile(r"副词[条缀性](推?荐)?[：:]?")
+_PAREN_RE = re.compile(r"[（(]([^（()）]*)[)）]")
 
-def _stats_in(seg):
-    """按原文出现顺序抽出属性 id（长别名优先，避免「生命值」吃掉「生命值%」）"""
-    out = []
-    for m in _ALIAS_RE.finditer(seg):
-        sid = STAT_ALIAS[m.group(0)]
-        if sid not in out:
-            out.append(sid)
-    return out
+
+def _split_tokens(seg):
+    """把一段词条原文切成 token（每个 token 应是一个属性名 + 可能的括号说明）"""
+    seg = _SUBS_HEAD_RE.sub("/", seg or "")
+    return [t.strip() for t in _SPLIT_RE.split(seg) if t.strip()]
+
+
+def _match_stat(token):
+    """token → 属性 id；识别不出返回 None（调用方按「未识别片段」上报）"""
+    token = (token or "").strip().strip("。.,，;；!！?？")
+    if not token:
+        return None
+    if token in STAT_ALIAS:
+        return STAT_ALIAS[token]
+    if token in TOKEN_ALIAS:
+        return TOKEN_ALIAS[token]
+    # 兜底：剥掉数值性尾缀再试（如「生命值百分比%」「攻击力%」）
+    for tail in ("百分比%", "百分比", "%"):
+        if token.endswith(tail):
+            base = token[:-len(tail)].strip()
+            if base in STAT_ALIAS:
+                return STAT_ALIAS[base]
+            if base in TOKEN_ALIAS:
+                return TOKEN_ALIAS[base]
+    return None
+
+
+def _is_conditional(note):
+    """括号说明是否表示「有条件才需要」"""
+    note = (note or "").strip()
+    if not note or note in VARIANT_MARKS:
+        return False
+    return any(c in note for c in COND_CLUES)
+
+
+def _match_stat_in_note(note):
+    """纯括号 token（如「（六命可选防御力）」）里只有在说明文字里才写出属性名，
+    用别名表在说明里扫一次，取最后一个匹配（属性名一般放在条件说明末尾）。"""
+    hits = _ALIAS_RE.findall(note or "")
+    return STAT_ALIAS[hits[-1]] if hits else None
+
+
+def _parse_segment(seg):
+    """解析一段词条原文 → (常规词条, 条件词条, 未识别片段)
+
+    条件词条 = 括号说明里含条件线索的词条，返回 [(stat, note), ...]，
+    由调用方决定去向：副词条段移出常规推荐、主词条段保留但排在末位。
+    """
+    stats, cond, unknown = [], [], []
+    for raw in _split_tokens(seg):
+        notes = [m.group(1).strip() for m in _PAREN_RE.finditer(raw)]
+        plain = _PAREN_RE.sub("", raw).strip()
+        sid = _match_stat(plain)
+        if sid is None and not plain:
+            # 纯括号 token：属性名写在括号里，如「时之沙：攻击力/（六命可选防御力）」
+            note = next((n for n in notes if _is_conditional(n)), None) \
+                or (notes[0] if notes else "")
+            sid = _match_stat_in_note(note)
+            if sid is not None:
+                plain = sid
+        if sid is None:
+            if plain and plain not in NOISE_TOKENS:
+                unknown.append(plain)
+            continue
+        if sid not in stats:
+            stats.append(sid)
+        hit = next((n for n in notes if _is_conditional(n)), None)
+        if hit is not None:
+            # 条件说明里另写了属性名时，条件词条是「说明里那个」而不是括号外的本体：
+            # 「攻击力（六命可选防御力）」= 一般用攻击力，六命才考虑防御力。
+            # 说明里没写属性名（「仅西风猎弓」「携带西风剑时」）→ 条件词条就是本体自己。
+            named = _match_stat_in_note(hit)
+            cid = named if (named and named != sid) else sid
+            if cid not in [c[0] for c in cond]:
+                cond.append((cid, hit))
+    return stats, cond, unknown
 
 
 def parse_mains(text):
-    res = {}
-    for key, slot in SLOT_KEYS.items():
-        seg = _slice_slot(text, key)
-        res[slot] = _stats_in(seg) if seg else []
-    return res
+    """兼容入口：只返回主词条（条件词条排在末位但保留，避免出现空槽）"""
+    return parse_fields(text)[0]
 
 
 def parse_subs(text):
+    """兼容入口：只返回常规副词条（不含条件词条）"""
+    return parse_fields(text)[1]
+
+
+def parse_fields(text):
+    """解析推荐理由 → (mains, subs, conditional, unknown)
+
+    mains: {'sands': [...], 'goblet': [...], 'circlet': [...]}
+           条件词条（如「防御力（六命可选防御力）」）保留在列表末位——
+           主词条是「该部位可选池」，出现空槽比多一个末尾备选更糟。
+    subs:  常规副词条（条件词条已剔除）
+    conditional: [{'where': 'subs'|'sands'|'goblet'|'circlet', 'stat': id, 'note': 原文说明}]
+    unknown:     [{'where': ..., 'text': 未识别片段}]，供人工复核（应为空）
+    """
+    text = text or ""
+    mains, conditional, unknown = {}, [], []
+    for key, slot in SLOT_KEYS.items():
+        seg = _slice_slot(text, key)
+        stats, cond, unk = _parse_segment(seg) if seg else ([], [], [])
+        stats = [s for s in stats if s not in [c[0] for c in cond]] + [c[0] for c in cond]
+        mains[slot] = stats
+        conditional += [{"where": slot, "stat": s, "note": n} for s, n in cond]
+        unknown += [{"where": slot, "text": t} for t in unk]
+
     m = re.search(r"副词[条缀性]", text)
     if not m:
-        return []
-    seg = text[m.end():]
-    seg = re.split(r"时之沙|空之杯|理之冠|套装效果|备注|说明", seg)[0]
-    return _stats_in(seg)
+        return mains, [], conditional, unknown
+    seg = re.split(r"时之沙|空之杯|理之冠|套装效果|备注|说明", text[m.end():])[0]
+    stats, cond, unk = _parse_segment(seg)
+    cond_stats = [c[0] for c in cond]
+    subs = [s for s in stats if s not in cond_stats]
+    conditional += [{"where": "subs", "stat": s, "note": n} for s, n in cond]
+    unknown += [{"where": "subs", "text": t} for t in unk]
+    return mains, subs, conditional, unknown
 
 
 def pick_preset(subs):
@@ -257,24 +402,48 @@ def pick_preset(subs):
     return {"em": "em", "hpP": "hp", "defP": "def", "er": "er", "atkP": "atk"}.get(head)
 
 
-def reparse(wb_path, dry=False):
-    """离线重解析：读已有 wiki_builds.json 的 rows[].reason 原文，
-    用当前 STAT_ALIAS 重算 mains/subs/roles/preset 并写回。
-    改了别名表后无需重新联网抓取（3 分钟）即可刷新解析结果。"""
+def reparse(wb_path, dry=False, allow_unrecognized=False):
+    """离线重解析（快照重放）：读已有 wiki_builds.json 的 rows[].reason 原文，
+    用当前 STAT_ALIAS / TOKEN_ALIAS + 角色级定位兜底，重算
+    mains / subs / conditional / unknown / roles / derived_preset 并写回。
+
+    改了别名表或推断逻辑后无需重新联网抓取即可刷新解析结果；
+    任何一次「联网抓取 → 重解析」的结果都与本函数一致（同一套解析代码）。
+
+    未识别片段（应为空）默认阻止落盘，除非 --allow-unrecognized；
+    诊断信息统一写到 tools/out/parse_warnings.json。
+    """
     wb = json.load(open(wb_path, encoding="utf-8"))
     changed = []
+    fixed_subs = 0          # 本次补回的词条数（旧快照里缺失、重解析后找回）
+    lost_subs = 0           # 本次移除的词条数（旧快照里的误收/非词条）
+    roles_filled = 0        # roles 由空补齐的配装数
+    cond_total = 0          # 条件词条数
+    empty_roles, unknown, not_ok = [], [], []
     for name, d in wb.items():
         if not d.get("ok") or not d.get("rows"):
+            not_ok.append(name)
             continue
+        char_roles = CHAR_ROLES.get(name)
         for i, r in enumerate(d["rows"]):
             reason = r.get("reason", "")
             old_m, old_s = r.get("mains"), r.get("subs")
-            new_m = parse_mains(reason)
-            new_s = parse_subs(reason)
-            roles = infer_roles(reason, new_m, new_s, r.get("label", ""))
-            if old_m != new_m or old_s != new_s or r.get("roles") != roles:
+            old_roles = r.get("roles") or []
+            new_m, new_s, cond, unk = parse_fields(reason)
+            roles = infer_roles(reason, new_m, new_s, r.get("label", ""), char_roles)
+            fixed_subs += len([s for s in new_s if s not in (old_s or [])])
+            lost_subs += len([s for s in (old_s or []) if s not in new_s])
+            if not old_roles and roles:
+                roles_filled += 1
+            cond_total += len(cond)
+            if not roles:
+                empty_roles.append("%s #%d" % (name, i))
+            unknown += [dict(w, char=name, row=i) for w in unk]
+            if old_m != new_m or old_s != new_s or old_roles != roles \
+                    or r.get("conditional") != cond:
                 changed.append((name, i, old_m, new_m, old_s, new_s))
             r["mains"], r["subs"], r["roles"] = new_m, new_s, roles
+            r["conditional"], r["unknown"] = cond, unk
         # 顶层 mains/subs/derived_preset 跟随第 0 组
         m0 = d["rows"][0]
         d["mains"], d["subs"] = m0["mains"], m0["subs"]
@@ -282,15 +451,37 @@ def reparse(wb_path, dry=False):
         if "heal" in (m0["mains"].get("circlet") or []) and derived in ("hp", "atk", "er"):
             derived = "heal"
         d["derived_preset"] = derived
-    print("重解析完成，变更 %d 处：" % len(changed))
+    warned = {
+        "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "unknown": unknown,
+        "empty_roles": empty_roles,
+        "no_rows": not_ok,
+    }
+    with open(os.path.join(OUT, "parse_warnings.json"), "w", encoding="utf-8") as f:
+        json.dump(warned, f, ensure_ascii=False, indent=1)
+
+    print("重解析完成，变更 %d 处（补回词条 %d / 移除词条 %d / roles 补齐 %d / 条件词条 %d）"
+          % (len(changed), fixed_subs, lost_subs, roles_filled, cond_total))
     for name, i, om, nm, os_, ns in changed:
         print("  %s #%d  mains %s -> %s   subs %s -> %s"
               % (name, i, om, nm, os_, ns))
-    if not dry:
-        # indent=1：与 fetch 写出的原始格式保持一致，否则 diff 会炸成几万行
-        with open(wb_path, "w", encoding="utf-8") as f:
-            json.dump(wb, f, ensure_ascii=False, indent=1)
-        print("已写回 %s" % wb_path)
+    print("未识别片段 %d 处 / 空定位 %d 处 / 无数据角色 %d 个 → tools/out/parse_warnings.json"
+          % (len(unknown), len(empty_roles), len(not_ok)))
+    for w in unknown:
+        print("  ! 未识别：%s #%d [%s] %r" % (w["char"], w["row"], w["where"], w["text"]))
+    for e in empty_roles:
+        print("  ! 定位为空：%s" % e)
+
+    if dry:
+        return changed
+    if unknown and not allow_unrecognized:
+        print("\n[中止] 重解析出现未识别片段，未写回 %s。" % wb_path)
+        print("       请补 STAT_ALIAS / TOKEN_ALIAS 后重跑；确认可忽略时加 --allow-unrecognized。")
+        sys.exit(2)
+    # indent=1：与 fetch 写出的原始格式保持一致，否则 diff 会炸成几万行
+    with open(wb_path, "w", encoding="utf-8") as f:
+        json.dump(wb, f, ensure_ascii=False, indent=1)
+    print("已写回 %s" % wb_path)
     return changed
 
 
@@ -299,17 +490,30 @@ def main():
     # --reparse：离线重解析已有 wiki_builds.json（改别名表后用它，不联网）
     if args and args[0] == "--reparse":
         wb = os.path.join(OUT, "wiki_builds.json")
-        reparse(wb, dry="--dry" in args)
+        reparse(wb, dry="--dry" in args, allow_unrecognized="--allow-unrecognized" in args)
         return
 
     sets, names = load_sets_and_names()
     os.makedirs(CACHE, exist_ok=True)
-    targets = args or names
-    if targets and targets[0] == "--all":
+    flags = {a for a in args if a.startswith("--")}
+    targets = [a for a in args if not a.startswith("--")]
+    if "--all" in flags:
+        targets = names
+    if not targets:
         targets = names
 
-    result = {}
+    # --merge：抓取失败的角色保留快照里的旧数据（部分角色 403/超时时不丢数据）。
+    # 现在**默认**就是这个行为：只要 out/wiki_builds.json 已存在就以它为底，
+    # 只有 --fresh 才从空开始。这样 wiki 挂掉/超时也不会把快照洗成残缺版。
+    wb_path = os.path.join(OUT, "wiki_builds.json")
+    prev = json.load(open(wb_path, encoding="utf-8")) if (
+        "--fresh" not in flags and os.path.exists(wb_path)) else {}
+
+    ok_before = len([d for d in prev.values() if (d or {}).get("ok")])
+    ok_now = 0
+    result = dict(prev)   # 以快照为底，只覆盖本次抓到的角色
     for name in targets:
+        char_roles = CHAR_ROLES.get(name)
         cands, _ = search_entry_ids(name)
         # 分形态角色（旅行者·风 等）在 data.js 里带「·」，wiki 词条名同名；
         # 找不到就退一步用「旅行者」这种基名再试一次。
@@ -317,7 +521,7 @@ def main():
             cands, _ = search_entry_ids(name.split("·")[0])
         if not cands:
             print("[skip] %-8s 未找到词条" % name)
-            result[name] = {"ok": False, "why": "词条未找到"}
+            result[name] = prev.get(name) or {"ok": False, "why": "词条未找到"}
             continue
 
         page, eid, rows, tab = None, None, [], None
@@ -327,7 +531,7 @@ def main():
             if not d or d.get("retcode") != 0:
                 continue
             pg = d["data"]["page"]
-            rr, tt = parse_artifact_tab(find_recommend_module(pg), sets)
+            rr, tt = parse_artifact_tab(find_recommend_module(pg), sets, char_roles)
             if rr:
                 page, eid, rows, tab = pg, cid, rr, tt
                 break
@@ -335,8 +539,8 @@ def main():
                 page, eid = pg, cid
         if not rows:
             print("[skip] %-8s 无圣遗物推荐" % name)
-            result[name] = {"ok": False, "why": "无圣遗物推荐", "entry_id": eid,
-                            "candidates": cands}
+            result[name] = prev.get(name) or {"ok": False, "why": "无圣遗物推荐", "entry_id": eid,
+                                              "candidates": cands}
             continue
         main_row = rows[0]
         # healer 特判：理之冠出现治疗加成 → 归到「治疗辅助」预设
@@ -353,12 +557,22 @@ def main():
             "rows": rows,
             "url": "https://baike.mihoyo.com/ys/obc/content/%s/detail" % eid,
         }
+        ok_now += 1
         print("[ok]   %-8s %s -> %s" % (name, tab, " / ".join("/".join(r["sets"]) for r in rows)))
 
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, "wiki_builds.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=1)
-    print("\n写入 tools/out/wiki_builds.json（%d 条）" % len(result))
+    print("\n写入 tools/out/wiki_builds.json（%d 条，本次新抓到 %d 条，快照原有可用 %d 条）"
+          % (len(result), ok_now, ok_before))
+    if ok_now == 0 and ok_before:
+        print("[警告] 本次抓取 0 个角色成功（wiki 不可达 / 全部超时）。快照已原样保留，"
+              "可改用 `python tools/fetch_wiki_builds.py --reparse` 离线重放。")
+    # 抓完立刻离线复核一遍：新抓/改写的词条都必须走同一套解析 + 非空校验，
+    # 未识别片段会被 reparse 拦下（除非 --allow-unrecognized），杜绝静默丢词条。
+    if "--no-reparse" not in flags:
+        print("\n[post-fetch 复核] 用同一套别名表离线重解析快照")
+        reparse(wb_path, dry=False, allow_unrecognized="--allow-unrecognized" in flags)
 
 
 if __name__ == "__main__":

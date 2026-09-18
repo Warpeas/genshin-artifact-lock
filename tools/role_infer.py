@@ -8,6 +8,7 @@
 供 fetch_wiki_builds.py（写 wiki_builds.json）与 apply_wiki_builds.py（写回 data.js）共用。
 """
 import os
+import re
 import sys
 
 # 杯主词条是这些 id 之一 → 元素/物理伤害加成 → 增伤
@@ -15,6 +16,38 @@ ELEM_DMG = {"pyro", "hydro", "cryo", "electro", "anemo", "geo", "dendro", "phys"
 # 增幅反应 / 剧变反应 关键词
 AMP = ("蒸发", "融化")
 TRANSFORM = ("超载", "感电", "绽放", "激化", "扩散", "碎冰", "剧变")
+
+# CHAR_META 的角色级定位（英文键）→ app 端中文定位
+ROLE_KEY_MAP = {"maindps": "输出", "subdps": "副C", "support": "辅助"}
+
+
+def load_char_roles(data_js=None):
+    """从 src/data.js 的 CHAR_META 读出角色级基础定位，用于「推荐理由推断不出定位」时的兜底。
+
+    wiki 的部分推荐理由只有一句效果描述（如「提供高额防御力加成。」），
+    不含任何定位关键词，此时退回角色自身的 maindps/subdps/support 定位，
+    避免出现 roles=[] 的空定位配装。
+    """
+    path = data_js or os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src", "data.js")
+    out = {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            src = f.read()
+    except OSError:
+        return out
+    i = src.find("const CHAR_META")
+    if i < 0:
+        return out
+    for m in re.finditer(r'"([^"]+)":\s*\{[^{}]*?roles:\s*\[([^\]]*)\]', src[i:], re.S):
+        keys = re.findall(r'"([^"]+)"', m.group(2))
+        roles = [ROLE_KEY_MAP[k] for k in keys if k in ROLE_KEY_MAP]
+        if roles:
+            out[m.group(1)] = roles
+    return out
+
+
+CHAR_ROLES = load_char_roles()
 
 # 展示顺序（与 app 端 BUILD_ROLES 一致），让推断结果稳定有序
 ROLE_ORDER = {
@@ -28,7 +61,7 @@ def _has(text, *subs):
     return any(s in text for s in subs)
 
 
-def infer_roles(text, mains=None, subs=None, label=""):
+def infer_roles(text, mains=None, subs=None, label="", char_roles=None):
     mains = mains or {}
     subs = subs or []
     full = (label or "") + " " + (text or "")
@@ -56,8 +89,8 @@ def infer_roles(text, mains=None, subs=None, label=""):
     # 精通：沙/杯主词条含元素精通，或描述句提到 元素精通 / 反应
     if "em" in (mains.get("sands", []) + goblet) or _has(desc, "元素精通", "反应"):
         roles.add("精通")
-    # 辅助 / 增益
-    if _has(desc, "辅助", "增益", "提升队友", "全队", "队伍"):
+    # 辅助 / 增益（「队友」单独出现也算：如「为队友提供攻击力加成」「释放元素爆发后可提升自身和队友攻击力」）
+    if _has(desc, "辅助", "增益", "提升队友", "全队", "队伍", "队友"):
         roles.add("辅助")
     # 副C：后台 / 脱手
     if _has(desc, "后台", "脱手", "副C", "副c"):
@@ -77,42 +110,30 @@ def infer_roles(text, mains=None, subs=None, label=""):
         roles.add("剧变反应")
         roles.add("精通")
 
+    # 兜底：理由文本 + 主副词条都推不出定位时，退回角色级基础定位（CHAR_META），
+    # 保证每组配装至少有 1 个定位（历史 bug：云堇/闲云/伊涅芙/莉奈娅 出现 roles=[]）。
+    if not roles:
+        roles |= {r for r in (char_roles or []) if r in ROLE_ORDER}
+
     return sorted(roles, key=lambda x: ROLE_ORDER.get(x, 99))
 
 
-def _core_prefix(subs, equal):
-    """复刻 data.js 的 subIdsToSubs + corePrefixOf 口径：
-    按 subs 顺序展开，equal 组里除最靠前的项外都标 op='='，再从第 0 项
-    沿 op='=' 延伸，得到「= 首位核心块」（该配装的身份/倍率级词条）。
-    """
-    n = len(subs)
-    op = ['>'] * n
-    pos = {}
-    for i, sid in enumerate(subs):
-        pos.setdefault(sid, i)
-    for group in equal:
-        idxs = sorted(pos[s] for s in group if s in pos)
-        for i in idxs[1:]:
-            op[i] = '='
-    prefix = set()
-    for i in range(n):
-        prefix.add(subs[i])
-        if i + 1 >= n or op[i + 1] != '=':
-            break
-    return prefix
-
-
-def infer_subrules(roles, subs):
-    """按配装功能定位生成保守的 subRules；只使用本地已解析的 roles/subs。
+def infer_subrules(roles, subs, optional=None):
+    """按配装功能定位生成 subRules；只使用本地已解析的 roles/subs。
 
     角色定位只能提供启发式证据，所以不把通用的首项自动标成必需：
     只有精通、充能、治疗/护盾等明确定位才会在词条存在时加入 required，
     双暴同时存在时则标记为同等优先。返回 None 表示没有足够证据生成规则。
 
-    ★ 收紧：role 注入的 required 只是「候选必需」，最终只保留落在
-    「= 首位核心块」内的词条（与运行时 subIdsToSubs 同口径）。这样胡桃的
-    精通（排在双暴之后）、尼可的充能（排在攻击之后）等「非身份词条」不会被
-    误标成 ★必需，而香菱的充能、心海的生命等首位倍率词条仍会保留。
+    ★ 修复（原 122 处 required 死字段）：
+      旧实现额外做了一次「required 必须落在 = 首位核心块内」的收紧，把
+      role 注入的必需项大量清成空数组，于是 data.js 里留下 `required:['em']`
+      这类永远不可能生效的死字段（词条不在首位核心块 → 运行时又被清一遍）。
+      现在生成端与运行端口径统一为：required ⊆ 该配装的 subs，写在 data.js 里的
+      每一条 required 都必然能在运行时可标记为 ★必选。
+
+    optional：带条件的词条（如「暴击率（携带西风剑时）」）由解析层单独传入，
+    不计入 required/equal，只作为「条件词条」随配装展示。
     """
     roles = set(roles or [])
     subs = list(subs or [])
@@ -137,13 +158,15 @@ def infer_subrules(roles, subs):
     if {"cr", "cd"}.issubset(available):
         equal.append(["cr", "cd"])
 
-    # 收紧：required 只保留「= 首位核心块」内的词条
-    prefix = _core_prefix(subs, equal)
-    required = [r for r in required if r in prefix]
+    # 条件词条只保留「不在常规副词条里」的部分，避免同一词条两处重复
+    optional = [s for s in (optional or []) if s not in available]
 
-    if not required and not equal:
+    if not required and not equal and not optional:
         return None
-    return {"required": required, "equal": equal, "source": "heuristic"}
+    rules = {"required": required, "equal": equal, "source": "heuristic"}
+    if optional:
+        rules["optional"] = optional
+    return rules
 
 
 # 供其它脚本 `from role_infer import infer_roles` 时自动把本目录加入搜索路径

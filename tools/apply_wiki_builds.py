@@ -24,7 +24,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from role_infer import infer_roles, infer_subrules  # noqa: E402
+from role_infer import CHAR_ROLES, infer_roles, infer_subrules  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "src", "data.js")
@@ -226,23 +226,43 @@ def fmt_subrules(rules):
         return None
     required = rules.get("required") or []
     equal = rules.get("equal") or []
+    optional = rules.get("optional") or []
     parts = ["required:[" + ", ".join(q(s) for s in required) + "]"]
     parts.append("equal:[" + ", ".join(
         "[" + ", ".join(q(s) for s in group) + "]" for group in equal
     ) + "]")
+    if optional:
+        parts.append("optional:[" + ", ".join(q(s) for s in optional) + "]")
     parts.append("source:" + q(rules.get("source") or "role-heuristic"))
     return "{" + ", ".join(parts) + "}"
 
 
-def generated_subrules(row):
+def optional_subs(row):
+    """该配装组里带条件说明的副词条（如「搭配西风猎弓就堆暴击率」）。
+
+    这些词条不算常规推荐，但也不能丢：写进 subRules.optional，
+    由前端标注成「条件词条」，用户按自己武器/命座情况取舍。
+    """
+    out = []
+    for c in row.get("conditional") or []:
+        if c.get("where") == "subs" and c.get("stat") and c["stat"] not in out:
+            out.append(c["stat"])
+    # 保持与 subs 相同的展示顺序
+    order = {s: i for i, s in enumerate(row.get("subs") or [])}
+    return sorted(out, key=lambda s: order.get(s, 99))
+
+
+def generated_subrules(row, char_roles=None):
     """按本地 roles/subs 生成可重算的规则文本。"""
     roles = row.get("roles") or infer_roles(
-        row.get("reason", ""), row.get("mains", {}), row.get("subs", []), row.get("label", "")
+        row.get("reason", ""), row.get("mains", {}), row.get("subs", []),
+        row.get("label", ""), char_roles
     )
-    return fmt_subrules(infer_subrules(roles, row.get("subs", [])))
+    return fmt_subrules(infer_subrules(roles, row.get("subs", []),
+                                       optional_subs(row)))
 
 
-def fmt_build(b, subrules=None):
+def fmt_build(b, subrules=None, char_roles=None):
     parts = [
         "sets:[" + ", ".join(q(s) for s in (b.get("sets") or [])) + "]",
         "sands:[" + ", ".join(q(s) for s in ((b.get("mains") or {}).get("sands") or [])) + "]",
@@ -252,22 +272,25 @@ def fmt_build(b, subrules=None):
     ]
     if subrules:
         parts.append("subRules:" + subrules)
-    # 功能定位：优先用 wiki 已推断的 roles；没有就当场按推荐理由文本推断（best-effort）
+    # 功能定位：优先用 wiki 已推断的 roles；没有就当场按推荐理由文本推断，
+    # 文本推不出时退回角色级基础定位（CHAR_META），保证 roles 不为空。
     roles = b.get("roles")
     if not roles:
-        roles = infer_roles(b.get("reason", ""), b.get("mains", {}), b.get("subs", []), b.get("label", ""))
+        roles = infer_roles(b.get("reason", ""), b.get("mains", {}), b.get("subs", []),
+                            b.get("label", ""), char_roles)
     parts.append("roles:[" + ", ".join(q(s) for s in roles) + "]")
     return "{" + ", ".join(parts) + "}"
 
 
-def fmt_builds_block(rows, subrules=None):
+def fmt_builds_block(rows, subrules=None, char_roles=None):
     if not rows:
         return "[]"
     subrules = subrules or {}
     return "[\n" + "\n".join(
         "    %s," % fmt_build(
             r,
-            subrules.get(build_signature_from_row(r)) or generated_subrules(r)
+            subrules.get(build_signature_from_row(r)) or generated_subrules(r, char_roles),
+            char_roles
         ) for r in rows
     ) + "\n  ]"
 
@@ -290,6 +313,7 @@ def main():
     i = i0 + 1
     report = []
     n_write, n_skip, n_src, n_note, n_rules = 0, 0, 0, 0, 0
+    n_cond, n_role_fix = 0, 0
 
     while i < i1:
         p = parse_entry_line(lines, i)
@@ -322,11 +346,19 @@ def main():
             out.extend(lines[i:end_idx + 1]); i = end_idx + 1; continue
 
         manual_subrules = existing_subrules(items[2]) if len(items) >= 5 else {}
+        char_roles = CHAR_ROLES.get(name)
         n_rules += sum(
             1 for r in rows
-            if build_signature_from_row(r) not in manual_subrules and generated_subrules(r)
+            if build_signature_from_row(r) not in manual_subrules and generated_subrules(r, char_roles)
         )
-        builds_block = fmt_builds_block(rows, manual_subrules)
+        n_cond += sum(
+            1 for r in rows
+            if build_signature_from_row(r) not in manual_subrules and optional_subs(r)
+        )
+        n_role_fix += sum(1 for r in rows if not r.get("roles") and infer_roles(
+            r.get("reason", ""), r.get("mains", {}), r.get("subs", []),
+            r.get("label", ""), char_roles))
+        builds_block = fmt_builds_block(rows, manual_subrules, char_roles)
 
         # 来源链接：默认更新（wiki + 攻略）
         src_text = old_src
@@ -370,8 +402,8 @@ def main():
         report.append("### %s —— 写入 %d 组配装，自动规则 %d 组（%s）" % (
             name, len(rows),
             sum(1 for r in rows
-                if build_signature_from_row(r) not in manual_subrules and generated_subrules(r)),
-            " / ".join(("·".join(infer_roles(r.get("reason", ""), r.get("mains", {}), r.get("subs", []), r.get("label", "")) or []) or "—") for r in rows)))
+                if build_signature_from_row(r) not in manual_subrules and generated_subrules(r, char_roles)),
+            " / ".join(("·".join(infer_roles(r.get("reason", ""), r.get("mains", {}), r.get("subs", []), r.get("label", ""), char_roles) or []) or "—") for r in rows)))
 
     out.extend(lines[i1:])          # 收尾的 ]; 与「展开为完整结构」注释等
 
@@ -384,13 +416,16 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     with io.open(os.path.join(OUT, "report.md"), "w", encoding="utf-8") as f:
         f.write("# 观测枢 wiki 配装同步报告（新格式：每组独立 套装+主词条+副词条+功能定位）\n\n")
-        f.write("- 写入配装角色：**%d** 条\n- 自动生成 subRules：**%d** 组\n- 来源链接更新：**%d** 条\n"
+        f.write("- 写入配装角色：**%d** 条\n- 自动生成 subRules：**%d** 组\n"
+                "- 含条件词条（subRules.optional）的规则：**%d** 组\n"
+                "- 补全空 roles：**%d** 组\n"
+                "- 来源链接更新：**%d** 条\n"
                 "- 清除「暂无专属攻略来源」备注：**%d** 条\n- 跳过：**%d** 条\n\n"
-            % (n_write, n_rules, n_src, n_note, n_skip))
+            % (n_write, n_rules, n_cond, n_role_fix, n_src, n_note, n_skip))
         f.write("## 逐角色明细\n\n")
         f.write("\n".join(report))
-    print("写入 %d / 自动规则 %d / 来源 %d / 清备注 %d / 跳过 %d" % (
-        n_write, n_rules, n_src, n_note, n_skip))
+    print("写入 %d / 自动规则 %d / 条件词条规则 %d / 补 roles %d / 来源 %d / 清备注 %d / 跳过 %d" % (
+        n_write, n_rules, n_cond, n_role_fix, n_src, n_note, n_skip))
 
 
 if __name__ == "__main__":
