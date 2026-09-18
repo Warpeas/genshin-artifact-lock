@@ -43,7 +43,10 @@ genshin-artifact-lock/
 ├── build.js            构建脚本（根目录，不在 src/）
 ├── README.md           给人看的项目说明
 ├── AGENTS.md           本文件（给 agent）
-├── docs/DESIGN.md      设计文档：架构 / 算法 / 取舍 / 局限
+├── docs/                给人看的文档
+│   ├── DESIGN.md                       设计文档：架构 / 算法 / 取舍 / 局限
+│   ├── 配装数据链路修复说明.md          2026-09-18 配装数据链路修复：问题、修复项、前后对照
+│   └── 配装数据核对报告.md              逐字段核对报告（链路修复的事前证据）
 ├── .nojekyll           GitHub Pages 跳过 Jekyll，勿删
 ├── .gitignore          只忽略 tools/out/*cache*/
 ├── preview/            界面截图（仅文档用）
@@ -55,6 +58,7 @@ genshin-artifact-lock/
 │   └── template.html   页面骨架（构建时被注入 css/js）
 │
 └── tools/              Python 抓取/回写工具链（仅维护内置数据用，运行时不参与）
+    ├── rebuild_data.py        ★ 一键重建总入口（抓取 / 离线重放 → 回写 → 测试 → 自检 → 打包）
     ├── fetch_wiki_builds.py   抓观测枢 wiki 配装
     ├── fetch_guides.py        挑米游社攻略链接
     ├── fetch_set_effects.py   抓套装 2 / 4 件套效果并回写 bonus4
@@ -127,7 +131,7 @@ genshin-artifact-lock/
 | `KEEP_MAX` | `4` | 建议保留件数上限 |
 | `SUB_RANK_DECAY` | `0.72` | 追加属性名次衰减（`>` 降权；`=` 同权；★ ×1.25） |
 | `SUB_POOL_TOP` / `SUB_POOL_MAX` | `5` / `5` | 单人贡献上限 / 合并后池上限 |
-| `MAIN_MAX` / `MAIN_COVER` | `3` / `0.7` | 单部位主属性上限 / 累计覆盖率 |
+| `MAIN_MAX` / `MAIN_COVER` | `3` / `0.7` | 次要主属性上限 / 累计覆盖率（`rank1` 保底不受 `MAIN_MAX` 限制，实际条数可能 >3） |
 | `SUB_MIN_HIT_DEFAULT` / `SUB_MIN_HIT_MAX` | `2` / `4` | 命中条数默认值 / 上限 |
 
 改这些会影响所有人的输出，动之前先想清楚（设计理由见 `docs/DESIGN.md`）。

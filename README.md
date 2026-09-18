@@ -12,6 +12,8 @@
 |---|---|---|
 | [`README.md`](README.md) | 使用者 | 怎么用、改哪里、四个页面、部署 |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | 想了解设计的人 | 问题定义、数据模型、算法、取舍与局限 |
+| [`docs/配装数据链路修复说明.md`](docs/配装数据链路修复说明.md) | 关心数据正确性的人 | 2026-09-18 配装数据生成链路修复：五类问题、逐条修复项、前后对照 |
+| [`docs/配装数据核对报告.md`](docs/配装数据核对报告.md) | 关心数据正确性的人 | 链路修复前的逐字段核对证据（125 角色 / 352 组） |
 | [`AGENTS.md`](AGENTS.md) | AI Agent / 开发者 | 改法、环境坑、验收清单 |
 
 ![角色配置](preview/01-角色配置.png)
@@ -89,7 +91,10 @@ genshin-artifact-lock/
 ├── index.html          ★ 成品。唯一的可运行页面，双击即用 / 上传 GitHub Pages 就是这个
 ├── README.md           本说明（给人看：怎么用、改哪里）
 ├── AGENTS.md           ★ 给 AI Agent 的开发文档：改法、环境坑、验收清单
-├── docs/DESIGN.md      ★ 设计文档（给人看）：模型、算法、取舍、局限
+├── docs/               ★ 文档（给人看）
+│   ├── DESIGN.md                  设计文档：模型、算法、取舍、局限
+│   ├── 配装数据链路修复说明.md     2026-09-18 配装数据链路修复：问题、修复项、前后对照
+│   └── 配装数据核对报告.md         逐字段核对报告（链路修复的事前证据）
 ├── .nojekyll           GitHub Pages 用（跳过 Jekyll 构建），勿删
 ├── .gitignore          只忽略 tools/out/*cache*/
 ├── build.js            构建脚本：把 src/ 打包成单文件版 index.html
@@ -101,6 +106,7 @@ genshin-artifact-lock/
 │   └── template.html   页面骨架模板（构建时被注入 css/js，生成 index.html）
 │
 ├── tools/              维护内置数据用的 Python 工具链（运行时不参与）
+│   ├── rebuild_data.py                          ★ 一键重建（抓取 / 离线重放 → 测试 → 自检 → 打包）
 │   ├── fetch_wiki_builds.py / fetch_guides.py   抓取
 │   ├── apply_wiki_builds.py                     回写 src/data.js
 │   ├── role_infer.py / gen_sources.py           定位推断 / 来源清单
