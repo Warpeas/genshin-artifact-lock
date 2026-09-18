@@ -3956,6 +3956,11 @@ function closeKrForm() {
  * ------------------------------------------------------------
  * 已读标记用独立的 localStorage key：点「恢复内置默认库」会整个重建
  * state，把标记存在 state 里会被一起清掉，导致公告反复弹。
+ *
+ * 版本模型：大版本 = 日期 YYYY.MM.DD；同一自然日内每次发布 = 该日大版本
+ * 下的子版本 .n。CHANGELOG 每次发布各记一条（不再做同日合并）。
+ * 界面按大版本聚合：数据管理页整表每天一块（块内合并当天各子版本的
+ * items 并去重），更新公告只弹「最新的未看过的大版本」。
  * ============================================================ */
 const NOTICE_KEY = 'genshin_artifact_lock_notice';
 function noticeRead() {
@@ -3964,13 +3969,58 @@ function noticeRead() {
 function markNoticeRead(v) {
   try { localStorage.setItem(NOTICE_KEY, v); } catch (e) { /* 隐私模式下写不进就算了 */ }
 }
-/* 只在版本变化后弹一次；手动「查看更新公告」不清除已读标记 */
+/* 大版本 = 版本号的前三段日期，子版本 .n 不参与 */
+function majorVersion(v) {
+  return String(v == null ? '' : v).split('.').slice(0, 3).join('.');
+}
+
+/* 按大版本把日志条目分组（新的在前）：[{ v:'2026.09.18', date, title, items:[...] }]
+ * 组头（版本号 / 日期）与组标题取该组最新的一条；组内 items 按新→旧拼接，
+ * 完全相同的文本只留最新一次出现的（当天多版本重复描述不会重复展示）。*/
+function groupByMajorVersion(list) {
+  const groups = [];
+  const index = {};
+  (list || []).forEach(it => {
+    if (!it) return;
+    const key = majorVersion(it.v);
+    let g = index[key];
+    if (!g) {
+      g = index[key] = { v: key, date: it.date, title: it.title, items: [], seen: new Set() };
+      groups.push(g);
+    }
+    (it.items || []).forEach(txt => {
+      if (g.seen.has(txt)) return;
+      g.seen.add(txt);
+      g.items.push(txt);
+    });
+  });
+  groups.forEach(g => { delete g.seen; });
+  return groups;
+}
+
+/* 未看过的条目 = CHANGELOG 里排在「已读版本号」之前的那些（新在前，取前缀）。
+ * 已读版本号在 CHANGELOG 里找不到（首次使用 / 清过缓存 / 版本号回退）时视为全部未看过。*/
+function unreadEntries() {
+  const read = noticeRead();
+  const at = read ? CHANGELOG.findIndex(it => it.v === read) : -1;
+  if (at < 0) return CHANGELOG.slice();
+  return CHANGELOG.slice(0, at);
+}
+
+/* 只在版本变化后弹一次（当天再发新子版本时已读版本号不等于 APP_VERSION，会再弹一次） */
 function maybeShowNotice() {
   if (noticeRead() === APP_VERSION) return;
-  showNotice();
+  showNotice('auto');
 }
-function showNotice() {
-  renderChangelog($('#noticeBody'), [CHANGELOG[0]]);
+
+/* mode='auto'：自动弹出，渲染「最新的未看过的大版本」里还没看过的条目；
+ * mode='all' ：手动点「查看更新公告」，渲染同一个大版本的全部条目（不过滤已读）。
+ * 没有未看过的大版本时退回最新一天，保证弹窗不会空白。*/
+function showNotice(mode) {
+  const manual = (mode === 'all');
+  const groups = groupByMajorVersion(manual ? CHANGELOG : unreadEntries());
+  const g = groups[0] || groupByMajorVersion(CHANGELOG.slice(0, 1))[0];
+  renderChangelog($('#noticeBody'), g ? [g] : []);
   $('#noticeMask').classList.remove('hidden');
   $('#noticeBox').classList.remove('hidden');
   markNoticeRead(APP_VERSION);   // 打开即写：就算后面出异常也不会反复弹
@@ -3980,18 +4030,20 @@ function closeNotice() {
   $('#noticeBox').classList.add('hidden');
 }
 
-/* 渲染更新日志：不传 list 就渲染全部 */
+/* 渲染日志：list 是「已按大版本分组好的列表」（见 groupByMajorVersion）；
+ * 不传则把整份 CHANGELOG 按大版本聚合后渲染（每天一块）。
+ * DOM 结构沿用 .chg-item / .chg-v / .chg-date / .chg-title + ul>li，不新增样式。*/
 function renderChangelog(box, list) {
   if (!box) return;
-  const items = list || CHANGELOG;
+  const items = list || groupByMajorVersion(CHANGELOG);
   box.innerHTML = items.map(it => `
     <div class="chg-item">
       <div><span class="chg-v">${esc(it.v)}</span><span class="chg-date">${esc(it.date)}</span>
         <span class="chg-title">${esc(it.title)}</span></div>
-      <ul>${(it.items || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+      <ul>${(it.items || []).map(txt => `<li>${esc(txt)}</li>`).join('')}</ul>
     </div>`).join('');
 }
-/* 数据管理页：版本号 + 全部日志 */
+/* 数据管理页：版本号 + 全部日志（按大版本分块） */
 function renderDataChangelog() {
   const v = $('#appVersion');
   if (v) v.textContent = t('当前版本') + ' ' + APP_VERSION;
@@ -4102,11 +4154,11 @@ function bind() {
   $('#pickCancel').onclick = closePicker;
   $('#pickMask').onclick = closePicker;
 
-  /* 更新公告 */
+  /* 更新公告：手动查看 = 该大版本的全部条目（不过滤已读，也不清已读标记） */
   $('#btnCloseNotice').onclick = closeNotice;
   $('#btnNoticeOk').onclick = closeNotice;
   $('#noticeMask').onclick = closeNotice;
-  $('#btnShowNotice').onclick = showNotice;
+  $('#btnShowNotice').onclick = () => showNotice('all');
   renderDataChangelog();
   $('#btnDeleteChar').onclick = () => {
     if (!editing || editingIsNew) return;
