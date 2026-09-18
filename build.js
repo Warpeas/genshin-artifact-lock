@@ -38,9 +38,11 @@ try {
     const suf = (m0 && m0[2] && oldBase === base) ? m0[2] : '';
     const v = base + suf; // 2026.09.13 或 2026.09.13.2
     out = out.replace(/const APP_VERSION = '[^']*'/, "const APP_VERSION = '" + v + "'");
-    // CHANGELOG[0] 的 v（点分隔）同步日期部分 + 保留 .n；date（横杠分隔）同步为本次提交时间
+    // CHANGELOG[0] 的 v 与 APP_VERSION 必须【完全相等】（否则更新公告不弹或重复弹），
+    // 所以两者共用同一个 suf：.n 只认 APP_VERSION 上填的那个，跨天一起归零。
+    // date（横杠分隔）同步为本次提交时间。
     out = out.replace(/(CHANGELOG = \[[\s\S]*?\{[\s\S]*?v: ')(\d{4}\.\d{2}\.\d{2})(\.\d+)?(',\s*date: ')([^']*)(')/,
-      (m, p1, p2, p3, p4, p5, p6) => p1 + base + (p3 || '') + p4 + gd + p6);
+      (m, p1, p2, p3, p4, p5, p6) => p1 + base + suf + p4 + gd + p6);
     console.log('版本号 / 日期已由 git 提交时间注入：' + v + '（' + gd + '）');
   }
 } catch (e) {

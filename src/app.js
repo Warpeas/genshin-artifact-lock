@@ -868,7 +868,7 @@ function normalizeMains(list, slot) {
 }
 
 /* 追加属性归一化：
- *   新：[{ id, req }] 有序数组
+ *   新：[{ id, req, op, opt }] 有序数组（opt = 条件词条，见 data.js subIdsToSubs）
  *   旧：{ cr: 1, cd: 0.7... } 数值权重对象 → 按值降序排序，≥0.9 视为必选
  */
 function normalizeSubs(subs) {
@@ -878,7 +878,10 @@ function normalizeSubs(subs) {
     return subs
       .map(s => (typeof s === 'string' ? { id: s } : s))
       .filter(s => s && valid.has(s.id) && !seen.has(s.id) && seen.add(s.id))
-      .map(s => ({ id: s.id, req: !!s.req, op: (s.op === '=' || s.op === '>') ? s.op : '>' }));
+      .map(s => ({
+        id: s.id, req: !!s.req, opt: !!s.opt,
+        op: (s.op === '=' || s.op === '>') ? s.op : '>',
+      }));
   }
   if (subs && typeof subs === 'object') {
     return Object.entries(subs)
@@ -1379,9 +1382,12 @@ function globalWeights() {
  *   ① 角色分组：按【重要属性】凝聚聚类——两组的重要属性重合度够高才合并，
  *      次要属性不同无所谓。追加属性需求相近的角色（主C / 副C 都要双暴）会自然
  *      并成一套；辅助（充能 / 生命 / 精通）的重要属性不同，自动被拆开
- *   ② 主属性：花/羽固定；沙/杯/冠【逐部位独立合并】——按「票数 × 优先级」
- *      降序，取到累计覆盖 ≥ MAIN_COVER 为止，上限 MAIN_MAX
- *   ③ ★必须：组内全体角色都标了「必选」的追加属性，按平均名次权重降序，上限 2
+ *   ② 主属性：花/羽固定；沙/杯/冠【逐部位独立合并】——组内每个角色的 rank1 主属性
+ *      【全部保留】（合并只放宽条件，不允许吞掉某位角色的头号主属性），其余按
+ *      「票数 × 优先级」降序补足，补到累计覆盖 ≥ MAIN_COVER 或总条数达 MAIN_MAX 为止
+ *   ③ ★必需：组内【任一】角色标了「必选」的追加属性（并集），按标的人数与名次降序，不限条数；
+ *      展示时按分组着色：1–2 个分组需要→多色★（需要它的角色一眼可辨），
+ *      ≥3 个分组需要（或全组一致）→退化为单色★，需要它的角色放进悬停提示
  *   ④ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求（剔除与唯一主要属性冲突项）
  *   ⑤ 命中条数：预设「至少两条」——圣遗物最终 4 条追加属性，至少 2 条符合要求
  *      才值得留下强化；用户可在该方案卡片上把它单独调到 1–4：
@@ -1389,7 +1395,8 @@ function globalWeights() {
  * ============================================================ */
 const CAND_SOFT_CAP  = 24;   // 候选数保护上限（防止极端数据下列表过长，正常不会触发）
 const GAME_MAX_PRESET = 3;   // 游戏内每种套装至多 3 个自定义预设（仅作提示，工具侧不再硬限制）
-const MAIN_MAX    = 3;       // 单部位主属性上限（条件过宽会「存伪」）
+const MAIN_MAX    = 3;       // 单部位主属性上限（条件过宽会「存伪」）；
+                             // 仅约束「次要主属性补足」，rank1 保底不受其限制，故实际可能多于 3 条
 const MAIN_COVER  = 0.7;     // 主属性取到累计覆盖该比例为止
 const SUB_MIN_HIT_DEFAULT = 2; // 追加属性命中条数【预设】「至少两个」；圣遗物最终 4 条追加属性，
                                // 至少 2 条符合要求才值得留下强化；可在方案卡片上手动调到 1–4
@@ -1534,25 +1541,62 @@ function naturalClusters(roles) {
   return groups.map(g => g.roles);
 }
 
-/* ② 合并一组角色在某部位的主属性需求
- *   按「票数 × 优先级」降序，取到累计覆盖 ≥ MAIN_COVER 为止，上限 MAIN_MAX
- */
-function mergeMain(group, slot) {
+/* ②-a 一组角色在某部位的主属性计票
+ *   score = Σ(票数 × 优先级权重)，rank1 = 「曾经是某位角色头号主属性」的集合。
+ *   纯函数：只看成员集合，与角色在数据里的先后顺序无关。 */
+function mainTally(group, slot) {
   const score = new Map();
+  const rank1 = new Set();
   group.forEach(r => {
-    const ws = opWeights(r.mains[slot] || []);
-    (r.mains[slot] || []).forEach((m, i) => {
+    const list = r.mains[slot] || [];
+    const ws = opWeights(list);
+    list.forEach((m, i) => {
       score.set(m.stat, (score.get(m.stat) || 0) + ws[i]);
+      if (i === 0) rank1.add(m.stat);   // 每个角色的头号主属性
     });
   });
-  const arr = [...score.entries()].sort((a, b) => b[1] - a[1]);
+  return { score, rank1 };
+}
+
+/* 主属性在同一部位内的声明顺序（MAIN_STATS 里固定不变的字典序）——同分时的稳定 tiebreak。
+ * 不用角色顺序、不用 Map 插入顺序，保证「同一组成员集合 → 同一份结果」，可复现。 */
+function mainStatOrder(slot, id) {
+  const list = MAIN_STATS[slot] || [];
+  const i = list.findIndex(s => s.id === id);
+  return i < 0 ? list.length : i;
+}
+/* 计票结果 → 确定性排序：票数降序，同分按主属性声明顺序 */
+function mainRanked(tally, slot) {
+  return [...tally.score.entries()].sort((a, b) =>
+    (b[1] - a[1]) || (mainStatOrder(slot, a[0]) - mainStatOrder(slot, b[0])));
+}
+/* 该组在该部位的 rank1 主属性（保留 mergeMain 的排序口径，供 mergePlans 保底复用） */
+function rank1StatsOf(group, slot) {
+  const tally = mainTally(group, slot);
+  return mainRanked(tally, slot).filter(([st]) => tally.rank1.has(st)).map(([st]) => st);
+}
+
+/* ② 合并一组角色在某部位的主属性需求
+ *   ① rank1 保底：组内【任何】角色的头号主属性都必须保留，不参与 MAIN_COVER / MAIN_MAX 截断
+ *      ——合并是「放宽条件」，不能把某位角色的第一主属性直接吞掉（旧实现在大组里出现过
+ *      rank1 被票数更高的次要主属性挤掉的情况）
+ *   ② 其余（rank2 起）按「票数 × 优先级」降序补足，补到累计覆盖 ≥ MAIN_COVER 或总条数
+ *      达 MAIN_MAX 为止
+ */
+function mergeMain(group, slot) {
+  const tally = mainTally(group, slot);
+  const arr = mainRanked(tally, slot);
   const total = arr.reduce((s, x) => s + x[1], 0) || 1;
-  const out = [];
-  let acc = 0;
-  for (const [st, w] of arr) {
+
+  const kept = arr.filter(([st]) => tally.rank1.has(st));   // ① rank1 全留
+  const out = kept.map(([st]) => st);
+  let acc = kept.reduce((s, x) => s + x[1], 0);
+
+  for (const [st, w] of arr) {                              // ② rank2 起补足
+    if (tally.rank1.has(st)) continue;
+    if (out.length >= MAIN_MAX || acc / total >= MAIN_COVER) break;
     out.push(st);
     acc += w;
-    if (out.length >= MAIN_MAX || acc / total >= MAIN_COVER) break;
   }
   return out;
 }
@@ -1564,7 +1608,8 @@ const FIXED_MAIN = { flower: 'hp', plume: 'atk' };
  *   ① 冲突剔除：追加属性不可能与同部位主要属性相同。改为方案级统一后，只能剔除
  *      花 / 羽的固定主要属性（hp / atk，这两部位主要属性恒定）；其余部位的主要属性随
  *      方案而变，无法再逐部位剔除——这是「统一追加属性」换取一致性的固有取舍。
- *   ② ★必须：组内「所有」角色都标了必选的词条（交集），按平均名次权重降序，最多 2 个
+ *   ② ★必需：组内【任一】角色标了必选的词条（并集）——展示层按分组着色说明「给谁」，
+ *      命中 >2 组时退化为单色★；是否真在游戏里设成「必须」由用户自己按重要程度定
  *   ③ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求，按「广度 × 名次」累加降序
  *   ④ 命中条数：预设「至少两个」（SUB_MIN_HIT_DEFAULT）。圣遗物最终 4 条追加属性，
  *      至少 2 条符合要求才值得留下强化——契合得越多越好；用户可在方案卡片上
@@ -1577,7 +1622,8 @@ function mergeSubUniform(group) {
 
   const avgW = id => group.reduce((s, r) => s + (r.subs[id] || 0), 0) / n;
 
-  /* ② ★必须：组内全员必选的交集 */
+  /* ② ★必需：组内任一角色标了必选的词条（并集）——合并只放宽条件，不吞掉某个人的必需项；
+   *    标的人数越多、名次越靠前的排越前（展示层据此分组着色） */
   const reqCnt = new Map();
   group.forEach(r => new Set(r.req || []).forEach(raw => {
     const id = statIdOf(raw);
@@ -1585,10 +1631,8 @@ function mergeSubUniform(group) {
     reqCnt.set(id, (reqCnt.get(id) || 0) + 1);
   }));
   const required = [...reqCnt.entries()]
-    .filter(([, c]) => c === n)          // 全员都标了必选
-    .map(([id]) => id)
-    .sort((a, b) => avgW(b) - avgW(a))   // 名次靠前的优先
-    .slice(0, 2);                        // 最多 2 个，避免条件过严
+    .sort((a, b) => (b[1] - a[1]) || (avgW(b[0]) - avgW(a[0])))
+    .map(([id]) => id);
 
   /* ③ 追加属性池：按「出现人数 × 算子权重」累加 */
   const poolScore = new Map();
@@ -1631,12 +1675,12 @@ function mergeSubUniform(group) {
 }
 
 /* 融合两份追加属性条件（手动合并方案时用）：
- *   ★必须取交集（两边都要才算必须）、追加属性池取并集；
+ *   ★必需取并集（合并只放宽条件：任一份标了必需就保留）、追加属性池取并集；
  *   命中条数回到预设值（手动合并等于重新起一套，原先的细筛不再适用） */
 function fuseSub(a, b) {
   if (!a) return b;
   if (!b) return a;
-  const required = a.required.filter(id => b.required.includes(id));
+  const required = [...new Set([...a.required, ...b.required])];
   const pool = [...new Set([...a.pool, ...b.pool])];
   required.forEach(id => { if (!pool.includes(id)) pool.unshift(id); });
   const p = pool.slice(0, SUB_POOL_MAX);
@@ -1676,15 +1720,20 @@ function mergePlans(list) {
   if (!acc && nonGroup.length) acc = nonGroup[0].sub;
   rest.forEach(p => { acc = fuseSub(acc, p.sub); });
 
-  /* 主要属性【逐部位独立合并】：有角色组时按「票数 × 优先级」重算（与自动合并同一套
-   * 规则，权重最准），再并入规则类方案指定的主要属性，最后统一截断到 MAIN_MAX——
-   * 避免手动「并入…」越并越宽、最后宽到等于「不限」 */
+  /* 主要属性【逐部位独立合并】：
+   *   ① rank1 先保底——本方案里所有角色的头号主属性必须保留（与 mergeMain 同一口径），
+   *      不参与 MAIN_MAX 截断
+   *   ② 有角色组时按「票数 × 优先级」重算（与自动合并同一套规则，权重最准），再并入
+   *      规则类方案指定的主要属性
+   *   ③ 其余条目补齐到 MAIN_MAX 后截断——避免手动「并入…」越并越宽、最后宽到等于「不限」 */
   const mains = {};
   SLOTS.forEach(sd => {
     if (sd.id === 'flower' || sd.id === 'plume') { mains[sd.id] = null; return; }
     const seen = new Set(groups.length ? mergeMain(groups, sd.id) : []);
     ps.forEach(p => (p.mains[sd.id] || []).forEach(id => seen.add(id)));
-    mains[sd.id] = [...seen].slice(0, MAIN_MAX);
+    // mergeMain 已把 rank1 排在队首，保底长度取「rank1 条数」与 MAIN_MAX 的较大者
+    const base = groups.length ? rank1StatsOf(groups, sd.id).length : 0;
+    mains[sd.id] = [...seen].slice(0, Math.max(MAIN_MAX, base));
   });
 
   const rules = ps.filter(p => p.kind === 'rule');
@@ -1901,16 +1950,19 @@ function planColorGroups(p) {
 }
 
 /* 追加属性的【展示顺序 + 着色】——颜色不再单独占一块图例，直接打在属性上。
- *   排序：① ★必须 → ② 全组共有（不着色）→ ③ 各组独占（着该组颜色）
- *   同一档内部按「相关角色对该属性的平均名次权重」降序，最想要的排最前。
- *   例：暴击率★ 暴击伤害★ 元素充能效率 | <蓝>攻击力%</蓝> <绿>生命值%</绿>
+ *   排序：① ★必需 → ② 全组共有（不着色）→ ③ 各组独占（着该组颜色）
+ *   同一档内部按「相关角色对该属性的平均名次权重」降序，最想要的排最前；
+ *   ★ 档内先按「需要它的分组数」降序——全员必需的排最前。
+ *   ★ 的分组命中数（starColors.length）同时决定展示形态：
+ *     1–2 组 → 多色★（每个分组一颗星，星色同于角色名）；>2 组 → 退化为单色★
+ *   例：★<蓝>★</蓝><绿>★</绿>元素充能效率 | <蓝>攻击力%</蓝> <绿>生命值%</绿>
  *   —— 前面是全组都要的，后面才是只有部分角色要的，照搬时按颜色给到对应的人。 */
 function planSubOrder(p) {
   const sub = (p && p.sub) || { required: [], pool: [] };
   const req = new Set(sub.required || []);
   const ids = (sub.pool || []).map(statIdOf).filter(Boolean);
   const groups = planColorGroups(p);
-  if (!groups) return ids.map(id => ({ id, req: req.has(id), color: null, owners: null, shared: true }));
+  if (!groups) return ids.map(id => ({ id, req: req.has(id), color: null, owners: null, shared: true, starColors: [] }));
 
   const everyone = groups.flatMap(g => g.roles);
   const avgW = (roles, id) => roles.reduce((s, r) => s + (r.subs[id] || 0), 0) / (roles.length || 1);
@@ -1919,10 +1971,19 @@ function planSubOrder(p) {
     groups.forEach((g, i) => {
       if (g.roles.some(r => (r.pool || []).some(x => statIdOf(x) === id))) owners.push(i);
     });
+    /* ★：哪些分组里有人把它标成「必需」——星色与角色名同色，一眼看出这条要给谁。
+     * 命中 >2 组说明是大多数人共有的需求，不逐组区分（渲染层退化） */
+    const isReq = req.has(id);
+    const starColors = [];
+    if (isReq) groups.forEach(g => {
+      if (g.roles.some(r => (r.req || []).some(x => statIdOf(x) === id))) {
+        starColors.push({ color: g.color, who: g.names.join('、') });
+      }
+    });
     // 没人「明确」要（例如并入散件规则带来的词条）时按共有处理，不给颜色
     const shared = owners.length === 0 || owners.length >= groups.length;
     return {
-      id, req: req.has(id), shared,
+      id, req: isReq, starColors, shared,
       color: shared ? null : groups[owners[0]].color,
       owners: shared ? null : owners,
     };
@@ -1932,6 +1993,10 @@ function planSubOrder(p) {
   items.sort((a, b) => {
     const d = bucket(a) - bucket(b);
     if (d) return d;
+    if (a.req && b.req) {
+      const ds = b.starColors.length - a.starColors.length;  // 全员必需排最前
+      if (ds) return ds;
+    }
     const ra = (a.shared || !a.owners) ? everyone : groups[a.owners[0]].roles;
     const rb = (b.shared || !b.owners) ? everyone : groups[b.owners[0]].roles;
     return avgW(rb, b.id) - avgW(ra, a.id);
@@ -1968,14 +2033,24 @@ function planCharsPlain(p) {
   return groups.map(g => `${g.names.join('、')}（${g.minor}）`).join(' / ');
 }
 
-/* 追加属性 chip 渲染：★必须 / 共有 / 分组专属（同色于对应角色，鼠标悬停看给谁） */
+/* 追加属性 chip 渲染：★必需 / 共有 / 分组专属（同色于对应角色，鼠标悬停看给谁） */
 function planSubText(p) {
   const items = planSubOrder(p);
   if (!items.length) return '<span class="gp-fixed">不限</span>';
   const groups = planColorGroups(p) || [];
   return items.map(it => {
     const nm = esc(subStatName(it.id));
-    if (it.req) return `<span class="gp-star">★${nm}</span>`;
+    if (it.req) {
+      const sc = it.starColors || [];
+      // 1–2 个分组需要：多色★（每个分组一颗星，星色同于角色名，悬停看是谁）
+      if (sc.length >= 1 && sc.length <= 2) {
+        const marks = sc.map(s => `<i class="gp-star-mark" style="--tc:${s.color}">★</i>`).join('');
+        return `<span class="gp-star gp-star-multi" title="${esc('必需：' + sc.map(s => s.who).join('、'))}">${marks}${nm}</span>`;
+      }
+      // >2 个分组都要（或定位不到分组）：退化为单色★，需要它的角色放进悬停
+      const tip = sc.length > 2 ? '必需：' + sc.map(s => s.who).join('、') : '';
+      return `<span class="gp-star"${tip ? ` title="${esc(tip)}"` : ''}>★${nm}</span>`;
+    }
     if (!it.color) return `<span class="gp-sub">${nm}</span>`;
     const who = it.owners.map(i => groups[i] && groups[i].names.join('、')).filter(Boolean).join('、');
     return `<span class="gp-sub gp-sub-g" style="--tc:${it.color}" title="只有 ${esc(who)} 需要，优先给到他">${nm}</span>`;
@@ -2008,21 +2083,44 @@ function mainCondText(slotId, list) {
     : '<span class="gp-fixed">不限</span>';
 }
 
+/* 导出里的「★必需角色」：每条★列出把它标成必需的角色名（合并方案里多组都要就都列上，
+ * 不写「第 N 组」这类分组编号——颜色只在页面上表达，纯文本里直接给名字） */
+function planStarWhoPlain(p) {
+  const items = planSubOrder(p).filter(it => it.req);
+  if (!items.length) return '';
+  const grouped = (planColorGroups(p) || []).flatMap(g => g.roles);
+  const all = grouped.length ? grouped : (p._group || []);
+  const rows = items.map(it => {
+    const who = all.filter(r => (r.req || []).some(x => statIdOf(x) === it.id)).map(r => r.name);
+    return `${subStatName(it.id)}${who.length ? `→${who.join('、')}` : ''}`;
+  });
+  // 只有「全组一致」才省略：每条★要的人恰好是全组，此时人人要同一批，列名字不提供额外信息。
+  // 只要有一条★只被部分角色标（如 A 要精通、B 要精通 + 充能），就必须列出来，否则照搬时落不了地。
+  const names = new Set(all.map(r => r.name));
+  const uniform = all.length > 0 && items.every(it => {
+    const who = new Set(all.filter(r => (r.req || []).some(x => statIdOf(x) === it.id)).map(r => r.name));
+    return who.size === names.size;
+  });
+  if (uniform) return '';
+  return rows.join('　｜　');
+}
+
 function planCopyText(setName, plan, idx) {
   const who = plan.kind === 'rule'
     ? `散件 / 过渡保留：${plan.ruleName}`
     : `供 ${planCharsPlain(plan)} 使用`;
   const L = [`  方案${idx + 1}（${who}）`];
-  // 追加属性是全方案统一的一份，先说一遍，五个部位再各自列主要属性
+  // 追加属性是全方案统一的一份，先说一遍，沙 / 杯 / 冠再各自列主要属性
   const subAll = planSubPlain(plan);
   const hitTxt = subHitPlain(plan.sub);
   L.push(`  追加属性（五个部位相同）：${subAll || '不限'}${hitTxt ? `　·　${hitTxt}` : ''}`);
+  const reqWho = planStarWhoPlain(plan);
+  if (reqWho) L.push(`  ★必需角色：${reqWho}`);
   SLOTS.forEach(sd => {
+    if (sd.id === 'flower' || sd.id === 'plume') return;   // 花 / 羽主属性固定，不必列
     const list = plan.mains[sd.id];
-    const mainTxt = list === null || list === undefined
-      ? '主要属性固定'
-      : (list.length ? list.map(id => mainStatName(sd.id, id)).join('、') : '不限');
-    L.push(`  ${sd.name}：主要属性 ${mainTxt}`);
+    const mainTxt = !list || !list.length ? '不限' : list.map(id => mainStatName(sd.id, id)).join('、');
+    L.push(`  ${sd.name}：${mainTxt}`);                    // 沙 / 杯 / 冠 后面列的就是主要属性
   });
   return L.join('\n');
 }
@@ -2129,6 +2227,15 @@ function charCardHtml(c) {
       arr.map(m => `<span class="ms r${m.rank}">${esc(mainStatName(slot, m.stat))}</span>`).join(' / ')
     }</span></div>`;
   };
+  // 追加属性一行：与上方主要属性分区显示（虚线分隔 + 更暗字色），记号沿用抽屉里的
+  // ★ = 必选、◇ = 条件词条（搭配了对应武器/命座才需要），避免与主要属性混淆。
+  const subRow = (b) => {
+    const subs = (b && b.subs) || [];
+    if (!subs.length) return '';
+    return `<div class="cc-sub-row"><span>${esc(t('追加'))}</span><span class="ss">${
+      subs.map(s => `${s.req ? '<i class="req">★</i>' : (s.opt ? '<i class="opt">◇</i>' : '')}${esc(subStatName(s.id))}`).join('　')
+    }</span></div>`;
+  };
   // 套装名 + 配装切换 合并为一行可点选按钮：编号 套装名（定位）
   // 选中（viewIdx）= 绿色高亮；未选中 = 普通色
   const builds = list.length
@@ -2156,6 +2263,7 @@ function charCardHtml(c) {
     <div class="cc-main">
       ${mainRow('sands')}${mainRow('goblet')}${mainRow('circlet')}
     </div>
+    <div class="cc-sub">${subRow(mb)}</div>
   </div>`;
 }
 
@@ -2578,9 +2686,9 @@ function buildMainBrief(b) {
     return { slot, name: SLOTS.find(s => s.id === slot).name, txt: names.join(' / ') };
   }).filter(Boolean);
 }
-/* 卡片上「追加属性」的一行摘要：★ 前缀表示必选 */
+/* 卡片上「追加属性」的一行摘要：★ 必选 / ◇ 条件词条（有武器或命座前提） */
 function buildSubBrief(b) {
-  return (b.subs || []).map(s => (s.req ? '★' : '') + subStatName(s.id)).join('　');
+  return (b.subs || []).map(s => (s.req ? '★' : (s.opt ? '◇' : '')) + subStatName(s.id)).join('　');
 }
 
 /* 配装卡片（只读）：套装 + 三部位主要属性 + 追加属性 + 操作按钮
@@ -2610,7 +2718,8 @@ function drawBuildCards() {
       </div>
       <div class="bm-sum">
         ${buildMainBrief(b).map(m => `<div><span class="k">${m.name}</span>${esc(m.txt)}</div>`).join('')}
-        <div><span class="k">${t('追加属性')}</span>${esc(buildSubBrief(b) || t('未设置'))}</div>
+        <div><span class="k">${t('追加属性')}</span>${esc(buildSubBrief(b) || t('未设置'))}${(b.subs || []).some(s => s.opt)
+          ? `<span class="muted small" title="${t('这些词条只在原文给定的前提下才需要，例如搭配了对应武器或解锁了命座')}">　${t('◇ 条件词条')}</span>` : ''}</div>
       </div>
       <div class="bm-ops">
         <button type="button" class="btn sm primary" data-bed="${i}">✎ 编辑</button>
@@ -3194,7 +3303,7 @@ function renderKeepRules() {
         <span class="kr-name">${esc(keepRuleName(r.name))}</span>
         <span class="kr-slot">${esc(slotTxt)}</span>
         ${modified ? `<span class="kr-mod" title="${t('已改过，点「恢复默认」可还原')}">${t('已修改')}</span>` : ''}
-        <span class="kr-cond">${t('主要属性：')}${esc(mainsTxt)}${poolTxt ? `　·　${t('追加属性：')}${esc(poolTxt)}` : ''}${reqTxt ? `　·　${t('★必须：')}${esc(reqTxt)}` : ''}</span>
+        <span class="kr-cond">${esc(mainsTxt)}${poolTxt ? `　·　${t('追加属性：')}${esc(poolTxt)}` : ''}${reqTxt ? `　·　${t('★必需：')}${esc(reqTxt)}` : ''}</span>
         ${r.desc ? `<span class="kr-desc">${esc(r.desc)}</span>` : ''}
         <span class="kr-btns">
           <button type="button" class="kr-edit" data-kr-edit="${esc(r.id)}" title="修改这条规则">编辑</button>

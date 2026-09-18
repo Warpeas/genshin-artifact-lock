@@ -187,6 +187,17 @@ html[lang="en"] .i18n-en-only{display:list-item;}
    注意用「直接子元素」选择器，别让内层 .ms 词条也命中 :first-child 而被强制定宽。 */
 .cc-main-row > span:first-child{color:var(--txt3);flex:none;min-width:26px;}
 .cc-main-row .ms{color:var(--txt2);flex:1 1 auto;min-width:0;overflow-wrap:anywhere;}
+/* ① 角色卡的「追加属性」一行：与上方主要属性分区（虚线分隔 + 更暗字色），
+   ★ = 必选（金色）、◇ = 条件词条，记号与角色抽屉里的写法一致。
+   英文下词条名会变长，允许收缩换行、不撑破卡片。 */
+.cc-sub{margin-top:5px;}
+.cc-sub:empty{display:none;}
+.cc-sub-row{display:flex;align-items:baseline;gap:6px;font-size:11.5px;color:var(--txt3);
+  min-width:0;padding-top:5px;border-top:1px dashed rgba(120,150,185,.22);}
+.cc-sub-row > span:first-child{color:var(--txt3);flex:none;min-width:26px;}
+.cc-sub-row .ss{color:var(--txt2);flex:1 1 auto;min-width:0;overflow-wrap:anywhere;}
+.cc-sub-row .req{font-style:normal;color:var(--gold);}
+.cc-sub-row .opt{font-style:normal;color:var(--txt3);}
 
 /* 配装功能定位小标签：统一中性配色（区别于角色级 .role-tag 的旧分色方案） */
 .brole{display:inline-flex;align-items:center;font-size:10.5px;padding:1px 7px;border-radius:5px;font-weight:600;flex:none;border:1px solid rgba(120,160,210,.35);background:rgba(120,160,210,.12);color:#a9c8ef;line-height:1.5;white-space:nowrap;}
@@ -558,6 +569,9 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-slot,.gp-mini .gp-slot{color:#9fb0c6;white-space:nowrap;font-weight:600;}
 .gp-main{display:inline-block;background:#233447;color:#bcd8f5;border:1px solid #33506e;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
 .gp-star{display:inline-block;background:#3d2f18;color:#f0c674;border:1px solid #6b5326;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;font-weight:600;}
+/* 多色★：≤2 个分组需要时每组分一颗星，星色同于角色名；>2 组退化为上面的普通单色★ */
+.gp-star-multi .gp-star-mark{font-style:normal;color:var(--tc,#f0c674);margin-right:1px;
+  text-shadow:0 0 5px color-mix(in srgb,var(--tc,#f0c674) 55%,transparent);}
 .gp-sub{display:inline-block;background:#232a33;color:#93a1b3;border:1px solid #333d4a;padding:1px 6px;border-radius:3px;margin:1px 3px 1px 0;font-size:11px;}
 /* 分组专属的追加属性：与需要它的角色同色，一眼看出这条该给谁。
    同色底会吃掉文字对比度，所以文字混入 45% 白（11px 小字仍约 5.7:1）；
