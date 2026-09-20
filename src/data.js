@@ -14,8 +14,17 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.20';
+const APP_VERSION = '2026.09.20.2';
 const CHANGELOG = [
+  {
+    v: '2026.09.20.2', date: '2026-09-20',
+    title: '配装编辑器：标记可选◇弹窗填理由 + 强制刷新系统数据',
+    items: [
+      '改：配装编辑器点 ◇ 标记「可选 / 条件词条」时改为弹窗填写前提理由（如「携带西风秘典时需要」），不再从出厂数据自动带出；取消可选后再次点开不保留上一次填的理由。',
+      '改：可选◇在无前提理由时，悬停浮窗简化为「满足条件时才需要」（去掉冗长说明）。',
+      '改：内置数据 SUB_EPOCH 递增 → 强制把精炼后的追加属性预设同步给所有旧存档，用户打开即生效、无需手动刷新系统值（本次已递增，全量刷新一次）。',
+    ],
+  },
   {
     v: '2026.09.20', date: '2026-09-20',
     title: '角色卡/配装卡/编辑器：必需★与可选◇改用方案页同款 chip，悬停直接显示前提理由',
@@ -1697,8 +1706,8 @@ const T_UI_EN = {
   '◇ 条件词条': '◇ Conditional',
   '这些词条只在原文给定的前提下才需要，例如搭配了对应武器或解锁了命座':
     'Only needed under the stated condition, e.g. with a specific weapon or constellation.',
-  '条件词条：仅在你满足原文前提时才需要，例如搭配对应武器或命座':
-    'Conditional substat: only needed when you meet the stated premise, e.g. with a specific weapon or constellation.',
+  '满足条件时才需要':
+    'Only needed when the condition is met',
   '启用': 'Enable',
   '停用': 'Disable',
   '已修改': 'Modified',

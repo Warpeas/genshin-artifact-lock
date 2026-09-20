@@ -412,6 +412,10 @@ table.tbl tr:hover td{background:#1d242e;}
 .pick-opt:hover{border-color:var(--gold);color:var(--gold2);background:var(--panel2);}
 .pick-empty{padding:14px 0;text-align:center;}
 .modal-body{padding:16px 22px 22px;overflow-y:auto;font-size:13.5px;color:var(--txt2);}
+/* 条件词条前提理由弹窗的输入框（复用 modal-l3 的小浮窗） */
+.opt-reason-input{width:100%;box-sizing:border-box;background:#131a24;color:var(--txt);
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;}
+.opt-reason-input:focus{outline:none;border-color:var(--gold);}
 
 /* ---------- 更新日志 ---------- */
 .chg-log{max-height:320px;overflow-y:auto;margin:4px 0 12px;}

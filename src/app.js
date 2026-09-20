@@ -19,7 +19,7 @@ const SWAP_GROUPS = {
 
 let state = null;
 let pendingMigrate = null;   // load() 若从旧存档回填了数据，init 里据此回写本地存储
-const SUB_EPOCH = 1;         // 追加属性预设重要度版本；递增即把精炼后的预设同步给旧存档
+const SUB_EPOCH = 2;         // 追加属性预设重要度版本；递增即把精炼后的预设同步给旧存档
 const META_EPOCH = 1;        // 国度 / 定位版本；递增即把修正后的归属同步给旧存档（只做一次，之后用户改的不动）
 let ui = {
   elem: 'all', region: 'all', role: 'all',
@@ -2083,8 +2083,8 @@ function planSubText(p) {
       return `<span class="gp-star"${tip ? ` title="${esc(tip)}"` : ''}>★${nm}</span>`;
     }
     if (it.opt) {
-      // 悬停直接展示前提理由（如「携带西风秘典时需要」），无理由时退化为通用说明
-      const tip = it.optNote || t('条件词条：仅在你满足原文前提时才需要，例如搭配对应武器或命座');
+      // 悬停直接展示前提理由（如「携带西风秘典时需要」），无理由时退化为极简说明
+      const tip = it.optNote || t('满足条件时才需要');
       return `<span class="gp-sub gp-opt" title="${esc(tip)}">◇${nm}</span>`;
     }
     if (!it.color) return `<span class="gp-sub">${nm}</span>`;
@@ -2245,10 +2245,10 @@ function renderChars() {
 /* 条件词条（◇）浮窗文案：有理由就用理由，否则回退通用说明。多处复用，保证措辞一致。 */
 function optTooltip(note) {
   // 悬停直接展示前提理由（如「携带西风秘典时需要」），不再叠「条件词条（…）」前缀；
-  // 无理由时退化为通用说明。scheme 页 planSubText 同步此口径。
+  // 无理由时退化为极简说明。scheme 页 planSubText 同步此口径。
   return note
     ? note
-    : t('条件词条：仅在你满足原文前提时才需要，例如搭配对应武器或命座');
+    : t('满足条件时才需要');
 }
 
 /* 单张角色卡片的完整 HTML（整页渲染与单卡切换芯片共用，保证两种路径一致） */
@@ -2883,6 +2883,48 @@ function openBuildModal(i, isNew) {
 }
 function bmDirty() { return canonBuildPrio(bmDraft) !== bmOrig; }
 
+/* 通用「单行文本」弹窗：给条件词条填写前提理由等场景复用（基于现成的 .modal/.modal-l3）。
+ * opts: { title, initial, placeholder, confirmText, cancelText, onConfirm(value), onCancel() }
+ * 取消 / 点遮罩 / Esc 均视为放弃（不调用 onConfirm）；确认调用 onConfirm(trimmed value)。 */
+let _reasonKeyHandler = null;
+function openReasonModal(opts) {
+  closeReasonModal();
+  const o = opts || {};
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask mask-l3';
+  mask.id = 'optReasonMask';
+  const box = document.createElement('div');
+  box.className = 'modal modal-l3';
+  box.id = 'optReasonBox';
+  box.innerHTML =
+    `<div class="modal-body">
+       <h4 style="margin:0 0 10px;color:var(--gold2);font-size:14px;">${esc(o.title || '')}</h4>
+       <input type="text" id="optReasonInput" class="opt-reason-input"
+              value="${esc(o.initial || '')}" placeholder="${esc(o.placeholder || '')}" />
+       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+         <button type="button" class="btn" id="optReasonCancel">${esc(o.cancelText || t('取消'))}</button>
+         <button type="button" class="btn primary" id="optReasonOk">${esc(o.confirmText || t('确定'))}</button>
+       </div>
+     </div>`;
+  mask.appendChild(box);
+  document.body.appendChild(mask);
+  const input = box.querySelector('#optReasonInput');
+  const ok = () => { const v = input.value.trim(); closeReasonModal(); o.onConfirm && o.onConfirm(v); };
+  const cancel = () => { closeReasonModal(); o.onCancel && o.onCancel(); };
+  box.querySelector('#optReasonOk').onclick = ok;
+  box.querySelector('#optReasonCancel').onclick = cancel;
+  mask.onclick = (e) => { if (e.target === mask) cancel(); };
+  input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); ok(); } };
+  _reasonKeyHandler = (e) => { if (e.key === 'Escape') { e.preventDefault(); cancel(); } };
+  document.addEventListener('keydown', _reasonKeyHandler);
+  setTimeout(() => input.focus(), 0);
+}
+function closeReasonModal() {
+  const m = document.getElementById('optReasonMask');
+  if (m) m.remove();
+  if (_reasonKeyHandler) { document.removeEventListener('keydown', _reasonKeyHandler); _reasonKeyHandler = null; }
+}
+
 function drawBuildForm() {
   const B = bmDraft;
   if (!Array.isArray(B.roles)) B.roles = [];
@@ -3176,7 +3218,8 @@ function drawSubs(B, prefix) {
         `<option value="${t.id}"${t.id === s.id ? ' selected' : ''}>${t.name}</option>`).join('')}</select>
       <span class="ms-ops">
         <button type="button" class="star-btn ${s.req ? 'on' : ''}" data-st="${i}" title="★必须（游戏内锁定方案的「必须」）">${s.req ? '★' : '☆'}</button>
-        <button type="button" class="opt-btn ${s.opt ? 'on' : ''}" data-so="${i}" title="${esc(optTooltip(s.optNote))}">◇</button>
+        <button type="button" class="opt-btn ${s.opt ? 'on' : ''}" data-so="${i}"
+          title="${s.opt ? esc(optTooltip(s.optNote)) : esc(t('标记为条件词条：将弹窗让你填写前提理由'))}">◇</button>
         <button type="button" class="drag-handle" title="拖动调整顺序" aria-label="拖动调整顺序">☷</button>
         <button type="button" class="rm" data-sr="${i}">×</button>
       </span>
@@ -3203,17 +3246,27 @@ function drawSubs(B, prefix) {
   });
   box.querySelectorAll('[data-so]').forEach(b => b.onclick = () => {
     const i = +b.dataset.so;
-    subs[i].opt = !subs[i].opt;
     if (subs[i].opt) {
-      subs[i].req = false;   // ◇ 与 ★ 互斥：条件项不可能是必选
-      // 从出厂 subRules.optional 里取该词条的「为什么是条件」理由，落到 optNote
-      const pairs = (B.subRules && Array.isArray(B.subRules.optional)) ? B.subRules.optional : [];
-      const hit = pairs.find(p => (Array.isArray(p) ? p[0] : p) === subs[i].id);
-      subs[i].optNote = (hit && Array.isArray(hit) && typeof hit[1] === 'string') ? hit[1] : '';
-    } else {
+      // 取消「可选」：清除标记与理由；再次点开时不保留上一次的理由
+      subs[i].opt = false;
       subs[i].optNote = '';
+      drawSubs(B, prefix);
+    } else {
+      // 添加「可选」：弹窗填写前提理由（不再从出厂 subRules.optional 自动带出）
+      openReasonModal({
+        title: t('条件词条的前提理由'),
+        initial: subs[i].optNote || '',
+        placeholder: t('例如：携带西风秘典时需要 / 六命可选防御力'),
+        confirmText: t('标记为可选'),
+        onConfirm: (v) => {
+          subs[i].opt = true;
+          subs[i].req = false;   // ◇ 与 ★ 互斥：条件项不可能是必选
+          subs[i].optNote = v;   // 空字符串也接受（悬停回退通用说明）
+          drawSubs(B, prefix);
+        },
+        // 取消：保持 opt=false，不写理由
+      });
     }
-    drawSubs(B, prefix);
   });
   box.querySelectorAll('[data-op]').forEach(b => b.onclick = () => {
     const i = +b.dataset.op;
