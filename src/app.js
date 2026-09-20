@@ -21,6 +21,7 @@ let state = null;
 let pendingMigrate = null;   // load() 若从旧存档回填了数据，init 里据此回写本地存储
 const SUB_EPOCH = 2;         // 追加属性预设重要度版本；递增即把精炼后的预设同步给旧存档
 const META_EPOCH = 1;        // 国度 / 定位版本；递增即把修正后的归属同步给旧存档（只做一次，之后用户改的不动）
+const CANON_EPOCH = 1;       // 内容指纹(canonBuild)格式版本；递增即按新格式重锚 fcanon，避免旧锚点与新格式不兼容导致「自动跟随出厂」失效
 let ui = {
   elem: 'all', region: 'all', role: 'all',
   search: '', onlyEnabled: false,
@@ -82,7 +83,9 @@ function canonBuild(b) {
     const id = typeof s === 'object' ? (s.id != null ? s.id : s.stat) : s;
     const req = (s && s.req) ? '1' : '0';
     const op = (s && s.op === '=') ? '=' : '>';
-    return [id, req, op];
+    const opt = (s && s.opt) ? '1' : '0';
+    const note = (s && s.opt && s.optNote) ? String(s.optNote) : '';
+    return [id, req, op, opt, note];
   });
   return JSON.stringify({
     sets: (b.sets || []).filter(Boolean),
@@ -325,6 +328,24 @@ function migrateFromDefaults(o) {
       c.roles = d.roles.slice();
     });
     o._metaEpoch = META_EPOCH;
+  }
+  /* 内容指纹格式升级：canonBuild 现在把「条件词条(opt) + 理由(optNote)」也纳入指纹，
+   * 旧存档里的 fcanon 锚点仍是旧格式（缺这两个字段），与新 canonBuild 永远不相等，
+   * 会让 syncFactoryUpdates 把所有「用户没动过」的组误判成「用户改过」→ 永远不再自动跟随出厂。
+   * 这里按新格式重锚：仅对「当前内容仍等于出厂」的组重设 fcanon（= 新出厂指纹），恢复自动跟随；
+   * 用户真改过的组保持旧锚点不动 —— 仍被判定为「用户改过」，符合「不覆盖用户改动」的语义。
+   * 幂等：只在首次（_canonEpoch 不匹配）执行一次。 */
+  if (o._canonEpoch !== CANON_EPOCH) {
+    (o.characters || []).forEach(c => {
+      if (c.custom) return;
+      (c.builds || []).forEach(b => {
+        const f = factoryBuildOf(c, b);
+        if (!f) return;
+        const cur = canonBuild(b), fac = canonBuild(f);
+        if (cur === fac) b.fcanon = fac;   // 未改动 → 用新格式锚定，恢复自动跟随
+      });
+    });
+    o._canonEpoch = CANON_EPOCH;
   }
   // 套装改名 / 订正（图鉴核对后内置库改了名，老存档的引用要跟着换）：
   // 只改内置套装与其引用，天然幂等 —— 改完之后旧名已不存在，再跑一次也不会重复。
