@@ -272,12 +272,11 @@ def fmt_build(b, subrules=None, char_roles=None):
     ]
     if subrules:
         parts.append("subRules:" + subrules)
-    # 功能定位：优先用 wiki 已推断的 roles；没有就当场按推荐理由文本推断，
-    # 文本推不出时退回角色级基础定位（CHAR_META），保证 roles 不为空。
-    roles = b.get("roles")
-    if not roles:
-        roles = infer_roles(b.get("reason", ""), b.get("mains", {}), b.get("subs", []),
-                            b.get("label", ""), char_roles)
+    # 功能定位：始终按推荐理由文本 + 当前（已收窄的）role_infer 规则当场重算，
+    # 不信任 wiki_builds.json 里缓存的 roles（那是历史快照，可能含被过度标上的
+    # 输出/辅助，见 P1 修复）。文本推不出时退回角色级基础定位（CHAR_META）。
+    roles = infer_roles(b.get("reason", ""), b.get("mains", {}), b.get("subs", []),
+                        b.get("label", ""), char_roles)
     parts.append("roles:[" + ", ".join(q(s) for s in roles) + "]")
     return "{" + ", ".join(parts) + "}"
 

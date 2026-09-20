@@ -80,8 +80,9 @@ def infer_roles(text, mains=None, subs=None, label="", char_roles=None):
     goblet = mains.get("goblet") or []
     if any(g in ELEM_DMG for g in goblet) or _has(desc, "伤害加成", "增伤", "提升伤害"):
         roles.add("增伤")
-    # 输出：描述句里出现 输出 / 站场 / 前台 / 主C（暴击只在描述句里算，副词条里的不算）
-    if _has(desc, "暴击", "输出", "站场", "前台", "主C"):
+    # 输出：描述句里出现 输出 / 站场 / 前台 / 主C
+    # （不再用「暴击」单独判定——副词条里几乎每套都提暴击，会误把副C/支援标成输出，见 audit）
+    if _has(desc, "输出", "站场", "前台", "主C"):
         roles.add("输出")
     # 充能：描述句提到 充能 / 循环 / 能量回复
     if _has(desc, "充能", "循环", "能量回复"):
@@ -89,8 +90,9 @@ def infer_roles(text, mains=None, subs=None, label="", char_roles=None):
     # 精通：沙/杯主词条含元素精通，或描述句提到 元素精通 / 反应
     if "em" in (mains.get("sands", []) + goblet) or _has(desc, "元素精通", "反应"):
         roles.add("精通")
-    # 辅助 / 增益（「队友」单独出现也算：如「为队友提供攻击力加成」「释放元素爆发后可提升自身和队友攻击力」）
-    if _has(desc, "辅助", "增益", "提升队友", "全队", "队伍", "队友"):
+    # 辅助（只用字面「辅助」判定；「增益 / 全队 / 队伍 / 队友」过于宽泛，
+    # 会误把自利主C标成辅助，仅污染定位展示，见 audit）
+    if _has(desc, "辅助"):
         roles.add("辅助")
     # 副C：后台 / 脱手
     if _has(desc, "后台", "脱手", "副C", "副c"):
@@ -121,9 +123,9 @@ def infer_roles(text, mains=None, subs=None, label="", char_roles=None):
 def infer_subrules(roles, subs, optional=None):
     """按配装功能定位生成 subRules；只使用本地已解析的 roles/subs。
 
-    角色定位只能提供启发式证据，所以不把通用的首项自动标成必需：
-    只有精通、充能、治疗/护盾等明确定位才会在词条存在时加入 required，
-    双暴同时存在时则标记为同等优先。返回 None 表示没有足够证据生成规则。
+    角色定位只能提供启发式证据，所以启发式不再把任何定位强标为 required
+    （★必选）——重要性只经由 wiki 的 subs 顺序（位置权重）表达；双暴同时存在时
+    标记为同等优先（equal）。返回 None 表示没有足够证据生成规则。
 
     ★ 修复（原 122 处 required 死字段）：
       旧实现额外做了一次「required 必须落在 = 首位核心块内」的收紧，把
@@ -140,19 +142,13 @@ def infer_subrules(roles, subs, optional=None):
     available = set(subs)
     required = []
 
-    def add_required(stat):
-        if stat in available and stat not in required:
-            required.append(stat)
-
-    if roles & {"精通", "增幅反应", "剧变反应"}:
-        add_required("em")
-    if "充能" in roles:
-        add_required("er")
-    if "治疗" in roles:
-        add_required("hpP")
-    if "护盾" in roles:
-        add_required("hpP")
-        add_required("defP")
+    # 启发式不再产出 required（★必选）。
+    # 旧逻辑按角色定位把 em/er/hpP/defP 强标为必需——会把「主词条 em 备选」
+    # 级联成「副词条必需」，过度收紧锁定方案（见 role_infer_audit.md）。
+    # 现改为：重要性只通过 wiki 已有的 subs 顺序（位置权重）表达，不再生成 ★。
+    # 双暴（cr/cd）标 ★ 也暂缓——先只保留 equal（同等优先），后续如需再开。
+    # 若日后恢复必选，务必按「强证据 + 真刚需」收敛：双暴 / 纯反应核心 / 奶妈 hp%
+    # 等，绝不用「主词条 em 备选」去反推副词条必需。
 
     equal = []
     if {"cr", "cd"}.issubset(available):
