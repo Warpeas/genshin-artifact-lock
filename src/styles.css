@@ -468,6 +468,7 @@ table.tbl tr:hover td{background:#1d242e;}
 .prio-tag{font-size:11px;padding:2px 8px;border-radius:20px;flex:none;}
 .prio-tag.main{background:#3a3a1d;color:var(--gold2);}
 .prio-tag.alt{background:var(--panel2);color:var(--txt2);}
+.bm-builtin{font-size:11px;padding:1px 7px;border-radius:4px;flex:none;color:#c8b890;border:1px dashed #6b5326;background:#2a2620;}
 .ms-list{display:flex;flex-direction:column;gap:5px;}
 .ms-item{
   display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);

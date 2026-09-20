@@ -14,8 +14,22 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.20.3';
+const APP_VERSION = '2026.09.21';
 const CHANGELOG = [
+  {
+    v: '2026.09.21', date: '2026-09-21',
+    title: '角色卡主推改动不再误标「已修改」；内置主推标注移入编辑界面；修复整组还原未保存',
+    items: [
+      '改：角色卡片的通用「已修改」徽标改为只反映词条内容改动（新增 charContentModified，比对不含主推排布）——只改「主推 / 备选」顺序不再点亮它，也不在卡片上提示「已修改顺序」（默认第 1 组即出厂主推，切到其他组只切换展示属性即可）。',
+      '改：「内置主推」标注移入角色编辑界面：仅当「当前主推」与「出厂主推」不一致时，在出厂主推对应的配装卡片上标注「内置主推」（虚线暖金），与当前主推（绿标）对照；一致时不显示。角色卡片不再显示该标注。',
+      '改：编辑界面保留「重置顺序」按钮（仅还原主推排布、不动词条内容），并修复此前「整组还原 / 重置顺序 / 还原内置」只改内存草稿、关窗即丢的 bug——现在点这三类还原会立即落盘保存，不必再点「保存」。',
+      '注：角色卡片的「还原为内置数据」按钮仍保留（基于内容+顺序的整体改动判定），顺序改动也照样能整体还原。',
+      '修：配装区的「设为主推」「删除」此前也只改内存草稿，关窗即丢——现在与「整组还原 / 重置顺序 / 还原内置」一样点完立即落盘（删除加了二次确认）。抽屉里的基础信息字段本来就是即时保存，这次把配装区对齐了。',
+      '修：整组还原后角色卡片上的「已修改」徽标不消失——因为抽屉关闭时不会重渲染卡片，徽标是上一次的残留。还原类动作现在统一走 persistEditingChar（落盘 + 重渲染角色卡）。',
+      '修：编辑里点「设为主推」现在会同步角色卡片当前展示的那一组（此前只改了主推标记，卡片仍停在原来那组，看着像没生效）；「重置顺序」「删除配装」也会把展示切回当前主推。',
+      '修：抽屉底部「还原内置」按钮此前只在开抽屉的那一刻判断一次——改动改成即时生效后就会出现「刚改完主推、明明已经可以还原，按钮却不出现」。现在每次配装改动后都重算它的显隐。',
+    ],
+  },
   {
     v: '2026.09.20.3', date: '2026-09-20',
     title: '标记可选◇ / 改理由也计入「已修改」并支持整组还原',
@@ -1818,14 +1832,20 @@ const T_UI_EN = {
   '攻略来源': 'Sources',
   '+ 添加链接': '+ Add link',
   '暂无来源，点击下方「+ 添加链接」': 'No sources yet — tap "+ Add link" below',
-  '↩ 还原主推': '↩ Restore main build',
+  '↩ 重置顺序': '↩ Restore main order',
+  '内置主推': 'Built-in main',
+  '出厂默认主推：当前主推与它不一致，点上方「重置顺序」可还原':
+    'Built-in main build: it differs from the current one — use "↩ Restore main order" above to revert',
   '当前「主推 / 备选」的排布与内置不同（词条内容没变）':
     'Main / alt arrangement differs from the built-in data (substats unchanged)',
   '✎ 编辑': '✎ Edit',
   '设为主推': 'Set as main build',
   '整组还原': 'Restore this group',
   '已还原为内置原样，点「保存」后生效': 'Restored to built-in — hit "Save" to apply',
-  '已还原主推排布，点「保存」后生效': 'Main build restored — hit "Save" to apply',
+  '已还原主推排布': 'Main build order restored',
+  '已还原为内置数据': 'Restored to built-in data',
+  '确定删除配装': 'Delete build ',
+  '吗？删除后立即生效，自定义配装无法恢复。': '? This takes effect immediately and custom builds cannot be recovered.',
   '这一组没有内置原样可还原': 'No built-in version to restore for this group',
   '这个角色没有内置数据可还原': 'No built-in data to restore for this character',
   '删除角色': 'Delete character',
@@ -1995,8 +2015,8 @@ const I18N_HTML = {
   help: [
     '<h4>How it works</h4>',
     '<ol>',
-    '<li><b>① Characters</b>: filter by <b>element / region / role</b> at the top (they stack, and combine with the search box and "Enabled only"); when a filter is on, the top right shows "matched N / total". Next to it <b>↓ Ascending / ↑ Descending</b> flips the whole list (your choice is remembered). Tick the characters you actually build. Tap a card to open the <b>edit popup</b>: character info on top, build cards below — each card shows the set, the three main stats and the substats at a glance; <b>"✎ Edit"</b> on a card opens a second <b>build editor popup</b>. Stats only apply after you hit <b>"Save"</b>; "Cancel" / closing / clicking outside warns about unsaved changes first. A character can have several builds (4-piece / 2+2) and <b>each build keeps its own stat needs</b>; when adding one you can start blank or copy an existing build, and deleted <b>built-in presets</b> can be picked back up from "＋ Add from presets". The <b>build buttons</b> on a character card (number + set name + function) both switch the view and <b>set that build as the character main build</b> (the rest become alternates) — if that differs from the built-in arrangement the card shows a "Modified" badge; click the original main build to clear it.</li>',
-    '<li><b>Made a mess?</b>: both build cards and character cards can show a <b>"Modified"</b> badge — that item now differs from the built-in data. One group gone wrong → <b>"Restore this group"</b> on the card (set + stats + main flag all back to built-in). Only tangled up which build is main → a <b>"↩ Restore main build"</b> button appears above the builds (touches the main flag only). Whole character a mess → <b>"Restore built-in"</b> at the bottom left of the popup (name / element / region / role / note / sources / every build at once). Deleted built-in builds can be re-added from "＋ Add from presets".</li>',
+    '<li><b>① Characters</b>: filter by <b>element / region / role</b> at the top (they stack, and combine with the search box and "Enabled only"); when a filter is on, the top right shows "matched N / total". Next to it <b>↓ Ascending / ↑ Descending</b> flips the whole list (your choice is remembered). Tick the characters you actually build. Tap a card to open the <b>edit popup</b>: character info on top, build cards below — each card shows the set, the three main stats and the substats at a glance; <b>"✎ Edit"</b> on a card opens a second <b>build editor popup</b>. Stats only apply after you hit <b>"Save"</b>; "Cancel" / closing / clicking outside warns about unsaved changes first. A character can have several builds (4-piece / 2+2) and <b>each build keeps its own stat needs</b>; when adding one you can start blank or copy an existing build, and deleted <b>built-in presets</b> can be picked back up from "＋ Add from presets". The <b>build buttons</b> on a character card (number + set name + function) both switch the view and <b>set that build as the character main build</b> (the rest become alternates) — changing the order alone does <b>not</b> show a "Modified" badge (it only switches which build is displayed); click the original main build to switch back.</li>',
+    '<li><b>Made a mess?</b>: both build cards and character cards can show a <b>"Modified"</b> badge — that item now differs from the built-in data. One group gone wrong → <b>"Restore this group"</b> on the card (set + stats + main flag all back to built-in). Only tangled up which build is main → a <b>"↩ Restore main order"</b> button appears above the builds (touches the main flag only), and the built-in main build card is tagged <b>"Built-in main"</b> for reference. Whole character a mess → <b>"Restore built-in"</b> at the bottom left of the popup (name / element / region / role / note / sources / every build at once). Deleted built-in builds can be re-added from "＋ Add from presets".</li>',
     '<li><b>Built-in data follows game updates</b>: builds you have <b>not touched</b> automatically pick up new data from the repo; anything <b>you edited</b> is left alone (tagged "Modified") — hit restore if you want the new version.</li>',
     '<li><b>② Lock Plans</b>: every set gets "in-game lock plan <b>candidates</b>" — clustered automatically by each character\'s <b>substat needs</b>. All <b>five slots in one plan share the same substat condition</b>; main stats are listed per slot, so you can just copy them into the game. <b>No slot limit</b>: there can be many candidates — merge them by hand with "Merge into…" or untick "Adopt" to drop the ones you do not want, then narrow it down to the 3 presets the game allows per set. The <b>"🧩 Off-piece / Transitional Keep Rules"</b> block at the top is character-independent: artifacts worth keeping purely because the main stat is rare (an elemental DMG goblet, say). Each enabled rule produces a candidate plan that joins the character clusters with <b>equal weight</b> for merging and adoption.</li>',
     '<li><b>Traveler</b> is split into 7 separate entries by element (Traveler · Anemo / Geo / Electro / Dendro / Hydro / Pyro / Cryo): each form has a different element and different builds, so they can be enabled and edited separately. Likewise <b>Nod-Krai</b> is now its own region (separate from Snezhnaya); if your save is from an older version, regions and roles are corrected once on open — after that your own edits are never overwritten.</li>',

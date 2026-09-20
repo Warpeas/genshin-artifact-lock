@@ -174,6 +174,24 @@ function charModified(c) {
   const n = (c.builds || []).length;
   return canonChar(c) !== canonCharWith(d, (d.builds || []).slice(0, n));
 }
+/* 角色内「内容」是否和出厂不一样（只比名称/归属/定位/备注/来源/词条套装，
+ * 主推排布单独算）。用于角色卡「已修改」徽标：只反映词条内容改动，
+ * 不把「只改了主推顺序」误标成已修改（顺序改动在角色卡上不提示，编辑界面才有「重置顺序」）。 */
+function charContentModified(c) {
+  const d = factoryCharOf(c);
+  if (!d) return false;
+  const n = (c.builds || []).length;
+  return canonCharContentWith(c, c.builds) !== canonCharContentWith(d, (d.builds || []).slice(0, n));
+}
+/* 角色指纹（内容口径，不含主推）：与 canonChar 同结构，但每个配装用 canonBuild（不含 priority） */
+function canonCharContentWith(c, builds) {
+  return JSON.stringify({
+    name: c.name, element: c.element, region: c.region,
+    roles: (c.roles || []).slice(),
+    note: c.note || '', src: (c.src || []).map(s => [s.url, s.title || '']),
+    builds: (builds || []).map(canonBuild),
+  });
+}
 /* 有没有值得还原的东西：用户改过，或者出厂里有这一角色还没用上的配装组 */
 function charCanRestore(c) {
   const d = factoryCharOf(c);
@@ -2313,18 +2331,18 @@ function charCardHtml(c) {
   // 选中（viewIdx）= 绿色高亮；未选中 = 普通色
   const builds = list.length
     ? list.map((b, i) => {
-        const stxt = (b.sets || []).map(s => esc(setName(s))).join('+');
-        const rTitle = (b.roles || []).map(r => t(r)).join('/');
-        const rInline = buildRoleInline(b.roles, ROLE_SHOW_MAX);
-        return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="${t('配装')} ${i + 1}${rTitle ? ' · ' + rTitle : ''}">${i + 1} ${stxt}${rInline ? `<span class="cc-bp-tag">${rInline}</span>` : ''}</button>`;
-      }).join('')
-    : `<span class="set-tag">${t('未配置套装')}</span>`;
+      const stxt = (b.sets || []).map(s => esc(setName(s))).join('+');
+      const rTitle = (b.roles || []).map(r => t(r)).join('/');
+      const rInline = buildRoleInline(b.roles, ROLE_SHOW_MAX);
+      return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="${t('配装')} ${i + 1}${rTitle ? ' · ' + rTitle : ''}">${i + 1} ${stxt}${rInline ? `<span class="cc-bp-tag">${rInline}</span>` : ''}</button>`;
+    }).join('')
+  : `<span class="set-tag">${t('未配置套装')}</span>`;
   return `
   <div class="char-card ${c.enabled ? 'on' : ''}" data-id="${c.id}">
     <div class="cc-top">
       <span class="cc-elem" style="background:${el.color}22;color:${el.color};border:1px solid ${el.color}55">${el.name}</span>
       <span class="cc-name" title="${esc(c.name)}">${esc(c.name)}</span>
-      ${charModified(c) ? `<span class="cc-mod" title="${t('与内置数据不同；可在角色编辑里「还原为内置数据」')}">${t('已修改')}</span>` : ''}
+      ${charContentModified(c) ? `<span class="cc-mod" title="${t('与内置数据不同；可在角色编辑里「还原为内置数据」')}">${t('已修改')}</span>` : ''}
       <span class="cc-star ${c.enabled ? 'on' : ''}" data-toggle="${c.id}">${c.enabled ? '★' : '☆'}</span>
     </div>
     <div class="cc-meta">
@@ -2351,7 +2369,7 @@ function bindCard(card, c) {
       if (!state.buildView) state.buildView = {};
       state.buildView[c.id] = vi;   // 切换即持久化为该角色的默认配装
       // 卡片上选中哪套 = 把「主推」一并切到这套，其余降为备选。
-      // 排布与出厂不一致时由 charModified 自动标「已修改」；切回出厂主推即恢复无标。
+      // 只改主推顺序不会标「已修改」（角色卡徽标只看词条内容）；切回出厂主推即可。
       if (c.builds && c.builds[vi]) {
         c.builds.forEach((b, i) => { b.priority = i === vi ? 'main' : 'alt'; });
       }
@@ -2457,6 +2475,21 @@ function updateBatchState() {
 /* ============================================================
  * 编辑抽屉
  * ============================================================ */
+/* 抽屉底部「还原内置」的可用态。
+ * 必须在每次配装改动后重算——改动现在是即时生效的，只看「开抽屉那一刻」会漏：
+ * 开抽屉时角色还没被改动 → 按钮隐藏，随后改了主推 / 删了组 → 其实已经可还原，按钮却不出现。 */
+function syncRestoreCharBtn() {
+  const btn = $('#btnRestoreChar');
+  if (btn) btn.classList.toggle('hidden', !(editing && charCanRestore(editing)));
+}
+/* 把角色卡片「当前展示哪一组」切到下标 i（与卡片点芯片的行为一致）。
+ * 编辑里改主推若不同步这个，卡片会继续展示原来那组，看起来像主推没生效。 */
+function syncCharView(i) {
+  if (!editing) return;
+  ui.charView[editing.id] = i;
+  if (!state.buildView) state.buildView = {};
+  state.buildView[editing.id] = i;
+}
 function openDrawer(id) {
   const src = state.characters.find(c => c.id === id);
   if (!src) return;
@@ -2466,8 +2499,8 @@ function openDrawer(id) {
   $('#drawerTitle').textContent = t('编辑') + ' ' + d(src.name, (CHAR_META[src.name] && CHAR_META[src.name].en) || src.name);
   $('#btnDeleteChar').classList.remove('hidden');
   // 自定义角色没有出厂数据，不给「还原为内置数据」
-  $('#btnRestoreChar').classList.toggle('hidden', !charCanRestore(editing));
   drawDrawer();
+  syncRestoreCharBtn();
   showDrawer(true);
 }
 
@@ -2777,9 +2810,15 @@ function drawBuildCards() {
   if (!box) return;
   // 主推排布与出厂不同时，给一个「只还原主推」的入口（不动任何词条内容）
   const prioMod = priorityModified(editing);
+  // 出厂主推所在配装下标（用于「内置主推」标注）：仅当当前主推与出厂不一致时才显示
+  let facMainIdx = -1;
+  (editing.builds || []).forEach((b, i) => {
+    const f = factoryBuildOf(editing, b);
+    if (f && f.priority === 'main') facMainIdx = i;
+  });
   box.innerHTML =
     (prioMod ? `<div class="bm-bar">
-        <button type="button" class="btn sm" id="edRestorePrio">↩ 还原主推</button>
+        <button type="button" class="btn sm" id="edRestorePrio">↩ 重置顺序</button>
         <span class="muted small">当前「主推 / 备选」的排布与内置不同（词条内容没变）</span>
       </div>` : '') +
     editing.builds.map((b, i) => {
@@ -2790,6 +2829,7 @@ function drawBuildCards() {
     <div class="bm-card" data-bi="${i}">
       <div class="bm-t">
         <span class="prio-tag ${b.priority}">${b.priority === 'main' ? t('主推') : t('备选')}</span>
+        ${prioMod && i === facMainIdx ? `<span class="bm-builtin" title="${t('出厂默认主推：当前主推与它不一致，点上方「重置顺序」可还原')}">${t('内置主推')}</span>` : ''}
         <span class="bm-name">${t('配装')} ${i + 1}　${esc(sets.map(setName).join(' + ') || t('未选套装'))}</span>
         ${buildRoleBadges(b.roles, ROLE_SHOW_MAX)}
         <span class="bm-kind">${sets.length === 2 ? t('2+2 组合') : (sets.length === 1 ? t('4 件套') : t('未选择套装'))}</span>
@@ -2811,8 +2851,11 @@ function drawBuildCards() {
   const rp = $('#edRestorePrio');
   if (rp) rp.onclick = () => {
     restorePriority(editing);
+    // 顺序回出厂后，卡片展示也切回出厂主推那组
+    syncCharView(Math.max(0, (editing.builds || []).findIndex(b => b.priority === 'main')));
+    persistEditingChar();     // 立即落盘 + 重渲染角色卡（与基础信息字段一致：点了就生效）
     drawBuildCards();
-    toast('已还原主推排布，点「保存」后生效');
+    toast('已还原主推排布');
   };
   box.querySelectorAll('[data-bed]').forEach(btn => {
     btn.onclick = () => openBuildModal(+btn.dataset.bed);
@@ -2821,13 +2864,17 @@ function drawBuildCards() {
     btn.onclick = () => {
       const i = +btn.dataset.bmain;
       editing.builds.forEach((b, j) => { b.priority = j === i ? 'main' : 'alt'; });
+      syncCharView(i);        // 卡片展示的那一组也切过去，否则编辑里改了主推、卡片还停在旧组
+      persistEditingChar();   // 立即落盘，否则关窗即丢（此前只改内存草稿）
       drawBuildCards();
+      toast('已设配装' + (i + 1) + '为主推');
     };
   });
   box.querySelectorAll('[data-bres]').forEach(btn => {
     btn.onclick = () => {
       const i = +btn.dataset.bres;
       if (!restoreBuild(editing, i)) return toast('这一组没有内置原样可还原');
+      persistEditingChar();    // 立即落盘 + 重渲染角色卡（否则卡片上的「已修改」会残留）
       drawBuildCards();
       toast('已还原配装' + (i + 1) + '为内置数据');
     };
@@ -2836,12 +2883,18 @@ function drawBuildCards() {
     btn.onclick = () => {
       const i = +btn.dataset.bdel;
       if (editing.builds.length <= 1) return toast('至少保留一组配装');
+      if (!confirm(t('确定删除配装') + (i + 1) + t('吗？删除后立即生效，自定义配装无法恢复。'))) return;
       editing.builds.splice(i, 1);
       if (!editing.builds.some(b => b.priority === 'main')) editing.builds[0].priority = 'main';
       if (ui.buildIdx >= editing.builds.length) ui.buildIdx = 0;
+      // 卡片原本展示的那组可能被删掉了，切到当前主推
+      syncCharView(Math.max(0, (editing.builds || []).findIndex(b => b.priority === 'main')));
+      persistEditingChar();    // 立即落盘，否则关窗即丢
       drawBuildCards();
+      toast('已删除配装' + (i + 1));
     };
   });
+  syncRestoreCharBtn();        // 改完重算「还原内置」是否可点（可还原状态会随改动变化）
 }
 
 /* ============================================================
@@ -3103,7 +3156,9 @@ function persistEditingChar() {
   const i = state.characters.findIndex(x => x.id === c.id);
   if (i >= 0) state.characters[i] = c;
   else state.characters.push(c);
-  editing = c;
+  // editing 继续保持为独立草稿（否则与 state.characters[i] 共享同一对象，
+  // 抽屉里后续未保存的编辑会直接改坏真实角色数据）
+  editing = JSON.parse(JSON.stringify(c));
   save();
   renderChars(); renderPlan(); renderSubs();
 }
@@ -4275,9 +4330,10 @@ function bind() {
     if (!editing) return;
     if (!confirm('确定把这个角色（名字 / 元素 / 国度 / 定位 / 备注 / 来源 / 全部配装）还原成内置数据吗？')) return;
     if (!restoreChar(editing)) return toast('这个角色没有内置数据可还原');
+    persistEditingChar();     // 立即落盘 + 重渲染，避免关窗丢弃
     drawDrawer();
-    $('#btnRestoreChar').classList.add('hidden');
-    toast('已还原为内置数据，点「保存」后生效');
+    syncRestoreCharBtn();     // 还原后重算（出厂还有没用上的配装组时仍可继续「从预置添加」）
+    toast('已还原为内置数据');
   };
 
   /* 配装编辑：二层浮窗 */
