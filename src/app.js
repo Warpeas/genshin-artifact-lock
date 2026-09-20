@@ -880,6 +880,7 @@ function normalizeSubs(subs) {
       .filter(s => s && valid.has(s.id) && !seen.has(s.id) && seen.add(s.id))
       .map(s => ({
         id: s.id, req: !!s.req, opt: !!s.opt,
+        optNote: (typeof s.optNote === 'string') ? s.optNote : '',
         op: (s.op === '=' || s.op === '>') ? s.op : '>',
       }));
   }
@@ -1084,6 +1085,7 @@ function isBuiltinSet(name) {
 const SUB_RANK_DECAY = 0.72;  // 名次权重衰减：第 1 名 1.0，之后 ×0.72
 const SUB_POOL_TOP   = 5;     // 每人最多贡献 N 条追加属性，避免追加属性池过宽
 const SUB_POOL_MAX   = 5;     // 合并后的追加属性池上限（再宽就等同于「不限」，失去筛选意义）
+const OPT_W         = 0.4;   // 条件词条（◇）折扣系数：进算法但优先度低，永不进 ★
 
 /* 重要度链：把「= / >」算子展开成每条词条的权重
  *   第 1 条最顶（权重 1.0）；其后每条：
@@ -1111,7 +1113,7 @@ function subWeights(list) {
   const ws = opWeights(list);
   (list || []).forEach((s, i) => {
     if (!(s.id in w)) return;
-    w[s.id] = ws[i] * (s.req ? 1.25 : 1);
+    w[s.id] = ws[i] * (s.req ? 1.25 : 1) * (s.opt ? OPT_W : 1);
   });
   return w;
 }
@@ -1123,7 +1125,7 @@ function reqSubs(list) {
 /* 追加属性池：取前 SUB_POOL_TOP 名，并带上各自的算子权重（供合并时按重要度累加） */
 function poolSubs(list) {
   const ws = opWeights(list);
-  return (list || []).slice(0, SUB_POOL_TOP).map((s, i) => ({ id: s.id, w: ws[i] }));
+  return (list || []).slice(0, SUB_POOL_TOP).map((s, i) => ({ id: s.id, w: ws[i] * (s.opt ? OPT_W : 1) }));
 }
 
 /* 角色的主推配装组（卡片展示 / 兜底取值用） */
@@ -1617,8 +1619,15 @@ const FIXED_MAIN = { flower: 'hp', plume: 'atk' };
  */
 function mergeSubUniform(group) {
   const n = group.length;
-  if (!n) return { required: [], pool: [], minHit: 0 };
+  if (!n) return { required: [], pool: [], minHit: 0, opt: [] };
   const banned = new Set([FIXED_MAIN.flower, FIXED_MAIN.plume]);  // 花/羽主要属性固定，恒冲突
+
+  // 条件词条（◇）：收集组内任一角色标为 opt 的词条，稍后强制保留进池（低优先但始终可见）
+  const optIds = [];
+  group.forEach(r => (r.subList || []).forEach(s => {
+    const id = statIdOf(s);
+    if (id && s.opt && !banned.has(id) && !optIds.includes(id)) optIds.push(id);
+  }));
 
   const avgW = id => group.reduce((s, r) => s + (r.subs[id] || 0), 0) / n;
 
@@ -1668,10 +1677,14 @@ function mergeSubUniform(group) {
     extra.forEach(id => { if (pool.length < cap && !pool.includes(id)) pool.push(id); });
   }
 
-  if (!pool.length) return { required: [], pool: [], minHit: 0 };  // 只挑主要属性，追加属性不限
+  // 条件词条（◇）强制进池：wiki 的「携带西风剑时才堆」类推荐，低优先但始终可见，
+  // 不被 SUB_POOL_MAX / 次要偏好保底 静默截断——无条件追加（opt 数量本就有限，且 opt 必有折扣）
+  optIds.forEach(id => { if (!pool.includes(id)) pool.push(id); });
+
+  if (!pool.length) return { required: [], pool: [], minHit: 0, opt: [] };  // 只挑主要属性，追加属性不限
 
   // 预设「至少两个」，可在方案卡片上手动调整；池不足 N 条时退化为池长度
-  return { required, pool, minHit: Math.min(SUB_MIN_HIT_DEFAULT, pool.length) };
+  return { required, pool, minHit: Math.min(SUB_MIN_HIT_DEFAULT, pool.length), opt: optIds };
 }
 
 /* 融合两份追加属性条件（手动合并方案时用）：
@@ -1681,10 +1694,15 @@ function fuseSub(a, b) {
   if (!a) return b;
   if (!b) return a;
   const required = [...new Set([...a.required, ...b.required])];
-  const pool = [...new Set([...a.pool, ...b.pool])];
+  const opt = [...new Set([...(a.opt || []), ...(b.opt || [])])];
+  const optSet = new Set(opt);
+  // 常规（非 opt）词条并集先截到 SUB_POOL_MAX；条件词条（◇）无条件追加在后，永不被截断
+  const regularPool = [...new Set([...a.pool, ...b.pool])].filter(id => !optSet.has(id));
+  const pool = regularPool.slice(0, SUB_POOL_MAX);
+  opt.forEach(id => { if (!pool.includes(id)) pool.push(id); });
   required.forEach(id => { if (!pool.includes(id)) pool.unshift(id); });
-  const p = pool.slice(0, SUB_POOL_MAX);
-  return { required, pool: p, minHit: Math.min(SUB_MIN_HIT_DEFAULT, p.length) };
+  if (!pool.length) return { required: [], pool: [], minHit: 0, opt: [] };
+  return { required, pool, opt, minHit: Math.min(SUB_MIN_HIT_DEFAULT, pool.length) };
 }
 
 /* 一组角色 -> 候选方案（追加属性条件全方案统一） */
@@ -1884,7 +1902,7 @@ function ruleToPlan(rule) {
       const required = (rule.required || []).filter(id => !banned.has(id));
       const pool = (rule.pool || []).filter(id => !banned.has(id));
       // 与角色方案一致：预设「至少两个」，可在方案卡片上单独调整
-      return { required, pool, minHit: Math.min(SUB_MIN_HIT_DEFAULT, pool.length) };
+      return { required, pool, minHit: Math.min(SUB_MIN_HIT_DEFAULT, pool.length), opt: [] };
     })(),
     mains,
     _group: null,
@@ -1958,13 +1976,24 @@ function planColorGroups(p) {
  *   例：★<蓝>★</蓝><绿>★</绿>元素充能效率 | <蓝>攻击力%</蓝> <绿>生命值%</绿>
  *   —— 前面是全组都要的，后面才是只有部分角色要的，照搬时按颜色给到对应的人。 */
 function planSubOrder(p) {
-  const sub = (p && p.sub) || { required: [], pool: [] };
+  const sub = (p && p.sub) || { required: [], pool: [], opt: [] };
   const req = new Set(sub.required || []);
+  const optSet = new Set(sub.opt || []);
   const ids = (sub.pool || []).map(statIdOf).filter(Boolean);
   const groups = planColorGroups(p);
-  if (!groups) return ids.map(id => ({ id, req: req.has(id), color: null, owners: null, shared: true, starColors: [] }));
+  // 从各角色的归一化 subs 里收集「条件词条 → 理由」，供方案页浮窗展示
+  const rolesForNote = groups ? groups.flatMap(g => g.roles) : (p._group || []);
+  const optNoteOf = {};
+  rolesForNote.forEach(r => (r.subList || []).forEach(s => {
+    const id = statIdOf(s);
+    if (id && s.opt && s.optNote && !optNoteOf[id]) optNoteOf[id] = s.optNote;
+  }));
+  if (!groups) return ids.map(id => ({ id, req: req.has(id), opt: optSet.has(id), optNote: optNoteOf[id] || '', color: null, owners: null, shared: true, starColors: [] }));
 
   const everyone = groups.flatMap(g => g.roles);
+  // 全组里把某词条当「常规需求」（非 opt）的角色——用于判断 ◇ 是否纯条件项
+  const regIds = new Set();
+  everyone.forEach(r => (r.subList || []).forEach(s => { const id = statIdOf(s); if (id && !s.opt) regIds.add(id); }));
   const avgW = (roles, id) => roles.reduce((s, r) => s + (r.subs[id] || 0), 0) / (roles.length || 1);
   const items = ids.map(id => {
     const owners = [];
@@ -1980,10 +2009,12 @@ function planSubOrder(p) {
         starColors.push({ color: g.color, who: g.names.join('、') });
       }
     });
+    // 条件词条（◇）：仅当组内所有人都只把它当 opt（无人当常规需求）时才标，避免把「多数人真要、个别带前提」的词条误标为条件
+    const isOpt = optSet.has(id) && !regIds.has(id) && !isReq;
     // 没人「明确」要（例如并入散件规则带来的词条）时按共有处理，不给颜色
     const shared = owners.length === 0 || owners.length >= groups.length;
     return {
-      id, req: isReq, starColors, shared,
+      id, req: isReq, opt: isOpt, optNote: optNoteOf[id] || '', starColors, shared,
       color: shared ? null : groups[owners[0]].color,
       owners: shared ? null : owners,
     };
@@ -2050,6 +2081,11 @@ function planSubText(p) {
       // >2 个分组都要（或定位不到分组）：退化为单色★，需要它的角色放进悬停
       const tip = sc.length > 2 ? '必需：' + sc.map(s => s.who).join('、') : '';
       return `<span class="gp-star"${tip ? ` title="${esc(tip)}"` : ''}>★${nm}</span>`;
+    }
+    if (it.opt) {
+      // 悬停直接展示前提理由（如「携带西风秘典时需要」），无理由时退化为通用说明
+      const tip = it.optNote || t('条件词条：仅在你满足原文前提时才需要，例如搭配对应武器或命座');
+      return `<span class="gp-sub gp-opt" title="${esc(tip)}">◇${nm}</span>`;
     }
     if (!it.color) return `<span class="gp-sub">${nm}</span>`;
     const who = it.owners.map(i => groups[i] && groups[i].names.join('、')).filter(Boolean).join('、');
@@ -2206,6 +2242,15 @@ function renderChars() {
   });
 }
 
+/* 条件词条（◇）浮窗文案：有理由就用理由，否则回退通用说明。多处复用，保证措辞一致。 */
+function optTooltip(note) {
+  // 悬停直接展示前提理由（如「携带西风秘典时需要」），不再叠「条件词条（…）」前缀；
+  // 无理由时退化为通用说明。scheme 页 planSubText 同步此口径。
+  return note
+    ? note
+    : t('条件词条：仅在你满足原文前提时才需要，例如搭配对应武器或命座');
+}
+
 /* 单张角色卡片的完整 HTML（整页渲染与单卡切换芯片共用，保证两种路径一致） */
 function charCardHtml(c) {
   const el = ELEMENTS[c.element];
@@ -2229,11 +2274,18 @@ function charCardHtml(c) {
   };
   // 追加属性一行：与上方主要属性分区显示（虚线分隔 + 更暗字色），记号沿用抽屉里的
   // ★ = 必选、◇ = 条件词条（搭配了对应武器/命座才需要），避免与主要属性混淆。
+  // 追加属性一行：复用方案页（合成方案）的同款 chip 样式，保证三处视觉一致——
+  // 必需 = .gp-star（实心金边）、可选 = .gp-opt（虚线金边 + 悬停浮窗展示前提理由）、常规 = .gp-sub（中性）。
   const subRow = (b) => {
     const subs = (b && b.subs) || [];
     if (!subs.length) return '';
     return `<div class="cc-sub-row"><span>${esc(t('追加'))}</span><span class="ss">${
-      subs.map(s => `${s.req ? '<i class="req">★</i>' : (s.opt ? '<i class="opt">◇</i>' : '')}${esc(subStatName(s.id))}`).join('　')
+      subs.map(s => {
+        const nm = esc(subStatName(s.id));
+        if (s.req) return `<span class="gp-star" title="${esc(t('★必须（游戏内锁定方案的「必须」）'))}">★${nm}</span>`;
+        if (s.opt) return `<span class="gp-opt" title="${esc(optTooltip(s.optNote))}">◇${nm}</span>`;
+        return `<span class="gp-sub">${nm}</span>`;
+      }).join('')
     }</span></div>`;
   };
   // 套装名 + 配装切换 合并为一行可点选按钮：编号 套装名（定位）
@@ -2686,9 +2738,15 @@ function buildMainBrief(b) {
     return { slot, name: SLOTS.find(s => s.id === slot).name, txt: names.join(' / ') };
   }).filter(Boolean);
 }
-/* 卡片上「追加属性」的一行摘要：★ 必选 / ◇ 条件词条（有武器或命座前提） */
+/* 配装卡片上「追加属性」的一行摘要：复用方案页同款 chip（★ 必选 / ◇ 条件词条 + 悬停浮窗），
+ * 不再写「条件词条」文字（具体前提理由见图标 title 浮窗）。返回 HTML。 */
 function buildSubBrief(b) {
-  return (b.subs || []).map(s => (s.req ? '★' : (s.opt ? '◇' : '')) + subStatName(s.id)).join('　');
+  return (b.subs || []).map(s => {
+    const nm = esc(subStatName(s.id));
+    if (s.req) return `<span class="gp-star" title="${esc(t('★必须（游戏内锁定方案的「必须」）'))}">★${nm}</span>`;
+    if (s.opt) return `<span class="gp-opt" title="${esc(optTooltip(s.optNote))}">◇${nm}</span>`;
+    return `<span class="gp-sub">${nm}</span>`;
+  }).join('');
 }
 
 /* 配装卡片（只读）：套装 + 三部位主要属性 + 追加属性 + 操作按钮
@@ -2718,8 +2776,7 @@ function drawBuildCards() {
       </div>
       <div class="bm-sum">
         ${buildMainBrief(b).map(m => `<div><span class="k">${m.name}</span>${esc(m.txt)}</div>`).join('')}
-        <div><span class="k">${t('追加属性')}</span>${esc(buildSubBrief(b) || t('未设置'))}${(b.subs || []).some(s => s.opt)
-          ? `<span class="muted small" title="${t('这些词条只在原文给定的前提下才需要，例如搭配了对应武器或解锁了命座')}">　${t('◇ 条件词条')}</span>` : ''}</div>
+        <div><span class="k">${t('追加属性')}</span>${buildSubBrief(b) || t('未设置')}</div>
       </div>
       <div class="bm-ops">
         <button type="button" class="btn sm primary" data-bed="${i}">✎ 编辑</button>
@@ -3119,6 +3176,7 @@ function drawSubs(B, prefix) {
         `<option value="${t.id}"${t.id === s.id ? ' selected' : ''}>${t.name}</option>`).join('')}</select>
       <span class="ms-ops">
         <button type="button" class="star-btn ${s.req ? 'on' : ''}" data-st="${i}" title="★必须（游戏内锁定方案的「必须」）">${s.req ? '★' : '☆'}</button>
+        <button type="button" class="opt-btn ${s.opt ? 'on' : ''}" data-so="${i}" title="${esc(optTooltip(s.optNote))}">◇</button>
         <button type="button" class="drag-handle" title="拖动调整顺序" aria-label="拖动调整顺序">☷</button>
         <button type="button" class="rm" data-sr="${i}">×</button>
       </span>
@@ -3140,6 +3198,21 @@ function drawSubs(B, prefix) {
   box.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     const i = +b.dataset.st;
     subs[i].req = !subs[i].req;
+    if (subs[i].req) { subs[i].opt = false; subs[i].optNote = ''; }   // ★ 与 ◇ 互斥：必选就不可能是条件项
+    drawSubs(B, prefix);
+  });
+  box.querySelectorAll('[data-so]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.so;
+    subs[i].opt = !subs[i].opt;
+    if (subs[i].opt) {
+      subs[i].req = false;   // ◇ 与 ★ 互斥：条件项不可能是必选
+      // 从出厂 subRules.optional 里取该词条的「为什么是条件」理由，落到 optNote
+      const pairs = (B.subRules && Array.isArray(B.subRules.optional)) ? B.subRules.optional : [];
+      const hit = pairs.find(p => (Array.isArray(p) ? p[0] : p) === subs[i].id);
+      subs[i].optNote = (hit && Array.isArray(hit) && typeof hit[1] === 'string') ? hit[1] : '';
+    } else {
+      subs[i].optNote = '';
+    }
     drawSubs(B, prefix);
   });
   box.querySelectorAll('[data-op]').forEach(b => b.onclick = () => {

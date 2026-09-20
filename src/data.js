@@ -14,8 +14,18 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.19';
+const APP_VERSION = '2026.09.20';
 const CHANGELOG = [
+  {
+    v: '2026.09.20', date: '2026-09-20',
+    title: '角色卡/配装卡/编辑器：必需★与可选◇改用方案页同款 chip，悬停直接显示前提理由',
+    items: [
+      '改：角色卡片与配装抽屉里的「追加属性」——必需(★)/可选(◇)/常规三种状态，改为直接复用方案页（合成方案）的同款 chip 样式：★ 实心金边、◇ 虚线暖金边 + 悬停浮窗、常规中性蓝灰，三处视觉统一。',
+      '改：可选◇的悬停浮窗不再叠「条件词条（…）」前缀，直接展示前提理由（如「携带西风秘典时需要」）；无理由时回退通用说明。',
+      '改：◇/★ 记号与词条名之间补 3px 间距，不再挨太近。',
+      '改：◇ 条件词条在角色卡与配装抽屉改为纯图标 + 悬停浮窗（对齐方案页），移除抽屉里冗余的「◇ 条件词条」文字标签；配装编辑器新增 ◇ 切换按钮（与 ★ 互斥，激活后虚线暖金描边）。',
+    ],
+  },
   {
     v: '2026.09.19', date: '2026-09-19',
     title: '去掉启发式 ★必需 + 收窄「输出/辅助」判定',
@@ -1687,8 +1697,6 @@ const T_UI_EN = {
   '◇ 条件词条': '◇ Conditional',
   '这些词条只在原文给定的前提下才需要，例如搭配了对应武器或解锁了命座':
     'Only needed under the stated condition, e.g. with a specific weapon or constellation.',
-  '条件词条（仅当满足原文前提时才需要）':
-    'Conditional substat (only needed when the stated condition is met)',
   '条件词条：仅在你满足原文前提时才需要，例如搭配对应武器或命座':
     'Conditional substat: only needed when you meet the stated premise, e.g. with a specific weapon or constellation.',
   '启用': 'Enable',
