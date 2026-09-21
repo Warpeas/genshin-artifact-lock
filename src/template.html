@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#101419">
 <title>原神圣遗物锁定方案生成器</title>
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -79,7 +80,7 @@
       <span class="bar-label">按定位</span>
       <span class="btn-grp" id="roleBatch"></span>
     </div>
-    <p class="batch-hint" data-en="Element / Region / Role: tap once to select the whole category, tap again to clear it. Categories stack and apply to <b>all characters</b>; &quot;Select all&quot; / &quot;Invert&quot; only affect the current filter result.">属性 / 国度 / 定位：点一次全选该类、再点一次取消，可叠加组合，对<b>全部角色</b>生效；「全选 / 反选」只对当前筛选结果生效</p>
+    <p class="batch-hint" data-en="Element / Region / Role: tap once to select a whole category, tap again to clear it; categories stack. Applies to <b>all characters</b> — &quot;Select all&quot; / &quot;Invert&quot; only affect the filtered result.">属性 / 国度 / 定位：点一次全选该类、再点取消，可叠加；对<b>全部角色</b>生效，「全选 / 反选」只作用于当前筛选结果</p>
 
     <div id="charGrid" class="char-grid"></div>
   </section>
@@ -119,11 +120,8 @@
         <span id="krCount" class="kr-count"></span>
       </h3>
       <div id="krBody" class="kr-body">
-        <p class="muted small" data-en="Artifacts worth keeping regardless of any character, either because the <b>main stat itself is rare</b> or because it works as a <b>transitional 2-piece</b> (an elemental DMG goblet, for example). Every enabled rule produces one <b>candidate plan</b> that shows up in the candidate area below with the <b>same weight</b> as character clusters; you can merge it into a character plan or adopt it on its own. <b>The game allows at most 3 custom presets per set</b> — keep it under 3 yourself. <br><b>Built-in rules are editable too</b>: hit &quot;Edit&quot; to change name / description / slot / main stats / substats / &#9733;required in a popup; edited ones are tagged &quot;Modified&quot; and can be reset with one tap. <br>Use the arrow on the left of the heading to <b>collapse the whole block</b> — that only hides it, enabled rules keep producing candidates.">与具体角色无关、只因「主要属性本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。
-          每条启用的规则会生成一份<b>候选方案</b>，与角色聚类结果<b>同权</b>出现在下面的候选区；
-          你可以「并入」到某个角色方案里、或单独采纳。<b>游戏内每种套装至多 3 个自定义预设</b>，请自行控制在 3 套以内。
-          <br><b>内置规则也能改</b>：点「编辑」即弹出浮窗修改（名称 / 描述 / 部位 / 主要属性 / 追加属性 / ★必须），改过的会标记「已修改」，可一键「恢复默认」。
-          <br>点标题左侧的箭头可<b>收起整个模块</b>——只是不再显示，已启用的规则照常生成候选方案。</p>
+        <p class="muted small" data-en="Artifacts worth keeping regardless of any character — either because the <b>main stat itself is rare</b> or because they work as a <b>transitional 2-piece</b> (an elemental DMG goblet, for example). Every enabled rule produces one <b>candidate plan</b> in the candidate area below, with the <b>same weight</b> as character clusters; merge it into a character plan or adopt it on its own. <b>Built-in rules are editable too</b> — hit &quot;Edit&quot; to change name / description / slot / main stats / substats / &#9733;required. The arrow on the left of the heading <b>collapses the whole block</b>: that only hides it, enabled rules keep producing candidates.">与具体角色无关、只因「主要属性本身稀有」或「能当过渡 2 件套」就该留的圣遗物（例如元素伤害杯）。每条启用的规则会生成一份<b>候选方案</b>，与角色聚类结果<b>同权</b>，可「并入」某个角色方案或单独采纳。
+          <br><b>内置规则也能改</b>：点「编辑」修改名称 / 描述 / 部位 / 主要属性 / 追加属性 / ★必须。点标题左侧箭头可<b>收起整个模块</b>——只是不再显示，已启用的规则照常生成候选方案。</p>
         <div class="toolbar wrap kr-bar">
           <button id="btnKrNew" class="btn primary" data-en="+ New custom rule">＋ 新增自定义规则</button>
         </div>
@@ -142,7 +140,7 @@
     <div class="two-col">
       <div class="card">
         <h3>通用分档规则</h3>
-        <p class="muted small" data-en="Auto-summarised from the characters you enabled: a main-stat whitelist plus the substat rules to copy into the game.">根据你启用的角色，自动汇总出的主要属性白名单 + 追加属性判定逻辑。游戏内可照此执行锁定。</p>
+        <p class="muted small" data-en="Auto-summarised from the characters you enabled: a main-stat whitelist plus the substat rules to copy into the game.">根据你启用的角色自动汇总：主要属性白名单 + 追加属性判定逻辑，游戏内照此锁定即可。</p>
         <div id="subRules"></div>
       </div>
 
@@ -169,8 +167,7 @@
 
     <div class="card">
       <h3>各套装推荐追加属性</h3>
-      <p class="muted small" data-en="Aggregated from the <b>ordering</b> of every character that wants this set: earlier = more characters ranked it first. &#9733; means most characters marked it &quot;Required&quot; (the &#9733;Required flag in the lock plan). Main stat / substat needs are counted <b>per build</b>.">按该套装下所有需求角色的<b>排序</b>汇总：越靠前 = 越多人把它排在前面；
-        ★ 表示多数角色把它标成了「必选」（对应锁定方案里的 ★必须）。主要属性 / 追加属性需求<b>按配装组</b>统计。</p>
+      <p class="muted small" data-en="Aggregated from the <b>ordering</b> of every character that wants this set: earlier = more characters ranked it first; &#9733; = most characters marked it &quot;Required&quot; (the lock plan&#39;s &#9733;Required). Needs are counted <b>per build</b>.">按该套装下所有需求角色的<b>排序</b>汇总：越靠前 = 越多人排在前面；★ = 多数角色标为「必选」。需求<b>按配装组</b>统计。</p>
       <div id="setSubTable"></div>
     </div>
   </section>
@@ -179,13 +176,13 @@
   <section id="tab-data" class="tabpane">
     <div class="card">
       <h3>圣遗物套装管理</h3>
-      <p class="muted small" data-en="Add or remove sets, edit the 2-piece and 4-piece effects, move entries up and down. Built-in sets are only &quot;hidden&quot; and can be restored any time. Long 4-piece effects are shown as a shortened summary; the full text remains editable below it. Hit the button below to work in a popup.">增删套装、改 2 件套 / 4 件套效果、上下移排序；内置套装只是「隐藏」，可随时恢复。过长的 4 件套效果会先展示重点摘要，完整文本仍可在下方编辑。点下面按钮在浮窗里操作。</p>
+      <p class="muted small" data-en="Add or remove sets, edit the 2-piece / 4-piece effects, reorder them. Built-in sets are only &quot;hidden&quot; and can be restored any time. Hit the button below to work in a popup.">增删套装、改 2 件套 / 4 件套效果、上下移排序；内置套装只是「隐藏」，可随时恢复。点下面按钮在浮窗里操作。</p>
       <button id="btnOpenSetMgr" class="btn primary">打开套装管理</button>
     </div>
     <div class="card">
       <h3>备份与恢复</h3>
-      <p class="muted small" data-en="Your config lives in this browser&#39;s local storage — export a user-data backup before switching devices or clearing the cache. The backup contains only your custom data and edits to built-in data; the built-in system library itself is not included. Import merges that user data into the current system library. <br><b>&quot;Restore built-in defaults&quot;</b> still resets the local save to the current built-in library and clears all custom edits. A normal browser refresh only reloads the page and does <b>not</b> clear local storage.">配置保存在浏览器的本地存储中，换设备或清缓存前请先导出。备份只包含用户自定义数据和对内置数据的修改，不包含内置系统库本身；导入时会把用户数据合并到当前系统库。<br>
-        <b>「恢复内置默认库」</b>仍会把本机存档重置为当前内置库并清除全部自定义修改；浏览器普通「刷新」只重载页面、<b>不会</b>清本地存档。</p>
+      <p class="muted small" data-en="Your config lives in this browser&#39;s local storage — export a backup before switching devices or clearing the cache. It contains only your custom data and edits to built-in data, and is merged into the current library on import. <br><b>&quot;Restore built-in defaults&quot;</b> resets the local save to the built-in library and clears all custom edits; a normal browser refresh only reloads the page and does <b>not</b> clear local storage.">配置保存在浏览器本地存储，换设备或清缓存前请先导出；备份只含你的自定义数据与对内置数据的修改，导入时合并进当前系统库。<br>
+        <b>「恢复内置默认库」</b>会把本机存档重置为内置库并清除全部自定义修改；浏览器普通「刷新」只重载页面、<b>不会</b>清存档。</p>
       <div class="btn-row">
         <button id="btnExportJson" class="btn primary" data-en="Export config (JSON)">导出配置 JSON</button>
         <button id="btnImportJson" class="btn" data-en="Import config (JSON)">导入配置 JSON</button>
@@ -197,7 +194,7 @@
 
     <div class="card">
       <h3>更新日志 <span id="appVersion" class="muted small"></span></h3>
-      <p class="muted small" data-en="The built-in character and artifact data is maintained by hand as the game updates; every change is logged here. A major update pops up the notice once the first time you open the app.">内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。大版本更新后首次打开会自动弹一次公告。</p>
+      <p class="muted small" data-en="The built-in character and artifact data is maintained by hand as the game updates; every change is logged here. A major update pops up the notice once the first time you open the app.">内置角色 / 圣遗物随游戏版本手工维护，这里记录每次更新改了什么。大版本更新后首次打开会弹一次公告。</p>
       <div id="chgLog" class="chg-log"></div>
       <div class="btn-row">
         <button id="btnShowNotice" class="btn">查看更新公告</button>
@@ -209,8 +206,7 @@
       <ul class="muted small notes">
         <li data-en="Built-in data covers <b id='statCharCount'>0</b> characters and <b id='statSetCount'>0</b> artifact sets, compiled from common community recommendations. Please verify as the game updates.">内置 <b id="statCharCount">0</b> 个角色、<b id="statSetCount">0</b> 个套装，整理自社区常见推荐，随版本变动请自行校正。</li>
         <li data-en='Weights for "primary / secondary" builds: primary = 1.0, secondary = 0.5. Main-stat priority 1/2/3 weights = 1.0 / 0.5 / 0.25.'>「主推 / 备选」权重：主推 = 1.0，备选 = 0.5；主要属性优先级 1/2/3 权重 = 1.0 / 0.5 / 0.25。</li>
-        <li data-en="Recommended keep count = the number of characters for which this main stat is the best choice (a character with multiple builds is counted once), ranging 1–4.">建议保留件数 = 以该主要属性为最优解的角色数（同一角色多套配装不重复计数），区间 1–4。</li>
-        <li data-en="A 2+2 build needs fewer pieces per set, so when aggregated it is counted at a 0.6 factor.">2+2 配装对单套的件数需求更低，汇总时按 0.6 系数折算。</li>
+        <li data-en="Recommended keep count = the number of characters for which this main stat is the best choice (a character with multiple builds is counted once), ranging 1–4; a 2+2 build needs fewer pieces per set and is counted at a 0.6 factor.">建议保留件数 = 以该主要属性为最优解的角色数（同一角色多套配装不重复计数），区间 1–4；2+2 配装对单套需求更低，按 0.6 系数折算。</li>
         <li data-en="Main-stat / sub-stat requirements are saved per build group, so a single character can have different stat needs when switching sets.">主要属性 / 追加属性需求<b>按配装组</b>分别保存：同一角色换套装时可以有不同的词条需求。</li>
         <li class="i18n-en-only" data-en="English translations are AI-generated, not fully proofread, and may not cover every piece of the interface. Please excuse any omissions or awkward wording."></li>
       </ul>
@@ -384,7 +380,6 @@
       <li>搜索框<b>两种语言都认</b>：不管当前显示哪种，输入「胡桃」或「Hu Tao」、「逐影猎人」或「Marechaussee」都能搜到。</li>
       <li>复制 / 导出的文本<b>始终保持中文</b>——游戏内的锁定界面是中文，照抄时才对得上。</li>
       <li>「更新日志」里记录的是历史改动，保留原始中文不翻译。</li>
-      <li>进阶：底层仍保留<b>分别设置</b>界面语言与数据语言的能力（<code>setLang('ui', …)</code> / <code>setLang('data', …)</code>），供接口或脚本单独调用；界面上不再拆成两个开关。</li>
     </ul>
   </div>
 </div>
@@ -397,7 +392,7 @@
     <button id="btnCloseSetMgr" class="icon-btn">×</button>
   </div>
   <div class="modal-body">
-    <p class="muted small" data-en="The <b>order</b> here is the order used by every dropdown and by the plan page; edit the 2-piece and 4-piece effects directly. Built-in sets can be hidden without removing character references; custom sets can be deleted. Restore the built-in order to place custom sets first and built-in sets in system order.">这里的<b>顺序</b>就是各处下拉与方案页的展示顺序；2 件套和 4 件套效果都可直接修改并保存。内置套装点「隐藏」只是不显示（角色配装里的引用会保留），自定义套装点「删除」会真正移除；可用「恢复内置顺序」将自定义套装置于前面、内置套装恢复系统顺序。</p>
+    <p class="muted small" data-en="The <b>order</b> here is used by every dropdown and by the plan page; the 2-piece / 4-piece effects are editable. Hiding a built-in set only keeps it out of sight (character references remain); deleting a custom set removes it for real.">这里的<b>顺序</b>就是各处下拉与方案页的展示顺序；2 件套 / 4 件套效果可直接修改并保存。内置套装点「隐藏」只是不显示（角色配装里的引用保留），自定义套装点「删除」会真正移除。</p>
     <div class="toolbar wrap">
       <button id="btnAddSet" class="btn primary">+ 添加套装</button>
       <span class="spacer"></span>
@@ -461,8 +456,7 @@
         <div><b>追加属性</b><div id="krPool" class="kr-chk"></div></div>
         <div><b>★必须追加属性</b><div id="krRequired" class="kr-chk"></div></div>
       </div>
-      <p class="muted small" data-en="The hit count <b>defaults to &quot;at least 2&quot;</b> — an artifact ends up with 4 substats, and at least 2 of them should match before it is worth investing in. Once enabled you can <b>set it to 1&ndash;4 per plan card</b> below; the higher the number, the stricter.">命中条数<b>预设「至少两条」</b>——圣遗物最终 4 条追加属性，至少 2 条符合要求才值得留下强化；
-        启用后可在下方每个方案卡片上<b>单独调到 1–4 条</b>，数字越大筛选越严。</p>
+      <p class="muted small" data-en="The hit count <b>defaults to &quot;at least 2&quot;</b> — an artifact ends up with 4 substats, and at least 2 should match to be worth investing in. Once enabled you can <b>set it to 1&ndash;4 on each plan card</b>; the higher, the stricter.">命中条数<b>预设「至少两条」</b>（圣遗物最终 4 条追加属性，至少 2 条符合才值得强化）；启用后可在每个方案卡片上<b>单独调到 1–4 条</b>，数字越大筛选越严。</p>
     </div>
   </div>
   <div class="drawer-foot">

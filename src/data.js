@@ -14,8 +14,18 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.21.3';
+const APP_VERSION = '2026.09.21.4';
 const CHANGELOG = [
+  {
+    v: '2026.09.21.4', date: '2026-09-21',
+    title: '修复手机端地址栏挡住浮窗底部按钮、桌面端筛选栏「国度」字段排布',
+    items: [
+      '修复：手机浏览器把地址栏 / 工具栏做成盖在页面上的浮层时（布局视口不跟着缩），配装编辑浮窗底部的「保存 / 取消」会被压在地址栏下面、点不着——现在按 visualViewport 实测的可见区高度给浮窗封顶，底部按钮始终露在地址栏上方；软键盘弹出时按钮同样会浮到键盘之上。',
+      '修复：角色编辑抽屉、属性选择小窗、套装管理 / 键位等居中浮窗同步纳入同一套规则，按「看得见的那块」居中并封顶，横屏手机与平板一并生效。',
+      '修复：桌面端筛选栏的「国度」标签原本固定压在选择框上方，整块比同排控件高出一截，选择框因而被往下挤约 11px，与相邻的元素 / 定位分段、搜索框、勾选框不在同一条中线上——现改为标签与选择框同排一行，「② 锁定方案」的「套装筛选 / 部位筛选」一并生效；手机端（≤560px）控件两列并排、横向空间紧张，保持原样。',
+      '说明：浏览器或机型不报出可见区差异时行为与改动前一致（仍走 100dvh），不会影响既有布局。',
+    ],
+  },
   {
     v: '2026.09.21.3', date: '2026-09-21',
     title: '去掉角色标签悬停提示里的指派口吻措辞',
@@ -2082,9 +2092,11 @@ const I18N_HTML = {
     '</ul>',
     '<h4>Language</h4>',
     '<ul>',
-    '<li>Two independent switches in the top right: <b>UI language</b> (buttons and help text) and <b>Data language</b> (character names, set names, stat names). Both are remembered, and the two can differ.</li>',
-    '<li>Search matches both languages — typing "Hu Tao" or "Marechaussee" works no matter which data language is active.</li>',
-    '<li>Exports and clipboard text follow the game, so they stay in Chinese.</li>',
+    '<li>There is a single <b>ZH / EN switch</b> at the top right — the lit side is the current language. Hit EN and the buttons, the help text and all character / set / stat names switch to English; your choice is remembered.</li>',
+    '<li>In English the official localised names are shown (胡桃 → Hu Tao, 逐影猎人 → Marechaussee Hunter), and stats, regions, roles and slots follow along.</li>',
+    '<li>The search box <b>understands both languages</b>: "胡桃" or "Hu Tao", "逐影猎人" or "Marechaussee" all work no matter which language is shown.</li>',
+    '<li>Copy / export text <b>always stays Chinese</b> — the in-game lock screen is Chinese, so it matches when you copy it over.</li>',
+    '<li>The changelog keeps its original Chinese; it records historical changes and is not translated.</li>',
     '</ul>',
   ].join(''),
 };

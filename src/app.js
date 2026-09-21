@@ -2698,6 +2698,7 @@ function showDrawer(show) {
       if (!on || s.scrollWidth <= s.clientWidth + 1) return;
       s.scrollLeft = on.offsetLeft - s.clientWidth / 2 + on.offsetWidth / 2;
     });
+    fitNote();     // 浮窗显示出来之后才量得到备注的真实内容高度（隐藏时量到的是 0）
   });
 }
 
@@ -2721,10 +2722,29 @@ function syncCharMeta() {
   renderChars(); renderPlan(); renderSubs();
 }
 
+/* 备注框高度自适应：初始 1 行 → 内容变多自动长高 → 到 CSS max-height（3 行）封顶，
+ * 之后高度固定，超出部分由 CSS 转成框内上下滚动。
+ * 量高度前必须先 height='auto'，否则量到的还是上一次写死的高度；
+ * 空 / 隐藏状态下量到的都是 0（display:none），所以先看有没有可见盒子，没有就跳过，
+ * 等浮窗真正显示出来（showDrawer 的 rAF）或内容有变化时再量。 */
+function fitNote(el) {
+  el = el || $('#edNote');
+  if (!el || !el.getClientRects || !el.getClientRects().length) return;
+  el.style.height = 'auto';
+  const cs = getComputedStyle(el);
+  const border = el.offsetHeight - el.clientHeight;   // box-sizing:border-box：把上下边框的高度补回来
+  const min = parseFloat(cs.minHeight) || 0;           // 下限：1 行高
+  const max = parseFloat(cs.maxHeight) || Infinity;    // 上限：3 行高（超出后由 CSS 固定高度 + 框内滚动）
+  el.style.height = Math.min(Math.max(el.scrollHeight + border, min), max) + 'px';
+}
+
 function drawDrawer() {
   const c = editing;
   const body = $('#drawerBody');
 
+  // 备注框用多行 <textarea>：宽度铺满，rows=1 从一行高起步，内容变多自动换行长高、
+  // 到 3 行封顶后转框内上下滚动（尺寸与上限见 styles.css 的 #edNote）。拼 HTML 时 ${esc(c.note)}
+  // 必须顶格——紧跟开始标签的那个换行会被 HTML 解析器吃掉，正好用来保住备注自身的前导换行。
   body.innerHTML = `
   <div class="fgroup">
     <label>角色名称</label>
@@ -2776,7 +2796,8 @@ function drawDrawer() {
 
   <div class="fgroup">
     <label>备注</label>
-    <input type="text" id="edNote" value="${esc(c.note)}" placeholder="例：主C，优先双暴；或用 2+2 过渡">
+    <textarea id="edNote" rows="1" placeholder="例：主C，优先双暴；或用 2+2 过渡">
+${esc(c.note)}</textarea>
   </div>
   <div class="fgroup">
     <label>${t('攻略来源')} <span class="hint">${t('每行标注来源：「米游社wiki」词条是配装数据的实际来源（数据源），作者攻略为延伸阅读（非数据源，本项目从不读取）；URL 可直接点击跳转；右侧 ✎ 编辑、✓ 确认、× 取消、− 删除，支持多个来源。留空表示暂无来源')}</span></label>
@@ -2814,7 +2835,11 @@ function drawDrawer() {
 
   // 名称
   body.querySelector('#edName').oninput = e => { editing.name = e.target.value; syncCharMeta(); };
-  body.querySelector('#edNote').oninput = e => { editing.note = e.target.value; syncCharMeta(); };
+  body.querySelector('#edNote').oninput = e => {
+    editing.note = e.target.value;   // 多行备注：保留换行，不做 trim
+    fitNote(e.target);               // 内容变多 / 变少都跟着重算高度
+    syncCharMeta();
+  };
 
   // 攻略来源：一行一链接 = 可点击直接跳转(锚) + 可编辑 + 可删除(−)，可加多源
   let srcEditIdx = null;   // 当前正在编辑的来源行；null = 全部为「可跳转链接」态
@@ -2941,6 +2966,7 @@ function drawDrawer() {
   };
 
   drawBuildCards();
+  fitNote(edNote);   // 浮窗此刻已显示（如「还原为内置数据」后重绘）就立刻贴合备注内容高度；隐藏时内部会跳过
 }
 
 /* 抽屉里正在编辑的配装组 */
@@ -4957,5 +4983,34 @@ function syncTopbarHeight() {
   startI18nObserver();            // 之后动态插入的内容自动跟着走
   syncTopbarHeight();
   window.addEventListener('resize', syncTopbarHeight);
+  window.addEventListener('resize', () => fitNote());   // 备注框高度取决于宽度：窗口尺寸一变就要重算
   window.addEventListener('orientationchange', () => setTimeout(syncTopbarHeight, 120));
+
+  /* 可视区高度 / 起点同步给 CSS（浮窗按它封顶，底部按钮才不会被地址栏挡住）：
+     有手机浏览器把地址栏、工具栏做成盖在页面上的浮层——布局视口不跟着缩，100dvh 也测不到，
+     整屏浮窗的底部「保存 / 取消」就被压在地址栏下面。这里用 visualViewport 取「真正看得见的
+     那块」写进 --vvh（高度）/ --vvt（起点），只在这块确实比布局视口矮时才写；
+     没写时 CSS 回落到 100dvh / 原百分比上限，行为与改动前一致。
+     双指缩放会让 visualViewport 整体变小，那不是「被挡住」，不接管。 */
+  (function syncVisibleHeight() {
+    const el = document.documentElement;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    let raf = 0;
+    const apply = () => {
+      raf = 0;
+      if (vv.scale > 1.01 || window.innerHeight - vv.height <= 1) {
+        el.style.removeProperty('--vvh');
+        el.style.removeProperty('--vvt');
+        return;
+      }
+      el.style.setProperty('--vvh', Math.round(vv.height) + 'px');
+      el.style.setProperty('--vvt', Math.round(vv.offsetTop) + 'px');
+    };
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(apply); };
+    vv.addEventListener('resize', schedule);   // 地址栏 / 工具栏伸缩、软键盘弹出
+    vv.addEventListener('scroll', schedule);   // 地址栏伸缩时 offsetTop 也跟着变
+    window.addEventListener('orientationchange', schedule);
+    apply();
+  })();
 })();
