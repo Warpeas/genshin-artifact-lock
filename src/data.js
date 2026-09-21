@@ -14,8 +14,27 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.21';
+const APP_VERSION = '2026.09.21.3';
 const CHANGELOG = [
+  {
+    v: '2026.09.21.3', date: '2026-09-21',
+    title: '去掉角色标签悬停提示里的指派口吻措辞',
+    items: [
+      '改：锁定方案界面角色标签的悬停提示只保留「次要属性偏好：…」本身，删去后缀那句把同色追加属性指派给某位角色的说明；悬停提示能力本身保留，属性点击小窗的内容与交互均不变。',
+    ],
+  },
+  {
+    v: '2026.09.21.2', date: '2026-09-21',
+    title: '锁定方案属性提示改为点击展开小窗（手机端可点）+ 关联角色多的属性强化显示',
+    items: [
+      '改：锁定方案的属性说明（追加属性 + 沙/杯/冠主要属性）不再依赖鼠标悬停——点一下 chip 就在旁边弹出小窗，手机端点按同样有效；再点同一个 chip / 点空白 / 按 Esc / 滚动页面即收起。',
+      '新增：小窗内分三块——属性名 + 优先度标签（高优先 / 中优先）、几名角色需要它（主要属性另说几人列为首选）、按分组逐行列出「具体是谁需要」。每行行首色条与小窗内角色名同色，和卡片上的角色名配色一一对应。',
+      '改：同一行里的多组内容用「★必需 / 需要 / ◇条件」（主要属性为「首选 / 次选」）分段隔开，不再靠一句话串着说；◇ 条件词条仍会带出前提理由。',
+      '新增：优先度强化显示——需要它的角色覆盖全组或过半（且 ≥3 人）标「高优先」，≥3 人标「中优先」，chip 配色加重并带人数角标，一眼看出哪几条该优先锁。',
+      '修：◇ 条件词条与分组专属词条此前是悬停手势（cursor:help），现改为可点击；小窗在窄屏铺满可用宽度，放不下时自动翻到 chip 上方并夹在视口内，不会跑出屏幕。',
+      '整理：小窗新增文案补进 i18n 词典，英文界面有对应翻译。',
+    ],
+  },
   {
     v: '2026.09.21', date: '2026-09-21',
     title: '角色卡主推改动不再误标「已修改」；内置主推标注移入编辑界面；修复整组还原未保存',
@@ -1754,6 +1773,24 @@ const T_UI_EN = {
     'Substat priority Top 5 (★ = most characters marked it Required)',
   '主要属性': 'Main stat',
   '主要属性固定': 'Main stat is fixed',
+  /* 属性详情小窗（点击 chip 展开） */
+  '点击查看属性详情': 'Click for details',
+  '高优先': 'High priority',
+  '中优先': 'Medium priority',
+  '★必需': '★Required',
+  '需要': 'Needed',
+  '◇条件': '◇Conditional',
+  '首选': 'First choice',
+  '次选': 'Backup choice',
+  '散件 / 过渡保留规则带来的属性，不针对具体角色':
+    'From a filler / transition keep-rule — not tied to any character.',
+  '{n} / {m} 名角色需要它': '{n} of {m} characters need it',
+  '{n} 名角色在这个部位需要它，其中 {k} 人列为首选':
+    '{n} characters need it in this slot, {k} list it first',
+  '颜色与卡片上的角色名一一对应，照搬时按同色给到对应角色':
+    'Colors match the character names on the card — give it to the same-colored character.',
+  '「首选」= 该角色在这个部位的头号主属性':
+    '"First choice" = that character\'s top main stat for this slot.',
   '未设置': 'Not set',
   '未设置，可在下方添加': 'Not set — add one below',
   '命中': 'Hits',

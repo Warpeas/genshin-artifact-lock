@@ -646,6 +646,47 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
 .gp-mini:last-child{border-bottom:none;}
 .gp-mini .gp-cell{line-height:1.7;}
 
+/* ---------- 属性详情小窗（点击展开；手机端点按同样生效） ----------
+   原先属性说明是 title 悬停提示，触屏上根本出不来 → 改为点 chip 弹小窗。
+   小窗内按分组分行，行首色条与卡片上的角色名同色；关联角色多的属性在
+   chip 上做强化显示（.gp-hot-*）+ 人数角标，提示这条优先度较高。 */
+.gp-tipable{cursor:pointer;}
+.gp-sub-g.gp-tipable,.gp-opt.gp-tipable{cursor:pointer;}   /* 盖掉原来的 cursor:help */
+.gp-tipable:hover{filter:brightness(1.25);}
+.gp-tipable:focus-visible{outline:2px solid var(--gold,#e8c88a);outline-offset:1px;}
+/* 中优先 = 描边提亮；高优先 = 底色更实 + 更亮的边 */
+.gp-main.gp-hot-mid,.gp-sub.gp-hot-mid,.gp-star.gp-hot-mid{border-color:#5c86b3;color:#cfe3ff;}
+.gp-sub-g.gp-hot-mid{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tc,#5fa8e8) 45%,transparent);}
+.gp-main.gp-hot-high,.gp-sub.gp-hot-high{background:#26354a;border-color:#5c86b3;color:#e2f0ff;}
+.gp-star.gp-hot-high{background:#4a3a1c;border-color:#a5822f;color:#ffe0a3;}
+.gp-sub-g.gp-hot-high{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tc,#5fa8e8) 70%,transparent);}
+/* 人数角标：N 名角色需要它 */
+.gp-hn{font-style:normal;font-size:9.5px;font-weight:700;margin-left:4px;padding:0 4px;
+  border-radius:7px;background:#3a5a7d;color:#e2f0ff;vertical-align:1px;}
+.gp-star .gp-hn{background:#7d6222;color:#ffe6ab;}
+
+#statTipBox{position:fixed;z-index:150;max-width:min(330px,calc(100vw - 20px));
+  background:#1c2532;border:1px solid #3a4757;border-radius:9px;padding:9px 11px 10px;
+  box-shadow:0 14px 34px rgba(0,0,0,.6);font-size:11.5px;line-height:1.6;color:#93a1b3;}
+#statTipBox.hidden{display:none;}
+.stt-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.stt-stat{font-size:12.5px;font-weight:700;color:#e6ecf3;}
+.stt-lv{font-size:10px;padding:1px 6px;border-radius:20px;border:1px solid;}
+.stt-lv-high{color:#ffd98a;background:#3a2f16;border-color:#7d6222;}
+.stt-lv-mid{color:#bcd8f5;background:#1f2e40;border-color:#3a5a7d;}
+.stt-sub{margin-top:2px;font-size:11px;color:#8792a4;}
+.stt-rows{display:flex;flex-direction:column;gap:3px;margin-top:6px;}
+.stt-note{margin-top:6px;font-size:10.5px;color:#6f7b8c;line-height:1.6;}
+/* 一行 = 一组：左侧色条与卡片上的角色名同色（分组靠分行 + 颜色区分，不会看串） */
+.stt-row{display:flex;align-items:baseline;flex-wrap:wrap;padding:3px 8px;border-radius:5px;
+  background:#16202c;border-left:3px solid var(--tc,#3a4757);}
+.stt-tag{font-size:10px;padding:0 5px;margin-right:4px;border-radius:3px;white-space:nowrap;
+  background:#233447;color:#9fb0c6;border:1px solid #33506e;}
+.stt-tag-req{background:#3d2f18;color:#f0c674;border-color:#6b5326;}
+.stt-tag-first{background:#23331f;color:#a9d69b;border-color:#3f5236;}
+.stt-tag-opt{background:#2a2620;color:#c8b890;border-color:#6b5326;border-style:dashed;}
+.stt-nm{font-size:11.5px;font-weight:600;color:var(--tc,#cfe3ff);margin-right:7px;white-space:nowrap;}
+
 /* 顶部采纳提示 */
 .pick-info:empty{display:none;}
 .pick-info{margin:0 0 10px;}
@@ -904,4 +945,14 @@ input[type=text]:focus{outline:none;border-color:var(--gold);}
   .slot-name{background:#f6f6f6 !important;color:#333 !important;}
   .slot-name,.stat-badge,.req-from,.set-head h3{color:#111 !important;}
   main{padding:0;}
+  #statTipBox{display:none !important;}   /* 打印时小窗不出现（它本身也随内容一起印） */
+}
+
+/* ---------- 窄屏（手机）：小窗铺满可用宽度，正文与角标可读 ---------- */
+@media (max-width:560px){
+  #statTipBox{max-width:calc(100vw - 16px);font-size:12px;padding:10px 12px;}
+  .stt-stat{font-size:13px;}
+  .stt-nm{font-size:12px;}
+  .stt-row{padding:4px 8px;}
+  .gp-hn{font-size:9px;padding:0 3px;}
 }

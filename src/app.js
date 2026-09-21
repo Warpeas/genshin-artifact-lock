@@ -2025,7 +2025,11 @@ function planSubOrder(p) {
     const id = statIdOf(s);
     if (id && s.opt && s.optNote && !optNoteOf[id]) optNoteOf[id] = s.optNote;
   }));
-  if (!groups) return ids.map(id => ({ id, req: req.has(id), opt: optSet.has(id), optNote: optNoteOf[id] || '', color: null, owners: null, shared: true, starColors: [] }));
+  // 关联角色数：点开属性小窗要说明「谁要它」，也是 chip 强化显示（优先度较高）的依据。
+  // 以角色自己的需求清单 subList 为准——★必需 / 常规 / 条件词条都算「这位角色要它」。
+  const allRoles = p._group || [];
+  const needCnt = (list, id) => list.filter(r => (r.subList || []).some(s => statIdOf(s) === id)).length;
+  if (!groups) return ids.map(id => ({ id, req: req.has(id), opt: optSet.has(id), optNote: optNoteOf[id] || '', color: null, owners: null, shared: true, starColors: [], needCount: needCnt(allRoles, id) }));
 
   const everyone = groups.flatMap(g => g.roles);
   // 全组里把某词条当「常规需求」（非 opt）的角色——用于判断 ◇ 是否纯条件项
@@ -2054,6 +2058,7 @@ function planSubOrder(p) {
       id, req: isReq, opt: isOpt, optNote: optNoteOf[id] || '', starColors, shared,
       color: shared ? null : groups[owners[0]].color,
       owners: shared ? null : owners,
+      needCount: needCnt(everyone, id),
     };
   });
   // ★0 → 共有1 → 第 k 组独占 2+k
@@ -2082,7 +2087,7 @@ function planForText(p) {
     const groups = planColorGroups(p);
     if (groups) {
       const chips = groups.map(g => g.names.map(n =>
-        `<span class="gp-char-tag" style="--tc:${g.color}" title="次要属性偏好：${esc(g.minor)}（下方同色的追加属性优先给到这位角色）">${esc(n)}</span>`
+        `<span class="gp-char-tag" style="--tc:${g.color}" title="次要属性偏好：${esc(g.minor)}">${esc(n)}</span>`
       ).join('')).join('');
       return `<span class="gp-for gp-for-groups">${chips}</span>`;
     }
@@ -2101,32 +2106,34 @@ function planCharsPlain(p) {
   return groups.map(g => `${g.names.join('、')}（${g.minor}）`).join(' / ');
 }
 
-/* 追加属性 chip 渲染：★必需 / 共有 / 分组专属（同色于对应角色，鼠标悬停看给谁） */
-function planSubText(p) {
+/* 追加属性 chip 渲染：★必需 / 共有 / 分组专属（同色于对应角色）。
+ *   属性说明不再是 title 悬停（触屏上根本出不来），改为点击展开小窗——见下方 statTipHTML。
+ *   关联角色多的属性在 chip 上做强化显示（.gp-hot-*）+ 人数角标，提示这条优先度较高。 */
+function planSubText(p, setName) {
   const items = planSubOrder(p);
   if (!items.length) return '<span class="gp-fixed">不限</span>';
-  const groups = planColorGroups(p) || [];
+  const total = (p._group || []).length;
   return items.map(it => {
     const nm = esc(subStatName(it.id));
+    const lv = statHotLevel(it.needCount || 0, total);
+    const hot = lv === 'normal' ? '' : ` gp-hot gp-hot-${lv}`;
+    const badge = lv === 'normal' ? '' : `<i class="gp-hn">${it.needCount}</i>`;
+    const tip = tipAttr(setName, p, '', it.id);
     if (it.req) {
       const sc = it.starColors || [];
-      // 1–2 个分组需要：多色★（每个分组一颗星，星色同于角色名，悬停看是谁）
+      // 1–2 个分组需要：多色★（每个分组一颗星，星色同于角色名，点开看是谁）
       if (sc.length >= 1 && sc.length <= 2) {
         const marks = sc.map(s => `<i class="gp-star-mark" style="--tc:${s.color}">★</i>`).join('');
-        return `<span class="gp-star gp-star-multi" title="${esc('必需：' + sc.map(s => s.who).join('、'))}">${marks}${nm}</span>`;
+        return `<span class="gp-star gp-star-multi gp-tipable${hot}"${tip}>${marks}${nm}${badge}</span>`;
       }
-      // >2 个分组都要（或定位不到分组）：退化为单色★，需要它的角色放进悬停
-      const tip = sc.length > 2 ? '必需：' + sc.map(s => s.who).join('、') : '';
-      return `<span class="gp-star"${tip ? ` title="${esc(tip)}"` : ''}>★${nm}</span>`;
+      // >2 个分组都要（或定位不到分组）：退化为单色★，需要它的角色在小窗里按分组列出
+      return `<span class="gp-star gp-tipable${hot}"${tip}>★${nm}${badge}</span>`;
     }
     if (it.opt) {
-      // 悬停直接展示前提理由（如「携带西风秘典时需要」），无理由时退化为极简说明
-      const tip = it.optNote || t('满足条件时才需要');
-      return `<span class="gp-sub gp-opt" title="${esc(tip)}">◇${nm}</span>`;
+      return `<span class="gp-sub gp-opt gp-tipable${hot}"${tip}>◇${nm}${badge}</span>`;
     }
-    if (!it.color) return `<span class="gp-sub">${nm}</span>`;
-    const who = it.owners.map(i => groups[i] && groups[i].names.join('、')).filter(Boolean).join('、');
-    return `<span class="gp-sub gp-sub-g" style="--tc:${it.color}" title="只有 ${esc(who)} 需要，优先给到他">${nm}</span>`;
+    if (!it.color) return `<span class="gp-sub gp-tipable${hot}"${tip}>${nm}${badge}</span>`;
+    return `<span class="gp-sub gp-sub-g gp-tipable${hot}" style="--tc:${it.color}"${tip}>${nm}${badge}</span>`;
   }).join('');
 }
 /* 导出文本用的追加属性顺序：与页面一致（共有在前、分组在后），无法上色所以保持纯文本 */
@@ -2148,12 +2155,184 @@ function subHitText(sub) {
   const t = subHitPlain(sub);
   return t ? `<b>${t}</b>` : '<span class="gp-fixed">不限</span>';
 }
-/* 单部位主要属性：null = 固定（花 / 羽），[] = 不限 */
-function mainCondText(slotId, list) {
+/* 单部位主要属性：null = 固定（花 / 羽），[] = 不限。
+ *   与追加属性一样「点击展开小窗」：小窗里按分组分行，列出该部位把它当首选 / 次选的角色。 */
+function mainCondText(slotId, list, p, setName) {
   if (list === null || list === undefined) return '<span class="gp-fixed">主要属性固定</span>';
-  return list.length
-    ? list.map(id => `<span class="gp-main">${esc(mainStatName(slotId, id))}</span>`).join('')
-    : '<span class="gp-fixed">不限</span>';
+  if (!list.length) return '<span class="gp-fixed">不限</span>';
+  const all = (p && p._group) || [];
+  return list.map(id => {
+    let first = 0, need = 0;
+    all.forEach(r => { const st = mainStatusOf(r, slotId, id); if (st) { need++; if (st === 'first') first++; } });
+    // 主属性按「把它列为首选」的人数做强化：头号主属性通常最该锁
+    const lv = statHotLevel(first || need, all.length);
+    const hot = lv === 'normal' ? '' : ` gp-hot gp-hot-${lv}`;
+    const badge = lv === 'normal' ? '' : `<i class="gp-hn">${first || need}</i>`;
+    const tip = p ? tipAttr(setName, p, slotId, id) : '';
+    return `<span class="gp-main gp-tipable${hot}"${tip}>${esc(mainStatName(slotId, id))}${badge}</span>`;
+  }).join('');
+}
+
+/* ============================================================
+ * 属性详情小窗（点击展开，替掉原来的 title 悬停）
+ * ------------------------------------------------------------
+ * 为什么改：title 悬停提示在手机上根本出不来，触屏只能点。
+ *   点 chip → 在它旁边弹出小窗；再点一次 / 点空白 / Esc / 滚动即收起。
+ * 小窗长什么样：
+ *   ① 头部：属性名 + 优先度标签（关联角色多时标「高 / 中优先」）；
+ *   ② 概览：几名角色需要它（主属性还会说清几人列为首选）；
+ *   ③ 分行：每个「次要属性偏好分组」一行，行首色条与卡片上的角色名同色；
+ *      行内再按 ★必需 / 需要 / ◇条件（主属性为 首选 / 次选）分段，
+ *      同一行里多组内容也不会看串。
+ * ============================================================ */
+/* chip 上的展开入口：把「哪个套装 / 哪个方案 / 哪个部位 / 哪个属性」编码进 data 属性。
+ *   方案 key 里本身可能出现 '|'，所以解析时首尾各取一个、中间整段当 key（见 openStatTip）。 */
+function tipAttr(setName, p, slot, id) {
+  const raw = `${setName}|${p.key}|${slot || ''}|${id}`;
+  return ` data-stat-tip="${esc(raw)}" role="button" tabindex="0" aria-label="${esc(t('点击查看属性详情'))}"`;
+}
+/* 关联角色数 → 强化档位：全员需要 = 高；过半且 ≥3 人 = 高；≥3 人 = 中。
+ *   只为「这条是多数角色的需求、优先度较高」服务；只有一两个人的孤立需求不虚标。 */
+function statHotLevel(n, total) {
+  if (!n || !total || n <= 1) return 'normal';
+  if (n >= total) return 'high';
+  if (total <= 2) return 'normal';
+  if (n / total >= 0.6) return n >= 3 ? 'high' : 'mid';
+  return n >= 3 ? 'mid' : 'normal';
+}
+/* 某角色在某部位对某主属性的地位：'first' 首选 / 'alt' 次选 / null 不需要 */
+function mainStatusOf(role, slotId, id) {
+  const list = (role.mains && role.mains[slotId]) || [];
+  const i = list.findIndex(m => statIdOf(m) === id);
+  return i < 0 ? null : (i === 0 ? 'first' : 'alt');
+}
+/* 某角色对某追加属性的状态：'req' ★必需 / 'need' 需要 / 'opt' ◇条件 / null 不需要 */
+function subStatusOf(role, id) {
+  const hit = (role.subList || []).find(s => statIdOf(s) === id);
+  if (!hit) return null;
+  if ((role.req || []).some(x => statIdOf(x) === id)) return 'req';
+  return hit.opt ? 'opt' : 'need';
+}
+/* 按「分组」分行：同色的一组角色一行，行内再按 statusOf 分段（★必需 / 需要 / ◇条件…）。
+ *   没有分组（散件 / 过渡保留方案）时不分行，整体一行。 */
+function tipRows(p, statusOf, tiers) {
+  const groups = planColorGroups(p) || [];
+  const all = (p._group || []).slice();
+  const mk = (roles, color) => {
+    const parts = tiers.map(tier => {
+      const names = roles.filter(r => statusOf(r) === tier.key).map(r => r.name);
+      return names.length ? { tag: tier.tag, cls: tier.cls || '', names } : null;
+    }).filter(Boolean);
+    return parts.length ? { color, parts } : null;
+  };
+  const rows = [];
+  if (groups.length) {
+    groups.forEach(g => { const row = mk(g.roles, g.color); if (row) rows.push(row); });
+  } else if (all.length) {
+    const row = mk(all, null);
+    if (row) rows.push(row);
+  }
+  return rows;
+}
+/* 追加属性小窗的数据 */
+function planSubTip(p, id) {
+  const it = planSubOrder(p).find(x => x.id === id) || null;
+  const all = (p._group || []).slice();
+  const need = all.filter(r => subStatusOf(r, id)).length;
+  return {
+    kind: 'sub', stat: subStatName(id), slot: '',
+    level: statHotLevel(need, all.length), need, total: all.length, first: 0,
+    rows: tipRows(p, r => subStatusOf(r, id), [
+      { key: 'req', tag: t('★必需'), cls: 'stt-tag-req' },
+      { key: 'need', tag: t('需要') },
+      { key: 'opt', tag: t('◇条件'), cls: 'stt-tag-opt' },
+    ]),
+    opt: !!(it && it.opt),
+    optNote: (it && it.optNote) || '',
+    rule: !all.length,
+  };
+}
+/* 主要属性（沙 / 杯 / 冠）小窗的数据 */
+function planMainTip(p, slotId, id) {
+  const all = (p._group || []).slice();
+  let need = 0, first = 0;
+  all.forEach(r => { const st = mainStatusOf(r, slotId, id); if (st) { need++; if (st === 'first') first++; } });
+  return {
+    kind: 'main', stat: mainStatName(slotId, id), slot: slotName(slotId),
+    level: statHotLevel(first || need, all.length), need, total: all.length, first,
+    rows: tipRows(p, r => mainStatusOf(r, slotId, id), [
+      { key: 'first', tag: t('首选'), cls: 'stt-tag-first' },
+      { key: 'alt', tag: t('次选') },
+    ]),
+    opt: false, optNote: '', rule: !all.length,
+  };
+}
+/* 小窗 HTML */
+function statTipHTML(m) {
+  const lv = m.level === 'high' ? t('高优先') : (m.level === 'mid' ? t('中优先') : '');
+  const head = `<div class="stt-head"><span class="stt-stat">${esc(m.slot ? m.slot + ' · ' + m.stat : m.stat)}</span>` +
+    (lv ? `<span class="stt-lv stt-lv-${m.level}">${esc(lv)}</span>` : '') + '</div>';
+  let sum;
+  if (m.rule) sum = t('散件 / 过渡保留规则带来的属性，不针对具体角色');
+  else if (m.kind === 'sub') sum = tf('{n} / {m} 名角色需要它', { n: m.need, m: m.total });
+  else sum = tf('{n} 名角色在这个部位需要它，其中 {k} 人列为首选', { n: m.need, k: m.first });
+  const rows = m.rows.map(row => {
+    const inner = row.parts.map(pt =>
+      `<span class="stt-tag${pt.cls ? ' ' + pt.cls : ''}">${esc(pt.tag)}</span>` +
+      pt.names.map(n => `<span class="stt-nm">${esc(charName(n))}</span>`).join('')
+    ).join('');
+    return `<div class="stt-row"${row.color ? ` style="--tc:${row.color}"` : ''}>${inner}</div>`;
+  }).join('');
+  const notes = [];
+  if (m.kind === 'sub' && m.opt) notes.push('◇ ' + esc(m.optNote || t('满足条件时才需要')));
+  if (!m.rule) notes.push(esc(m.kind === 'sub'
+    ? t('颜色与卡片上的角色名一一对应，照搬时按同色给到对应角色')
+    : t('「首选」= 该角色在这个部位的头号主属性')));
+  return head + `<div class="stt-sub">${esc(sum)}</div>` +
+    (rows ? `<div class="stt-rows">${rows}</div>` : '') +
+    notes.map(x => `<div class="stt-note">${x}</div>`).join('');
+}
+/* 收起小窗 */
+function closeStatTip() {
+  const box = $('#statTipBox');
+  if (!box || box.classList.contains('hidden')) return;
+  box.classList.add('hidden');
+  box.innerHTML = '';
+  box.removeAttribute('data-for');
+  box.removeAttribute('style');
+}
+/* 展开小窗：从 data-stat-tip 复原出「套装 / 方案 / 部位 / 属性」，现算现画（不缓存，免得跟重渲染脱节）。
+ *   再点同一个 chip = 收起；点别的 chip = 换内容。 */
+function openStatTip(chip) {
+  const box = $('#statTipBox');
+  const raw = (chip && chip.dataset) ? chip.dataset.statTip : '';
+  if (!box || !raw) return;
+  if (box.dataset.for === raw && !box.classList.contains('hidden')) { closeStatTip(); return; }
+  const parts = String(raw).split('|');
+  const id = parts.pop();
+  const slot = parts.pop();
+  const setName = parts.shift();
+  const key = parts.join('|');
+  const p = candsOfSet(setName).find(x => x.key === key);
+  if (!p) { closeStatTip(); return; }
+  box.dataset.for = raw;
+  box.innerHTML = statTipHTML(slot ? planMainTip(p, slot, id) : planSubTip(p, id));
+  box.classList.remove('hidden');
+  /* 先量尺寸再定位：默认贴 chip 正下方居中，下方放不下就翻到上方，
+   * 最后把位置夹在视口内——手机上小窗不会跑出屏幕。 */
+  const r = chip.getBoundingClientRect();
+  const w = box.offsetWidth, h = box.offsetHeight;
+  const vw = document.documentElement.clientWidth || window.innerWidth;
+  const vh = document.documentElement.clientHeight || window.innerHeight;
+  let left = r.left + r.width / 2 - w / 2;
+  left = Math.max(8, Math.min(left, vw - w - 8));
+  let top = r.bottom + 6;
+  if (top + h > vh - 8) {
+    const up = r.top - h - 6;
+    top = up >= 8 ? up : Math.max(8, vh - h - 8);
+  }
+  box.style.left = left + 'px';
+  box.style.top = top + 'px';
 }
 
 /* 导出里的「★必需角色」：每条★列出把它标成必需的角色名（合并方案里多组都要就都列上，
@@ -3397,6 +3576,7 @@ function tierClass(t) {
 }
 
 function renderPlan() {
+  closeStatTip();   // 方案页重渲染后旧的属性小窗会指向已经不存在的 chip，先收起
   const includeAlt = $('#planAltBuild').checked;
   const hideUnused = $('#planHideUnused').checked;
   const plan = computePlan(includeAlt);
@@ -3612,10 +3792,10 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
     const rows = slotsTodo.map(sd => `
       <div class="gp-mini">
         <span class="gp-slot">${sd.name}</span>
-        <span class="gp-cell">${mainCondText(sd.id, p.mains[sd.id])}</span>
+        <span class="gp-cell">${mainCondText(sd.id, p.mains[sd.id], p, setName)}</span>
       </div>`).join('');
 
-    const subTxt = planSubText(p);
+    const subTxt = planSubText(p, setName);
     // 命中条数：池有多宽就能调到几（上限 SUB_MIN_HIT_MAX）；池为空 = 追加属性不限，不给下拉
     const poolN = (p.sub && p.sub.pool) || [];
     const hitSel = poolN.length
@@ -4588,6 +4768,23 @@ function bind() {
       return;
     }
   });
+
+  /* 属性 chip：点一下展开小窗（手机端点按同样生效）。
+   *   捕获阶段监听，免得被卡片上的其它点击代理（复制 / 拆分 / 采纳）抢走；
+   *   点空白 / 再点同一个 chip / Esc / 滚动 / 缩放窗口都会收起。 */
+  document.addEventListener('click', e => {
+    const chip = e.target && e.target.closest ? e.target.closest('[data-stat-tip]') : null;
+    if (chip) { openStatTip(chip); return; }
+    if (!(e.target && e.target.closest && e.target.closest('#statTipBox'))) closeStatTip();
+  }, true);
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const chip = document.querySelector('[data-stat-tip]:focus');
+    if (chip) chip.blur();
+    closeStatTip();
+  });
+  window.addEventListener('resize', closeStatTip);
+  window.addEventListener('scroll', closeStatTip, true);
 
   function copyOnePlan(raw) {
     const setName = raw.split('|')[0];
