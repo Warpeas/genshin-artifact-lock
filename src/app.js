@@ -26,7 +26,6 @@ let ui = {
   elem: 'all', region: 'all', role: 'all',
   search: '', onlyEnabled: false,
   planSet: 'all', planSlot: 'all', buildIdx: 0,
-  charView: {},          // 卡片上当前展示的配装组下标（按角色 id）：用于多流派切换预览
 };
 /* 当前是否有任一筛选条件生效（用于「批量」作用域提示与筛选计数显示） */
 function charsFiltering() {
@@ -425,7 +424,7 @@ function userBackup() {
   const characterPrefs = [];
   state.characters.forEach(c => {
     const key = c.skey || c.id;
-    characterPrefs.push({ key, enabled: !!c.enabled, buildView: state.buildView && state.buildView[c.id] });
+    characterPrefs.push({ key, enabled: !!c.enabled });
     if (c.custom) {
       customCharacters.push(JSON.parse(JSON.stringify(c)));
       return;
@@ -488,7 +487,6 @@ function restoreUserBackup(data) {
     const c = state.characters.find(x => (x.skey || x.id) === p.key);
     if (!c) return;
     c.enabled = !!p.enabled;
-    if (p.buildView != null) state.buildView[c.id] = p.buildView;
   });
   state.planCfg = data.planCfg || {};
   state.keepRules = normalizeKeepRules(data.keepRules || {});
@@ -838,8 +836,8 @@ function normalize(o) {
   });
   delete o.customSets;
 
-  // 角色卡片「默认展示的配装组」偏好：{ 角色id: 配装下标 }，切换即持久化
-  o.buildView = (o.buildView && typeof o.buildView === 'object') ? o.buildView : {};
+  // 卡片展示哪一组 = 恒等于「主推」那一组（由 b.priority 派生），不再单独持久化展示偏好
+  delete o.buildView;
 
   // 语言：ui = 界面文案，data = 角色 / 套装 / 属性等数据内容，两者独立
   o.lang = normalizeLang(o.lang);
@@ -2296,11 +2294,9 @@ function charCardHtml(c) {
   const rg = c.region;
   const roleTxt = (c.roles || []).map(r => ROLE_NAME[r] || r).join('·');
   const list = c.builds || [];
-  const mainIdx = Math.max(0, list.findIndex(b => b.priority === 'main'));
-  const persisted = (state.buildView && typeof state.buildView[c.id] === 'number' && list[state.buildView[c.id]])
-    ? state.buildView[c.id] : null;
-  const viewIdx = (typeof ui.charView[c.id] === 'number' && list[ui.charView[c.id]])
-    ? ui.charView[c.id] : (persisted != null ? persisted : mainIdx);
+  // 卡片展示哪一组 = 恒等于「主推」那一组（单一数据源：b.priority）。
+  // 不再单独维护 ui.charView / state.buildView，从源头杜绝「改了主推却没同步展示」。
+  const viewIdx = Math.max(0, list.findIndex(b => b.priority === 'main'));
   const mb = list[viewIdx] || mainBuild(c);
   const sets = mb.sets || [];
   const mainRow = (slot) => {
@@ -2365,11 +2361,9 @@ function bindCard(card, c) {
     if (chip) {
       e.stopPropagation();
       const vi = +chip.dataset.vi;
-      ui.charView[c.id] = vi;
-      if (!state.buildView) state.buildView = {};
-      state.buildView[c.id] = vi;   // 切换即持久化为该角色的默认配装
       // 卡片上选中哪套 = 把「主推」一并切到这套，其余降为备选。
       // 只改主推顺序不会标「已修改」（角色卡徽标只看词条内容）；切回出厂主推即可。
+      // 展示与后台共用 b.priority 这一个数据源：卡片展示恒等于主推组，无需另存展示下标。
       if (c.builds && c.builds[vi]) {
         c.builds.forEach((b, i) => { b.priority = i === vi ? 'main' : 'alt'; });
       }
@@ -2482,14 +2476,9 @@ function syncRestoreCharBtn() {
   const btn = $('#btnRestoreChar');
   if (btn) btn.classList.toggle('hidden', !(editing && charCanRestore(editing)));
 }
-/* 把角色卡片「当前展示哪一组」切到下标 i（与卡片点芯片的行为一致）。
- * 编辑里改主推若不同步这个，卡片会继续展示原来那组，看起来像主推没生效。 */
-function syncCharView(i) {
-  if (!editing) return;
-  ui.charView[editing.id] = i;
-  if (!state.buildView) state.buildView = {};
-  state.buildView[editing.id] = i;
-}
+// 注：卡片「展示哪一组」现在由 b.priority 直接派生（见 charCardHtml 的 viewIdx），
+// 不再需要 syncCharView 这类额外同步入口——改主推后 persistEditingChar 会重渲染卡片，
+// 卡片自动选中新的主推组，从源头消灭「改了主推却没同步展示」这类遗漏。
 function openDrawer(id) {
   const src = state.characters.find(c => c.id === id);
   if (!src) return;
@@ -2851,8 +2840,6 @@ function drawBuildCards() {
   const rp = $('#edRestorePrio');
   if (rp) rp.onclick = () => {
     restorePriority(editing);
-    // 顺序回出厂后，卡片展示也切回出厂主推那组
-    syncCharView(Math.max(0, (editing.builds || []).findIndex(b => b.priority === 'main')));
     persistEditingChar();     // 立即落盘 + 重渲染角色卡（与基础信息字段一致：点了就生效）
     drawBuildCards();
     toast('已还原主推排布');
@@ -2864,8 +2851,7 @@ function drawBuildCards() {
     btn.onclick = () => {
       const i = +btn.dataset.bmain;
       editing.builds.forEach((b, j) => { b.priority = j === i ? 'main' : 'alt'; });
-      syncCharView(i);        // 卡片展示的那一组也切过去，否则编辑里改了主推、卡片还停在旧组
-      persistEditingChar();   // 立即落盘，否则关窗即丢（此前只改内存草稿）
+      persistEditingChar();   // 立即落盘 + 重渲染角色卡：卡片展示恒等于主推，自动切到新主推组
       drawBuildCards();
       toast('已设配装' + (i + 1) + '为主推');
     };
@@ -2887,9 +2873,7 @@ function drawBuildCards() {
       editing.builds.splice(i, 1);
       if (!editing.builds.some(b => b.priority === 'main')) editing.builds[0].priority = 'main';
       if (ui.buildIdx >= editing.builds.length) ui.buildIdx = 0;
-      // 卡片原本展示的那组可能被删掉了，切到当前主推
-      syncCharView(Math.max(0, (editing.builds || []).findIndex(b => b.priority === 'main')));
-      persistEditingChar();    // 立即落盘，否则关窗即丢
+      persistEditingChar();    // 立即落盘 + 重渲染角色卡：卡片展示恒等于主推，自动切到当前主推组
       drawBuildCards();
       toast('已删除配装' + (i + 1));
     };
@@ -4087,6 +4071,12 @@ function renameSet(idx, newName) {
     b.sets = (b.sets || []).map(x => { if (x === old) { n++; return nn; } return x; });
   }));
   s.name = nn;
+  // planCfg 以套装名为键，改名后把旧键的配置（手动合并/隐藏候选）迁到新键，
+  // 否则记录变孤儿键：方案页既看不见也不生效——视图与后台脱节（同类于之前的 buildView）。
+  if (state.planCfg && Object.prototype.hasOwnProperty.call(state.planCfg, old)) {
+    state.planCfg[nn] = state.planCfg[old];
+    delete state.planCfg[old];
+  }
   save(); afterSetsChange();
   toast(`已改名为「${nn}」${n ? `，同步更新 ${n} 处配装引用` : ''}`);
 }
