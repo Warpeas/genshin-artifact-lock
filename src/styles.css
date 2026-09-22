@@ -313,9 +313,21 @@ input[type=range]{accent-color:var(--gold);}
 }
 .bar-div{width:1px;height:18px;background:var(--line-soft);flex:none;margin:0 2px;}
 .bar-hint{font-size:var(--fs-xs);color:var(--txt3);margin-left:auto;}
-.batch-hint{margin:-4px 2px var(--s4);font-size:var(--fs-xs);color:var(--txt3);text-wrap:pretty;}
+.batch-hint{margin:0;font-size:var(--fs-xs);color:var(--txt3);text-wrap:pretty;}
 .batch-hint b{color:var(--txt2);font-weight:600;}
+/* ---- 启用区下方一行：左侧说明文字吃掉剩余宽度、右侧「新增角色」按钮不换行被挤扁 ---- */
+.enable-foot{
+  display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;
+  margin:calc(-1 * var(--s1)) 2px var(--s4);
+}
+.enable-foot .batch-hint{flex:1 1 280px;min-width:0;}
+.enable-foot .btn{flex:none;}
 .btn-grp{display:flex;gap:4px;flex-wrap:wrap;min-width:0;}
+/* ---- 启用栏里的分类块：桌面端只是把「分类名 + 按钮组」打成一包（分类名不占位，
+   分组仍靠发丝分隔线 .bar-div）；窄屏才把这一包做成可见的分组容器（见文件末尾 ≤560px 段）。
+   之所以给三个分类各包一层，是因为窄屏 .bar-div 会整条隐藏，光靠间距根本看不出分了哪几类。 ---- */
+.batch-grp{display:flex;align-items:center;gap:4px;min-width:0;}
+.grp-tag{display:none;}
 .btn.sm.on{
   background:linear-gradient(150deg,var(--gold2),var(--gold));color:var(--gold-ink);
   border-color:transparent;font-weight:600;
@@ -459,6 +471,15 @@ input[type=range]{accent-color:var(--gold);}
  * 抽屉 / 浮窗
  * ============================================================ */
 .modal-mask{position:fixed;inset:0;background:rgba(6,9,13,.66);z-index:90;backdrop-filter:blur(3px);}
+/* ---- 浮窗滚动锁（防「滚动穿透」）----
+   浮窗打开时 <html> 挂 .lock-scroll：主页面 overflow:hidden —— 页面停在原处不动，
+   关掉浮窗还在同一位置（不用 position:fixed 那套负 top 补偿，也就不会有跳位 / 抖动）。
+   再加两道：遮罩本身不吃手势（手指落在遮罩上的滑动不再拖着页面走）；浮窗内的滚动容器
+   滚到顶 / 底时余势不外传（overscroll-behavior）。
+   iOS 上 overflow:hidden 挡不住手指拖动，另有 app.js 的 touchmove 拦截兜底（initScrollLock）。 ---- */
+html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;}
+.modal-mask{touch-action:none;}
+.modal-body,.drawer-body{overscroll-behavior:contain;}
 .drawer{
   position:fixed;top:0;right:0;bottom:0;width:min(560px,94vw);z-index:100;
   background:var(--bg2);border-left:1px solid var(--line-soft);
@@ -1133,11 +1154,25 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .kr-btns button{min-height:32px;padding:6px 10px;}
   .kr-fold{width:32px;height:32px;}
 
-  /* --- 批量栏 / 显示行：分组标签保持在行首（chip 形态），各分组各自占满一行 --- */
+  /* --- 批量栏 / 显示行：分组标签保持在行首（chip 形态） --- */
   .batch-bar{gap:8px;padding:10px;}
   .filter-bar{padding:10px;}
+  /* 窄屏没有横向空间摆发丝分隔线，改用一个分类一块「凹槽」来分组：
+     槽内 = 分类名 + 该类全部按钮，槽底比栏底暗一档（凹槽色）、槽与槽之间留 8px 呼吸。
+     三类（属性 / 国度 / 定位）一眼能数清，也不会跟上面「全选 / 全不选 / 反选」混成一排。 */
   .bar-div{display:none;}
-  .btn-grp{width:100%;}
+  .batch-grp{
+    width:100%;gap:7px;padding:8px 10px;border-radius:var(--r-sm);
+    background:var(--sunken);border:1px solid var(--line-soft);
+  }
+  .batch-grp .grp-tag{
+    display:inline-flex;align-items:center;flex:none;
+    font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--txt3);
+  }
+  .batch-grp .btn-grp{flex:1 1 0;width:auto;gap:6px;}
+  /* 启用区下方：说明独占一行、按钮通栏，不再和计数徽标抢同一行 */
+  .enable-foot{flex-direction:column;align-items:stretch;gap:8px;margin:0 2px var(--s4);}
+  .enable-foot .btn{width:100%;}
 
   /* --- 统计条：auto-fit 自动 2×2 --- */
   .summary-strip{gap:8px;}

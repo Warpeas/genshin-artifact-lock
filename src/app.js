@@ -4938,6 +4938,60 @@ const MODAL_LAYERS = [
 function openHelp() { $('#helpBox').classList.remove('hidden'); $('#helpMask').classList.remove('hidden'); }
 function closeHelp() { $('#helpBox').classList.add('hidden'); $('#helpMask').classList.add('hidden'); }
 
+/* ============================================================
+ * 浮窗滚动锁：只允许浮窗自己滚，主页面不跟着动
+ * ============================================================ */
+/* 浮窗（角色编辑 / 配装编辑 / 各层弹窗）打开后，手指在主页面一侧继续滑会带着后面整页滚
+ * ——这就是「滚动穿透」：关掉浮窗常常找不回原来的位置。两层兜底：
+ * ① <html> 挂 .lock-scroll（见 styles.css）：主页面 overflow:hidden，滚动位置原地不动，
+ *    关掉浮窗还停在原处（比 position:fixed 那套负 top 补偿稳，不会跳位）；
+ * ② 下面那条 touchmove 拦截：iOS 上 overflow:hidden 挡不住手指拖动，而且浮窗内滚到顶 / 底
+ *    之后手势会顺着手继续把主页面带走 —— 只有「落在浮窗内的滚动容器、且这个方向还能滚」才放行。 */
+function syncScrollLock() {
+  /* 任一层遮罩可见就算「有浮窗」，二层（.mask-l2）/ 三层（.mask-l3）都一起算进去 */
+  const open = $$('.modal-mask').some(m => !m.classList.contains('hidden'));
+  document.documentElement.classList.toggle('lock-scroll', open);
+}
+
+function initScrollLock() {
+  /* 浮窗是散在各处 open / close 里成对 toggle 'hidden' 的：与其在每个开关里手工同步一次，
+     不如盯着遮罩的 class 自动跟 —— 新增浮窗、动态生成的浮窗（如属性选择原因）都不用再记得这把锁。 */
+  new MutationObserver(syncScrollLock).observe(document.body, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ['class'],
+  });
+  syncScrollLock();
+
+  /* 从落点往上找「真正能上下滚」的那一层：横向条（元素 / 页签）和没超高的容器都会被跳过，
+     所以抽屉正文、弹窗正文、备注框、长列表都能各自滚，不用维护一串白名单。 */
+  const findScroller = node => {
+    for (let n = node; n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
+      const ov = getComputedStyle(n).overflowY;
+      if (ov !== 'auto' && ov !== 'scroll') continue;
+      if (n.scrollHeight > n.clientHeight + 1) return n;
+    }
+    return null;
+  };
+  let y0 = 0;
+  document.addEventListener('touchstart', e => {
+    y0 = e.touches.length === 1 ? e.touches[0].clientY : 0;
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (e.touches.length > 1 || !e.cancelable) return;      // 双指缩放 / 已经不可取消的手势不碰
+    if (!document.documentElement.classList.contains('lock-scroll')) return;
+    const t = e.target;
+    if (!t || typeof t.closest !== 'function') return;
+    if (t.closest('#statTipBox')) return;                   // 属性小窗自成一层，不吃这把锁
+    const dy = e.touches[0].clientY - y0;
+    const scroller = findScroller(t);
+    if (scroller) {
+      const atTop = scroller.scrollTop <= 0;
+      const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+      if (dy > 0 ? !atTop : (dy < 0 && !atBottom)) return;  // 这一下确实还能滚 → 放行
+    }
+    e.preventDefault();                                     // 其余（遮罩 / 浮窗头脚 / 已到顶底）一律拦住
+  }, { passive: false });
+}
+
 function fallbackCopy(txt) {
   const ta = document.createElement('textarea');
   ta.value = txt;
@@ -4966,6 +5020,7 @@ function syncTopbarHeight() {
   pushLang();                     // 语言开关同步给 data.js 的取值函数
   document.documentElement.lang = (langOf('ui') === 'en' ? 'en' : 'zh-CN');
   bind();
+  initScrollLock();               // 浮窗打开时锁住主页面滚动（防滚动穿透）
   // 老存档补 bkey：没有指纹就没法判定「这一组还是不是内置原样」，也就没法单组还原
   const bfN = backfillBkeys();
   const syN = syncFactoryUpdates();   // 后台更新了内置数据 → 没动过的组自动跟上

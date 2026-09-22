@@ -62,23 +62,37 @@
       <span class="spacer"></span>
       <span id="filterCount" class="count-badge hidden">筛出 <b>0</b> / 0 个</span>
       <span class="count-badge">已启用 <b id="enabledCount">0</b> 个角色</span>
-      <button id="btnAddChar" class="btn primary">+ 新增角色</button>
     </div>
 
-    <!-- 「启用」行：真正勾选 / 取消勾选角色（写入数据），与上方只管显示的一行分开 -->
+    <!-- 「启用」行：真正勾选 / 取消勾选角色（写入数据），与上方只管显示的一行分开。
+         属性 / 国度 / 定位各包一层 .batch-grp：桌面端分类名不占位、仍靠发丝分隔线分组；
+         窄屏改成「分类名 + 整块底色」把三组分开（样式见 styles.css 的 ≤560px 段）。 -->
     <div class="toolbar batch-bar enable-bar">
       <span class="bar-tag on" data-en="Enable">启用</span>
       <button class="btn sm" data-batch="all">全选</button>
       <button class="btn sm" data-batch="none">全不选</button>
       <button class="btn sm" data-batch="invert">反选</button>
       <span class="bar-div"></span>
-      <span class="btn-grp" id="elemBatch" role="group" aria-label="按属性" title="按属性"></span>
+      <span class="batch-grp">
+        <span class="grp-tag">按属性</span>
+        <span class="btn-grp" id="elemBatch" role="group" aria-label="按属性" title="按属性"></span>
+      </span>
       <span class="bar-div"></span>
-      <span class="btn-grp" id="regionBatch" role="group" aria-label="按国度" title="按国度"></span>
+      <span class="batch-grp">
+        <span class="grp-tag">按国度</span>
+        <span class="btn-grp" id="regionBatch" role="group" aria-label="按国度" title="按国度"></span>
+      </span>
       <span class="bar-div"></span>
-      <span class="btn-grp" id="roleBatch" role="group" aria-label="按定位" title="按定位"></span>
+      <span class="batch-grp">
+        <span class="grp-tag">按定位</span>
+        <span class="btn-grp" id="roleBatch" role="group" aria-label="按定位" title="按定位"></span>
+      </span>
     </div>
-    <p class="batch-hint" data-en="&quot;View&quot; only decides which characters you see in the list (no data change); &quot;Enable&quot; actually ticks / unticks characters. Element / Region / Role: tap once to select a whole category, tap again to clear it; categories stack. Applies to <b>all characters</b> — &quot;Select all&quot; / &quot;Invert&quot; only affect the filtered result.">上方「显示」只决定列表里看到哪些角色（不改数据）；「启用」才真正勾选 / 取消勾选角色。属性 / 国度 / 定位：点一次全选该类、再点取消，可叠加；对<b>全部角色</b>生效，「全选 / 反选」只作用于当前筛选结果</p>
+    <!-- 启用区下方一行：说明文字 + 「新增角色」（按钮不再挤在「显示」行末尾跟计数徽标抢位置） -->
+    <div class="enable-foot">
+      <p class="batch-hint" data-en="&quot;View&quot; only decides which characters you see in the list (no data change); &quot;Enable&quot; actually ticks / unticks characters. Element / Region / Role: tap once to select a whole category, tap again to clear it; categories stack. Applies to <b>all characters</b> — &quot;Select all&quot; / &quot;Invert&quot; only affect the filtered result.">上方「显示」只决定列表里看到哪些角色（不改数据）；「启用」才真正勾选 / 取消勾选角色。属性 / 国度 / 定位：点一次全选该类、再点取消，可叠加；对<b>全部角色</b>生效，「全选 / 反选」只作用于当前筛选结果</p>
+      <button id="btnAddChar" class="btn primary">+ 新增角色</button>
+    </div>
 
     <div id="charGrid" class="char-grid"></div>
   </section>
