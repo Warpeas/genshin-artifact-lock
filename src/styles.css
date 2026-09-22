@@ -253,7 +253,7 @@ input[type=text]:hover,input[type=search]:hover,select:hover{border-color:color-
 .chk input{accent-color:var(--gold);cursor:pointer;width:15px;height:15px;flex:none;}
 .chk-row{display:flex;gap:16px;flex-wrap:wrap;}
 .fld{display:flex;flex-direction:column;gap:4px;font-size:var(--fs-xs);color:var(--txt3);}
-.fld select,.fld input{padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--line);
+.fld select,.fld input,.sel-flat{padding:6px 10px;border-radius:var(--r-sm);border:1px solid var(--line);
   background:var(--panel2);color:var(--txt);font-size:var(--fs-sm);font-family:inherit;min-width:130px;}
 /* 筛选栏（.toolbar）里的字段：标签与控件同排一行。
    默认的“标签在上”会让 .fld 比同排控件高一截（55px vs 32px），整行垂直居中的结果是
@@ -289,7 +289,28 @@ input[type=range]{accent-color:var(--gold);}
   padding:10px 12px;margin-bottom:var(--s3);
   flex-wrap:wrap;   /* 英文态按钮更宽，允许整行换行 */
 }
-.bar-label{font-size:var(--fs-xs);color:var(--txt3);flex:none;letter-spacing:.02em;}
+/* ---- 角色页两行筛选区的分组：上一行「显示」（只决定看到谁）/ 下一行「启用」（真正勾选角色）。
+   两行不再靠零散文字标签区分，而是各行开头一个分组标签 + 同一套容器框（面板底 / 圆角 / 内边距 /
+   左侧 3px 竖条）+ 不同的强调色：金色竖条留给真正改数据的「启用」行，中性竖条给只筛选视图的「显示」行。 ---- */
+.filter-bar{
+  background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r-lg);
+  padding:10px 12px;margin-bottom:var(--s2);
+  border-left:3px solid var(--line);
+}
+.enable-bar{
+  border-left:3px solid color-mix(in srgb,var(--gold) 55%,transparent);
+  background:color-mix(in srgb,var(--gold) 5%,var(--panel));
+}
+.bar-tag{
+  flex:none;font-size:var(--fs-xs);letter-spacing:.04em;color:var(--txt3);
+  padding:3px 9px;border-radius:999px;
+  border:1px solid var(--line-soft);background:var(--panel2);
+}
+.bar-tag.on{
+  color:var(--gold2);font-weight:600;
+  border-color:color-mix(in srgb,var(--gold) 45%,transparent);
+  background:color-mix(in srgb,var(--gold) 10%,transparent);
+}
 .bar-div{width:1px;height:18px;background:var(--line-soft);flex:none;margin:0 2px;}
 .bar-hint{font-size:var(--fs-xs);color:var(--txt3);margin-left:auto;}
 .batch-hint{margin:-4px 2px var(--s4);font-size:var(--fs-xs);color:var(--txt3);text-wrap:pretty;}
@@ -1093,12 +1114,13 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .toolbar .spacer{display:none;}
   .toolbar input[type=search]{width:100%;}
   .toolbar .fld{flex:1 1 calc(50% - 4px);}
+  .toolbar .sel-flat{flex:1 1 calc(50% - 4px);}
   .toolbar .btn{flex:1 1 auto;}
   .count-badge{margin-left:auto;}
   .sort-bar{gap:6px;}
   /* 窄屏说明文字缩到最小档并独占一行：触屏看不到 title，说明必须留在页面上 */
   .sort-note{font-size:11px;white-space:normal;flex-basis:100%;}
-  .fld select,.fld input{min-width:0;width:100%;}
+  .fld select,.fld input,.sel-flat{min-width:0;width:100%;}
   /* 元素分段：英文（Pyro / Electro…）比中文宽 → 横向滚动而不是撑破布局 */
   .seg{flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none;}
   .seg::-webkit-scrollbar{display:none;}
@@ -1111,9 +1133,9 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .kr-btns button{min-height:32px;padding:6px 10px;}
   .kr-fold{width:32px;height:32px;}
 
-  /* --- 批量栏 --- */
+  /* --- 批量栏 / 显示行：分组标签保持在行首（chip 形态），各分组各自占满一行 --- */
   .batch-bar{gap:8px;padding:10px;}
-  .bar-label{width:100%;}
+  .filter-bar{padding:10px;}
   .bar-div{display:none;}
   .btn-grp{width:100%;}
 

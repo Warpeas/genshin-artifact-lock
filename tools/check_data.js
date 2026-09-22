@@ -10,6 +10,12 @@
 //
 // ⚠️ 主词条为空「不一定」是 bug：wiki 原文写「空之杯：不强求」时，空就是正确结果
 //    （如欧洛伦辅助向配装）。判断是否真漏，回看 out/wiki_builds.json 的 reason 原文。
+//
+// ⚠️ subRules.optional（wiki 条件词条）支持两种写法：
+//      旧：['cr']                   纯字符串列表
+//      新：[['cr','携带西风秘典时']]  [stat, note] 元组，note 是「为什么是条件词条」的理由
+//    本脚本直接复用 src/data.js 的 normalizeSubRules / subIdsToSubs 解析（见 optPairsOf），
+//    不再自行按纯字符串处理 —— 否则元组会被当成 id，历史上曾误报 24 项「非法 id」。
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -34,7 +40,10 @@ vm.runInContext(src + `
 ;globalThis.__EXPORT = {
   RAW_CHARS: typeof RAW_CHARS !== 'undefined' ? RAW_CHARS : null,
   MAIN_STATS: typeof MAIN_STATS !== 'undefined' ? MAIN_STATS : null,
-  SUB_STATS: typeof SUB_STATS !== 'undefined' ? SUB_STATS : null
+  SUB_STATS: typeof SUB_STATS !== 'undefined' ? SUB_STATS : null,
+  /* 复用运行端解析逻辑：optional 的元组写法、条件词条落地判定都以 app 实际用的函数为准 */
+  subIdsToSubs: typeof subIdsToSubs === 'function' ? subIdsToSubs : null,
+  normalizeSubRules: typeof normalizeSubRules === 'function' ? normalizeSubRules : null
 };`, sandbox);
 
 const EX = sandbox.__EXPORT || {};
@@ -47,6 +56,19 @@ for (const slot of Object.keys(EX.MAIN_STATS || {})) {
   valid[slot] = new Set((EX.MAIN_STATS[slot] || []).map(x => (x && x.id) ? x.id : x));
 }
 const validSub = new Set((EX.SUB_STATS || []).map(x => (x && x.id) ? x.id : x));
+
+/* ---- optional（wiki 条件词条）写法规整 ----
+ * 直接复用 src/data.js 的 normalizeSubRules，把两种写法统一成 [[stat, note], ...]：
+ *   旧 ['cr'] / 新 [['cr','携带西风秘典时']]
+ * 拿不到运行端函数时用等价的本地兜底，保证脚本单独跑也不会退化成「把元组当 id」。
+ */
+function optPairsOf(rules) {
+  const r = (rules && typeof rules === 'object') ? rules : {};
+  if (typeof EX.normalizeSubRules === 'function') return EX.normalizeSubRules(r).optional;
+  return (Array.isArray(r.optional) ? r.optional : [])
+    .map(o => Array.isArray(o) ? [String(o[0] || ''), String(o[1] || '')] : [String(o), ''])
+    .filter(p => p[0]);
+}
 
 /* ---- 派生字段：复刻 src/data.js 的 subIdsToSubs 展开逻辑 ----
  * 只做纯 JS 展开（不含「前缀块收紧」，那段逻辑已废弃），用于检查：
@@ -69,12 +91,14 @@ function expandSubs(b) {
     const pos = group.map(id => out.findIndex(it => it.id === id)).filter(i => i >= 0);
     pos.sort((a, b) => a - b).slice(1).forEach(i => { out[i].op = '='; });
   });
-  const optional = new Set(Array.isArray(rules.optional) ? rules.optional : []);
+  const optPairs = optPairsOf(rules);
+  const optional = new Set(optPairs.map(p => p[0]));
+  const optNoteOf = Object.fromEntries(optPairs);
   out.forEach(it => { if (optional.has(it.id) && !it.req) it.opt = true; });
   optional.forEach(id => {
     if (out.some(it => it.id === id)) return;
     if (validSub.size && !validSub.has(id)) return;
-    out.push({ id, req: false, op: '>', opt: true });
+    out.push({ id, req: false, op: '>', opt: true, optNote: optNoteOf[id] || '' });
   });
   return out;
 }
@@ -120,19 +144,30 @@ for (const c of RAW) {
     if (!(b.roles || []).filter(Boolean).length) emptyRoles.push(name + '  #' + i + '  [' + (b.sets || []).join('+') + ']');
     const rules = (b.subRules && typeof b.subRules === 'object') ? b.subRules : {};
     const reqList = Array.isArray(rules.required) ? rules.required : [];
-    const optList = Array.isArray(rules.optional) ? rules.optional : [];
+    const optPairs = optPairsOf(rules);   // [[stat, note], ...]，两种写法已规整
     const expanded = expandSubs(b);
     const stars = expanded.filter(it => it.req).length;
     if (reqList.length && stars === 0) deadFields.push(name + '  #' + i + '  required=[' + reqList.join(',') + ']');
     if (stars === 0) starEmpty.push(name + '  #' + i);
     const subIds = new Set(expanded.map(it => it.id));
-    for (const id of optList) {
-      if (validSub.size && !validSub.has(id)) badOptional.push(name + '  #' + i + '  ' + id + '=<非法 id>');
-      else if (!subIds.has(id)) badOptional.push(name + '  #' + i + '  ' + id + '=<未落到词条>');
-      if (optList.filter(x => x === id).length > 1) badOptional.push(name + '  #' + i + '  ' + id + '=<重复>');
+    /* 条件词条是否真能落到词条上：以运行端 subIdsToSubs 的展开结果为准
+     * （正常情况下合法 stat 一定会被补进结果并标 opt，因此「未落到词条」实际是
+     *   运行端解析与数据约定脱钩时的哨兵）。 */
+    let landed = expanded;
+    if (typeof EX.subIdsToSubs === 'function') {
+      try {
+        const rt = EX.subIdsToSubs(b.subs || [], b.subRules);
+        if (Array.isArray(rt)) landed = rt;
+      } catch (e) { /* 运行端解析异常时退回本地展开 */ }
     }
-    for (const id of optList) {
-      const hit = expanded.find(it => it.id === id);
+    const landedIds = new Set(landed.map(it => it.id));
+    for (const [id, note] of optPairs) {
+      if (validSub.size && !validSub.has(id)) badOptional.push(name + '  #' + i + '  ' + id + '=<非法 id>');
+      else if (!landedIds.has(id)) badOptional.push(name + '  #' + i + '  ' + id + '=<未落到词条>');
+      if (optPairs.filter(p => p[0] === id).length > 1) badOptional.push(name + '  #' + i + '  ' + id + '=<重复>');
+    }
+    for (const [id] of optPairs) {
+      const hit = landed.find(it => it.id === id);
       if (hit && !hit.opt && !hit.req) unmarkedOptional.push(name + '  #' + i + '  ' + id);
     }
     if (reqList.some(id => !subIds.has(id))) issues.push('required=<不在 subs 里:' + reqList.filter(id => !subIds.has(id)).join('/') + '>');
