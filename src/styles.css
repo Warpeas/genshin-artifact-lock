@@ -320,13 +320,21 @@ input[type=range]{accent-color:var(--gold);}
   display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;
   margin:calc(-1 * var(--s1)) 2px var(--s4);
 }
-.enable-foot .batch-hint{flex:1 1 280px;min-width:0;}
+.enable-foot .foot-more{flex:1 1 280px;min-width:0;}
 .enable-foot .btn{flex:none;}
+/* 「说明」折叠入口：桌面端正文常显、标题不显示（桌面有宽度，没必要再点一下）；
+   窄屏才把标题放出来当一行折叠入口，正文默认收起，见文件末尾 ≤560px 段与 app.js 的 footMore 初始化。 */
+.foot-more>summary{display:none;}
 .btn-grp{display:flex;gap:4px;flex-wrap:wrap;min-width:0;}
 /* ---- 启用栏里的分类块：桌面端只是把「分类名 + 按钮组」打成一包（分类名不占位，
-   分组仍靠发丝分隔线 .bar-div）；窄屏才把这一包做成可见的分组容器（见文件末尾 ≤560px 段）。
+   分组仍靠发丝分隔线 .bar-div）；窄屏才把分类名放出来当行首窄列（见文件末尾 ≤560px 段）。
    之所以给三个分类各包一层，是因为窄屏 .bar-div 会整条隐藏，光靠间距根本看不出分了哪几类。 ---- */
 .batch-grp{display:flex;align-items:center;gap:4px;min-width:0;}
+/* ---- 「显示」栏里的分类壳：桌面端 display:contents —— 它不生成盒子，里面的选项条照旧直接参与
+   整行 flex 排布，等于没包；窄屏才变成「分类名 + 选项条」的整行容器（见文件末尾 ≤560px 段）。
+   给这一栏也加壳的原因：窄屏分类名要跟自己的选项条绑在一起，否则选项条会被 flex 压成几十像素、
+   挤回上一行（min-width:0 之后谁也拦不住换行）。 ---- */
+.f-grp{display:contents;}
 .grp-tag{display:none;}
 .btn.sm.on{
   background:linear-gradient(150deg,var(--gold2),var(--gold));color:var(--gold-ink);
@@ -1154,25 +1162,54 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .kr-btns button{min-height:32px;padding:6px 10px;}
   .kr-fold{width:32px;height:32px;}
 
-  /* --- 批量栏 / 显示行：分组标签保持在行首（chip 形态） --- */
-  .batch-bar{gap:8px;padding:10px;}
-  .filter-bar{padding:10px;}
-  /* 窄屏没有横向空间摆发丝分隔线，改用一个分类一块「凹槽」来分组：
-     槽内 = 分类名 + 该类全部按钮，槽底比栏底暗一档（凹槽色）、槽与槽之间留 8px 呼吸。
-     三类（属性 / 国度 / 定位）一眼能数清，也不会跟上面「全选 / 全不选 / 反选」混成一排。 */
-  .bar-div{display:none;}
-  .batch-grp{
-    width:100%;gap:7px;padding:8px 10px;border-radius:var(--r-sm);
-    background:var(--sunken);border:1px solid var(--line-soft);
-  }
-  .batch-grp .grp-tag{
+  /* --- 角色页两栏筛选区（「显示」+「启用」）：统一成「分类名 + 单行选项条」 ---
+     形态：每栏第一行是「栏名 + 主控件」，其后属性 / 国度 / 定位各占一行（分类名在行首、选项条紧随）。
+     上一版把三个分类各做成整块「凹槽」（分类名 + 整类按钮，width:100%），于是窄屏下三类各占一整排、
+     槽内按钮还被 .toolbar .btn{flex:1 1 auto} 均分拉长（「草」拉成 264px），
+     再加上长说明独占一块，整片筛选区比一屏还高、第一屏看不到角色卡。这一版：
+     1) 收掉凹槽：分类名回到行首当窄列，不再有 8px 上下内边距与整块底色；
+     2) 选项条改 nowrap + 横向滚动（与上方「显示」行的元素条同一形态），行高稳定为一行；
+     3) 长说明收进 <details>，只留一行折叠入口；
+     4) 两栏的内边距 / 行间距收紧，启用区与角色卡的间距也一并收短。 */
+  .filter-bar,.batch-bar{gap:6px;padding:9px 10px;}
+  .grp-tag{
     display:inline-flex;align-items:center;flex:none;
-    font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--txt3);
+    font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--txt3);
   }
-  .batch-grp .btn-grp{flex:1 1 0;width:auto;gap:6px;}
-  /* 启用区下方：说明独占一行、按钮通栏，不再和计数徽标抢同一行 */
-  .enable-foot{flex-direction:column;align-items:stretch;gap:8px;margin:0 2px var(--s4);}
+  #charSearch{flex:1 1 0;width:auto;min-width:0;min-height:36px;}
+  /* 「显示」栏：三个分类各占整行（分类名在行首、选项条吃掉剩余宽度），与下方「启用」栏逐行对齐 */
+  .f-grp{display:flex;align-items:center;gap:6px;flex:none;width:100%;min-width:0;}
+  .f-grp .seg,.f-grp .sel-flat{flex:1 1 0;width:auto;min-width:0;}
+  .f-grp .seg-btn{padding:0 10px;}
+  .filter-bar .chk,.filter-bar .sort-bar{flex:none;}
+  /* 排序依据说明（米游社图鉴 / 推荐顺序）改由「使用说明」与按钮 title 承载，窄屏不再占一整行 */
+  .filter-bar .sort-note{display:none;}
+  .bar-div{display:none;}
+  .batch-grp{flex:none;width:100%;gap:6px;}
+  .batch-grp .btn-grp{flex:1 1 0;width:auto;min-width:0;gap:5px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
+  .batch-grp .btn-grp::-webkit-scrollbar{display:none;}
+  /* 选项条内的按钮一律按自身宽度排布：既不被 flex 均分拉伸，也不会掉到第二排 */
+  .batch-grp .btn-grp .btn{flex:0 0 auto;padding:0 10px;}
+  /* 右缘渐隐：提示这一条还能横向滑动；没有溢出时渐隐区落在空白处，不影响观感 */
+  .filter-bar .seg,.batch-grp .btn-grp{
+    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 14px),transparent);
+    mask-image:linear-gradient(90deg,#000 calc(100% - 14px),transparent);
+  }
+  /* 启用区下方：长说明收成一行可展开的入口，「新增角色」通栏，且与角色卡间距调短 */
+  .enable-foot{flex-direction:column;align-items:stretch;gap:6px;margin:0 2px var(--s2);}
+  /* 窄屏是纵向排列：桌面那条 flex:1 1 280px（横向抢宽度）在这里会变成 280px 的行高，
+     折叠态也会白占近 280px，必须显式收回按内容高度 */
+  .enable-foot .foot-more{flex:none;}
   .enable-foot .btn{width:100%;}
+  .foot-more>summary{
+    display:flex;align-items:center;gap:5px;min-height:26px;
+    font-size:11px;color:var(--txt3);cursor:pointer;list-style:none;
+  }
+  .foot-more>summary::-webkit-details-marker{display:none;}
+  .foot-more>summary::before{content:'\25B8';font-size:9px;}
+  .foot-more[open]>summary::before{content:'\25BE';}
+  .foot-more>summary:active{color:var(--txt);}
+  .foot-more[open] .batch-hint{margin-top:6px;padding:8px 10px;background:var(--sunken);border-radius:var(--r-sm);}
 
   /* --- 统计条：auto-fit 自动 2×2 --- */
   .summary-strip{gap:8px;}

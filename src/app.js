@@ -5014,6 +5014,20 @@ function syncTopbarHeight() {
   if (tb) document.documentElement.style.setProperty('--tbh', tb.offsetHeight + 'px');
 }
 
+/* 启用区下方的长说明（.foot-more）：桌面端展开常显，窄屏默认收起成一行入口。
+ * 说明整段偏长，窄屏常显时会把「新增角色」和角色卡整个顶到第一屏之外，
+ * 收成一行后点一下就能展开，信息量不变。宽度跨过断点（旋转 / 缩放窗口）时再同步一次，
+ * 平时用户手动展开 / 收起的状态不干预。 */
+function initFootMore() {
+  const box = document.querySelector('.foot-more');
+  if (!box) return;
+  const mq = window.matchMedia('(max-width:560px)');
+  const sync = () => { box.open = !mq.matches; };
+  if (mq.addEventListener) mq.addEventListener('change', sync);
+  else if (mq.addListener) mq.addListener(sync);
+  sync();
+}
+
 (function init() {
   state = load();
   if (pendingMigrate) { save(); pendingMigrate = null; }   // 固化从默认数据的回填
@@ -5021,6 +5035,7 @@ function syncTopbarHeight() {
   document.documentElement.lang = (langOf('ui') === 'en' ? 'en' : 'zh-CN');
   bind();
   initScrollLock();               // 浮窗打开时锁住主页面滚动（防滚动穿透）
+  initFootMore();                 // 窄屏把启用区下方的长说明收成一行
   // 老存档补 bkey：没有指纹就没法判定「这一组还是不是内置原样」，也就没法单组还原
   const bfN = backfillBkeys();
   const syN = syncFactoryUpdates();   // 后台更新了内置数据 → 没动过的组自动跟上
