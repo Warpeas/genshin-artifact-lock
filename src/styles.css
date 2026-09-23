@@ -299,7 +299,9 @@ input[type=range]{accent-color:var(--gold);}
 }
 .enable-bar{
   border-left:3px solid color-mix(in srgb,var(--gold) 55%,transparent);
-  background:color-mix(in srgb,var(--gold) 5%,var(--panel));
+  /* --bar-bg：栏底色。三态角标靠它描边，视觉上像从栏底挖空 */
+  --bar-bg:color-mix(in srgb,var(--gold) 5%,var(--panel));
+  background:var(--bar-bg);
 }
 .bar-tag{
   flex:none;font-size:var(--fs-xs);letter-spacing:.04em;color:var(--txt3);
@@ -344,6 +346,48 @@ input[type=range]{accent-color:var(--gold);}
 .tag-btn{border-color:var(--tc);color:var(--tc);}
 .tag-btn:hover{background:var(--panel2);}
 .tag-btn.on{background:var(--tc);color:#10151c;border-color:var(--tc);font-weight:600;}
+
+/* ============================================================
+ * 启用栏三态（未启用 / 部分启用 / 全部启用）
+ *   未启用：只上色框 + 色字，不填底；
+ *   部分启用：填暗底 + 计数角标；
+ *   全部启用：整块亮填充（比边框亮）+ 深色字。
+ *   定位组（主C/副C/辅助）未全启用时整体再暗一档，不跟上面两排抢视线。
+ * 说明：本段必须排在 .btn.sm.on / .tag-btn.on 之后，用更高特异性覆盖原「全选=金色渐变」，
+ *       全程不用 !important，免得以后改不动。
+ * ============================================================ */
+.enable-bar .btn.sm{position:relative;--tc:var(--gold);}
+.enable-bar .btn.sm,
+.enable-bar .btn.sm.partial{
+  background:transparent;
+  border-color:color-mix(in srgb,var(--tc) 58%,transparent);
+  color:color-mix(in srgb,var(--tc) 78%,#ffffff);
+}
+.enable-bar .btn.sm.partial{
+  background:color-mix(in oklab,var(--tc) 30%,#0b0f15);
+  border-color:color-mix(in srgb,var(--tc) 92%,transparent);
+  color:color-mix(in srgb,var(--tc) 38%,#ffffff);
+}
+.enable-bar .btn.sm.on{
+  background:color-mix(in srgb,var(--tc) 82%,#ffffff);
+  border-color:color-mix(in srgb,var(--tc) 58%,#0b0f15);
+  color:#0d1218;font-weight:600;
+}
+#roleBatch .btn.sm:not(.on){--tc:color-mix(in srgb,var(--gold) 42%,#6d7883);}
+@media (hover:hover){.enable-bar .btn.sm:hover{filter:brightness(1.18);}}
+/* 桌面端：三组各一行不换行；角标用数字圆标（窄屏降为圆点，见文件末尾 ≤560px 段） */
+@media (min-width:561px){
+  .enable-bar{gap:18px 8px;padding-top:14px;}
+  .enable-bar .bar-div{margin:0 1px;}
+  .enable-bar .batch-grp .btn-grp{flex-wrap:nowrap;}
+  .enable-bar .btn.sm{padding-left:8px;padding-right:8px;}
+  .enable-bar .btn.sm.partial::after{
+    content:attr(data-on);position:absolute;top:-12px;right:-3px;
+    min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:999px;
+    font-size:10px;font-weight:700;line-height:17px;text-align:center;font-variant-numeric:tabular-nums;
+    background:var(--tc);color:#0d1218;box-shadow:0 0 0 2px var(--bar-bg);pointer-events:none;z-index:2;
+  }
+}
 
 /* ============================================================
  * 角色卡
@@ -1376,4 +1420,17 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .gp-lead,.gp-tip,.gp-meta,.gp-for,.gp-rule-desc{color:#444 !important;}
   main{padding:0;max-width:none;}
   #statTipBox{display:none !important;}   /* 打印时小窗不出现 */
+}
+
+/* ---------- 启用栏三态 · 窄屏（≤560px）----------
+   窄屏一屏放不下三组，复用已有「分类名 + 横滑按钮条」布局；
+   角标降为 9px 圆点并给按钮条补上/右留白，避免被横滑容器裁掉。 */
+@media (max-width:560px){
+  .enable-bar .btn.sm{min-height:32px;padding-left:8px;padding-right:8px;font-size:12px;}
+  .enable-bar .batch-grp .btn-grp{padding-top:8px;padding-right:4px;}
+  .enable-bar .batch-grp .grp-tag{margin-top:8px;}
+  .enable-bar .btn.sm.partial::after{
+    content:'';position:absolute;top:-5px;right:-4px;width:9px;height:9px;border-radius:50%;
+    background:var(--tc);box-shadow:0 0 0 2px var(--bar-bg);pointer-events:none;z-index:2;
+  }
 }

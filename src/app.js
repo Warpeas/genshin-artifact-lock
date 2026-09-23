@@ -2638,6 +2638,8 @@ function updateBatchState() {
       if (!btn) return;
       const list = state.characters.filter(c => g.match(c, k.id));
       const on = list.filter(c => c.enabled).length;
+      /* 供启用栏「部分启用」角标读取：::after{content:attr(data-on)} */
+      btn.dataset.on = String(on);
       btn.classList.toggle('on', list.length > 0 && on === list.length);
       btn.classList.toggle('partial', on > 0 && on < list.length);
       btn.title = `${k.name}：已启用 ${on} / ${list.length}`;
