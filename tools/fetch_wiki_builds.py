@@ -52,6 +52,8 @@ FIVE_STAR_SETS = None  # 运行时从 data.js 读取
 STAT_ALIAS = {
     "攻击力": "atkP", "攻击力%": "atkP", "百分比攻击力": "atkP",
     "生命值": "hpP",  "生命值%": "hpP",  "百分比生命值": "hpP",
+    # 沃雅妮莎词条段写成「百分比生命 / 数值生命」，观测枢四星过渡行也偶见这种说法
+    "百分比生命": "hpP", "数值生命": "hp",
     "防御力": "defP", "防御力%": "defP",
     "百分比防御力": "defP",
     "元素精通": "em",
@@ -101,7 +103,9 @@ COND_CLUES = ("西风", "命", "可选", "携带", "触发", "特效", "推荐",
 VARIANT_MARKS = {"输出", "辅助", "治疗", "副C", "主C", "通用", "物理", "站场", "后台", "散搭", "满命"}
 # 整段都是噪音词（非属性名）时不算「未识别片段」，避免误报
 NOISE_TOKENS = {"不强求", "推荐", "副词条", "主词条", "副词缀", "副词性", "无", "以上",
-                "-", "—", "·", "等", "起"}
+                "-", "—", "·", "等", "起",
+                # 四星过渡行常直接写这句话，表示「前期副词条不用挑」
+                "前期不需要考虑"}
 
 
 def get(url, retries=3):
@@ -174,33 +178,99 @@ def find_recommend_module(page):
 MAX_BUILDS = 15  # wiki 单角色可达 11 组；保留全部去重后的五星配装，不做前 N 截断
 
 
-def parse_sets_from_label(label, sets):
-    """从「推荐圣遗物」单元格解析套装组合。
-    规则：'+' 或 '＋' 表示 2+2 同时穿；'/' 表示同等备选，只取第一个。
-    只保留五星套装（四星过渡套如战狂/教官/流放者直接丢弃）。
+WRAP_RE = re.compile(r'data-entry-name="([^"]+)"')
+SET_ALT_RE = re.compile(r"[/／、|]")
+
+# 单元格里认出的套装超过 2 套时的告警（wiki 把「战狂2/武人2/教官2」这类等价散搭写成
+# 相邻标签，只能取前两套），由 main() 落到 tools/out/sets_warnings.json 留痕。
+SET_WARNINGS = []
+
+
+def _cell_set_seq(raw_html):
+    """按出现顺序取单元格里的套装名 + 「到下一个套装标签之间的分隔文本」。
+
+    wiki 的推荐单元格里每套都用
+      <span class="custom-entry-wrapper" data-entry-name="战狂">…</span>
+    包了一层；直接剥标签会把相邻套名粘成一串（「战狂武人」「纺月的夜歌绝缘之旗印」），
+    所以先按 data-entry-name 切出顺序，再看标签之间的分隔符判断关系。
+    返回 [(name, gap_to_next), ...]
     """
+    marks = list(WRAP_RE.finditer(raw_html or ""))
+    seq = []
+    for i, m in enumerate(marks):
+        close = raw_html.find(">", m.end())
+        nxt = marks[i + 1].start() if i + 1 < len(marks) else len(raw_html)
+        gap = strip_html(raw_html[close + 1:nxt]) if close >= 0 else ""
+        seq.append((m.group(1).strip(), gap))
+    return seq
+
+
+def _dedupe(names):
+    out = []
+    for n in names:
+        if n not in out:
+            out.append(n)
+    return out
+
+
+def parse_sets_from_label(label, sets):
+    """纯文本兜底（单元格没有 data-entry-name 包裹时）：
+    '+'／'＋' = 同时穿；'/'／'、' = 同等备选，只取第一个命中 SETS 的。"""
     if not label:
         return []
-    parts = re.split(r"[+＋]", label)
     picked = []
-    for p in parts:
-        alts = re.split(r"[/／、]", p)
-        for a in alts:
+    for p in re.split(r"[+＋]", label):
+        for a in re.split(r"[/／、]", p):
             a = a.strip()
             if a in sets:
                 picked.append(a)
                 break
-    out = []
-    for s in picked:
-        if s not in out:
-            out.append(s)
-    return out
+    return _dedupe(picked)
 
 
-def parse_artifact_tab(module, sets, char_roles=None):
-    """返回 (rows, raw_tab_name)。rows 已过滤掉无五星套装的过渡行。
+def parse_sets_from_cell(raw_html, sets, label="", char_name=None):
+    """从「推荐圣遗物」单元格解析套装组合（四星过渡套只要在 SETS 里就照常收）。
+
+    规则：
+      - 标签之间是 '/'／'、'／'|' → 同等备选，只取第一个命中 SETS 的；
+      - 标签之间是 '+'／'＋' 或直接相邻 → 同时穿，拆成多组
+        （2+2 散搭「纺月的夜歌绝缘之旗印」就是靠这一步救回来的）；
+      - 一组里认不出 SETS 就整组丢掉，不猜。
+    最多保留 2 组（一个角色只有 5 个部位，3 组以上必然含备选关系），
+    超出的写进 SET_WARNINGS。
+    """
+    seq = _cell_set_seq(raw_html)
+    if not seq:
+        return parse_sets_from_label(label or strip_html(raw_html), sets)
+
+    groups = []                      # 每组 = 一个「同时穿」的位置，组内互为备选
+    for name, gap in seq:
+        if groups and SET_ALT_RE.search(gap or ""):
+            groups[-1].append(name)
+        else:
+            groups.append([name])
+
+    picked = []
+    for g in groups:
+        hit = next((n for n in g if n in sets), None)
+        if hit:
+            picked.append(hit)
+    picked = _dedupe(picked)
+    if len(picked) > 2:
+        SET_WARNINGS.append({
+            "char": char_name or "", "label": label or strip_html(raw_html),
+            "kept": picked[:2], "dropped": picked[2:],
+        })
+        picked = picked[:2]
+    return picked
+
+
+def parse_artifact_tab(module, sets, char_roles=None, char_name=None):
+    """返回 (rows, raw_tab_name)。rows 只保留「能认出 SETS 里套装」的行
+    （五星 + 四星都在 SETS 里，1~3 星的游医 / 冒险家 / 幸运儿才会被丢）。
 
     char_roles：该角色的基础定位（CHAR_META），仅在理由文本推不出定位时兜底。
+    char_name：仅用于把套装数超限的告警记到角色名下。
     """
     if not module:
         return [], None
@@ -215,11 +285,17 @@ def parse_artifact_tab(module, sets, char_roles=None):
             rows = []
             for r in t.get("row", []):
                 cells = [strip_html(x) for x in r]
+                raw_name = r[0] if r else ""
                 name_cell = cells[0] if cells else ""
                 reason = cells[1] if len(cells) > 1 else ""
-                combos = parse_sets_from_label(name_cell, sets)
+                combos = parse_sets_from_cell(raw_name, sets, name_cell, char_name)
                 if not combos:
-                    continue  # 四星 / 过渡套，不进正式配装
+                    continue  # 认不出套装的过渡行（1~3 星或纯文字描述）
+                # 单元格里并排两套不等于 2+2：wiki 常把「A4件套/B4件套」写成相邻两个图，
+                # 那是二选一。理由里出现 4 件套且没有 2 件套 / 2+2 字样时只留第一套。
+                if len(combos) > 1 and re.search(r"[4４]件套|四件套", reason) \
+                        and not re.search(r"2\s*[+＋]\s*2|2件套|两件套", reason):
+                    combos = combos[:1]
                 mains, subs, cond, unknown = parse_fields(reason)
                 rows.append({
                     "sets": combos,
@@ -251,8 +327,13 @@ SLOT_KEYS = {"时之沙": "sands", "空之杯": "goblet", "理之冠": "circlet"
 
 
 def _slice_slot(text, key):
-    """截取 时之沙：... 到下一个部位关键字或副词条之前"""
-    i = text.find(key)
+    """截取 时之沙：... 到下一个部位关键字或副词条之前
+
+    优先认「理之冠：」这种带冒号的标签写法：理由正文里可能先出现
+    「（理之冠的位置建议使用…）」这类括号说明，按首个出现切会把说明当词条。
+    """
+    m = re.search(re.escape(key) + r"\s*[：:]", text)
+    i = m.start() if m else text.find(key)
     if i < 0:
         return None
     seg = text[i + len(key):]
@@ -531,7 +612,7 @@ def main():
             if not d or d.get("retcode") != 0:
                 continue
             pg = d["data"]["page"]
-            rr, tt = parse_artifact_tab(find_recommend_module(pg), sets, char_roles)
+            rr, tt = parse_artifact_tab(find_recommend_module(pg), sets, char_roles, name)
             if rr:
                 page, eid, rows, tab = pg, cid, rr, tt
                 break
@@ -563,6 +644,13 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, "wiki_builds.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=1)
+    # 套装组合超过 2 组的告警单独留痕（reparse 会覆盖 parse_warnings.json，所以分文件写）
+    with open(os.path.join(OUT, "sets_warnings.json"), "w", encoding="utf-8") as f:
+        json.dump(SET_WARNINGS, f, ensure_ascii=False, indent=1)
+    if SET_WARNINGS:
+        print("[套装告警] %d 行出现 3 套及以上，已只取前两套 → tools/out/sets_warnings.json" % len(SET_WARNINGS))
+        for w in SET_WARNINGS:
+            print("  ! %s %r 保留 %s / 丢弃 %s" % (w["char"], w["label"], " + ".join(w["kept"]), " + ".join(w["dropped"])))
     print("\n写入 tools/out/wiki_builds.json（%d 条，本次新抓到 %d 条，快照原有可用 %d 条）"
           % (len(result), ok_now, ok_before))
     if ok_now == 0 and ok_before:

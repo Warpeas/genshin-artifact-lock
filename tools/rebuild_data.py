@@ -97,6 +97,8 @@ def main():
     u = re.search(r"未识别片段:\s*(\d+)", out)
     s = re.search(r"★必选为空的组[^:]*:\s*(\d+)", out)
     o = re.search(r"optional（wiki 条件词条）异常:\s*(\d+)", out)
+    q = re.search(r"四星过渡行无副词条[^:]*:\s*(\d+)", out)
+    r = re.search(r"主词条「不强求」[^:]*:\s*(\d+)", out)
 
     if "--no-build" not in flags:
         rc, _ = run(["node", "build.js"], "5/6 打包 index.html")
@@ -114,6 +116,8 @@ def main():
     print("未识别片段    : %s" % (u.group(1) if u else "?"))
     print("optional 异常 : %s" % (o.group(1) if o else "?"))
     print("★必选为空组数 : %s（无 ★ 约束的组，属正常分布）" % (s.group(1) if s else "?"))
+    print("四星无副词条   : %s 组（wiki 原文只给主词条，允许）" % (q.group(1) if q else "?"))
+    print("主词条不强求   : %s 组（wiki 原文结论，允许）" % (r.group(1) if r else "?"))
     print("自检退出码    : %s" % check_rc)
     print("明细见 tools/out/_scan_result.md、tools/out/parse_warnings.json")
     return check_rc

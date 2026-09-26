@@ -449,7 +449,7 @@ input[type=range]{accent-color:var(--gold);}
 .cc-sub-row .gp-star,.cc-sub-row .gp-sub,.cc-sub-row .gp-opt{white-space:nowrap;}
 .bm-sum .gp-star,.bm-sum .gp-sub,.bm-sum .gp-opt{white-space:nowrap;}
 
-/* 配装功能定位小标签：统一中性配色（区别于角色级 .role-tag 的旧分色方案） */
+/* 配装功能定位小标签：大类用中性蓝、关键词用弱化的青色（两层可区分） */
 .brole{
   display:inline-flex;align-items:center;font-size:10.5px;padding:1px 7px;border-radius:var(--r-xs);
   font-weight:600;flex:none;line-height:1.5;white-space:nowrap;
@@ -457,6 +457,16 @@ input[type=range]{accent-color:var(--gold);}
   background:color-mix(in srgb,var(--blue) 12%,transparent);
   color:color-mix(in srgb,#fff 30%,var(--blue));
 }
+/* 「大类·关键词」里的关键词层：弱化描边，避免与大类抢视觉 */
+.brole.kw{
+  font-weight:500;
+  border-color:color-mix(in srgb,var(--txt2) 30%,transparent);
+  background:color-mix(in srgb,var(--txt2) 8%,transparent);
+  color:color-mix(in srgb,#fff 24%,var(--txt2));
+}
+/* 套装管理：关键词占位行（比大类行略缩进、标签更淡） */
+.sm-rrow.sm-rkw .sm-rlabel{color:var(--txt3);font-weight:400;}
+.sm-rrow.sm-rkw .role-chips{padding-left:8px;}
 .cc-top .brole{margin-left:4px;}
 .bm-t .brole{margin-left:4px;}
 .role-chks{display:flex;flex-wrap:wrap;gap:6px 12px;margin-bottom:6px;}
@@ -629,6 +639,9 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 .set-head .set-bonus{font-size:var(--fs-xs);color:var(--txt3);}
 .set-head .set-bonus4{font-size:var(--fs-xs);color:var(--txt2);margin-left:8px;padding-left:8px;
   border-left:1px solid var(--line-soft);}
+.set-head .set-badge2{font-size:11px;padding:1px 8px;border-radius:var(--r-pill);margin-left:8px;
+  background:color-mix(in oklab,var(--panel2) 88%,var(--gold) 12%);
+  border:1px dashed color-mix(in srgb,var(--gold) 45%,transparent);color:var(--gold2);white-space:nowrap;}
 .set-head .set-users{margin-left:auto;font-size:var(--fs-sm);color:var(--txt2);
   display:flex;flex-wrap:wrap;gap:4px;max-width:62%;justify-content:flex-end;}
 .user-pill{font-size:11px;padding:1px 7px;border-radius:var(--r-pill);background:var(--panel2);
@@ -946,6 +959,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
  * ============================================================ */
 .bm-sets{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
 .bm-sets select{flex:1 1 200px;min-width:0;}
+.bm-set-list{display:contents;}   /* 候选下拉直接参与 .bm-sets 的 flex 排布 */
 .bm-plus{color:var(--txt3);}
 .bm-kind{font-size:var(--fs-sm);color:var(--txt3);}
 .bm-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
@@ -1053,6 +1067,22 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
 .sm-badge{font-size:10.5px;padding:2px 7px;border-radius:var(--r-pill);flex:none;}
 .sm-badge.bi{background:var(--panel2);color:var(--txt2);}
 .sm-badge.cu{background:color-mix(in oklab,var(--gold) 20%,var(--panel2));color:var(--gold2);}
+
+/* 套装管理 · 定位编辑区（2 / 4 件套两列，点选即保存） */
+.sm-roles{grid-column:1 / -1;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:6px 16px;padding:7px 9px;border:1px dashed var(--line-soft);border-radius:var(--r-sm);
+  background:color-mix(in oklab,var(--panel2) 55%,transparent);}
+.sm-rrow{display:flex;align-items:flex-start;gap:8px;min-width:0;}
+.sm-rlabel{flex:none;min-width:64px;padding-top:3px;font-size:var(--fs-xs);color:var(--txt3);}
+.sm-infer{grid-column:1 / -1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.role-chips{display:flex;flex-wrap:wrap;gap:5px;flex:1;min-width:0;}
+.role-chip{font-size:11px;padding:2px 8px;border-radius:var(--r-pill);border:1px solid var(--line-soft);
+  background:var(--panel2);color:var(--txt3);cursor:pointer;user-select:none;line-height:1.5;}
+.role-chip:hover{border-color:var(--line);color:var(--txt2);}
+.role-chip.on{background:color-mix(in oklab,var(--gold) 22%,var(--panel2));border-color:var(--gold);color:var(--gold2);font-weight:600;}
+/* 配装浮窗里的定位只读展示 */
+.role-chks.readonly{display:block;margin-bottom:2px;}
+.role-chks.readonly .brole-list{display:inline-flex;flex-wrap:wrap;gap:5px;margin-right:8px;}
 
 /* ---- 其它零散部件 ---- */
 .chip-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}

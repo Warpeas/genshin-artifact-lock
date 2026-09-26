@@ -80,7 +80,7 @@ genshin-artifact-lock/
 ```js
 // [ 名称, 元素, [配装组...], 来源链接, 备注 ]
 ['胡桃', 'pyro', [
-    { sets:['炽烈的炎之魔女'],                       // 1 个 = 4件套；2 个 = 2+2
+    { sets:['炽烈的炎之魔女'],                       // 1 个 = 4件套；≥2 个 = 2+2 任选池（任选两套散搭，可选 need:4 = 池内任选一套穿满4件）
       sands:['hpP','em'], goblet:['pyro'], circlet:['cr','cd'],   // 各部位主词条，按优先级降序
       subs:['cr','cd','hpP','em','atkP'],            // 追加属性（来自 wiki 精确值）
       subRules:{required:['cr'], equal:[['cr','cd']], source:'manual'}, // 语义校准
@@ -128,7 +128,7 @@ genshin-artifact-lock/
 | 常量 | 值 | 含义 |
 |---|---|---|
 | `W_PRIORITY` | `{main:1.0, alt:0.55}` | 主推 / 备选配装 |
-| `W_SET_COUNT` | `{1:1.0, 2:0.8}` | 4 件套 / 2+2 |
+| `W_SET_COUNT` | `{1:1.0, 2:0.8}` | 4 件套 / 2+2；候选池另按 `min(挑取套数, 池宽)/池宽` 折减，2+2 池单套权重下限 `TIER_TRANS+0.05` |
 | `TIER_KEEP` / `TIER_TRANS` | `0.8` / `0.4` | 必留 / 过渡阈值 |
 | `KEEP_MAX` | `4` | 建议保留件数上限 |
 | `SUB_RANK_DECAY` | `0.72` | 追加属性名次衰减（`>` 降权；`=` 同权；★ ×1.25） |

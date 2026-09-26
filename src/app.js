@@ -8,6 +8,54 @@ const STORE_KEY = 'genshin_artifact_lock_v1';
 /* 权重常量 */
 const W_PRIORITY   = { main: 1.0, alt: 0.55 };   // 主推 / 备选配装
 const W_SET_COUNT  = { 1: 1.0, 2: 0.8 };         // 4件套 / 2+2
+const W_PICK       = 2;                          // 2+2 需要从候选池里任选两套
+
+/* ============================================================
+ * 配装形态（build 的 sets = 候选池）
+ *   · 单套                → 4 件套（need 缺省 4）
+ *   · 多套                → 二件套散搭 2+2：从池里任选两套（各穿 2 件，不重复同一套）
+ *   · 显式 need: 4        → 四件套「池内任选其中一套」穿满 4 件
+ * 选择权归用户，工具只把「池内每套」的该套装词条需求都落到锁定方案里。
+ * ============================================================ */
+function buildPool(b) { return ((b && b.sets) || []).filter(Boolean); }
+function buildNeed(b) {
+  const p = buildPool(b);
+  if (!p.length) return 4;
+  if (b && (b.need === 2 || b.need === 4)) return b.need;   // 数据显式标注优先
+  return p.length >= 2 ? 2 : 4;
+}
+// 从候选池里要挑几套：2+2 挑 2 套，四件套二选一挑 1 套
+function buildPickCount(b) { return buildNeed(b) === 2 ? W_PICK : 1; }
+// 每套分摊权重：候选越多、单套越「非必选」，按 池宽 / 所需套数 折减
+function buildSetWeight(b) {
+  const p = buildPool(b);
+  const n = p.length;
+  if (!n) return 0;
+  return (W_SET_COUNT[buildNeed(b)] || 1) * (Math.min(buildPickCount(b), n) / n);
+}
+// 展示：单套「A」；正好够挑「A + B」；候选多于所需「A / B / C（任选2套）」
+function buildSetsLabel(b) {
+  const p = buildPool(b).map(setName);
+  if (!p.length) return '';
+  const k = buildPickCount(b);
+  if (p.length <= k) return p.join(' + ');
+  return p.join(' / ') + (k === W_PICK ? '（任选2套）' : '（任选1套）');
+}
+/* 某套装在锁定方案里的形态备注（导出用）：
+ * 只要有「把它当 2+2 散搭用」的启用配装，就提醒游戏里这一套只需 2 件。 */
+function setFormNote(name) {
+  let only2 = false, four = false;
+  (state.characters || []).forEach(c => {
+    if (!c.enabled) return;
+    (c.builds || []).forEach(b => {
+      if (!buildPool(b).includes(name)) return;
+      if (buildNeed(b) === 2) only2 = true; else four = true;
+    });
+  });
+  if (only2 && !four) return '（该套装仅需 2 件套：2+2 散搭用）';
+  if (only2) return '（2+2 散搭只需 2 件；另有配装要求 4 件套）';
+  return '';
+}
 const TIER_KEEP    = 0.8;                        // ≥ 视为必留
 const TIER_TRANS   = 0.4;                        // ≥ 视为过渡
 const KEEP_MAX     = 4;
@@ -73,7 +121,9 @@ function factoryCharOf(c) {
 
 /* 配装组「内容」指纹：固定字段顺序的数组，规避 key 顺序差异
  * 排除 rank（由下标派生，改内容必然改下标，重复计入没意义）、bkey（标识而非内容）
- * 以及 priority（主推单独判定 —— 只改主推不该让「整组还原」按钮冒出来） */
+ * 以及 priority（主推单独判定 —— 只改主推不该让「整组还原」按钮冒出来）。
+ * 另排除 roles：定位已改为「由套装派生」，不再参与内容比较 —— 否则定位词表的
+ * 增删会凭空让所有老存档标成「已修改」、也会让「整组还原」漏配出厂组。 */
 function canonBuild(b) {
   if (!b) return '[]';
   const mains = ['sands', 'goblet', 'circlet'].map(slot =>
@@ -88,7 +138,8 @@ function canonBuild(b) {
   });
   return JSON.stringify({
     sets: (b.sets || []).filter(Boolean),
-    roles: (b.roles || []).slice(),
+    // 注意：形态标注 need 不进指纹 —— 它只是「候选池怎么用」的说明，
+    // 进指纹会让老存档（无 need）对上新数据（有 need）时误报「已修改」。
     mains, subs,
   });
 }
@@ -412,9 +463,16 @@ function load() {
                      _subEpoch: SUB_EPOCH, _metaEpoch: META_EPOCH, _srcMigrated: true });
 }
 
-/* 默认套装列表（内置套装 + 空自定义列表） */
+/* 默认套装列表（内置套装 + 空自定义列表）。
+ * pos2 / pos4 是该套 2 / 4 件套效果对应的「大类」，pos2kw / pos4kw 是对应的「关键词」，
+ * 两者合成配装定位（见 deriveBuildTags）。 */
 function defaultSets() {
-  return SETS.map(s => ({ skey: s.name, name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '', builtin: true, hidden: false }));
+  return SETS.map(s => ({
+    skey: s.name, name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '',
+    pos2: (s.pos2 || []).slice(), pos2kw: (s.pos2kw || []).slice(),
+    pos4: (s.pos4 || []).slice(), pos4kw: (s.pos4kw || []).slice(),
+    builtin: true, hidden: false,
+  }));
 }
 
 function sameJson(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
@@ -442,9 +500,9 @@ function userBackup() {
     const factory = SETS.find(x => x.name === s.skey);
     if (!factory) return null;
     const patch = {};
-    ['name', 'bonus', 'bonus4', 'hidden'].forEach(k => {
+    ['name', 'bonus', 'bonus4', 'hidden', 'pos2', 'pos2kw', 'pos4', 'pos4kw'].forEach(k => {
       const baseline = k === 'hidden' ? false : (factory[k] || '');
-      if (!sameJson(s[k], baseline)) patch[k] = s[k];
+      if (!sameJson(s[k], baseline)) patch[k] = JSON.parse(JSON.stringify(s[k]));
     });
     return Object.keys(patch).length ? { key: s.skey, patch } : null;
   }).filter(Boolean);
@@ -805,33 +863,77 @@ function planCfgOf(setName) {
   return c;
 }
 
+/* 定位标签数组归一化：只留非空字符串，去掉重复（顺序保留，展示端会再按词表排序） */
+function normRoleTags(v) {
+  if (!Array.isArray(v)) return [];
+  const out = [];
+  v.forEach(r => {
+    if (typeof r !== 'string') return;
+    const s = r.trim();
+    if (s && !out.includes(s)) out.push(s);
+  });
+  return out;
+}
+/* 套装对象 → 用于派生的 pos2 / pos2kw / pos4 / pos4kw（大类 + 关键词两层）。
+ * 存档里有就用存档的（用户在「套装管理」里的改动优先）；
+ * 缺字段（旧存档 / 更早版本的自定义套装）按内置 SETS 同 skey 回填，回填不到给空数组。 */
+function setPosTags(s) {
+  const f = SETS.find(x => x.name === ((s && (s.skey || s.name)) || ''));
+  const pick = (k) => Array.isArray(s && s[k]) ? normRoleTags(s[k]) : normRoleTags(f && f[k]);
+  return {
+    pos2: pick('pos2'), pos2kw: pick('pos2kw'),
+    pos4: pick('pos4'), pos4kw: pick('pos4kw'),
+  };
+}
+
 function normalize(o) {
   // ---- 套装列表：旧存档只有 customSets，需要合并进统一列表 ----
   const legacyCustom = Array.isArray(o.customSets) ? o.customSets : [];
   if (!Array.isArray(o.sets) || !o.sets.length) {
     o.sets = defaultSets();
   }
-  o.sets = o.sets.filter(s => s && s.name).map(s => ({
-    skey: typeof s.skey === 'string' ? s.skey : (s.builtin ? s.name : ''),
-    name: s.name,
-    bonus: s.bonus || '',
-    bonus4: s.bonus4 || '',
-    builtin: !!s.builtin,
-    hidden: !!s.hidden,
-  }));
-  // 内置套装：缺失则补回；已存在但缺 4 件套描述则从图鉴补齐
+  o.sets = o.sets.filter(s => s && s.name).map(s => {
+    const pos = setPosTags(s);   // 旧存档缺定位字段 → 按内置同 skey 回填（用户改过的名字 / 顺序 / 隐藏原样保留）
+    return {
+      skey: typeof s.skey === 'string' ? s.skey : (s.builtin ? s.name : ''),
+      name: s.name,
+      bonus: s.bonus || '',
+      bonus4: s.bonus4 || '',
+      pos2: pos.pos2,
+      pos2kw: pos.pos2kw,
+      pos4: pos.pos4,
+      pos4kw: pos.pos4kw,
+      builtin: !!s.builtin,
+      hidden: !!s.hidden,
+    };
+  });
+  // 内置套装：缺失则补回；已存在但缺 4 件套描述 / 定位标签则从图鉴补齐
   SETS.forEach(s => {
     const ex = o.sets.find(x => x.name === s.name);
     if (ex) {
       if (ex.builtin && !ex.bonus4) ex.bonus4 = s.bonus4 || '';
+      // 旧存档：pos2/pos4 存的是「大类」，pos2kw/pos4kw 存「关键词」；缺失时按图鉴补
+      ['pos2', 'pos2kw', 'pos4', 'pos4kw'].forEach(k => {
+        if (ex.builtin && !(ex[k] || []).length && (s[k] || []).length) ex[k] = s[k].slice();
+      });
     } else {
-      o.sets.push({ skey: s.name, name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '', builtin: true, hidden: false });
+      o.sets.push({
+        skey: s.name, name: s.name, bonus: s.bonus, bonus4: s.bonus4 || '',
+        pos2: (s.pos2 || []).slice(), pos2kw: (s.pos2kw || []).slice(),
+        pos4: (s.pos4 || []).slice(), pos4kw: (s.pos4kw || []).slice(),
+        builtin: true, hidden: false,
+      });
     }
   });
   // 旧存档的自定义套装
   legacyCustom.forEach(s => {
     if (s && s.name && !o.sets.some(x => x.name === s.name)) {
-      o.sets.push({ skey: '', name: s.name, bonus: s.bonus || '', bonus4: s.bonus4 || '', builtin: false, hidden: false });
+      o.sets.push({
+        skey: '', name: s.name, bonus: s.bonus || '', bonus4: s.bonus4 || '',
+        pos2: normRoleTags(s.pos2), pos2kw: normRoleTags(s.pos2kw),
+        pos4: normRoleTags(s.pos4), pos4kw: normRoleTags(s.pos4kw),
+        builtin: false, hidden: false,
+      });
     }
   });
   delete o.customSets;
@@ -874,13 +976,16 @@ function normalize(o) {
  */
 function normalizeBuild(b, c) {
   const out = {
-    sets: Array.isArray(b.sets) ? b.sets.filter(Boolean) : [],
+    sets: Array.isArray(b.sets) ? [...new Set(b.sets.filter(Boolean))] : [],   // 池内去重：2+2 不支持重复套
+    // 形态标注：显式 4 = 池内任选一套穿满 4 件；显式 2 / 空 = 多套即「任选两套散搭（2+2）」
+    need: (b.need === 2 || b.need === 4) ? b.need : null,
     bkey: typeof b.bkey === 'string' ? b.bkey : '',   // 出厂指纹（「角色名#序号」），用来判断这一组是否还是内置原样
     // fcanon = 上次与出厂同步时的内容指纹；内容还等于它 → 说明用户没动过，可以自动跟随出厂更新
     fcanon: (b.fcanon == null ? null : String(b.fcanon)),
     priority: b.priority === 'alt' ? 'alt' : 'main',
     subRules: normalizeSubRules(b.subRules),
-    // 功能定位：输出 / 增伤 / 减抗 / 治疗 / 护盾 ……（多选，可在编辑器里改，也支持自定义）
+    // 功能定位：**遗留字段，仅保留读写兼容**。定位已改为由所选套装派生（deriveBuildRoles），
+    // 不再参与任何展示与编辑；旧存档里的值原样留着，避免回滚版本时丢数据。
     roles: Array.isArray(b.roles) ? b.roles.filter(s => typeof s === 'string' && s) : [],
   };
   // 主要属性：优先用组内的，缺失则回落到角色级旧数据
@@ -1080,6 +1185,18 @@ function flash(msg) {
 function allSets() {
   return state.sets.filter(s => !s.hidden).map(s => s.name);
 }
+/* 套装稀有度：内置 SETS 里四星套显式写 rarity: 4，缺省即五星（自定义套装同样按五星算）。
+ *   用 skey（内置原名）查，这样套装被改名后星级依然跟得住。 */
+let _setRarityMap = null;
+function setRarityOf(name) {
+  if (!_setRarityMap) {
+    _setRarityMap = {};
+    SETS.forEach(s => { if (s.rarity) _setRarityMap[s.name] = s.rarity; });
+  }
+  const s = state.sets.find(x => x.name === name);
+  const key = (s && s.skey) ? s.skey : name;
+  return _setRarityMap[key] === 4 ? 4 : 5;
+}
 function allSetBonus() {
   const o = {};
   state.sets.forEach(s => { o[s.name] = s.bonus || ''; });
@@ -1171,24 +1288,51 @@ function mainBuild(c) {
   return list.find(b => b.priority === 'main') || list[0] || { sets: [], main: {}, subs: [] };
 }
 
-/* 配装功能定位的标准重要度顺序（与 BUILD_ROLES 基础词表对齐；自定义定位排在末尾）。
- * 用于卡片 / 切换按钮上只展示「最重要的一两个」定位，避免长标签挤占角色名空间。 */
+/* 配装功能定位的标准重要度顺序：「大类」在前、「关键词」在后；自定义取值排在末尾。
+ * 用于卡片 / 切换按钮上只展示「最重要的一两个」标签，避免长标签挤占角色名空间。 */
 const ROLE_RANK = new Map(BUILD_ROLES.map((r, i) => [r, i]));
+const CAT_RANK = new Map(BUILD_CATS.map((r, i) => [r, i]));
+const KW_RANK = new Map(BUILD_KWS.map((r, i) => [r, i]));
 const ROLE_SHOW_MAX = 2;
+function rankBy(rank, list) {
+  return (list || []).slice().sort((a, b) =>
+    ((rank.get(a) ?? 999) - (rank.get(b) ?? 999)) || String(a).localeCompare(String(b)));
+}
 function rankBuildRoles(roles) {
-  return (roles || []).slice().sort((a, b) =>
-    ((ROLE_RANK.get(a) ?? 999) - (ROLE_RANK.get(b) ?? 999)) || String(a).localeCompare(String(b)));
+  return rankBy(ROLE_RANK, roles);
 }
 function topBuildRoles(roles, max) {
   const r = rankBuildRoles(roles);
   return typeof max === 'number' ? r.slice(0, max) : r;
 }
-/* 配装功能定位（多选）的小标签：统一中性配色，区别于角色级 .role-tag */
+/* 二维标签：大类、关键词各自排序（可分别截断） */
+function rankBuildTags(tags, max) {
+  const cats = rankBy(CAT_RANK, (tags && tags.cats) || []);
+  const kws = rankBy(KW_RANK, (tags && tags.kws) || []);
+  return {
+    cats: typeof max === 'number' ? cats.slice(0, max) : cats,
+    kws: typeof max === 'number' ? kws.slice(0, max) : kws,
+  };
+}
+/* 配装功能定位（多选）的小标签：大类用中性配色、关键词用弱化配色以区分两层 */
 function buildRoleBadges(roles, max) {
   return topBuildRoles(roles, max).map(r => `<span class="brole">${esc(r)}</span>`).join('');
 }
-/* 配装按钮后缀：把「最重要的一两个」定位拼成「（输出·增伤）」。
- * 定位名属于「数据语言」，按当前语言翻译（英文下为 (DPS · Buff)），否则会残留中文。 */
+function buildTagBadges(tags, max) {
+  const r = rankBuildTags(tags, max);
+  return r.cats.map(c => `<span class="brole">${esc(c)}</span>`).join('')
+    + r.kws.map(k => `<span class="brole kw">${esc(k)}</span>`).join('');
+}
+/* 配装按钮后缀：把「最重要的一两个」标签拼成「（输出·增伤｜攻击·暴击）」，`｜` 前是大类、后是关键词。
+ * 标签名属于「数据语言」，按当前语言翻译（英文下为 (DPS · Buff | ATK)），否则会残留中文。 */
+function buildTagInline(tags, max) {
+  const r = rankBuildTags(tags, max);
+  if (!r.cats.length && !r.kws.length) return '';
+  const en = (typeof isDataEn === 'function' && isDataEn());
+  const join = xs => (en ? xs.map(x => t(x)).join(' · ') : xs.map(esc).join('·'));
+  const body = join(r.cats) + (r.cats.length && r.kws.length ? (en ? ' | ' : '｜') : '') + join(r.kws);
+  return en ? ` (${body})` : `（${body}）`;
+}
 function buildRoleInline(roles, max) {
   const a = topBuildRoles(roles, max).filter(Boolean);
   if (!a.length) return '';
@@ -1196,6 +1340,68 @@ function buildRoleInline(roles, max) {
   return (typeof isDataEn === 'function' && isDataEn())
     ? ` (${names.join(' · ')})`
     : `（${names.map(esc).join('·')}）`;
+}
+
+/* ============================================================
+ * 配装定位派生（唯一入口）
+ * 定位不再存在配装组上，而是由「所选套装」的效果语义派生，且分「大类 + 关键词」两层：
+ *   单套（4 件套）= 该套 pos2 ∪ pos4（大类、关键词各自并集）
+ *   两套（2+2）  = 两套 pos2 的并集（吃不到 4 件套效果）
+ * 派生核心在 data.js 的 deriveBuildTags / deriveBuildRoles（tools/check_data.js 复用同一口径）；
+ * 这里只负责把「当前生效的套装列表」整理成派生来源：
+ *   - 存档里的套装优先（含改名 / 自定义，以及用户在「套装管理」里改过的定位）；
+ *   - 旧存档缺定位字段的，运行时再按内置同 skey 兜底一次（normalize 已回填，这里防漏）；
+ *   - 末尾追加内置图鉴：存档里已删除、但配装仍引用着的内置套也能派生出结果
+ *     （与套装名的展示口径一致：setName() 找不到时会回落图鉴）。
+ * ============================================================ */
+function posSourceList() {
+  const list = (state.sets || []).map(s => {
+    const pos = setPosTags(s);
+    return {
+      name: s.name, skey: s.skey,
+      pos2: pos.pos2, pos2kw: pos.pos2kw, pos4: pos.pos4, pos4kw: pos.pos4kw,
+    };
+  });
+  return list.concat(SETS);
+}
+/* 派生（二维）：{ cats: [...], kws: [...] } */
+function buildTagsOf(b) {
+  return deriveBuildTags((b && b.sets) || [], posSourceList());
+}
+/* 派生（扁平串，[大类..., 关键词...]，供只读速览） */
+function buildRolesOf(b) {
+  return deriveBuildRoles((b && b.sets) || [], posSourceList());
+}
+/* 套装名数组 → 派生定位（套装管理里预览「改了定位会影响什么」用） */
+function tagsOfSets(sets) {
+  return deriveBuildTags(sets || [], posSourceList());
+}
+function rolesOfSets(sets) {
+  return deriveBuildRoles(sets || [], posSourceList());
+}
+/* 点选池：大类池 / 关键词池（+ 该套装已有的自定义取值，历史自定义值不因改造丢失） */
+function catPoolOf(extra) {
+  const pool = BUILD_CATS.slice();
+  normRoleTags(extra).forEach(r => { if (!pool.includes(r)) pool.push(r); });
+  return pool;
+}
+function kwPoolOf(extra) {
+  const pool = BUILD_KWS.slice();
+  normRoleTags(extra).forEach(r => { if (!pool.includes(r)) pool.push(r); });
+  return pool;
+}
+function rolePoolOf(extra) {
+  return catPoolOf(extra).concat(kwPoolOf(extra).filter(x => !BUILD_CATS.includes(x)));
+}
+/* 定位点选芯片（套装管理用）：点选即保存，不做自定义输入 */
+function tagChipsHtml(selected, attr, pool) {
+  const on = normRoleTags(selected);
+  return (pool || []).map(r =>
+    `<span class="role-chip ${on.includes(r) ? 'on' : ''}" data-${attr}="${esc(r)}" title="${esc(t('点选即保存'))}">${esc(r)}</span>`
+  ).join('');
+}
+function roleChipsHtml(selected, attr) {
+  return tagChipsHtml(selected, attr, rolePoolOf(selected));
 }
 
 /* ============================================================
@@ -1215,12 +1421,17 @@ function computePlan(includeAlt = true) {
       if (!b.sets || !b.sets.length) return;
       if (!includeAlt && b.priority === 'alt') return;
 
-      const w = W_PRIORITY[b.priority] * W_SET_COUNT[b.sets.length] || 0;
+      const onlyTwo = buildNeed(b) === 2;   // 任选两套散搭 → 该套装在方案里只需 2 件套
+      // 2+2 任选池的权重下限：池内每套的「首选」词条需求必须能落进锁定方案，
+      // 不能被 TIER_TRANS 阈值过滤掉（备选配装 × 池宽折减后会低于阈值）
+      const rawW = W_PRIORITY[b.priority] * buildSetWeight(b);
+      const w = onlyTwo ? Math.max(rawW, TIER_TRANS + 0.05) : (rawW || 0);
       const isAlt = b.priority === 'alt';
 
       b.sets.forEach(setName => {
         if (!out.has(setName)) return;
         const bucket = out.get(setName);
+        bucket.need2 = bucket.need2 === undefined ? onlyTwo : (bucket.need2 && onlyTwo);
 
         // 记录使用者（主推覆盖备选）
         const prev = bucket.users.get(c.name);
@@ -2506,9 +2717,10 @@ function charCardHtml(c) {
   // 选中（viewIdx）= 绿色高亮；未选中 = 普通色
   const builds = list.length
     ? list.map((b, i) => {
-      const stxt = (b.sets || []).map(s => esc(setName(s))).join('+');
-      const rTitle = (b.roles || []).map(r => t(r)).join('/');
-      const rInline = buildRoleInline(b.roles, ROLE_SHOW_MAX);
+      const stxt = esc(buildSetsLabel(b));
+      const dt = buildTagsOf(b);                     // 定位（大类 + 关键词）由套装派生，b.roles 不再参与展示
+      const rTitle = dt.cats.concat(dt.kws).map(r => t(r)).join('/');
+      const rInline = buildTagInline(dt, ROLE_SHOW_MAX);
       return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="${t('配装')} ${i + 1}${rTitle ? ' · ' + rTitle : ''}">${i + 1} ${stxt}${rInline ? `<span class="cc-bp-tag">${rInline}</span>` : ''}</button>`;
     }).join('')
   : `<span class="set-tag">${t('未配置套装')}</span>`;
@@ -2776,7 +2988,7 @@ function drawDrawer() {
   </div>
 
   <div class="fgroup">
-    <span class="glabel">${t('圣遗物配装')} <span class="hint">${t('第 1 组为主推，其余为备选；单套=4件套，双套=2+2')}</span></span>
+    <span class="glabel">${t('圣遗物配装')} <span class="hint">${t('第 1 组为主推，其余为备选；单套=4件套，多套=从候选中任选两套散搭（2+2）')}</span></span>
     <p class="muted small" style="margin:-2px 0 10px">角色基础信息修改后立即生效；下面每组是一张<b>只读卡片</b>，要看 / 改词条（三部位主要属性与追加属性）请点「✎ 编辑」，在弹出窗口里点「保存」才生效。</p>
     <div id="edBuilds"></div>
     <div class="bm-row">
@@ -2784,13 +2996,13 @@ function drawDrawer() {
       <label class="fld">📋 新增时套用…
         <select id="edAddFrom">
           <option value="blank">${t('空白（自行填写追加属性）')}</option>
-          ${editing.builds.map((b, i) => `<option value="b${i}">${t('复制配装')} ${i + 1}（${esc((b.sets || []).filter(Boolean).map(setName).join(' + ') || t('未选套装'))}）</option>`).join('')}
+          ${editing.builds.map((b, i) => `<option value="b${i}">${t('复制配装')} ${i + 1}（${esc(buildSetsLabel(b) || t('未选套装'))}）</option>`).join('')}
         </select>
       </label>
       ${factoryPresetOptions(editing).length ? `<label class="fld">＋ 从预置添加
         <select id="edAddPreset">
           <option value="">${t('（选择一个已删除的预置组）')}</option>
-          ${factoryPresetOptions(editing).map(b => `<option value="${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).map(setName).join(' + '))}</option>`).join('')}
+          ${factoryPresetOptions(editing).map(b => `<option value="${esc(b.bkey)}">${esc(buildSetsLabel(b))}</option>`).join('')}
         </select>
       </label>` : ''}
     </div>
@@ -2944,7 +3156,7 @@ ${esc(c.note)}</textarea>
       if (src) {
         nb.main = JSON.parse(JSON.stringify(src.main || {}));
         nb.subs = JSON.parse(JSON.stringify(src.subs || []));
-        nb.roles = JSON.parse(JSON.stringify(src.roles || []));   // 定位（功能定位）一并复制
+        // 定位不再复制：它由「所选套装」派生，复制套装即自动带上定位
       }
     }
     editing.builds.push(nb);
@@ -3026,9 +3238,12 @@ function drawBuildCards() {
       <div class="bm-t">
         <span class="prio-tag ${b.priority}">${b.priority === 'main' ? t('主推') : t('备选')}</span>
         ${prioMod && i === facMainIdx ? `<span class="bm-builtin" title="${t('出厂默认主推：当前主推与它不一致，点上方「重置顺序」可还原')}">${t('内置主推')}</span>` : ''}
-        <span class="bm-name">${t('配装')} ${i + 1}　${esc(sets.map(setName).join(' + ') || t('未选套装'))}</span>
-        ${buildRoleBadges(b.roles, ROLE_SHOW_MAX)}
-        <span class="bm-kind">${sets.length === 2 ? t('2+2 组合') : (sets.length === 1 ? t('4 件套') : t('未选择套装'))}</span>
+        <span class="bm-name">${t('配装')} ${i + 1}　${esc(buildSetsLabel(b) || t('未选套装'))}</span>
+        ${buildTagBadges(buildTagsOf(b), ROLE_SHOW_MAX)}
+        <span class="bm-kind">${!sets.length ? t('未选择套装')
+          : (buildNeed(b) === 2
+            ? (sets.length <= 2 ? t('2+2 组合') : t('2+2 候选池（任选 2 套）'))
+            : (sets.length === 1 ? t('4 件套') : t('4 件套（候选中任选 1 套）')))}</span>
         ${mod ? `<span class="bm-mod">${t('已修改')}</span>` : ''}
       </div>
       <div class="bm-sum">
@@ -3127,6 +3342,7 @@ function closePicker() {
  * 配装编辑：二层浮窗（草稿机制，点「保存」才写回 editing）
  * ============================================================ */
 let bmDraft = null;      // 当前草稿（深拷贝）
+let bmSlots = 2;         // 套装候选下拉的展示槽位数（≥ 实际候选数；「＋ 候选套装」可加）
 let bmOrig = '';         // 打开时的 canon 快照，用于脏检查
 let bmIndex = -1;
 let bmIsNew = false;
@@ -3137,6 +3353,7 @@ function openBuildModal(i, isNew) {
   bmIsNew = !!isNew;
   bmDraft = JSON.parse(JSON.stringify(editing.builds[i] || freshBuild('alt')));
   bmOrig = canonBuildPrio(bmDraft);
+  bmSlots = Math.max(2, (bmDraft.sets || []).filter(Boolean).length);   // 候选多时把槽位一次铺够
   $('#bmTitle').textContent = t('编辑配装') + ' ' + (i + 1) +
     (bmDraft.priority === 'main' ? t('（主推）') : t('（备选）'));
   const btnRes = $('#bmRestore');
@@ -3194,10 +3411,20 @@ function drawBuildForm() {
   const B = bmDraft;
   if (!Array.isArray(B.roles)) B.roles = [];
   const sets = (B.sets || []).filter(Boolean);
-  // 套装双下拉
-  ['bmSet0', 'bmSet1'].forEach((id, k) => {
-    const sel = $('#' + id);
-    sel.innerHTML = '<option value="">' + (k === 0 ? '（选择套装）' : '（2+2 可选）') + '</option>' + setOptions(sets[k]);
+  // 套装候选池：1 套 = 4 件套；≥2 套 = 从候选里任选两套散搭（2+2，不重复同一套）
+  const slots = Math.max(bmSlots, sets.length, buildNeed(B) === 2 ? 2 : 1);
+  const sbox = $('#bmSets');
+  sbox.innerHTML = '';
+  for (let k = 0; k < slots; k++) {
+    if (k) {
+      const plus = document.createElement('span');
+      plus.className = 'bm-plus';
+      plus.textContent = '+';
+      sbox.appendChild(plus);
+    }
+    const sel = document.createElement('select');
+    sel.className = 'bm-set';
+    sel.innerHTML = '<option value="">' + (k === 0 ? '（选择套装）' : '（候选套装）') + '</option>' + setOptions(sets[k]);
     sel.value = sets[k] || '';
     sel.onchange = () => {
       const arr = (B.sets || []).filter(Boolean);
@@ -3205,9 +3432,26 @@ function drawBuildForm() {
       B.sets = arr.filter(Boolean);
       drawBuildForm();
     };
-  });
-  $('#bmKind').textContent = (B.sets || []).filter(Boolean).length === 2 ? '2+2 组合'
-    : ((B.sets || []).filter(Boolean).length === 1 ? '4 件套' : '未选择套装');
+    // 2+2 池内不支持重复套：其他槽位已选的套装在本槽置灰
+    sel.querySelectorAll('option').forEach(o => {
+      if (o.value && sets.some((s, j) => j !== k && s === o.value)) o.disabled = true;
+    });
+    sbox.appendChild(sel);
+  }
+  const addBtn = $('#bmAddSet');
+  if (addBtn) addBtn.onclick = () => { bmSlots = slots + 1; drawBuildForm(); };
+  // 形态：候选 ≥2 时才能选「任选 2 套散搭」或「四件套任选其一」
+  const needWrap = $('#bmNeedWrap'), needSel = $('#bmNeed');
+  if (needWrap && needSel) {
+    needWrap.classList.toggle('hidden', sets.length < 2);
+    needSel.value = (B.need === 2 || B.need === 4) ? String(B.need) : '';
+    needSel.onchange = () => { B.need = needSel.value ? +needSel.value : null; drawBuildForm(); };
+  }
+  const nSet = sets.length;
+  $('#bmKind').textContent = !nSet ? '未选择套装'
+    : (buildNeed(B) === 2
+      ? (nSet <= 2 ? '2+2 组合' : '2+2 候选池（任选 2 套）')
+      : (nSet === 1 ? '4 件套' : '4 件套（候选中任选 1 套）'));
   // 主推
   const prio = $('#bmPrio');
   prio.checked = B.priority === 'main';
@@ -3219,10 +3463,10 @@ function drawBuildForm() {
     '<option value="">（不改，保持当前）</option>' +
     '<optgroup label="复制其他配装组">' +
       editing.builds.map((b, j) => j === bmIndex ? '' :
-        `<option value="b${j}">配装${j + 1}（${esc((b.sets || []).filter(Boolean).map(setName).join(' + ') || '未选套装')}）</option>`).join('') +
+        `<option value="b${j}">配装${j + 1}（${esc(buildSetsLabel(b) || '未选套装')}）</option>`).join('') +
     '</optgroup>' +
     (presets.length ? '<optgroup label="出厂预置">' +
-      presets.map(b => `<option value="f${esc(b.bkey)}">${esc((b.sets || []).filter(Boolean).map(setName).join(' + '))}</option>`).join('') +
+      presets.map(b => `<option value="f${esc(b.bkey)}">${esc(buildSetsLabel(b))}</option>`).join('') +
     '</optgroup>' : '') +
     '<optgroup label="追加属性预设（仅追加属性）">' +
       Object.keys(SUB_PRESETS).map(k => `<option value="p${k}">${esc(SUB_PRESET_NAMES[k])}</option>`).join('') +
@@ -3236,8 +3480,8 @@ function drawBuildForm() {
       B.sets = (src.sets || []).filter(Boolean).slice();
       B.main = JSON.parse(JSON.stringify(src.main || {}));
       B.subs = JSON.parse(JSON.stringify(src.subs || []));
-      B.roles = JSON.parse(JSON.stringify(src.roles || []));   // 定位一并套用
-      toast('已复制配装' + (+v.slice(1) + 1) + '的套装、词条与定位');
+      // 定位不参与复制：它跟着套装走，套装复制过来定位自然一致（避免「定位一并套用」的误导）
+      toast('已复制配装' + (+v.slice(1) + 1) + '的套装与词条（定位随套装自动派生）');
     } else if (v[0] === 'f') {
       const key = v.slice(1);
       const fc = factoryCharOf(editing);
@@ -3248,8 +3492,8 @@ function drawBuildForm() {
       B.bkey = fb.bkey;
       B.main = fb.main;
       B.subs = fb.subs;
-      B.roles = (fb.roles || []).slice();   // 预置的定位一并套用
-      toast('已套用出厂预置：' + B.sets.join(' + '));
+      // 定位由套装派生，不再从预置里带过来
+      toast('已套用出厂预置：' + buildSetsLabel(B));
       $('#bmRestore').classList.remove('hidden');
     } else {
       B.subs = toSubs(SUB_PRESETS[v.slice(1)] || SUB_PRESETS.crit);
@@ -3275,7 +3519,7 @@ function drawBuildForm() {
     };
   });
   drawMains(B, 'bm');
-  // 功能定位（多选 + 自定义）：单独渲染，不打断上面的表单状态
+  // 功能定位：只读展示（由所选套装派生，统一在「套装管理」里改），不打断上面的表单状态
   drawBuildRoles();
   // 追加属性：按属性库顺序直接加入第一个尚未使用的属性，之后可在行内修改
   const add = $('#bmAddSub');
@@ -3289,40 +3533,33 @@ function drawBuildForm() {
   drawSubs(B, 'bm');
 }
 
-/* 配装功能定位：基础词表 + 当前配装已有的自定义定位，勾选即写入 B.roles（多选）。
- * 自定义输入框只把新定位加入当前配装组，不写入全局词库。 */
+/* 配装功能定位：只读展示。
+ * 定位由所选套装的 2 / 4 件套效果语义派生（单套 = pos2 ∪ pos4，2+2 = 两套 pos2 并集），
+ * 这里不能再勾选 / 自定义 —— 想改定位请到「数据管理 → 套装管理」里改对应套装的定位。 */
 function drawBuildRoles() {
   const B = bmDraft;
   const box = $('#bmRoles');
   if (!box) return;
-  const pool = BUILD_ROLES.concat((B.roles || []).filter(r => !BUILD_ROLES.includes(r)));
-  box.innerHTML = pool.map(r => {
-    const on = (B.roles || []).includes(r);
-    return `<label class="chk brole-chk"><input type="checkbox" data-brole="${esc(r)}" ${on ? 'checked' : ''}> ${esc(r)}</label>`;
-  }).join('') || '<span class="muted small">（暂无可选定位）</span>';
-  box.querySelectorAll('input[data-brole]').forEach(cb => {
-    cb.onchange = () => {
-      const name = cb.dataset.brole;
-      const set = new Set(B.roles || []);
-      if (cb.checked) set.add(name); else set.delete(name);
-      B.roles = Array.from(set);
-    };
-  });
-  const add = $('#bmAddRole');
-  if (add) add.onclick = () => {
-    const inp = $('#bmNewRole');
-    const name = (inp.value || '').trim();
-    if (!name) return;
-    if (!(B.roles || []).includes(name)) B.roles = (B.roles || []).concat(name);
-    inp.value = '';
-    drawBuildRoles();
-  };
+  const sets = (B.sets || []).filter(Boolean);
+  if (!sets.length) {
+    box.innerHTML = `<span class="muted small">${esc(t('先选择套装，定位会按套装效果自动派生'))}</span>`;
+    return;
+  }
+  const tags = buildTagsOf(B);
+  const empty = !tags.cats.length && !tags.kws.length;
+  box.innerHTML = empty
+    ? `<span class="muted small">${esc(t('所选套装暂无可识别的定位；可在「套装管理」里为它点选定位。'))}</span>`
+    : `<span class="brole-list">${tags.cats.map(r => `<span class="brole">${esc(r)}</span>`).join('')}</span>
+       <span class="brole-list">${tags.kws.map(r => `<span class="brole kw">${esc(r)}</span>`).join('')}</span>
+       <span class="muted small">${esc(t('大类 → 关键词，均由套装效果派生，统一在「套装管理」里修改。'))}</span>`;
 }
 
 /* 保存：写回 editing.builds，主推唯一，关浮窗并重绘卡片 */
 function saveBuildModal() {
   const B = bmDraft;
-  if (!(B.sets || []).filter(Boolean).length) return toast('请至少选择一个套装');
+  const pool = (B.sets || []).filter(Boolean);
+  if (!pool.length) return toast('请至少选择一个套装');
+  if (new Set(pool).size !== pool.length) return toast('同一套装只能选一次：2+2 不支持重复套');
   editing.builds[bmIndex] = JSON.parse(JSON.stringify(B));
   if (B.priority === 'main') editing.builds.forEach((b, j) => { if (j !== bmIndex) b.priority = 'alt'; });
   else if (!editing.builds.some(b => b.priority === 'main')) editing.builds[0].priority = 'main';
@@ -3608,15 +3845,22 @@ function renderPlan() {
   const includeAlt = $('#planAltBuild').checked;
   const hideUnused = $('#planHideUnused').checked;
   const plan = computePlan(includeAlt);
-  const setFilter = $('#planSetFilter').value;
+  const starFilter = state.planStar || 'all';   // 星级档：all / 5 / 4
   const slotFilter = $('#planSlotFilter').value;
 
-  // 下拉
+  // 星级切换按钮态与 state 同步（备份恢复、切页回来也要一致）
+  const starSeg = $('#planStarSeg');
+  if (starSeg) starSeg.querySelectorAll('.seg-btn').forEach(x =>
+    x.classList.toggle('active', (x.dataset.star || 'all') === starFilter));
+
+  // 下拉：只列当前星级档的套装；切档后旧的选中项若不在档内，回落「全部套装」
   const sel = $('#planSetFilter');
   const cur = sel.value;
+  const starSets = allSets().filter(n => starFilter === 'all' || String(setRarityOf(n)) === starFilter);
   sel.innerHTML = '<option value="all">全部套装</option>' +
-    allSets().map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
-  sel.value = cur || 'all';
+    starSets.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  sel.value = (cur && starSets.indexOf(cur) >= 0) ? cur : 'all';
+  const setFilter = sel.value || 'all';
 
   const enabled = state.characters.filter(c => c.enabled).length;
   const psb = $('#planSortBar');
@@ -3629,7 +3873,9 @@ function renderPlan() {
     return;
   }
 
-  let blocks = Array.from(plan.entries());
+  // 星级档在源头过滤：下方区块列表与顶部汇总（涉及套装 / 采纳方案总数）都跟着变
+  let blocks = Array.from(plan.entries())
+    .filter(([name]) => starFilter === 'all' || String(setRarityOf(name)) === starFilter);
   // 统计
   let usedSets = 0, fodderSets = 0, planCount = 0, overSets = 0;
   blocks.forEach(([name, b]) => {
@@ -3782,6 +4028,7 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
       <h3>${esc(setName(name))}</h3>
       <span class="set-bonus">${esc(bonus)}</span>
       ${bonus4 ? `<span class="set-bonus4" title="${esc(bonus4)}">4件套：${esc(briefSetBonus4(bonus4))}</span>` : ''}
+      ${b.need2 ? `<span class="set-badge2" title="${esc('这些角色的配装是「任选两套散搭（2+2）」，本套装只需 2 件；具体搭配哪两套由你决定。')}">${esc('仅需 2 件套')}</span>` : ''}
       <span class="set-users">
         ${unused
           ? '<span class="tier-tag fodder">无角色需要 · 可整套清理</span>'
@@ -3920,7 +4167,10 @@ function gamePlansToText() {
   const includeAlt = $('#planAltBuild').checked;
   const plan = computePlan(includeAlt);
   const L = ['原神 · 圣遗物套装锁定方案（游戏内照此设置）',
-    '说明：每个方案的【五个部位共用同一份追加属性条件】，照下方逐套设置即可。', ''];
+    '说明：每个方案的【五个部位共用同一份追加属性条件】，照下方逐套设置即可。',
+    '形态：【单套】= 穿满 4 件；【任选2套】= 2+2 散搭 —— 候选里的每个套装各有一份方案，',
+    '      游戏里任选其中两套、各穿 2 件即可（同一套不可重复用两次），选哪两套由你自己定。',
+    ''];
   let total = 0, setCount = 0, over = 0;
 
   Array.from(plan.entries())
@@ -3934,7 +4184,7 @@ function gamePlansToText() {
       setCount++;
       if (plans.length > GAME_MAX_PRESET) over++;
       L.push('━━━━━━━━━━━━━━━━━━━━━━━━');
-      L.push(`【${name}】${plans.length} 个预设${plans.length > GAME_MAX_PRESET ? '（⚠️ 超过游戏上限 ' + GAME_MAX_PRESET + '）' : ''}`);
+      L.push(`【${name}】${setFormNote(name)}${plans.length} 个预设${plans.length > GAME_MAX_PRESET ? '（⚠️ 超过游戏上限 ' + GAME_MAX_PRESET + '）' : ''}`);
       plans.forEach((p, i) => L.push(planCopyText(name, p, i)));
       L.push('');
       total += plans.length;
@@ -3961,7 +4211,7 @@ function planToText() {
     .filter(([, b]) => b.users.size > 0)
     .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
     .forEach(([name, b]) => {
-      lines.push('【' + name + '】' + (allSetBonus()[name] ? '（' + allSetBonus()[name] + '）' : ''));
+      lines.push('【' + name + '】' + setFormNote(name) + (allSetBonus()[name] ? '（' + allSetBonus()[name] + '）' : ''));
       SLOTS.forEach(sd => {
         const rows = b.slots[sd.id] || [];
         if (!rows.length) { lines.push('  ' + sd.name + '：无需求，可全喂'); return; }
@@ -3983,16 +4233,17 @@ function planToText() {
 function planToCsv() {
   const includeAlt = $('#planAltBuild').checked;
   const plan = computePlan(includeAlt);
-  const rows = [['套装', '部位', '主要属性', '分级', '建议保留件数', '需求角色']];
+  const rows = [['套装', '部位', '主要属性', '分级', '建议保留件数', '需求角色', '形态备注']];
   Array.from(plan.entries())
     .filter(([, b]) => b.users.size > 0)
     .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
     .forEach(([name, b]) => {
+      const note = setFormNote(name);
       SLOTS.forEach(sd => {
         (b.slots[sd.id] || []).forEach(r => {
           const statName = statLabel(sd.id, r) + (isSwap(r) ? '(二选一)' : '');
           const who = r.charsArr.map(x => x.name + (x.rank > 1 ? '(次选)' : '') + (x.alt ? '(备选)' : '')).join(' / ');
-          rows.push([name, sd.name, statName, tierLabel(r.tier), r.keep, who]);
+          rows.push([name, sd.name, statName, tierLabel(r.tier), r.keep, who, note]);
         });
       });
     });
@@ -4208,11 +4459,33 @@ function renderSets() {
             : `<button class="btn sm ${s.builtin ? '' : 'danger'}" data-smhide="${i}">${s.builtin ? t('隐藏') : t('删除')}</button>`}
         </span>
         <textarea class="sm-bonus4" data-smbonus4="${i}" placeholder="${esc(t('4 件套效果'))}">${esc(s.bonus4 || '')}</textarea>
+        <div class="sm-roles">
+          <div class="sm-rrow">
+            <span class="sm-rlabel">${t('2 件套定位')}</span>
+            <span class="role-chips" data-smpos2="${i}">${tagChipsHtml(s.pos2, 'smrole', catPoolOf(s.pos2))}</span>
+          </div>
+          <div class="sm-rrow sm-rkw">
+            <span class="sm-rlabel">${t('关键词')}</span>
+            <span class="role-chips" data-smpos2kw="${i}">${tagChipsHtml(s.pos2kw, 'smrolekw', kwPoolOf(s.pos2kw))}</span>
+          </div>
+          <div class="sm-rrow">
+            <span class="sm-rlabel">${t('4 件套定位')}</span>
+            <span class="role-chips" data-smpos4="${i}">${tagChipsHtml(s.pos4, 'smrole', catPoolOf(s.pos4))}</span>
+          </div>
+          <div class="sm-rrow sm-rkw">
+            <span class="sm-rlabel">${t('关键词')}</span>
+            <span class="role-chips" data-smpos4kw="${i}">${tagChipsHtml(s.pos4kw, 'smrolekw', kwPoolOf(s.pos4kw))}</span>
+          </div>
+          <div class="sm-infer">
+            <button class="btn sm" data-sminfer="${i}">${t('按效果文本自动推导')}</button>
+            <span class="muted small">${t('点选即保存；大类表配装方向，关键词可跨大类组合（如「辅助+攻击」=给队友加攻击）；角色配装的定位只读引用这里的结果。')}</span>
+          </div>
+        </div>
       </div>`).join('');
 
   box.innerHTML = `
     <div class="sm-row sm-head">
-      <span class="sm-no">#</span><span>${t('套装名称')}</span><span>${t('2 / 4 件套效果')}</span><span class="sm-ops">${t('操作')}</span>
+      <span class="sm-no">#</span><span>${t('套装名称')}</span><span>${t('2 / 4 件套效果与定位')}</span><span class="sm-ops">${t('操作')}</span>
     </div>
     ${rows || `<p class="muted small">${t('没有可显示的套装。')}</p>`}
     <p class="muted small" style="margin-top:10px">
@@ -4256,6 +4529,37 @@ function renderSets() {
     s.hidden = false;
     save(); afterSetsChange();
     toast('已恢复：' + s.name);
+  });
+
+  // 定位点选：大类 / 关键词两行，点一下即保存，并联动刷新角色卡 / 方案页（那里都是只读派生展示）
+  const togglePos = (chip, key) => {
+    const holder = chip.closest('[data-smpos2],[data-smpos2kw],[data-smpos4],[data-smpos4kw]');
+    if (!holder) return;
+    const raw = holder.getAttribute('data-' + key);
+    const s = state.sets[+raw];
+    if (!s) return;
+    const role = chip.getAttribute(key.endsWith('kw') ? 'data-smrolekw' : 'data-smrole');
+    if (!role) return;
+    const cur = normRoleTags(s[key]);
+    const at = cur.indexOf(role);
+    if (at >= 0) cur.splice(at, 1); else cur.push(role);
+    s[key] = sortBuildRoles(cur);
+    save(); afterSetsChange();
+    const isKw = key.endsWith('kw');
+    toast(`「${s.name}」${key.startsWith('pos2') ? '2' : '4'} 件套${isKw ? '关键词' : '定位'}：${(s[key] || []).join('·') || '（空）'}`);
+  };
+  [['smpos2', 'pos2'], ['smpos2kw', 'pos2kw'], ['smpos4', 'pos4'], ['smpos4kw', 'pos4kw']].forEach(([attr, key]) => {
+    box.querySelectorAll(`[data-${attr}] .role-chip`).forEach(c => c.onclick = () => togglePos(c, key));
+  });
+  // 一键按 2 / 4 件套效果文本推导初值（推导完仍可继续点选修改）
+  box.querySelectorAll('[data-sminfer]').forEach(b => b.onclick = () => {
+    const s = state.sets[+b.dataset.sminfer];
+    if (!s) return;
+    const inf = inferSetRoles(s);
+    s.pos2 = (inf.pos2 || []).slice(); s.pos2kw = (inf.pos2kw || []).slice();
+    s.pos4 = (inf.pos4 || []).slice(); s.pos4kw = (inf.pos4kw || []).slice();
+    save(); afterSetsChange();
+    toast(`已按效果文本推导「${s.name}」的定位与关键词（可继续点选微调）`);
   });
 
   const cnt = $('#statSetCount');
@@ -4570,6 +4874,15 @@ function bind() {
   };
 
   // 方案页
+  // 星级一键筛选：全部 / 五星 / 四星（选择记进 state，下次打开保持）
+  const planStarSeg = $('#planStarSeg');
+  if (planStarSeg) planStarSeg.querySelectorAll('.seg-btn').forEach(b => {
+    b.onclick = () => {
+      state.planStar = b.dataset.star || 'all';
+      save();
+      renderPlan();
+    };
+  });
   $('#planSetFilter').onchange = renderPlan;
   $('#planSlotFilter').onchange = renderPlan;
   $('#planHideUnused').onchange = renderPlan;

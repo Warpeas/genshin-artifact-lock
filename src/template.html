@@ -116,6 +116,11 @@
   <!-- ============ 锁定方案 ============ -->
   <section id="tab-plan" class="tabpane">
     <div class="toolbar wrap">
+      <span class="seg" id="planStarSeg" title="按套装稀有度筛选（四星套为过渡推荐）">
+        <button type="button" class="seg-btn active" data-star="all" data-en="All">全部</button>
+        <button type="button" class="seg-btn" data-star="5" data-en="5★">五星</button>
+        <button type="button" class="seg-btn" data-star="4" data-en="4★">四星</button>
+      </span>
       <label class="fld">套装筛选
         <select id="planSetFilter"><option value="all">全部套装</option></select>
       </label>
@@ -267,10 +272,19 @@
   </div>
   <div class="modal-body">
     <div class="bm-sets">
-      <select id="bmSet0" class="bm-set"></select>
-      <span class="bm-plus">+</span>
-      <select id="bmSet1" class="bm-set"></select>
+      <span id="bmSets" class="bm-set-list"></span>
+      <button type="button" class="btn sm" id="bmAddSet" title="再加一个候选套装：两套及以上即「任选两套散搭（2+2）」">＋ 候选套装</button>
       <span id="bmKind" class="bm-kind"></span>
+    </div>
+    <div class="bm-row">
+      <label class="fld" id="bmNeedWrap">形态
+        <select id="bmNeed">
+          <option value="">自动（候选 ≥2 套 = 任选 2 套散搭）</option>
+          <option value="2">二件套散搭（2+2：候选中任选 2 套，各穿 2 件）</option>
+          <option value="4">四件套（候选中任选 1 套，穿满 4 件）</option>
+        </select>
+      </label>
+      <span class="muted small">候选池内的每一套都会单独落到锁定方案；具体选哪套由你在游戏里决定。</span>
     </div>
     <div class="bm-row">
       <label class="chk"><input type="checkbox" id="bmPrio"> 设为主推（第 1 组默认主推，同一角色只可有一组主推）</label>
@@ -281,12 +295,8 @@
       </label>
     </div>
     <div class="fgroup">
-      <span class="glabel">功能定位 <span class="hint">可多选；可自定义（仅当前配装），如 输出 / 增伤 / 治疗 / 护盾</span></span>
-      <div id="bmRoles" class="role-chks"></div>
-      <div class="bm-addrole">
-        <input id="bmNewRole" type="text" placeholder="自定义定位，如 增幅反应" maxlength="12" />
-        <button type="button" class="btn sm" id="bmAddRole">+ 添加</button>
-      </div>
+      <span class="glabel">功能定位 <span class="hint" data-en="Derived from set effects (read-only) — 4-piece = 2pc ∪ 4pc; 2+2 = union of both 2pc. Edit them in “Set manager”.">由套装效果派生（只读）：单套 = 2 件套 ∪ 4 件套；2+2 = 两套 2 件套的并集。要改请去「套装管理」。</span></span>
+      <div id="bmRoles" class="role-chks readonly"></div>
     </div>
     <div id="bmMainBox"></div>
     <div class="fgroup">
