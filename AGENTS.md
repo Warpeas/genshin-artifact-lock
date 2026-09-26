@@ -46,7 +46,8 @@ genshin-artifact-lock/
 ├── docs/                给人看的文档
 │   ├── DESIGN.md                       设计文档：架构 / 算法 / 取舍 / 局限
 │   ├── 配装数据链路修复说明.md          2026-09-18 配装数据链路修复：问题、修复项、前后对照
-│   └── 配装数据核对报告.md              逐字段核对报告（链路修复的事前证据）
+│   ├── 配装数据核对报告.md              逐字段核对报告（链路修复的事前证据）
+│   └── 圣遗物分类词表.md                55 套 2 / 4 件套二维分类（4 大类 × 22 关键词）+ 同角色分类一致情况
 ├── .nojekyll           GitHub Pages 跳过 Jekyll，勿删
 ├── .gitignore          只忽略 tools/out/*cache*/
 ├── preview/            界面截图（仅文档用）
@@ -110,7 +111,7 @@ genshin-artifact-lock/
 | 追加属性种类 | `SUB_STATS` |
 | 追加属性预设（fallback） | `SUB_PRESETS` |
 | 元素 / 国度 / 定位枚举 | `ELEMENTS` / `REGIONS` / `ROLES` |
-| **配装功能定位**词表 | `BUILD_ROLES`（输出/增伤/减抗/治疗/护盾/副C/辅助/精通/充能/聚怪/增幅反应/剧变反应） |
+| **配装功能定位**词表 | `BUILD_CATS`（大类 4：输出 / 辅助 / 生存 / 功能，可多选）+ `BUILD_KWS`（关键词 22，可跨大类组合）；`BUILD_ROLES` 是两者拼接，仅用于排序与旧存档合法性校验 |
 | 更新公告 / 更新日志 | `APP_VERSION` / `CHANGELOG` |
 
 ### 3.3 版本号与 CHANGELOG —— 有个反直觉的约定
