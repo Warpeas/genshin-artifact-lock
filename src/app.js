@@ -34,8 +34,8 @@ function buildSetWeight(b) {
   return (W_SET_COUNT[buildNeed(b)] || 1) * (Math.min(buildPickCount(b), n) / n);
 }
 // 展示：单套「A」；正好够挑「A + B」；候选多于所需「A / B / C（任选2套）」
-function buildSetsLabel(b) {
-  const p = buildPool(b).map(setName);
+function buildSetsLabel(b, short) {
+  const p = buildPool(b).map(short ? setShortName : setName);
   if (!p.length) return '';
   const k = buildPickCount(b);
   if (p.length <= k) return p.join(' + ');
@@ -519,6 +519,7 @@ function userBackup() {
     format: 'genshin-artifact-lock-user-data', version: 1,
     customCharacters, characterOverrides, characterPrefs,
     customSets, setOverrides,
+    setShort: state.setShort || { zh: {}, en: {} },
     planCfg: state.planCfg || {},
     keepRules: {
       enabled: (state.keepRules && state.keepRules.enabled) || [],
@@ -544,6 +545,8 @@ function restoreUserBackup(data) {
     const s = state.sets.find(x => x.builtin && x.skey === item.key);
     if (s && item.patch) Object.assign(s, JSON.parse(JSON.stringify(item.patch)));
   });
+  state.setShort = normalizeSetShort(data.setShort);
+  syncSetShorts();
   (data.customSets || []).forEach(raw => {
     const copy = JSON.parse(JSON.stringify(raw));
     copy.builtin = false;
@@ -586,6 +589,46 @@ function normalizeSortPref(raw) {
   return out;
 }
 
+/* 用户改过的套装简称：{ zh: {套装名: 简称}, en: {套装名: 简称} }（只留非空字符串） */
+function normalizeSetShort(raw) {
+  const out = { zh: {}, en: {} };
+  ['zh', 'en'].forEach(lang => {
+    const src = (raw && typeof raw === 'object' && raw[lang] && typeof raw[lang] === 'object') ? raw[lang] : null;
+    if (!src) return;
+    Object.keys(src).forEach(k => {
+      const v = (src[k] == null ? '' : String(src[k])).trim();
+      if (k && v) out[lang][k] = v;
+    });
+  });
+  return out;
+}
+/* 把用户层简称覆盖同步给 data.js（取值函数只读那边的内存变量） */
+function syncSetShorts() {
+  if (typeof setShortOverrides === 'function') setShortOverrides(state && state.setShort);
+}
+/* 某套装在当前数据语言下的用户简称覆盖（无覆盖返回 ''） */
+function shortOverrideOf(name) {
+  const slot = (state && state.setShort && state.setShort[langOf('data')]) || {};
+  return slot[name] || '';
+}
+/* 写入 / 还原某一套装的简称：空值或等于系统自带 → 删掉覆盖（保持跟随系统） */
+function setSetShort(idx, val) {
+  const s = state.sets[idx];
+  if (!s) return;
+  const lang = langOf('data');
+  const name = s.name;
+  const v = (val || '').trim();
+  if (!state.setShort) state.setShort = { zh: {}, en: {} };
+  if (!state.setShort[lang]) state.setShort[lang] = {};
+  const slot = state.setShort[lang];
+  const follow = !v || v === setShortDefault(name);
+  if (follow) delete slot[name]; else slot[name] = v;
+  syncSetShorts();
+  save();
+  renderPlan(); renderSets();
+  toast(follow ? t('已跟随系统自带简称') : t('简称已保存：') + name + ' → ' + v);
+}
+
 /* ============================================================
  * 语言：显示语言（界面文案）与数据语言（角色 / 套装 / 属性）各自独立
  * ------------------------------------------------------------
@@ -604,6 +647,7 @@ function langOf(kind) { return (state && state.lang && state.lang[kind]) || 'zh'
 function pushLang() {
   setUiLang(langOf('ui'));
   setDataLang(langOf('data'));
+  syncSetShorts();
 }
 /* 当前生效的词典（界面文案优先于数据名） */
 const I18N_ATTRS = ['placeholder', 'title', 'aria-label'];
@@ -888,6 +932,25 @@ function setPosTags(s) {
     pos4: pick('pos4'), pos4kw: pick('pos4kw'),
   };
 }
+/* 出厂定位（= 系统内置）：图鉴 SETS 里该套装的 pos2 / pos2kw / pos4 / pos4kw，
+ * 按「大类 + 关键词」分好层。锚点是 skey（出厂名，套装改名后不变）；
+ * 自定义套装不在 SETS 里 → null（没有可还原的目标，界面不给重置入口）。 */
+function factoryPosOf(s) {
+  const f = SETS.find(x => x.name === ((s && (s.skey || s.name)) || ''));
+  if (!f) return null;
+  const p2 = splitPosLayers(f.pos2, f.pos2kw);
+  const p4 = splitPosLayers(f.pos4, f.pos4kw);
+  return { pos2: p2.cats, pos2kw: p2.kws, pos4: p4.cats, pos4kw: p4.kws };
+}
+/* 某一件套（part = 2 / 4）的定位是否已被用户改过（与系统内置不一致）：驱动「已改」徽标与重置按钮可用态 */
+function posPartDirty(s, part) {
+  const f = factoryPosOf(s);
+  if (!f) return false;
+  const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+  const ck = part === 4 ? 'pos4' : 'pos2';
+  const kk = part === 4 ? 'pos4kw' : 'pos2kw';
+  return !(same(normRoleTags(s[ck]), f[ck]) && same(normRoleTags(s[kk]), f[kk]));
+}
 
 function normalize(o) {
   // ---- 套装列表：旧存档只有 customSets，需要合并进统一列表 ----
@@ -941,11 +1004,23 @@ function normalize(o) {
   });
   delete o.customSets;
 
+  // 定位两层口径统一：大类层只留 输出 / 辅助 / 生存 / 功能 这 4 项。
+  // 被写进大类层的「增伤 / 剧变反应」等关键词（旧版本点选池把关键词一起并进了大类池）
+  // 在这里一次性归位到同一件套的关键词层，用户已选的值一个不丢（规则见 data.js splitPosLayers）。
+  o.sets.forEach(s => {
+    const p2 = splitPosLayers(s.pos2, s.pos2kw);
+    const p4 = splitPosLayers(s.pos4, s.pos4kw);
+    s.pos2 = p2.cats; s.pos2kw = p2.kws;
+    s.pos4 = p4.cats; s.pos4kw = p4.kws;
+  });
+
   // 卡片展示哪一组 = 恒等于「主推」那一组（由 b.priority 派生），不再单独持久化展示偏好
   delete o.buildView;
 
   // 语言：ui = 界面文案，data = 角色 / 套装 / 属性等数据内容，两者独立
   o.lang = normalizeLang(o.lang);
+  // 用户改过的套装简称（只存与系统自带不同的那些），空即跟随系统
+  o.setShort = normalizeSetShort(o.setShort);
   // 各列表的正序 / 倒序偏好（排序顺序本身来自米游社图鉴，这里只记要不要反过来）
   o.sortPref = normalizeSortPref(o.sortPref);
   // 用户对候选方案的手动整理结果：{ 套装名: { merge: [[key,key,...]], hide: [key] } }
@@ -1382,29 +1457,41 @@ function tagsOfSets(sets) {
 function rolesOfSets(sets) {
   return deriveBuildRoles(sets || [], posSourceList());
 }
-/* 点选池：大类池 / 关键词池（+ 该套装已有的自定义取值，历史自定义值不因改造丢失） */
-function catPoolOf(extra) {
-  const pool = BUILD_CATS.slice();
-  normRoleTags(extra).forEach(r => { if (!pool.includes(r)) pool.push(r); });
-  return pool;
+/* 点选池 · 大类：恒为 4 项内置大类（输出 / 辅助 / 生存 / 功能）。
+ * 旧实现会把该套装「已有的取值」一并并进大类池，于是「增伤 / 剧变反应」这类关键词
+ * 也被当成大类摆在大类行里（分布错乱）。现在两层各管各的：混层的值在 normalize
+ * 阶段已由 splitPosLayers 归位，池子不再按已选值扩容。 */
+function catPoolOf() {
+  return BUILD_CATS.slice();
 }
+/* 点选池 · 关键词：22 项内置关键词 + 该层已有的额外取值（历史自定义值不因改造丢失） */
 function kwPoolOf(extra) {
   const pool = BUILD_KWS.slice();
-  normRoleTags(extra).forEach(r => { if (!pool.includes(r)) pool.push(r); });
+  normRoleTags(extra).forEach(r => { if (!pool.includes(r) && !BUILD_CATS.includes(r)) pool.push(r); });
   return pool;
 }
+/* 扁平池（大类在前、关键词在后）：不再按层分行的历史调用方用 */
 function rolePoolOf(extra) {
-  return catPoolOf(extra).concat(kwPoolOf(extra).filter(x => !BUILD_CATS.includes(x)));
+  return catPoolOf().concat(kwPoolOf(extra).filter(x => !BUILD_CATS.includes(x)));
 }
-/* 定位点选芯片（套装管理用）：点选即保存，不做自定义输入 */
-function tagChipsHtml(selected, attr, pool) {
+/* 定位点选芯片（套装管理用）：点选即保存，不做自定义输入。
+ * base = 该套装该层「系统内置」的取值，用来把标签分成可辨识的三态：
+ *   已选 + 内置   → .on        金色（跟随系统内置）
+ *   已选 + 非内置 → .on.user   蓝色（你自己加的）
+ *   未选 + 内置   → .bi-off    虚线灰（内置项被你取消了）
+ * 自定义套装没有内置基线（base 为空）→ 已选的一律按「你选的」显示。 */
+function tagChipsHtml(selected, attr, pool, base) {
   const on = normRoleTags(selected);
-  return (pool || []).map(r =>
-    `<span class="role-chip ${on.includes(r) ? 'on' : ''}" data-${attr}="${esc(r)}" title="${esc(t('点选即保存'))}">${esc(r)}</span>`
-  ).join('');
+  const bi = normRoleTags(base);
+  return (pool || []).map(r => {
+    const isOn = on.includes(r), isBi = bi.includes(r);
+    const cls = isOn ? (isBi ? 'on' : 'on user') : (isBi ? 'bi-off' : '');
+    const tip = isOn ? (isBi ? '内置已选' : '你选的') : (isBi ? '内置项·已取消' : '点选即保存');
+    return `<span class="role-chip ${cls}" data-${attr}="${esc(r)}" title="${esc(t(tip))}">${esc(r)}</span>`;
+  }).join('');
 }
 function roleChipsHtml(selected, attr) {
-  return tagChipsHtml(selected, attr, rolePoolOf(selected));
+  return tagChipsHtml(selected, attr, rolePoolOf(selected), selected);
 }
 
 /* ============================================================
@@ -3138,7 +3225,9 @@ function filteredChars() {
         (CHAR_META[c.skey] && CHAR_META[c.skey].en) ||
           (CHAR_META[c.name] && CHAR_META[c.name].en) || '',
         c.builds.map(b => b.sets.join(' ')).join(' '),
+        c.builds.map(b => b.sets.map(s => SET_SHORT[s] || '').join(' ')).join(' '),
         c.builds.map(b => b.sets.map(s => SET_EN[s] || '').join(' ')).join(' '),
+        c.builds.map(b => b.sets.map(s => (SET_EN[s] && SET_SHORT_EN[SET_EN[s]]) || '').join(' ')).join(' '),
         REGION_NAME[c.region] || '', REGION_EN[c.region] || '',
         c.roles.map(r => ROLE_NAME[r] || '').join(''),
         c.roles.map(r => ROLE_EN[r] || '').join(''),
@@ -3248,7 +3337,7 @@ function charCardHtml(c) {
   // 选中（viewIdx）= 绿色高亮；未选中 = 普通色
   const builds = list.length
     ? list.map((b, i) => {
-      const stxt = esc(buildSetsLabel(b));
+      const stxt = esc(buildSetsLabel(b, true));   // 角色卡片：套装用二字简称（其余位置一律全称）
       const dt = buildTagsOf(b);                     // 定位（大类 + 关键词）由套装派生，b.roles 不再参与展示
       const rTitle = dt.cats.concat(dt.kws).map(r => t(r)).join('/');
       const rInline = buildTagInline(dt, ROLE_SHOW_MAX);
@@ -4956,6 +5045,39 @@ function renderSetSubTable() {
 /* ============================================================
  * 套装管理（数据管理页浮窗，点「打开套装管理」弹出）
  * ============================================================ */
+/* 定位编辑块：2 件套 / 4 件套各占一块（块内固定两行：大类 1 行、关键词 1 行）。
+ * 旧写法把 4 行直接丢进一个 auto-fit 网格，换行位置随宽度漂移 —— 4 件套关键词会被挤到
+ * 2 件套大类旁边、甚至跑到大类上方；同一「件套」的大类与关键词还被拆到两列。
+ * 现在每块自己带标题 + 状态徽标 + 一键重置，同一件套的大类 / 关键词永远同块相邻。 */
+function posBlockHtml(s, i, part) {
+  const four = part === 4;
+  const f = factoryPosOf(s);                 // 自定义套装 = null：没有内置基线，不给重置入口
+  const dirty = posPartDirty(s, part);
+  const cats = four ? s.pos4 : s.pos2;
+  const kws = four ? s.pos4kw : s.pos2kw;
+  const badge = f
+    ? `<span class="sm-badge ${dirty ? 'cu' : 'bi'}" title="${esc(t(dirty ? '已改：与系统内置不一致' : '与系统内置一致'))}">${t(dirty ? '已修改' : '内置')}</span>`
+    : '';
+  const reset = f
+    ? `<button class="btn sm sm-rreset" data-smposreset="${i}" data-smpospart="${part}" title="${esc(t('把这一件套的定位（大类 + 关键词）还原为系统内置'))}"${dirty ? '' : ' disabled'}>↺</button>`
+    : '';
+  return `
+        <div class="sm-rblock${dirty ? ' dirty' : ''}">
+          <div class="sm-rhead">
+            <span class="sm-rtitle">${t(four ? '4 件套定位' : '2 件套定位')}</span>
+            ${badge}${reset}
+          </div>
+          <div class="sm-rrow">
+            <span class="sm-rlabel">${t('大类')}</span>
+            <span class="role-chips" data-${four ? 'smpos4' : 'smpos2'}="${i}">${tagChipsHtml(cats, 'smrole', catPoolOf(), f ? (four ? f.pos4 : f.pos2) : [])}</span>
+          </div>
+          <div class="sm-rrow sm-rkw">
+            <span class="sm-rlabel">${t('关键词')}</span>
+            <span class="role-chips" data-${four ? 'smpos4kw' : 'smpos2kw'}="${i}">${tagChipsHtml(kws, 'smrolekw', kwPoolOf(kws), f ? (four ? f.pos4kw : f.pos2kw) : [])}</span>
+          </div>
+        </div>`;
+}
+
 function renderSets() {
   const box = $('#setManager');
   if (!box) return;
@@ -4969,6 +5091,10 @@ function renderSets() {
       <div class="sm-row ${s.hidden ? 'off' : ''}">
         <span class="sm-no">${i + 1}</span>
         <input type="text" class="sm-name" data-smname="${i}" data-smdisplay="${esc(s.builtin ? setName(s.name) : s.name)}" value="${esc(s.builtin ? setName(s.name) : s.name)}"${s.builtin ? ` title="${esc(t('内置套装'))}"` : ''}>
+        <span class="sm-shortwrap">
+          <input type="text" class="sm-short${shortOverrideOf(s.name) ? ' over' : ''}" data-smshort="${i}" data-smdisplay="${esc(shortOverrideOf(s.name) || setShortDefault(s.name))}" value="${esc(shortOverrideOf(s.name) || setShortDefault(s.name))}" placeholder="${esc(t('简称'))}" title="${esc(t('套装简称（角色卡片显示用，留空即跟随系统自带）'))}">
+          <button class="btn sm" data-smshortreset="${i}" title="${esc(t('还原系统简称'))}"${shortOverrideOf(s.name) ? '' : ' disabled'}>↺</button>
+        </span>
         <input type="text" class="sm-bonus" data-smbonus="${i}" data-smdisplay="${esc(s.builtin && SET_BONUS[s.name] === s.bonus ? setBonusText(s.name) : (s.bonus || ''))}" value="${esc(s.builtin && SET_BONUS[s.name] === s.bonus ? setBonusText(s.name) : (s.bonus || ''))}" placeholder="${esc(t('2 件套效果'))}">
         <span class="sm-ops">
           <span class="sm-badge ${s.builtin ? 'bi' : 'cu'}">${s.builtin ? t('内置') : t('自定义')}</span>
@@ -4980,24 +5106,11 @@ function renderSets() {
         </span>
         <textarea class="sm-bonus4" data-smbonus4="${i}" placeholder="${esc(t('4 件套效果'))}">${esc(s.bonus4 || '')}</textarea>
         <div class="sm-roles">
-          <div class="sm-rrow">
-            <span class="sm-rlabel">${t('2 件套定位')}</span>
-            <span class="role-chips" data-smpos2="${i}">${tagChipsHtml(s.pos2, 'smrole', catPoolOf(s.pos2))}</span>
-          </div>
-          <div class="sm-rrow sm-rkw">
-            <span class="sm-rlabel">${t('关键词')}</span>
-            <span class="role-chips" data-smpos2kw="${i}">${tagChipsHtml(s.pos2kw, 'smrolekw', kwPoolOf(s.pos2kw))}</span>
-          </div>
-          <div class="sm-rrow">
-            <span class="sm-rlabel">${t('4 件套定位')}</span>
-            <span class="role-chips" data-smpos4="${i}">${tagChipsHtml(s.pos4, 'smrole', catPoolOf(s.pos4))}</span>
-          </div>
-          <div class="sm-rrow sm-rkw">
-            <span class="sm-rlabel">${t('关键词')}</span>
-            <span class="role-chips" data-smpos4kw="${i}">${tagChipsHtml(s.pos4kw, 'smrolekw', kwPoolOf(s.pos4kw))}</span>
-          </div>
+          ${posBlockHtml(s, i, 2)}
+          ${posBlockHtml(s, i, 4)}
           <div class="sm-infer">
             <button class="btn sm" data-sminfer="${i}">${t('按效果文本自动推导')}</button>
+            ${factoryPosOf(s) ? `<button class="btn sm" data-smposreset="${i}" data-smpospart="0" title="${esc(t('把 2 / 4 件套的定位一起还原为系统内置'))}">↺ ${t('全部重置为内置')}</button>` : ''}
             <span class="muted small">${t('点选即保存；大类表配装方向，关键词可跨大类组合（如「辅助+攻击」=给队友加攻击）；角色配装的定位只读引用这里的结果。')}</span>
           </div>
         </div>
@@ -5005,11 +5118,17 @@ function renderSets() {
 
   box.innerHTML = `
     <div class="sm-row sm-head">
-      <span class="sm-no">#</span><span>${t('套装名称')}</span><span>${t('2 / 4 件套效果与定位')}</span><span class="sm-ops">${t('操作')}</span>
+      <span class="sm-no">#</span><span>${t('套装名称')}</span><span>${t('简称')}</span><span>${t('2 / 4 件套效果与定位')}</span><span class="sm-ops">${t('操作')}</span>
+    </div>
+    <div class="sm-legend">
+      <span class="sm-legend-lb">${t('定位标记：')}</span>
+      <span class="role-chip on">${t('内置已选')}</span>
+      <span class="role-chip on user">${t('你选的')}</span>
+      <span class="role-chip bi-off">${t('内置项·已取消')}</span>
     </div>
     ${rows || `<p class="muted small">${t('没有可显示的套装。')}</p>`}
     <p class="muted small" style="margin-top:10px">
-      ${tf('共 {n} 个套装', { n: state.sets.length })}${hiddenCount ? `（${tf('已隐藏 {n} 个', { n: hiddenCount })}）` : ''}；${t('改名会自动同步到所有角色的配装。')}
+      ${tf('共 {n} 个套装', { n: state.sets.length })}${hiddenCount ? `（${tf('已隐藏 {n} 个', { n: hiddenCount })}）` : ''}；${t('改名会自动同步到所有角色的配装。')} ${t('简称只影响角色卡片上显示的名字，其他页面与导出仍是全称。')}
     </p>`;
 
   // 改名（同步到角色配装）
@@ -5018,6 +5137,20 @@ function renderSets() {
       if (inp.value === inp.dataset.smdisplay) return;
       renameSet(+inp.dataset.smname, inp.value);
     };
+  });
+  // 改简称（只存用户数据层；留空 / 与系统自带相同 = 跟随系统）
+  box.querySelectorAll('[data-smshort]').forEach(inp => {
+    inp.onchange = () => {
+      if (inp.value.trim() === inp.dataset.smdisplay) return;
+      setSetShort(+inp.dataset.smshort, inp.value);
+    };
+  });
+  box.querySelectorAll('[data-smshortreset]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.smshortreset;
+    const s = state.sets[i];
+    if (!s) return;
+    if (!shortOverrideOf(s.name)) return;
+    setSetShort(i, '');
   });
   // 改 2 件套效果
   box.querySelectorAll('[data-smbonus]').forEach(inp => {
@@ -5081,6 +5214,21 @@ function renderSets() {
     save(); afterSetsChange();
     toast(`已按效果文本推导「${s.name}」的定位与关键词（可继续点选微调）`);
   });
+  // 一键重置为系统内置：data-smpospart = 2 / 4 只还原那一件套，= 0（「全部重置为内置」）两件套一起还原。
+  // 还原目标恒为图鉴 SETS 的出厂 pos2 / pos2kw / pos4 / pos4kw（不是「当前档案的初次值」），
+  // 所以用户自己加的关键词会被删掉、自己取消的内置项会回来 —— 与按钮文案一致。
+  box.querySelectorAll('[data-smposreset]').forEach(b => b.onclick = () => {
+    const s = state.sets[+b.dataset.smposreset];
+    if (!s) return;
+    const f = factoryPosOf(s);
+    if (!f) return toast(t('自定义套装没有系统内置定位，无法重置'));
+    const part = +b.dataset.smpospart;
+    if (part === 2) { s.pos2 = f.pos2.slice(); s.pos2kw = f.pos2kw.slice(); }
+    else if (part === 4) { s.pos4 = f.pos4.slice(); s.pos4kw = f.pos4kw.slice(); }
+    else { s.pos2 = f.pos2.slice(); s.pos2kw = f.pos2kw.slice(); s.pos4 = f.pos4.slice(); s.pos4kw = f.pos4kw.slice(); }
+    save(); afterSetsChange();
+    toast(`「${s.name}」${t('定位已还原为系统内置')}`);
+  });
 
   const cnt = $('#statSetCount');
   if (cnt) cnt.textContent = state.sets.filter(s => !s.hidden).length;
@@ -5109,6 +5257,15 @@ function renameSet(idx, newName) {
     state.planCfg[nn] = state.planCfg[old];
     delete state.planCfg[old];
   }
+  // 简称覆盖以套装名为键，改名后跟着迁移，别把用户改过的简称丢成孤儿键
+  ['zh', 'en'].forEach(lang => {
+    const slot = state.setShort && state.setShort[lang];
+    if (slot && Object.prototype.hasOwnProperty.call(slot, old)) {
+      if (!Object.prototype.hasOwnProperty.call(slot, nn)) slot[nn] = slot[old];
+      delete slot[old];
+    }
+  });
+  syncSetShorts();
   save(); afterSetsChange();
   toast(`已改名为「${nn}」${n ? `，同步更新 ${n} 处配装引用` : ''}`);
 }
@@ -5735,8 +5892,9 @@ function bind() {
   };
   $('#btnReset').onclick = () => {
     if (!confirm('恢复内置默认角色库与套装列表、清除你的全部自定义修改（相当于硬刷新）？\n\n提示：浏览器普通「刷新」不会清本地存档，所以旧数据 / 乱码会一直留着；这个按钮能彻底重置。')) return;
-    state = normalize({ characters: freshDefaultCharacters(), sets: defaultSets(), planCfg: {},
+    state = normalize({ characters: freshDefaultCharacters(), sets: defaultSets(), planCfg: {}, setShort: {},
                          _subEpoch: SUB_EPOCH, _metaEpoch: META_EPOCH, _srcMigrated: true });
+    syncSetShorts();
     save(); renderChars(); renderPlan(); renderSubs(); renderSets();
     toast('已恢复默认库');
   };
@@ -5762,6 +5920,16 @@ function bind() {
     });
     save(); renderSets(); renderPlan(); renderChars();
     toast(n ? `已恢复 ${n} 个内置套装` : '内置套装已全部在列表中');
+  };
+  // 简称：一次把所有用户改过的简称还原成系统自带（含中英两门）
+  $('#btnRestoreSetShorts').onclick = () => {
+    const n = ['zh', 'en'].reduce((a, lang) => a + Object.keys((state.setShort && state.setShort[lang]) || {}).length, 0);
+    if (!n) return toast(t('没有改过的简称'));
+    if (!confirm(t('把改过的套装简称全部还原成系统自带？角色卡片会立刻跟着变。'))) return;
+    state.setShort = { zh: {}, en: {} };
+    syncSetShorts();
+    save(); renderPlan(); renderSets();
+    toast(tf('已还原 {n} 个简称', { n }));
   };
   $('#btnRestoreSetOrder').onclick = () => {
     const custom = state.sets.filter(s => !s.builtin);

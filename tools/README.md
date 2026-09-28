@@ -21,6 +21,7 @@
 | `gen_sources.py` | 生成人读的来源清单（可点开） | `out/sources.md`、`out/sources.html` |
 | `role_infer.py` | 提供 `infer_roles(...)` 推断功能定位、`infer_subrules(roles, subs, optional)` 生成 `subRules`；角色级定位兜底读 `src/data.js` 的 `CHAR_META` | —（被上面脚本 import，不直接跑） |
 | `check_data.js` | 数据自检：主词条空 / 缺字段 / 非法值，配装组完整性，**派生字段门禁**（死字段 / 空 roles / optional 异常 / 未识别片段） | `out/_scan_result.md` |
+| `set_short_suggest.py` | 套装简称半自动工具：缺口检测 + 中英候选 + 回测（**只读，不写任何源文件**） | 默认只打终端；`--out FILE.md` 才额外落盘清单 |
 
 ## 标准流程（以 `rebuild_data.py` 为唯一入口）
 
@@ -159,6 +160,24 @@ node tools/check_data.js
 注意它与角色级「队伍定位」（主C/副C/辅助）是两回事，别混。
 
 单次调试：`python tools/fetch_wiki_builds.py 胡桃 钟离`（传角色名即只跑这些）。
+
+## 套装简称半自动（`set_short_suggest.py`）
+
+角色卡片上的套装**简称**维护在 `src/data.js` 的 `SET_SHORT`（中文全称 → 中文简称）与
+`SET_SHORT_EN`（官方英文名 → 英文简称）：**只收有公认短呼的套装**，没登记的由 `setShortName()`
+回落官方全称，所以宁可留空也不臆造。当前两表各 36 条（55 套内置套装余 19 套无简称）。
+
+```bash
+python tools/set_short_suggest.py                     # 缺口报告 + 候选 + 可粘贴片段
+python tools/set_short_suggest.py --out 简称待确认.md   # 额外写成 Markdown 清单（默认不落盘）
+python tools/set_short_suggest.py --backtest          # 拿现有两表回测命中率（附逐条明细）
+python tools/set_short_suggest.py --demo              # 拿 3 套假装缺简称，跑通链路
+```
+
+- **脚本只读**：不写 `src/data.js`、不 build、不联网。取数优先 `node` + `vm` 载入 `src/data.js`（`SET_EN` 是派生的，纯正则拿不到），node 不可用才回落正则，两条都失败就明确报错退出，绝不静默返回空表。
+- 候选是**按名字字面量猜的**：中文按『的 / 之 / 与』切段后取二字（『影中沉凝的幻灭』→『幻灭』这种靠语境的，规则给不出），英文跳过 `of / the / a / and…` 取首个实词。**候选仅供参考，定稿人工写回两表**。
+- `--backtest` 的基准就是当前两表的人工值，新增条目后重跑一次能看出规则短板（命中率会随人工风格变化）。
+- 写回后照例 `node tools/check_data.js` + `node build.js`；简称表不在 `check_data.js` 的检查范围内，靠回读 `index.html` 里的两张表核对。
 
 ## 根据定位生成 subRules（离线）
 

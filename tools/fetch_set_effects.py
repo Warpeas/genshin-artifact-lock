@@ -345,6 +345,13 @@ def main():
         n = apply_to_data_js(results)
         print("已写回 src/data.js 的 bonus4：%d 套" % n)
 
+    # —— 套装简称缺口（离线自检，失败不影响主流程）——
+    try:
+        from set_short_suggest import report_missing
+        report_missing()
+    except Exception as e:
+        print("[short] 简称缺口检测跳过：%s" % e)
+
 
 if __name__ == "__main__":
     main()

@@ -566,7 +566,7 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 /* 4 列网格仅在宽屏生效；窄屏回退到块布局，避免被挤变形 */
 @media (min-width:640px){
   .modal-lg .sm-row{
-    grid-template-columns:38px minmax(130px,1.4fr) minmax(180px,2.4fr) auto;
+    grid-template-columns:38px minmax(110px,1.2fr) minmax(96px,.85fr) minmax(160px,2fr) auto;
     gap:12px;align-items:center;
   }
   .modal-lg .sm-row input[type=text]{font-size:var(--fs-sm);padding:7px 10px;}
@@ -1160,7 +1160,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
 
 /* ---- ④ 套装管理行 ---- */
 .sm-row{
-  display:grid;grid-template-columns:38px minmax(120px,1.3fr) minmax(140px,1.6fr) minmax(210px,auto);
+  display:grid;grid-template-columns:30px minmax(92px,1.1fr) minmax(72px,.7fr) minmax(112px,1.3fr) minmax(150px,auto);
   gap:8px;align-items:center;padding:7px 9px;border:1px solid var(--line-soft);
   border-radius:var(--r-sm);background:var(--sunken);margin-bottom:6px;
 }
@@ -1170,24 +1170,64 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   color:var(--txt);font-family:inherit;font-size:var(--fs-sm);line-height:1.45;}
 .sm-row.off{opacity:.5;}
 .sm-no{color:var(--txt3);font-size:var(--fs-sm);text-align:center;font-variant-numeric:tabular-nums;}
+/* 简称：跟语言切换的小输入框 + 单行还原；有用户覆盖时描金边以示区别 */
+.sm-shortwrap{display:flex;align-items:center;gap:4px;min-width:0;}
+.sm-shortwrap .sm-short{flex:1;min-width:0;}
+.sm-shortwrap .btn.sm{flex:none;}
+.sm-row input.sm-short.over{
+  border-color:color-mix(in srgb,var(--gold) 45%,var(--line));
+  color:var(--gold2);
+}
+.sm-shortwrap .btn.sm[disabled]{opacity:.3;cursor:default;}
 .sm-row input[type=text]{padding:6px 10px;font-size:var(--fs-sm);}
 .sm-ops{display:flex;align-items:center;gap:5px;justify-content:flex-end;flex-wrap:wrap;}
 .sm-badge{font-size:10.5px;padding:2px 7px;border-radius:var(--r-pill);flex:none;}
 .sm-badge.bi{background:var(--panel2);color:var(--txt2);}
 .sm-badge.cu{background:color-mix(in oklab,var(--gold) 20%,var(--panel2));color:var(--gold2);}
 
-/* 套装管理 · 定位编辑区（2 / 4 件套两列，点选即保存） */
-.sm-roles{grid-column:1 / -1;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-  gap:6px 16px;padding:7px 9px;border:1px dashed var(--line-soft);border-radius:var(--r-sm);
+/* 套装管理 · 定位编辑区（点选即保存）
+ * 结构：2 件套一块 + 4 件套一块，每块内部固定两行 —— 第 1 行大类、第 2 行关键词。
+ * 关键点：网格只有「跨块」这一层是 2 列（minmax(0,1fr)，块内不参与换行），
+ * 所以同一「件套」的大类与关键词永远贴在同一块里，不会再出现
+ * 「4 件套关键词被 auto-fit 挤到 2 件套大类左边 / 上方」「同一件套被拆到两列」的错位。 */
+.sm-roles{grid-column:1 / -1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px 14px;padding:8px 10px;border:1px dashed var(--line-soft);border-radius:var(--r-sm);
   background:color-mix(in oklab,var(--panel2) 55%,transparent);}
+.sm-rblock{display:flex;flex-direction:column;gap:5px;min-width:0;padding:7px 9px;
+  border:1px solid var(--line-soft);border-radius:var(--r-sm);
+  background:color-mix(in oklab,var(--panel) 60%,transparent);}
+.sm-rblock.dirty{border-color:color-mix(in srgb,var(--gold) 40%,var(--line-soft));}
+.sm-rhead{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.sm-rtitle{font-size:var(--fs-xs);font-weight:600;color:var(--txt2);}
+.sm-rhead .sm-rreset{flex:none;width:24px;height:24px;padding:0;line-height:1;font-size:12px;}
+.sm-rhead .sm-rreset[disabled]{opacity:.3;cursor:default;}
 .sm-rrow{display:flex;align-items:flex-start;gap:8px;min-width:0;}
-.sm-rlabel{flex:none;min-width:64px;padding-top:3px;font-size:var(--fs-xs);color:var(--txt3);}
+.sm-rlabel{flex:none;min-width:46px;padding-top:3px;font-size:var(--fs-xs);color:var(--txt3);}
 .sm-infer{grid-column:1 / -1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+/* 定位标记图例（表头下方只出现一次，属说明性文案，不参与点选） */
+.sm-legend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:2px 3px 8px;
+  font-size:var(--fs-xs);color:var(--txt3);}
+.sm-legend .role-chip{cursor:default;}
+/* 两块并排只在桌面宽度成立（≥1000px 时 .modal-lg = 900px，块内 chip 行还有 ~350px）；
+   窄屏退回单列：2 件套块在上、4 件套块在下，各自仍保持「大类 + 关键词」两行。
+   注意：这里只在「块」这一层调整列数，块内部永远不换行 —— 块内 auto-fit 正是错位的根因。 */
+@media (max-width:999px){ .sm-roles{grid-template-columns:1fr;} }
 .role-chips{display:flex;flex-wrap:wrap;gap:5px;flex:1;min-width:0;}
 .role-chip{font-size:11px;padding:2px 8px;border-radius:var(--r-pill);border:1px solid var(--line-soft);
   background:var(--panel2);color:var(--txt3);cursor:pointer;user-select:none;line-height:1.5;}
 .role-chip:hover{border-color:var(--line);color:var(--txt2);}
 .role-chip.on{background:color-mix(in oklab,var(--gold) 22%,var(--panel2));border-color:var(--gold);color:var(--gold2);font-weight:600;}
+/* 定位标签三态（套装管理用，只作用于传了「系统内置基线」的芯片）：
+ *   金 = 内置已选（跟随系统）  ·  蓝 = 你自己选的（改过的）
+ *   虚线灰 + 删除线 = 内置项已被你取消（点一下就回来，不丢信息） */
+.role-chip.on.user{background:color-mix(in srgb,var(--blue) 16%,var(--panel2));
+  border-color:color-mix(in srgb,var(--blue) 46%,transparent);
+  color:color-mix(in srgb,#fff 22%,var(--blue));}
+.role-chip.on.user:hover{border-color:var(--blue);}
+.role-chip.bi-off{background:transparent;border-style:dashed;
+  border-color:color-mix(in srgb,var(--gold) 32%,transparent);
+  color:var(--txt3);text-decoration:line-through;}
+.role-chip.bi-off:hover{border-color:color-mix(in srgb,var(--gold) 55%,transparent);color:var(--txt2);}
 /* 配装浮窗里的定位只读展示 */
 .role-chks.readonly{display:block;margin-bottom:2px;}
 .role-chks.readonly .brole-list{display:inline-flex;flex-wrap:wrap;gap:5px;margin-right:8px;}
@@ -1435,9 +1475,10 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .sm-row.sm-head{display:none;}
   .sm-no{grid-column:1;grid-row:1;}
   .sm-row input.sm-name{grid-column:2;grid-row:1;}
-  .sm-row input.sm-bonus{grid-column:1 / -1;grid-row:2;}
-  .sm-ops{grid-column:1 / -1;grid-row:3;justify-content:flex-start;}
-  .sm-bonus4{grid-row:4;}
+  .sm-shortwrap{grid-column:1 / -1;grid-row:2;}
+  .sm-row input.sm-bonus{grid-column:1 / -1;grid-row:3;}
+  .sm-ops{grid-column:1 / -1;grid-row:4;justify-content:flex-start;}
+  .sm-bonus4{grid-row:5;}
 
   /* --- 属性行：控件固定同一行，只有下拉框收缩让出操作按钮空间 --- */
   .ms-item{flex-wrap:nowrap;gap:4px;padding:8px;width:100%;}

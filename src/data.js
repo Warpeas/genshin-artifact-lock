@@ -14,8 +14,28 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.27.7';
+const APP_VERSION = '2026.09.28.1';
 const CHANGELOG = [
+  {
+    v: '2026.09.28.1', date: '2026-09-28',
+    title: '套装简称补齐 7 套：千岩牢固 / 沉沦之心 / 饰金之梦 / 水仙之梦 / 昔时之歌 / 黑曜秘典 / 海染砗磲；中文简称 29 → 36 条、英文简称 29 → 36 条，其余未取得公认短呼的套装继续按官方全称回落',
+    items: [
+      '新增 7 套中英简称（中文表 SET_SHORT、英文表 SET_SHORT_EN 各 7 条，与已有条目同格式追加，原 29 条一条未动）：千岩牢固 → 千岩 / Tenacity、沉沦之心 → 沉沦 / Heart、饰金之梦 → 饰金 / Gilded、水仙之梦 → 水仙 / Nymph、昔时之歌 → 昔时 / Song、黑曜秘典 → 黑曜 / Obsidian、海染砗磲 → 海染 / Ocean。中文仍是 B 口径纯二字，英文取官方名核心词。',
+      '没拿到公认短呼的内置套装一律不登记，不臆造简称：55 套里仍有 19 套没有简称，setShortName() / setShortDefault() 取不到就回落官方全称（英文界面回落官方英文名）。',
+      '取简称的口径不变：用户覆盖优先（套装管理「简称」输入框，跟随中英切换、留空即跟随系统），其次内置简称表，最后回落全称；只有角色卡片用简称，方案页 / 评分表 / 编辑页 / 导出与复制仍是全称。',
+      '配套：tools/set_short_suggest.py 先出缺口清单与候选（只读、不写源码），人工定稿后写回内置表；README.md / AGENTS.md / tools/README.md 补简称展示口径与该工具用法说明。',
+    ],
+  },
+  {
+    v: '2026.09.28', date: '2026-09-28',
+    title: '套装简称落地：角色卡片改用套装简称（B 口径纯二字），套装管理新增跟随语言切换的简称编辑框，改动只落在用户数据层、可随时还原系统自带',
+    items: [
+      '角色卡片改用套装简称：卡片配装条上的套装名换成 2 字简称（角斗士三字、幻灭二字），方案页 / 评分表 / 编辑页 / 导出与复制仍是官方全称 —— 简称只是卡片上的省位写法，任何会写进锁定方案或导出文本的地方都保持全称。中文简称 29 条、英文简称按「取官方名核心词」29 条，统一由 setShortName() 按数据语言取值。',
+      '套装管理新增「简称」编辑框并跟随语言切换：切到英文界面，框里就是英文简称（没登记英文简称时回落英文全称），改的是哪一门语言就只动哪一门。留空或与系统自带相同即视为「跟随系统」，输入框会退掉高亮；行内 ↺ 可单独还原一套，工具条「全部还原简称」可一次全还原。',
+      '简称改动只存用户数据层：写进本地存档 state.setShort，并随「导出用户数据」一起带走，系统内置的 SET_SHORT 表一个字都不动；导入备份、清空存档即回到系统自带。套装改名时用户改过的简称会跟着迁移，不会因为改名丢成孤儿键。',
+      '界面上补了一句提醒：简称只影响角色卡片上显示的名字，其余页面保持全称，避免误以为改简称等于改套装名。',
+    ],
+  },
   {
     v: '2026.09.27.7', date: '2026-09-27',
     title: '修复主要属性 chip 漏出 undefined：分组着色辅助函数 groupMarkPlan 在单色 / 多色分支漏返 badge 字段，主要属性无条件拼接时把它渲染成字面量',
@@ -498,6 +518,24 @@ function sortBuildRoles(list) {
     const ib = ROLE_ORDER.has(b) ? ROLE_ORDER.get(b) : 999;
     return ia - ib || String(a).localeCompare(String(b));
   });
+}
+/* ---------- 定位两层清洗：大类层 / 关键词层互不串味 ----------
+ * 规则只有一条：大类层只认 BUILD_CATS 这 4 项（输出 / 辅助 / 生存 / 功能）。
+ * 任何被写进大类层的非大类取值（关键词，或更早版本允许的自造词）都归位到同一件套的
+ * 关键词层；反过来关键词层里混进来的大类词也提回大类层。顺序按词表排，去重，不丢已选值。
+ * 兼容旧存档的「扁平写法」（只有 pos2 存全量、没有 pos2kw）——拆完就是正确的两层结构。 */
+function splitPosLayers(cats, kws) {
+  const cat = [], kw = [];
+  const put = (arr, v) => {
+    if (typeof v !== 'string') return;
+    const s = v.trim();
+    if (!s || arr.includes(s)) return;
+    arr.push(s);
+  };
+  const isCat = v => typeof v === 'string' && BUILD_CATS.includes(v.trim());
+  (Array.isArray(cats) ? cats : []).forEach(v => put(isCat(v) ? cat : kw, v));
+  (Array.isArray(kws) ? kws : []).forEach(v => put(isCat(v) ? cat : kw, v));
+  return { cats: sortBuildRoles(cat), kws: sortBuildRoles(kw) };
 }
 /* 按套装名找套装对象：先查传入列表（存档里的生效列表，含改名 / 自定义），再回落内置 SETS */
 function setByName(name, list) {
@@ -1989,6 +2027,92 @@ const SUB_PRESET_EN = {
 function charName(n) { return d(n, CHAR_META[n] && CHAR_META[n].en); }
 function keepRuleName(n) { return d(n, KEEP_RULE_EN[n]); }
 function setName(n)  { return d(n, SET_EN[n]); }
+/* 角色卡片用套装简称（B 口径：纯二字，角斗士除外）——仅角色卡片展示使用，
+ * 方案页 / 评分表 / 编辑页 / 导出清单一律走 setName() 全称。 */
+const SET_SHORT = {
+  '平息鸣雷的尊者': '平雷', '炽烈的炎之魔女': '魔女', '渡过烈火的贤人': '渡火',
+  '冰风迷途的勇士': '冰风', '悠古的磐岩': '磐岩', '如雷的盛怒': '如雷',
+  '逆飞的流星': '流星', '昔日宗室之仪': '宗室', '染血的骑士道': '染血',
+  '被怜爱的少女': '少女', '华馆梦醒形骸记': '华馆', '绝缘之旗印': '绝缘',
+  '追忆之注连': '追忆', '辰砂往生录': '辰砂', '深林的记忆': '深林',
+  '沙上楼阁史话': '楼阁', '乐园遗落之花': '乐园', '花海甘露之光': '花海',
+  '谐律异想断章': '谐律', '回声之林夜话': '回声', '未竟的遐思': '遐思',
+  '烬城勇者绘卷': '勇者', '穹境示现之夜': '穹境', '纺月的夜歌': '纺月',
+  '晨星与月的晓歌': '晨星', '炉火融炼之心': '炉火', '影中沉凝的幻灭': '幻灭',
+  '流浪大地的乐团': '乐团', '角斗士的终幕礼': '角斗士',
+  '千岩牢固': '千岩', '沉沦之心': '沉沦', '饰金之梦': '饰金',
+  '水仙之梦': '水仙', '昔时之歌': '昔时', '黑曜秘典': '黑曜',
+  '海染砗磲': '海染',
+};
+/* 英文简称（键为官方英文名）：有公认短呼叫才收录，缺省回落英文全称 */
+const SET_SHORT_EN = {
+  "Thundersoother": "Thundersoother",
+  "Crimson Witch of Flames": "Crimson Witch",
+  "Lavawalker": "Lavawalker",
+  "Blizzard Strayer": "Blizzard",
+  "Archaic Petra": "Petra",
+  "Thundering Fury": "Thundering",
+  "Retracing Bolide": "Bolide",
+  "Noblesse Oblige": "Noblesse",
+  "Bloodstained Chivalry": "Bloodstained",
+  "Maiden Beloved": "Maiden",
+  "Husk of Opulent Dreams": "Husk",
+  "Emblem of Severed Fate": "Emblem",
+  "Vermillion Hereafter": "Vermillion",
+  "Deepwood Memories": "Deepwood",
+  "Desert Pavilion Chronicle": "Pavilion",
+  "Flower of Paradise Lost": "Paradise",
+  "Fragment of Harmonic Whimsy": "Whimsy",
+  "Nighttime Whispers in the Echoing Woods": "Whispers",
+  "Unfinished Reverie": "Reverie",
+  "Scroll of the Hero of Cinder City": "Scroll",
+  "Aubade of Morningstar and Moon": "Aubade",
+  "Heart of the Furnace": "Furnace",
+  "Disenchantment in Deep Shadow": "Disenchantment",
+  "Shimenawa's Reminiscence": "Shimenawa",
+  "Wanderer's Troupe": "Troupe",
+  "Gladiator's Finale": "Gladiator",
+  "Vourukasha's Glow": "Vourukasha",
+  "Night of the Sky's Unveiling": "Unveiling",
+  "Silken Moon's Serenade": "Silken Moon",
+  "Tenacity of the Millelith": "Tenacity",
+  "Heart of Depth": "Heart",
+  "Gilded Dreams": "Gilded",
+  "Nymph's Dream": "Nymph",
+  "Song of Days Past": "Song",
+  "Obsidian Codex": "Obsidian",
+  "Ocean-Hued Clam": "Ocean",
+};
+/* 用户层简称覆盖（本地数据层，可随时还原系统自带）：
+ * { zh: {套装名: 简称}, en: {套装名: 简称} } —— 由 app.js 在加载 / 修改后灌进来，
+ * data.js 不直接读 state，保持数据层对界面层零依赖。 */
+let SET_SHORT_USER = { zh: {}, en: {} };
+function setShortOverrides(map) {
+  const src = (map && typeof map === 'object') ? map : {};
+  const pick = o => {
+    const out = {};
+    if (o && typeof o === 'object') Object.keys(o).forEach(k => {
+      const v = (o[k] == null ? '' : String(o[k])).trim();
+      if (k && v) out[k] = v;
+    });
+    return out;
+  };
+  SET_SHORT_USER = { zh: pick(src.zh), en: pick(src.en) };
+}
+/* 系统自带简称（不含用户覆盖），按当前数据语言取；没登记过就回落全称 */
+function setShortDefault(n) {
+  const en = SET_EN[n];
+  if (isDataEn()) return (en && SET_SHORT_EN[en]) || en || n;
+  return SET_SHORT[n] || n;
+}
+/* 最终简称：用户覆盖优先，其次系统自带；导出 / 复制（withZh）时恒取中文那一门 */
+function setShortName(n) {
+  const en = SET_EN[n];
+  const ov = SET_SHORT_USER;
+  const zh = ((ov.zh[n] || '') + '').trim() || SET_SHORT[n] || n;
+  const enS = ((ov.en[n] || '') + '').trim() || (en && SET_SHORT_EN[en]) || en;
+  return d(zh, enS);
+}
 function elemName(id)   { return d((ELEMENTS[id] || {}).name || id, ELEMENT_EN[id]); }
 function regionName(id) { return d(REGION_NAME[id] || id, REGION_EN[id]); }
 function roleName(id)   { return d(ROLE_NAME[id] || id, ROLE_EN[id]); }
@@ -2292,6 +2416,16 @@ const T_UI_EN = {
   '自定义': 'Custom',
   '内置套装': 'Built-in set',
   '套装名称': 'Set name',
+  '简称': 'Short',
+  '套装简称（角色卡片显示用，留空即跟随系统自带）': 'Short name (shown on character cards; leave empty to follow the built-in one)',
+  '还原系统简称': 'Restore built-in short name',
+  '全部还原简称': 'Restore all short names',
+  '把改过的套装简称全部还原成系统自带？角色卡片会立刻跟着变。': 'Restore every edited short name to the built-in one? Character cards update immediately.',
+  '没有改过的简称': 'No short names have been changed',
+  '已还原 {n} 个简称': '{n} short names restored',
+  '已跟随系统自带简称': 'Following the built-in short name',
+  '简称已保存：': 'Short name saved: ',
+  '简称只影响角色卡片上显示的名字，其他页面与导出仍是全称。': 'The short name only shows on character cards — other pages and exports keep the full name.',
   '2 / 4 件套效果': '2 / 4-piece bonus',
   '2 / 4 件套效果与定位': '2 / 4-piece bonus & roles',
   '2 件套定位': '2-piece roles',
@@ -2307,6 +2441,23 @@ const T_UI_EN = {
   '2 件套效果': '2-piece bonus',
   '4 件套效果': '4-piece bonus',
   '没有可显示的套装。': 'No sets to display.',
+  /* 套装管理 · 定位编辑：2 / 4 件套各一块，块内「大类 / 关键词」两层，
+     并按「系统内置 / 用户自定义」给标签上色（金 = 内置，蓝 = 你选的，虚框 = 内置项已取消） */
+  '大类': 'Category',
+  '关键词': 'Keyword',
+  '定位标记：': 'Role marks:',
+  '内置已选': 'Built-in · on',
+  '你选的': 'Your pick',
+  '内置项·已取消': 'Built-in · off',
+  '与系统内置一致': 'Matches the built-in roles',
+  '已改：与系统内置不一致': 'Edited — differs from the built-in roles',
+  '重置为系统内置': 'Reset to built-in',
+  '全部重置为内置': 'Reset all to built-in',
+  '把这一件套的定位（大类 + 关键词）还原为系统内置': 'Restore this piece’s roles (category + keyword) to the built-in values',
+  '把 2 / 4 件套的定位一起还原为系统内置': 'Restore both the 2-piece and 4-piece roles to the built-in values',
+  '自定义套装没有系统内置定位，无法重置': 'Custom sets have no built-in roles to reset',
+  '定位已还原为系统内置': 'Roles reset to the built-in values',
+  '把定位改回系统内置（内置套装）：删掉你自己加的、取消你自己停用的': 'Put roles back to the built-in ones (built-in sets): drops what you added, restores what you removed',
   '共 {n} 个套装': '{n} sets total',
   '已隐藏 {n} 个': '{n} hidden',
   '改名会自动同步到所有角色的配装。': 'Renaming syncs to every character build.',

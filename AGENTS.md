@@ -106,6 +106,7 @@ genshin-artifact-lock/
 | 想改什么 | 常量 |
 |---|---|
 | 套装清单（含官方英文名 `en`、2 件套 `bonus`） | `SETS`（`SET_NAMES`/`SET_BONUS` 自动派生，**别手改**） |
+| **角色卡片上的套装简称** | `SET_SHORT`（中文全称 → 中文简称）/ `SET_SHORT_EN`（官方英文名 → 英文简称）——人工维护，**只收有公认短呼的套装**，缺省回落全称；用户覆盖存在存档 `state.setShort`，取值统一走 `setShortName()`（见 §4.5） |
 | 角色英文名 / 国度 / 队伍定位 | `CHAR_META`：`'角色名': { en, region, roles, catalog }` |
 | 主要属性可选范围（按部位） | `MAIN_STATS` |
 | 追加属性种类 | `SUB_STATS` |
@@ -202,6 +203,9 @@ genshin-artifact-lock/
 - ⚠️ 数据名切换英文后会**变长**（Sands / Goblet / Circlet、DPS / Transform…），容器要能收缩 / 换行，否则会把卡片顶宽、文字重叠。
 - ⚠️ `applyI18n` 是**整段替换**，会重置动态计数；改这块时注意别把计数清掉。
 - ⚠️ 调试 i18n 时每个场景要**重新构造一份 DOM**——`_i18nOrigHtml` 用 WeakMap 缓存，跨场景会串味导致误判。
+- **套装简称（B 口径）**：`SET_SHORT` / `SET_SHORT_EN` 只收有公认短呼的套装（当前中英各 36 条、55 套内置套装余 19 套**不登记**，不臆造简称）。取值三层——**用户覆盖 `state.setShort[lang]`** → 内置表 → 全称（英文界面回落官方英文名）；`setShortDefault()` 只给「系统自带那层」（套装管理输入框回显 + 「跟随系统」判定），**展示一律用 `setShortName()`**。
+- ⚠️ **简称只出现在角色卡片**：唯一开关是 `buildSetsLabel(b, short)`，`app.js` 里只有角色卡片那一处传 `true`（`const stxt = esc(buildSetsLabel(b, true))`），其余（配装卡片 / 方案页 / 锁定清单 / 编辑浮窗下拉 / 导出与复制）都走全称。搜索索引是例外：`SET_SHORT` / `SET_SHORT_EN` 的简称也进 `hay`，方便按简称搜到角色。
+- 简称的用户改动**只落用户数据层**（`state.setShort`，随「导出用户数据」走，`SET_SHORT` 本身一个字不动）；套装改名时用户覆盖跟着迁移，导入备份 / 清空存档即回到系统自带。改简称表后记得 `node build.js`，简称在 `index.html` 里是**内联的**，不重新构建线上不会变。
 
 ---
 
@@ -226,6 +230,7 @@ node build.js                              # 7. 打包
 - `role_infer.py` 提供 `infer_roles(text, mains, subs, label)`，从 wiki 描述前缀推断配装功能定位，被上面两个脚本 import。
 - `out/cache/`、`out/guides_cache/` 已 gitignore，删掉即重新联网，不删则脚本可离线重跑。
 - 单次调试：`python tools/fetch_wiki_builds.py 胡桃 钟离`。
+- `set_short_suggest.py`：套装简称的**半自动**工具（**只读，不写源文件**）——列出缺中文 / 缺英文简称的套装、按名字字面量给候选、生成可粘贴片段；`--out FILE.md` 额外落盘清单，`--backtest` 拿现有两表回测命中率，`--demo` 假造 3 套缺简称跑通链路。候选只是参考（中文简称常靠语境），**定稿仍由人工写回 `SET_SHORT` / `SET_SHORT_EN`**；不 build、不联网，取数走 `node` + `vm` 载入 `src/data.js`（正则拿不到派生的 `SET_EN`），node 不可用才回落正则。
 - 详见 `tools/README.md`。
 
 ### 5.1 属性别名表 `STAT_ALIAS`（踩过坑，改前必读）
@@ -293,6 +298,7 @@ node tools/check_data.js   # 结果写 tools/out/_scan_result.md
 - [ ] 若动了数据：`node tools/check_data.js` 无异常项（允许 wiki 原文写「不强求」导致的空主词条）
 - [ ] 若动了数据：角色数 / 套装数符合预期（当前 125 / 46）
 - [ ] 若动了合并或阈值：确认「② 锁定方案」输出仍合理（重要属性相同的能合并、不同的被拆开）
+- [ ] 若动了套装简称表 `SET_SHORT` / `SET_SHORT_EN`：`node build.js` 后回读 `index.html`，两张表的条目数与 `src/data.js` 对得上、新条目在产物里抓得到；角色卡片与配装按钮显示简称，方案页 / 编辑页 / 导出仍是全称（`withZh` 下英文界面也取中文全称）
 - [ ] 若动了版本号 / 更新日志：数据管理页「更新日志」每天一块、当天条目已合并；公告只弹最新未看过的大版本；构建产物里 `APP_VERSION` 与 `CHANGELOG[0].v` 字符串相等
 - [ ] 若动了 i18n：中英文各切一遍，动态计数没被 `applyI18n` 清掉；英文下无残留中文（含卡片配装按钮的定位标签、部位名、来源「数据源 / 攻略」标注），英文长词不撑破卡片（角色卡 `.cc-top` 可换行、沙杯冠标签不写死宽度）
 - [ ] 手机端（≤560px）无横向滚动
