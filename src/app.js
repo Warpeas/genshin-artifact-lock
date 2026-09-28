@@ -41,20 +41,29 @@ function buildSetsLabel(b) {
   if (p.length <= k) return p.join(' + ');
   return p.join(' / ') + (k === W_PICK ? '（任选2套）' : '（任选1套）');
 }
-/* 某套装在锁定方案里的形态备注（导出用）：
- * 只要有「把它当 2+2 散搭用」的启用配装，就提醒游戏里这一套只需 2 件。 */
-function setFormNote(name) {
-  let only2 = false, four = false;
-  (state.characters || []).forEach(c => {
-    if (!c.enabled) return;
-    (c.builds || []).forEach(b => {
-      if (!buildPool(b).includes(name)) return;
-      if (buildNeed(b) === 2) only2 = true; else four = true;
+/* 某套装在锁定方案里的【件数需求】备注（导出清单 / CSV 用）：
+ * 件数跟在【套装（圣遗物）名之后】分两栏 —— 「4 件套：…　｜　2 件套：…」，
+ * 与方案卡片里的分栏（.gp-boardrow / pieceBoardHTML）同措辞；没有 2 件套需求角色时只写 4 件套一栏。
+ * 件数需求是【套装级】信息，所以整段附在套装标题后；【角色名标签里不再写件数】。
+ * 传了 bucket（该套装的方案桶）就直接查桶，保证与页面 / 方案文本口径完全一致。 */
+function setFormNote(name, bucket = null) {
+  let cols;
+  if (bucket) {
+    cols = pieceColsOf(bucket, (state.characters || []).filter(c => c.enabled).map(c => c.name));
+  } else {
+    /* 没有桶时按配装池现场推导：单套配装 = 4 件套；need = 2 的候选池 = 2 件套 */
+    const rows = [];
+    (state.characters || []).forEach(c => {
+      if (!c.enabled) return;
+      (c.builds || []).forEach(b => {
+        if (!buildPool(b).includes(name)) return;
+        rows.push({ name: c.name, k: buildNeed(b) === 2 ? 'two' : 'four' });
+      });
     });
-  });
-  if (only2 && !four) return '（该套装仅需 2 件套：2+2 散搭用）';
-  if (only2) return '（2+2 散搭只需 2 件；另有配装要求 4 件套）';
-  return '';
+    cols = pieceColsSplit(rows);
+  }
+  const txt = pieceColsText(cols);
+  return txt ? '（' + txt + '）' : '';
 }
 const TIER_KEEP    = 0.8;                        // ≥ 视为必留
 const TIER_TRANS   = 0.4;                        // ≥ 视为过渡
@@ -819,15 +828,9 @@ function cmpSetSubRows() {
                    a[0].localeCompare(b[0], 'zh');
 }
 
-/* 命中条数钳位：只接受 1–SUB_MIN_HIT_MAX 的整数，其余回落到预设值 */
-function clampHit(n) {
-  const v = Math.round(Number(n));
-  if (!Number.isFinite(v)) return SUB_MIN_HIT_DEFAULT;
-  return Math.min(SUB_MIN_HIT_MAX, Math.max(1, v));
-}
-
 /* planCfg 归一化：{ 套装名: { merge: [[key...]], hide: [key...], minHit: { key: 1-4 } } }
- *   只保留结构合法的条目；成员不足 2 个的 merge 组视为无效（已无意义） */
+ *   只保留结构合法的条目；成员不足 2 个的 merge 组视为无效（已无意义）
+ *   注：minHit 自「命中条数只读」改造后已不再写入，这里保留归一化只是为了兼容旧存档字段。 */
 function normalizePlanCfg(raw) {
   const out = {};
   if (!raw || typeof raw !== 'object') return out;
@@ -1237,8 +1240,8 @@ function isBuiltinSet(name) {
  *   名次权重用于「相似度 / 评分 / 排序」等需要数值的场合（界面上不暴露给用户的内部量）
  * ============================================================ */
 const SUB_RANK_DECAY = 0.72;  // 名次权重衰减：第 1 名 1.0，之后 ×0.72
-const SUB_POOL_TOP   = 5;     // 每人最多贡献 N 条追加属性，避免追加属性池过宽
-const SUB_POOL_MAX   = 5;     // 合并后的追加属性池上限（再宽就等同于「不限」，失去筛选意义）
+const SUB_POOL_TOP   = 5;     // 每人最多贡献 N 条追加属性；合并后的池宽 = 并集本身，不再收口
+const SUB_REQ_MAX    = 4;     // ★必需条数上限：★只是「标记语义」，一组人合起来最多标 4 条
 const OPT_W         = 0.4;   // 条件词条（◇）折扣系数：进算法但优先度低，永不进 ★
 
 /* 重要度链：把「= / >」算子展开成每条词条的权重
@@ -1432,6 +1435,11 @@ function computePlan(includeAlt = true) {
         if (!out.has(setName)) return;
         const bucket = out.get(setName);
         bucket.need2 = bucket.need2 === undefined ? onlyTwo : (bucket.need2 && onlyTwo);
+        /* 件数需求的【归属角色】：谁吃 4 件套、谁只吃 2 件套（同一角色的多个配装取并集，
+         *   即该角色对这套装的全部需要都保留），供展示层明确标注件数需求 */
+        const needWho = onlyTwo ? (bucket.need2Chars || (bucket.need2Chars = new Map()))
+                                : (bucket.need4Chars || (bucket.need4Chars = new Map()));
+        if (!needWho.has(c.name)) needWho.set(c.name, { alt: isAlt });
 
         // 记录使用者（主推覆盖备选）
         const prev = bucket.users.get(c.name);
@@ -1623,8 +1631,10 @@ function globalWeights() {
  * 规则依据（社区攻略实测 + 游戏内界面）：
  *   - 每种圣遗物套装至多预设 3 个自定义方案，多个方案在锁定时共同生效
  *   - 每个部位（含花 / 羽）都可分别设定主要属性与追加属性
- *   - 追加属性支持「★必须」；命中条数预设「至少两条」，可逐方案调到 1–4
- *   - 仅有 3 条追加属性的圣遗物，所需数量相应减 1
+ *   - 追加属性支持「★必须」；★只是【标记语义】（这条是某人明确点名要的），是否真按「必须」用由用户自己定；
+ *     一组人合起来的 ★ 最多保留 4 条（SUB_REQ_MAX），与圣遗物最终 4 条追加属性对齐
+ *   - 命中条数由系统按【组内支持度】给出推荐值（至少 N 条），该推荐值即最终值（页面不提供修改入口）
+ *   - 「仅有 3 条追加属性的圣遗物，所需数量自动减 1」属游戏侧行为，本工具不模拟、不承诺
  *   - 重要属性相同但次要属性不同的角色可以合并（次要属性再按实际圣遗物适配到某个角色），
  *     此时需求角色会按次要属性【颜色分组】显示，便于照搬时区分
  *
@@ -1635,22 +1645,31 @@ function globalWeights() {
  *   ② 主属性：花/羽固定；沙/杯/冠【逐部位独立合并】——组内每个角色的 rank1 主属性
  *      【全部保留】（合并只放宽条件，不允许吞掉某位角色的头号主属性），其余按
  *      「票数 × 优先级」降序补足，补到累计覆盖 ≥ MAIN_COVER 或总条数达 MAIN_MAX 为止
- *   ③ ★必需：组内【任一】角色标了「必选」的追加属性（并集），按标的人数与名次降序，不限条数；
- *      展示时按分组着色：1–2 个分组需要→多色★（需要它的角色一眼可辨），
+ *   ③ ★必需：组内【任一】角色标了「必选」的追加属性（并集），按标的人数与名次降序，
+ *      最多 SUB_REQ_MAX（4）条；展示时按分组着色：1–2 个分组需要→多色★（需要它的角色一眼可辨），
  *      ≥3 个分组需要（或全组一致）→退化为单色★，需要它的角色放进悬停提示
- *   ④ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求（剔除与唯一主要属性冲突项）
- *   ⑤ 命中条数：预设「至少两条」——圣遗物最终 4 条追加属性，至少 2 条符合要求
- *      才值得留下强化；用户可在该方案卡片上把它单独调到 1–4：
- *      调到 3 / 4 即重做更细的筛选，把次要属性也对上的圣遗物挑出来
+ *   ④ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求（剔除与唯一主要属性冲突项）的并集——
+ *      【池宽就是合并结果本身，不再收口】（池只是建议过滤条件，收口会把某位角色赖以筛装的词条砍掉）
+ *   ⑤ 命中条数：系统按【组内支持度】推荐——N_rec = clamp(池里支持度 ≥ 50% 的条目数, 2, 3)，
+ *      再取 N = min(N_rec, 池宽, SUB_MIN_HIT_MAX)；UI 文案是「推荐至少 N 条」，
+ *      该推荐值即最终值（只在页面上展示，不提供手动修改入口）
+ *   ⑥ 池内顺序：必需（★）→ 普通需求（组内过半、且非条件词条）→ 可选（◇ 条件词条 与 个别人要的）；档内按使用人数降序，
+ *      人数相同按游戏常规顺序（双暴 → 攻击 → 生命 → 防御 → 精通 → 充能）
  * ============================================================ */
 const CAND_SOFT_CAP  = 24;   // 候选数保护上限（防止极端数据下列表过长，正常不会触发）
 const GAME_MAX_PRESET = 3;   // 游戏内每种套装至多 3 个自定义预设（仅作提示，工具侧不再硬限制）
 const MAIN_MAX    = 3;       // 单部位主属性上限（条件过宽会「存伪」）；
                              // 仅约束「次要主属性补足」，rank1 保底不受其限制，故实际可能多于 3 条
 const MAIN_COVER  = 0.7;     // 主属性取到累计覆盖该比例为止
-const SUB_MIN_HIT_DEFAULT = 2; // 追加属性命中条数【预设】「至少两个」；圣遗物最终 4 条追加属性，
-                               // 至少 2 条符合要求才值得留下强化；可在方案卡片上手动调到 1–4
-const SUB_MIN_HIT_MAX = 4;     // 命中条数上限（游戏内 N 取 1–4；仅有 3 条追加属性时自动减 1）
+
+/* 追加属性命中条数：不再恒定「至少两条」，改由系统按【组内支持度】推荐
+ *   N_rec = clamp(池里「支持度 ≥ SUB_MIN_HIT_SUPPORT（50%）」的条目数, SUB_MIN_HIT_MIN, SUB_MIN_HIT_RECOMMEND_MAX)
+ *   实际生效 N = min(N_rec, 池宽, SUB_MIN_HIT_MAX)；该值即最终值（页面只在只读展示，不提供修改入口）。
+ *   注：「仅有 3 条追加属性的圣遗物，所需数量自动减 1」是游戏侧行为，本工具不模拟、不承诺。 */
+const SUB_MIN_HIT_MIN = 2;          // 推荐值下限：至少推荐「命中 2 条」
+const SUB_MIN_HIT_RECOMMEND_MAX = 3; // 推荐值上限：池里过半支持度的条目再多也只推荐 3 条
+const SUB_MIN_HIT_SUPPORT = 0.5;    // 「支持度」阈值：组内 ≥ 半数角色的需求清单里有该词条
+const SUB_MIN_HIT_MAX = 4;          // 推荐值硬上限（游戏内 N 取 1–4），实际还受池宽钳制
 
 function cosSim(a, b) {
   let dot = 0, na = 0, nb = 0;
@@ -1730,8 +1749,8 @@ function minorPreferenceGroups(group) {
 
 /* 两组能否合并 —— 【只看重要属性】：
  *   重要属性重合度够高就合，次要属性（攻击力% / 生命值% / 防御力% 等）不同没关系：
- *   反正「至少两条」的重要属性已经满足了，具体次要属性再按实际圣遗物给到适配的角色；
- *   想更细筛就把该方案的命中条数手动调大到 3 或 4。
+ *   反正「组核心一致」的重要属性已经满足了，具体次要属性再按实际圣遗物给到适配的角色；
+ *   想更细筛请在游戏内锁定界面自行调整（页面不再提供命中条数修改入口）。
  *   判据：交集 ≥ min(2, 较小的核心大小)（核心只有 1 条时要求相同），
  *         且交集各自占本组核心 ≥ 一半。
  *   {暴击,暴击伤害} vs {暴击,暴击伤害} → 合并；{暴击,暴击伤害,攻击%} vs {暴击,暴击伤害,生命%} → 合并；
@@ -1853,17 +1872,253 @@ function mergeMain(group, slot) {
 
 /* 花/羽的主要属性（固定值），该词条不可能作为同部位的追加属性出现 */
 const FIXED_MAIN = { flower: 'hp', plume: 'atk' };
+/* 花/羽主属性的展示文案：写出【具体值】再标固定，而不是只写「固定」 */
+const FIXED_MAIN_LABEL = { flower: '生命值（固定）', plume: '攻击力（固定）' };
+const FIXED_MAIN_LABEL_EN = { flower: 'HP (fixed)', plume: 'ATK (fixed)' };
+/* 界面用的花/羽固定主属性文案：跟随界面语言（导出走 _forceZh 时仍是中文，口径不变） */
+function fixedMainLabel(slotId) {
+  return d(FIXED_MAIN_LABEL[slotId] || FIXED_MAIN_LABEL.flower, FIXED_MAIN_LABEL_EN[slotId] || FIXED_MAIN_LABEL_EN.flower);
+}
+
+/* ---------- 追加属性池的【分层排序口径】（池生成与展示层共用同一份比较器） ----------
+ *   一级：必需（★必需）→ 普通需求 → 可选（◇ 条件词条 与 仅个别人要的次要偏好）；
+ *   二级：同档内按「组内使用人数」降序；
+ *   三级：人数相同按游戏常规顺序：暴击率 → 暴击伤害 → 攻击力% → 生命值% → 防御力% → 元素精通 → 元素充能效率。
+ *   「普通 / 可选」的界线 = 使用人数 ≥ 组内半数（与命中条数推荐值同一个支持度阈值）：
+ *   全组过半都要的算普通需求，只有个别人要的次要偏好归可选，排在全组共有需求之后自然收尾。
+ *   注：同一条目的档位 / 人数对整组唯一，因此同一角色群体的需求条目天然连续聚块，不会被别的档位插断。 */
+const SUB_ORDER_FALLBACK = ['暴击率', '暴击伤害', '攻击力%', '生命值%', '防御力%', '元素精通', '元素充能效率'];
+function subOrderRank() {
+  if (!subOrderRank._m) {
+    const names = (typeof SUB_STATS !== 'undefined' && SUB_STATS.length)
+      ? SUB_STATS.map(s => s && s.name).filter(Boolean) : [];
+    SUB_ORDER_FALLBACK.forEach(n => { if (!names.includes(n)) names.push(n); });
+    subOrderRank._m = new Map(names.map((n, i) => [n, i]));
+  }
+  return subOrderRank._m;
+}
+function subOrderRankOf(id) {
+  const m = subOrderRank();
+  const n = (typeof subStatName === 'function') ? subStatName(id) : id;
+  return m.has(n) ? m.get(n) : SUB_ORDER_FALLBACK.length + 1;
+}
+/* 「方案内角色算不算要这条词条」——只认角色的需求清单 subList（★必需 / 常规 / ◇条件词条都算） */
+function subNeedCount(roles, id) {
+  return (roles || []).filter(r => (r.subList || []).some(s => statIdOf(s) === id)).length;
+}
+function subOrderCtxOf(roles, reqIds, optIds) {
+  const total = (roles || []).length;
+  const reqSet = new Set(reqIds || []);
+  const optSet = new Set(optIds || []);
+  return {
+    total,
+    tier(id) {
+      if (reqSet.has(id)) return 0;
+      if (optSet.has(id)) return 2;
+      return (total > 0 && subNeedCount(roles, id) * 2 >= total) ? 1 : 2;
+    },
+    count(id) { return subNeedCount(roles, id); },
+  };
+}
+function subOrderCmp(a, b, ctx) {
+  const ta = ctx.tier(a), tb = ctx.tier(b);
+  if (ta !== tb) return ta - tb;
+  const ca = ctx.count(a), cb = ctx.count(b);
+  if (ca !== cb) return cb - ca;                 // 使用人数降序
+  return subOrderRankOf(a) - subOrderRankOf(b);  // 人数相同 → 游戏常规顺序
+}
+function orderSubIds(ids, ctx) {
+  return [...ids].sort((a, b) => subOrderCmp(a, b, ctx));   // ES2019+ 稳定排序，同键保持原相对次序
+}
+
+/* ---------- 套装件数需求（谁吃 4 件套 / 谁只吃 2 件套） ----------
+ *   件数由角色的配装形态决定：单套 = 4 件套；多套 = 「任选两套散搭（2+2）」，本套装只需 2 件。
+ *   同一角色对同一套装可能同时有 4 件套与 2+2 配装 → 两栏里都出现。
+ *   展示形态：分栏只出现在【方案卡片内】（.gp-boardrow）—— 一栏「4 件套」、一栏「2 件套」；
+ *   该方案没有 2 件套需求角色时不出现「2 件套」栏。
+ *   ★ 为什么必须下沉到方案卡片：同一角色对同一套装可能有多套方案（重要属性不同 → 拆成多个候选），
+ *     套装级把所有人的名字摊在一处，既没法对应到具体方案，也会让不同方案的分组互相覆盖。
+ *     套装标题行（.set-head）不再列任何角色；方案卡片原先的「本方案角色（共 N 人）」计数行
+ *     由本分栏取代（两栏人数之和 = 本方案角色数）。
+ *   栏内按「次要属性偏好」的配色分组（同色 = 次要需求相同的一批人，见 planColorGroups）：
+ *     ① 每组最多列 3 人（PIECE_GRP_MAX），多出来的折成「+n」；
+ *     ② 每栏最多列 6 人（PIECE_COL_CHIP_MAX，约两行），再多的折成「共 N 人 M 组」摘要；
+ *     ③ 点某个角色 → 第二层属性小窗（#charAttrBox）看该角色在这套配装下的具体推荐属性；
+ *        点分栏空白 → 弹窗（#charTipBox）分组分行列出【本方案】全部角色。
+ *   角色顺序：首选 → 备选 → 2 件套（「两种形态都有（both）」的角色殿后）；同级内保持原始顺序。
+ *   分组与顺序同源（pieceBoardGroupsOf 在【已排序名单】上切连续段），所以「共 N 人 M 组」里的 M
+ *   就是栏内实际画出的段数，摘要 / 弹窗 / 复制文本三处顺序完全一致。
+ *   渲染入口只有一个（pieceBoardHTML）—— 先前「套装标题里的全量角色 pill / 候选区顶部的
+ *   独立件数分栏块 / 方案卡片里的角色 chips」三处重复列角色的做法已全部删除，只此一份，
+ *   从根上消除多处不同步与排版走形。 */
+/* 单角色的件数归属：'four' | 'two' | 'both' | ''（本套装无件数需求） */
+function pieceNeedOf(b, name) {
+  const n4 = !!(b && b.need4Chars && b.need4Chars.has(name));
+  const n2 = !!(b && b.need2Chars && b.need2Chars.has(name));
+  return n4 && n2 ? 'both' : (n4 ? 'four' : (n2 ? 'two' : ''));
+}
+/* 归栏：k = 'both'（两种形态都有配装）时两栏都出现；同一栏内同名只留一次 */
+function pieceColsSplit(rows) {
+  const four = [], two = [];
+  const push = (arr, n) => { if (!arr.includes(n)) arr.push(n); };
+  (rows || []).forEach(({ name, k }) => {
+    if (k === 'four' || k === 'both') push(four, name);
+    if (k === 'two' || k === 'both') push(two, name);
+  });
+  return { four, two };
+}
+/* 由方案桶取分栏：不传 names = 桶内全部角色（套装级），传了就只统计这批人（方案级） */
+function pieceColsOf(b, names = null) {
+  const list = names || (b && b.users ? Array.from(b.users.keys()) : []);
+  return pieceColsSplit(list.map(n => ({ name: n, k: pieceNeedOf(b, n) })));
+}
+/* 分栏文案（纯文本）：恒中文（游戏内锁定界面是中文，复制 / 导出口径一致）——
+ *   「4 件套：奥黛塔、托马　｜　2 件套：烟绯」；没有 2 件套需求角色时只有前一栏。 */
+function pieceColsText(cols) {
+  const parts = [];
+  if (cols.four.length) parts.push('4 件套：' + cols.four.join('、'));
+  if (cols.two.length) parts.push('2 件套：' + cols.two.join('、'));
+  return parts.join('　｜　');
+}
+function pieceColsPlain(b, names = null) { return pieceColsText(pieceColsOf(b, names)); }
+/* 每组 / 每栏的展开上限：组内多出来的折成「+n」，栏内多出来的折成「共 N 人 M 组」摘要 */
+const PIECE_GRP_MAX = 3;        // 每组最多列 3 人
+const PIECE_COL_CHIP_MAX = 6;   // 每栏最多列 6 人（≈ 两行）
+/* 栏内顺序：① 首选 → ② 备选 → ③ 2 件套（both：4 件套与 2+2 散搭都能用）殿后；④ 同级内保持原始顺序。
+ *   alt 取方案桶里的 users（b.users: Map<name, {alt}>）；原始顺序取传进来的 names 次序。
+ *   与 README / DESIGN / 页面说明里的「首选 → 备选 → 2 件套」完全同口径。 */
+function pieceBoardOrder(b, names = null) {
+  const cols = pieceColsOf(b, names);
+  const idx = new Map((names || (b && b.users ? Array.from(b.users.keys()) : [])).map((n, i) => [n, i]));
+  const rankOf = n => {
+    const alt = !!(b && b.users && b.users.get(n) && b.users.get(n).alt);
+    const both = pieceNeedOf(b, n) === 'both';
+    const i = idx.has(n) ? idx.get(n) : 999;
+    return (both ? 20000 : 0) + (alt ? 10000 : 0) + i;
+  };
+  const sortCol = a => a.slice().sort((x, y) => rankOf(x) - rankOf(y));   // 稳定排序，同键保持原相对次序
+  return { four: sortCol(cols.four), two: sortCol(cols.two) };
+}
+/* 角色的「次要属性偏好签名」：重要属性（coreSetOf，双暴那类）之外的前 2 条追加属性。
+ *   与 minorPreferenceGroups 的签名口径一致，供【分组数据缺失时兜底聚类】用：
+ *   签名相同 = 次要需求相同 = 该合成一组。缺分组时靠它合组，绝不退化到「一人一组」。 */
+function pieceMinorSigOf(role) {
+  const core = coreSetOf(role);
+  const ids = (role.subList || []).map(statIdOf).filter(id => id && !core.has(id)).slice(0, 2);
+  return { sig: ids.join(','), minor: ids.map(subStatName).join(d('、', ', ')) };
+}
+/* 栏内分组：沿用方案卡片的配色分组（planColorGroups）——同色 = 同一份次要属性偏好。
+ *   ★ 顺序与分组的一致性口径：分组必须落在【已经排好序】的名单上，否则组块顺序会盖掉排名顺序。
+ *     旧实现按方案顺序输出组块，导致「组块连续但不满足 首选→备选→2 件套」的统一口径（诊断 6/7/8 里
+ *     能观察到 26 列与之冲突）；现改为：先按 list（= pieceBoardOrder 排好的名次序）逐人走一遍，
+ *     取该人第一次出现的语义分组（color / minor / sig）作为它的分组，再把【分组完全相同】的
+ *     相邻人合并成一段。于是——① 段内段间顺序 = 名次序（= 分栏摘要 / 弹窗 / 复制的唯一顺序）；
+ *     ② 段与段互斥且并集 = 名单（不重不漏）；③ 同组只在相邻时聚拢，被别的组隔开时自然分成两段。
+ *   ★ 退化修复：cands 传进来的就是【本方案自己】（方案级分栏），同一角色不会再被别的方案的分组
+ *     覆盖（旧套装级实现里，教官 4 件套 23 人因此被切成了 23 段）；万一该方案确实没有分组数据
+ *     （planColorGroups 返回 null：全组次要偏好一致 或 _group 缺失 / 不完整），一律按
+ *     pieceMinorSigOf 的次要签名聚类 —— 签名相同的相邻人合并成一段，不会一人一组。 */
+function pieceBoardGroupsOf(cands, list) {
+  const meta = new Map();
+  (cands || []).forEach(p => {
+    if (!p) return;
+    const groups = planColorGroups(p);
+    if (groups) {
+      groups.forEach(g => (g.names || []).forEach(n => {
+        if (meta.has(n)) return;                       // 一个角色只认它第一次出现的分组
+        const r = (g.roles || []).find(x => x.name === n);
+        const fb = r ? pieceMinorSigOf(r) : { sig: '', minor: '' };
+        meta.set(n, { color: g.color || null, minor: g.minor || g.minorStr || '', sig: g.sig || fb.sig });
+      }));
+      // 分组数据不完整（有人没被任何一组覆盖）时，缺的那些人按次要签名兜底
+      (p._group || []).forEach(r => {
+        if (meta.has(r.name)) return;
+        const fb = pieceMinorSigOf(r);
+        meta.set(r.name, { color: null, minor: fb.minor, sig: fb.sig });
+      });
+    } else {
+      // 完全没有分组数据：按次要需求签名聚类（同签名 = 同组），而不是让每人各成一段
+      (p._group || []).forEach(r => {
+        if (meta.has(r.name)) return;
+        const fb = pieceMinorSigOf(r);
+        meta.set(r.name, { color: null, minor: fb.minor, sig: fb.sig });
+      });
+      (p.chars || []).forEach(n => {
+        if (meta.has(n)) return;
+        meta.set(n, { color: null, minor: '', sig: '' });    // 连角色对象都拿不到 → 归入「无次要需求」一组
+      });
+    }
+  });
+  const out = [];
+  (list || []).forEach(n => {
+    const m = meta.get(n) || { color: null, minor: '', sig: '' };
+    const last = out[out.length - 1];
+    if (last && last.color === m.color && last.minor === m.minor && last.sig === m.sig) {
+      last.names.push(n); return;
+    }
+    out.push({ color: m.color, minor: m.minor, sig: m.sig, names: [n] });
+  });
+  return out;
+}
+/* 角色属性小窗的 data 编码：套装 | 方案 key | 角色名（见 openCharAttr 的解析口径） */
+function charAttrRaw(setName, planKey, name) {
+  return `${setName}|${planKey}|${name}`;
+}
+/* 分栏渲染（页面唯一入口）：【方案卡片】里那一块「4 件套 / 2 件套」。
+ *   只看本方案的角色（plan.chars）——同一角色对同一套装可能有多套方案，套装级摊在一起对应不上；
+ *   本方案的角色集合 = 两栏并集（不重不漏），也就是原先那行「本方案角色（共 N 人）」。
+ *   点角色 → 第二层属性小窗（data-char-tip）；点分栏空白 → 弹窗看本方案全量（data-piece-board）。 */
+function pieceBoardHTML(setName, b, plan, cands = null) {
+  const names = (plan && plan.chars) || [];
+  if (!names.length) return '';
+  const key = (plan && plan.key) || '';
+  const main = (cands && cands.length) ? cands : [plan];
+  const ord = pieceBoardOrder(b, names);
+  const col = (ck, label, list) => {
+    if (!list.length) return '';
+    const groups = pieceBoardGroupsOf(main, list);
+    let shown = 0;
+    const inner = groups.map(g => {
+      if (shown >= PIECE_COL_CHIP_MAX) return '';
+      const take = g.names.slice(0, Math.min(PIECE_GRP_MAX, PIECE_COL_CHIP_MAX - shown));
+      shown += take.length;
+      const left = g.names.length - take.length;
+      const chips = take.map(n =>
+        `<span class="pb-item${pieceNeedOf(b, n) === 'both' ? ' pb-both' : ''}"` +
+        ` data-char-tip="${esc(charAttrRaw(setName, key, n))}" role="button" tabindex="0"` +
+        ` aria-label="${esc(t('点角色看该配装的具体推荐属性'))}">${esc(charName(n))}</span>`
+      ).join('');
+      const more = left > 0 ? `<span class="pb-plus" title="${esc(tf('本组还有 {n} 人', { n: left }))}">+${left}</span>` : '';
+      const tip = g.minor ? ` title="${esc(tf('次要属性偏好：{x}', { x: g.minor }))}"` : '';
+      return `<span class="pb-grp"${g.color ? ` style="--tc:${g.color}"` : ''}${tip}>${chips}${more}</span>`;
+    }).join('');
+    const sum = list.length > shown
+      ? `<span class="pb-sum">${esc(tf('共 {n} 人 {g} 组', { n: list.length, g: groups.length }))}</span>`
+      : '';
+    return `<span class="pb-col pb-${ck}"><span class="pb-h">${esc(t(label))}</span>${inner}${sum}</span>`;
+  };
+  const html = col('four', '4 件套', ord.four) + col('two', '2 件套', ord.two);
+  if (!html) return '';
+  const tip = esc(t('点击查看全部需求角色'));
+  return `<span class="piece-board" data-piece-board="${esc(setName)}" data-piece-plan="${esc(key)}"` +
+    ` role="button" tabindex="0" aria-label="${tip}" title="${tip}">${html}</span>`;
+}
 
 /* ③④⑤ 合并一组角色的追加属性条件 —— 【全方案唯一一份，五个部位共用】
  *   ① 冲突剔除：追加属性不可能与同部位主要属性相同。改为方案级统一后，只能剔除
  *      花 / 羽的固定主要属性（hp / atk，这两部位主要属性恒定）；其余部位的主要属性随
  *      方案而变，无法再逐部位剔除——这是「统一追加属性」换取一致性的固有取舍。
- *   ② ★必需：组内【任一】角色标了必选的词条（并集）——展示层按分组着色说明「给谁」，
- *      命中 >2 组时退化为单色★；是否真在游戏里设成「必须」由用户自己按重要程度定
- *   ③ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求，按「广度 × 名次」累加降序
- *   ④ 命中条数：预设「至少两个」（SUB_MIN_HIT_DEFAULT）。圣遗物最终 4 条追加属性，
- *      至少 2 条符合要求才值得留下强化——契合得越多越好；用户可在方案卡片上
- *      单独调到 1–4（重要属性相同、次要属性不同的大组，调大即可做更细的筛选）
+ *   ② ★必需：组内【任一】角色标了必选的词条（并集）——★只是【标记语义】（这条是某人明确点名
+ *      要的），是否真在游戏里设成「必须」由用户自己定；一组人合起来最多保留 SUB_REQ_MAX（4）条
+ *   ③ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求的并集（★ / ◇ 强制进池）
+ *      ——【池宽就是合并结果本身，不再收口】：池只是给用户的建议过滤条件，收口会把某位角色
+ *      赖以筛装的词条砍掉（旧实现收口到 5 条，正好也把排在池尾的 ★ 一起截断）
+ *   ④ 池内顺序【分层排序】：必需（★）→ 普通需求（过半且非条件词条）→ 可选（◇ 与 个别人要的）；档内按组内使用人数降序，
+ *      人数相同按游戏常规顺序（双暴 → 攻击 → 生命 → 防御 → 精通 → 充能）。
+ *      展示层 planSubOrder 用同一份比较器，保证「池里的顺序」=「页面上的顺序」
+ *   ⑤ 命中条数：系统按【组内支持度】给推荐值——N_rec = clamp(池里支持度 ≥ 50% 的条目数, 2, 3)，
+ *      N = min(N_rec, 池宽, SUB_MIN_HIT_MAX)；UI 文案为「推荐至少 N 条」，
+ *      该推荐值即最终值，页面不再提供手动修改入口（需要更细的筛选请在游戏内自行调整）
  */
 function mergeSubUniform(group) {
   const n = group.length;
@@ -1880,7 +2135,9 @@ function mergeSubUniform(group) {
   const avgW = id => group.reduce((s, r) => s + (r.subs[id] || 0), 0) / n;
 
   /* ② ★必需：组内任一角色标了必选的词条（并集）——合并只放宽条件，不吞掉某个人的必需项；
-   *    标的人数越多、名次越靠前的排越前（展示层据此分组着色） */
+   *    标的人数越多、名次越靠前的排越前（展示层据此分组着色）。
+   *    硬上限 SUB_REQ_MAX：★ 只是「标记语义」，一组人合起来超过 4 条就失去了标记的区分度，
+   *    只保留最重要的前 4 条（人数 → 平均名次权重）。 */
   const reqCnt = new Map();
   group.forEach(r => new Set(r.req || []).forEach(raw => {
     const id = statIdOf(raw);
@@ -1889,68 +2146,60 @@ function mergeSubUniform(group) {
   }));
   const required = [...reqCnt.entries()]
     .sort((a, b) => (b[1] - a[1]) || (avgW(b[0]) - avgW(a[0])))
-    .map(([id]) => id);
+    .map(([id]) => id)
+    .slice(0, SUB_REQ_MAX);
 
-  /* ③ 追加属性池：按「出现人数 × 算子权重」累加 */
-  const poolScore = new Map();
+  /* ③ 追加属性池：组内任一角色前 SUB_POOL_TOP 条需求的并集；【池宽就是并集本身，不再收口】
+   *    （池只是建议过滤条件，收口会把某位角色赖以筛装的词条砍掉） */
+  const poolIds = [], inPool = new Set();
   group.forEach(r => (r.pool || []).forEach(p => {
     const id = statIdOf(p);
-    const w = (p && typeof p === 'object' && typeof p.w === 'number') ? p.w : 0;
-    if (!id || banned.has(id)) return;
-    poolScore.set(id, (poolScore.get(id) || 0) + w);
+    if (!id || banned.has(id) || inPool.has(id)) return;
+    inPool.add(id); poolIds.push(id);
   }));
-  let pool = [...poolScore.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
-  // ★必须一定得在追加属性池里（可能排名在 SUB_POOL_TOP 之外）
-  required.forEach(id => { if (!pool.includes(id)) pool.push(id); });
+  /* ★必需与 ◇条件词条【强制进池】：★可能排名在 SUB_POOL_TOP 之外，◇是带前提的推荐但也要常在 */
+  required.forEach(id => { if (!inPool.has(id)) { inPool.add(id); poolIds.push(id); } });
+  optIds.forEach(id => { if (!inPool.has(id)) { inPool.add(id); poolIds.push(id); } });
+  if (!poolIds.length) return { required: [], pool: [], minHit: 0, opt: [] };  // 只挑主要属性，追加属性不限
 
-  // 追加属性池收口：太宽就等于「不限」，失去筛选意义
-  if (pool.length > SUB_POOL_MAX) pool = pool.slice(0, SUB_POOL_MAX);
+  /* ④ 排序【分层口径】：必需（★）→ 普通需求（过半且非条件词条）→ 可选（◇ 与 个别人要的）；档内按组内使用人数降序，
+   *    人数相同按游戏常规顺序（双暴 → 攻击 → 生命 → 防御 → 精通 → 充能）。
+   *    与展示层 planSubOrder 共用同一份比较器，避免「池里的顺序」与「页面上的顺序」漂移。 */
+  const ctx = subOrderCtxOf(group, required, optIds);
+  const pool = orderSubIds(poolIds, ctx);
 
-  /* 池的「次要偏好保底」——【必须排在收口之后】：合并放宽后，一组里可能同时有
-   * 攻击% / 生命% / 防御% 好几种次要偏好，只按总分收口到 SUB_POOL_MAX 会把某条偏好
-   * 赖以成型的追加属性挤掉（例：绝缘套 4 人的池收到双暴+攻击%+充能+精通，把夜兰的
-   * 生命值% 挤在第 6 名砍掉），那样合并看着漂亮、实际没照顾到那位角色。
-   * 所以这里给每种次要偏好补回 1 条代表词条（该组最想要、又还没进池的那条），
-   * 池上限也随之多开一档——每多一种次要偏好 +1；嫌松就把命中条数调大到 3 / 4。 */
-  const prefs = minorPreferenceGroups(group);
-  if (prefs) {
-    const extra = [];
-    prefs.forEach(g => {
-      const id = g.minor.find(x =>
-        x && !banned.has(x) && !pool.includes(x) && !extra.includes(x) &&
-        g.roles.some(r => (r.pool || []).some(y => statIdOf(y) === x)));
-      if (id) extra.push(id);
-    });
-    const cap = SUB_POOL_MAX + prefs.length - 1;
-    extra.forEach(id => { if (pool.length < cap && !pool.includes(id)) pool.push(id); });
-  }
-
-  // 条件词条（◇）强制进池：wiki 的「携带西风剑时才堆」类推荐，低优先但始终可见，
-  // 不被 SUB_POOL_MAX / 次要偏好保底 静默截断——无条件追加（opt 数量本就有限，且 opt 必有折扣）
-  optIds.forEach(id => { if (!pool.includes(id)) pool.push(id); });
-
-  if (!pool.length) return { required: [], pool: [], minHit: 0, opt: [] };  // 只挑主要属性，追加属性不限
-
-  // 预设「至少两个」，可在方案卡片上手动调整；池不足 N 条时退化为池长度
-  return { required, pool, minHit: Math.min(SUB_MIN_HIT_DEFAULT, pool.length), opt: optIds };
+  /* ⑤ 命中条数【推荐值】：池里「使用人数 ≥ 组内半数」的条目数，钳到 2–3 条得 N_rec，
+   *    再取 N = min(N_rec, 池宽, 4)。这是系统给出的推荐值，也是【最终值】——
+   *    页面不再提供下拉修改入口（需要更细 / 更宽的筛选请在游戏内自行调整）。 */
+  const shared = pool.filter(id => ctx.total > 0 && ctx.count(id) * 2 >= ctx.total).length;
+  const rec = Math.min(Math.max(shared, SUB_MIN_HIT_MIN), SUB_MIN_HIT_RECOMMEND_MAX);
+  return { required, pool, minHit: Math.min(rec, pool.length, SUB_MIN_HIT_MAX), opt: optIds };
 }
 
-/* 融合两份追加属性条件（手动合并方案时用）：
- *   ★必需取并集（合并只放宽条件：任一份标了必需就保留）、追加属性池取并集；
- *   命中条数回到预设值（手动合并等于重新起一套，原先的细筛不再适用） */
+/* 融合两份追加属性条件（手动合并方案时用；仅在没有角色组、无法重算权重时兜底）：
+ *   ★必需取并集（合并只放宽条件：任一份标了必需就保留，再按 SUB_REQ_MAX 收口）、追加属性池取并集；
+ *   ★ 放在池首（与 mergeSubUniform 同一口径）；命中条数回到推荐值下限（手动合并等于重新起一套） */
 function fuseSub(a, b) {
   if (!a) return b;
   if (!b) return a;
-  const required = [...new Set([...a.required, ...b.required])];
+  const required = [...new Set([...a.required, ...b.required])].slice(0, SUB_REQ_MAX);
   const opt = [...new Set([...(a.opt || []), ...(b.opt || [])])];
   const optSet = new Set(opt);
-  // 常规（非 opt）词条并集先截到 SUB_POOL_MAX；条件词条（◇）无条件追加在后，永不被截断
-  const regularPool = [...new Set([...a.pool, ...b.pool])].filter(id => !optSet.has(id));
-  const pool = regularPool.slice(0, SUB_POOL_MAX);
-  opt.forEach(id => { if (!pool.includes(id)) pool.push(id); });
-  required.forEach(id => { if (!pool.includes(id)) pool.unshift(id); });
+  // 并集【不再收口】；★必需与条件词条（◇）都强制进池，随后统一分层排序
+  const poolIds = [], inPool = new Set();
+  [...a.pool, ...b.pool, ...required, ...opt].forEach(id => {
+    if (!id || inPool.has(id)) return;
+    inPool.add(id); poolIds.push(id);
+  });
+  /* 手动合并时没有角色组、统计不出使用人数 → 用「必需 → 普通 → 可选 + 游戏常规顺序」的稳定排序兜底 */
+  const ctx = {
+    total: 0,
+    tier: id => (required.includes(id) ? 0 : (optSet.has(id) ? 2 : 1)),
+    count: () => 0,
+  };
+  const pool = orderSubIds(poolIds, ctx);
   if (!pool.length) return { required: [], pool: [], minHit: 0, opt: [] };
-  return { required, pool, opt, minHit: Math.min(SUB_MIN_HIT_DEFAULT, pool.length) };
+  return { required, pool, opt, minHit: Math.min(SUB_MIN_HIT_MIN, pool.length) };
 }
 
 /* 一组角色 -> 候选方案（追加属性条件全方案统一） */
@@ -2147,28 +2396,26 @@ function ruleToPlan(rule) {
     ruleName: rule.name,
     ruleDesc: rule.desc || '',
     sub: (() => {
-      const required = (rule.required || []).filter(id => !banned.has(id));
+      const required = (rule.required || []).filter(id => !banned.has(id)).slice(0, SUB_REQ_MAX);
       const pool = (rule.pool || []).filter(id => !banned.has(id));
-      // 与角色方案一致：预设「至少两个」，可在方案卡片上单独调整
-      return { required, pool, minHit: Math.min(SUB_MIN_HIT_DEFAULT, pool.length), opt: [] };
+      // 规则本就没有角色组、算不出支持度：推荐值取下限（至少 2 条），可在方案卡片上单独调整
+      return { required, pool, minHit: Math.min(SUB_MIN_HIT_MIN, pool.length), opt: [] };
     })(),
     mains,
     _group: null,
   };
 }
 
-/* 套用用户对「命中条数」的手动调整：{ 方案 key: N }
- *   挂在候选管道的出口，所以渲染 / 导出 / 事件三条路径拿到的都是同一份结果。
- *   实际生效值还要被该方案的追加属性池宽度钳住——池里只有 3 条时不可能要求命中 4 条。 */
+/* 命中条数出口统一处理：所有方案一律取【系统推荐值】（按组内支持度算出，即为最终值），
+ *   页面只读展示、不提供修改入口，所以这里只做「按池宽钳制」的兜底——
+ *   池里只有 3 条时不可能要求命中 4 条。历史存档里旧的 cfg.minHit 覆盖值一律忽略。 */
 function applyMinHit(setName, list) {
-  const cfg = (state.planCfg && state.planCfg[setName]) || null;
-  const map = (cfg && cfg.minHit) || null;
   list.forEach(p => {
     const pool = (p.sub && p.sub.pool) || [];
     if (!pool.length) { if (p.sub) p.sub.minHit = 0; return; }   // 只挑主要属性 → 追加属性不限
-    const want = map && Object.prototype.hasOwnProperty.call(map, p.key) ? clampHit(map[p.key]) : SUB_MIN_HIT_DEFAULT;
+    const rec = (p.sub && p.sub.minHit) || SUB_MIN_HIT_MIN;      // 系统推荐值（mergeSubUniform / ruleToPlan 给出）
     // 深拷贝一份再改，避免污染 buildPlanCandidates 缓存出来的同一对象
-    p.sub = { ...p.sub, minHit: Math.min(want, pool.length) };
+    p.sub = { ...p.sub, minHit: Math.min(rec, pool.length) };
   });
   return list;
 }
@@ -2198,7 +2445,8 @@ const GROUP_COLORS = ['#5fa8e8', '#5fd39a', '#ff9f5a', '#b98cff',
 /* 把一个方案的需求角色按「次要属性偏好」分组，给每组分配一个稳定颜色
  *   背景：合并放宽后，重要属性（如双暴）相同、次要属性（攻击% / 生命% / 防御%）
  *   不同的角色会并进同一套方案——他们的圣遗物要按实际次要属性分别给到适配的角色。
- *   颜色同时用在【角色名】和【追加属性】上，两处同色即可对应，不需要额外图例。
+ *   颜色同时用在【角色名】、【追加属性】和【主要属性】上（主要属性见 mainColorMarks），
+ *   同色即可对应，不需要额外图例。
  *   次要属性完全一致时不分组（返回 null），避免无意义的色块。
  *   _group 经 mergePlans 继续传递，所以手工合并后的方案同样能分组；
  *   散件规则方案 _group 为 null，自然不分组。
@@ -2211,16 +2459,48 @@ function planColorGroups(p) {
     color: GROUP_COLORS[i % GROUP_COLORS.length],
     roles: x.roles,
     names: x.roles.map(r => r.name),
-    minor: x.minor.map(subStatName).join('、') || '无次要需求',
+    sig: x.sig,                                    // 次要属性偏好签名（分组聚类 / 合组判据的唯一依据）
+    minor: x.minor.map(subStatName).join(d('、', ', ')) || d('无次要需求', 'no secondary priority'),
   }));
 }
 
+/* ── 分组着色：逐组打色点（追加属性 / 主要属性共用这一份辅助函数与退化规则）──
+ * 旧口径：一条属性有多个分组需要时，只取 owners[0] 那一组的颜色 —— 其余分组等于没有提示；
+ *   本工具的合并逻辑允许「次要属性偏好不同的角色并进同一套方案」，一条属性被多个分组同时需要
+ *   是常见情况，只标一组会把信息丢掉。
+ * 新口径：一颗色点 = 一个分组，色点色 = 该分组在卡片上的角色名色（同色即可对应，无需图例）。
+ * 退化规则（追加属性与主要属性同一套，理由见 docs/DESIGN.md「属性分组着色」一行）：
+ *   · 需要它的分组 0 个，或所有分组都要（全组共享）→ 不着色：没有区分价值
+ *   · 1 个分组 → 单色（沿用旧版单色 chip / 单颗色点，观感与改造前完全一致）
+ *   · 2–3 个分组 → 逐组一颗色点（多色 chip）
+ *   · ≥4 个分组 → 不着色 + 「N 组需要」角标（与 ★ 的 >2 组退化同一思路）
+ * 阈值为什么是 4 而不是沿用 ★ 的 2：色点上限 GROUP_MARK_MAX = 3 颗，再多 chip 会明显变长、
+ *   颜色也难一眼数清；1–3 组是实际数据里的绝对主流（见诊断报告），值得逐组区分，
+ *   因此把「逐组上色」的上界从 2 抬到 3，只把 ≥4 组（长尾）退化成角标。
+ * dotCls：色点元素的类名（追加属性 gp-sub-mark / 主要属性 gp-main-mark，形状同款）。
+ * total：本方案的分组总数；marks：需要该属性的分组 [{color, who}]（调用方已剔除「全组共享」）。
+ * 返回 { n, mode, dots, badge }，mode ∈ none | single | multi | overflow。 */
+const GROUP_MARK_MAX = 3;             // 单 chip 色点上限：超过即退化为「N 组需要」角标
+function groupMarkPlan(marks, total, dotCls) {
+  const list = marks || [];
+  const n = list.length;
+  const cls = dotCls || 'gp-grp-mark';
+  if (!n || (total > 1 && n >= total)) return { n, mode: 'none', dots: '', badge: '' };
+  const dots = list.map(m => `<i class="${cls}" style="--tc:${m.color}"></i>`).join('');
+  if (n === 1) return { n, mode: 'single', dots, badge: '' };
+  if (n <= GROUP_MARK_MAX) return { n, mode: 'multi', dots, badge: '' };
+  return { n, mode: 'overflow', dots: '', badge: `<i class="gp-hn gp-gn">${esc(tf('{n} 组需要', { n }))}</i>` };
+}
+
 /* 追加属性的【展示顺序 + 着色】——颜色不再单独占一块图例，直接打在属性上。
- *   排序：① ★必需 → ② 全组共有（不着色）→ ③ 各组独占（着该组颜色）
- *   同一档内部按「相关角色对该属性的平均名次权重」降序，最想要的排最前；
- *   ★ 档内先按「需要它的分组数」降序——全员必需的排最前。
+ *   排序：① 必需（★必需）→ ② 普通需求（组内过半、且非条件词条）→ ③ 可选（◇ 条件词条 与 个别人要的次要偏好）
+ *   档内按「组内使用人数」降序；人数相同按游戏常规顺序：
+ *   暴击率 → 暴击伤害 → 攻击力% → 生命值% → 防御力% → 元素精通 → 元素充能效率。
+ *   与池生成 mergeSubUniform 共用同一份比较器（subOrderCmp），「池里的顺序」=「页面上的顺序」。
  *   ★ 的分组命中数（starColors.length）同时决定展示形态：
  *     1–2 组 → 多色★（每个分组一颗星，星色同于角色名）；>2 组 → 退化为单色★
+ *   非 ★ 的「分组专属」词条形态由 groupMarkPlan（上方）统一裁决：
+ *     1 组 → 单色 chip；2–3 组 → 逐组一颗色点；≥4 组 → 不着色 + 「N 组需要」角标
  *   例：★<蓝>★</蓝><绿>★</绿>元素充能效率 | <蓝>攻击力%</蓝> <绿>生命值%</绿>
  *   —— 前面是全组都要的，后面才是只有部分角色要的，照搬时按颜色给到对应的人。 */
 function planSubOrder(p) {
@@ -2240,7 +2520,8 @@ function planSubOrder(p) {
   // 以角色自己的需求清单 subList 为准——★必需 / 常规 / 条件词条都算「这位角色要它」。
   const allRoles = p._group || [];
   const needCnt = (list, id) => list.filter(r => (r.subList || []).some(s => statIdOf(s) === id)).length;
-  if (!groups) return ids.map(id => ({ id, req: req.has(id), opt: optSet.has(id), optNote: optNoteOf[id] || '', color: null, owners: null, shared: true, starColors: [], needCount: needCnt(allRoles, id) }));
+  // 无分组（散件 / 过渡保留规则方案）：没有分组色可言，marks 恒为空、groupCount 为 0 → 一律不着色
+  if (!groups) return ids.map(id => ({ id, req: req.has(id), opt: optSet.has(id), optNote: optNoteOf[id] || '', color: null, owners: null, shared: true, starColors: [], marks: [], groupCount: 0, needCount: needCnt(allRoles, id) }));
 
   const everyone = groups.flatMap(g => g.roles);
   // 全组里把某词条当「常规需求」（非 opt）的角色——用于判断 ◇ 是否纯条件项
@@ -2265,61 +2546,62 @@ function planSubOrder(p) {
     const isOpt = optSet.has(id) && !regIds.has(id) && !isReq;
     // 没人「明确」要（例如并入散件规则带来的词条）时按共有处理，不给颜色
     const shared = owners.length === 0 || owners.length >= groups.length;
+    /* 分组色点：需要它的分组【逐个】各一颗色点（不再只取 owners[0] 那一组的颜色）。
+     *   0 组需要 / 全组共享 / ≥4 组退化等情形统一交给 groupMarkPlan 裁决（与主要属性同一辅助函数）。 */
+    const marks = shared ? [] : owners.map(i => ({ color: groups[i].color, who: groups[i].names.join('、') }));
     return {
-      id, req: isReq, opt: isOpt, optNote: optNoteOf[id] || '', starColors, shared,
-      color: shared ? null : groups[owners[0]].color,
+      id, req: isReq, opt: isOpt, optNote: optNoteOf[id] || '', starColors, shared, marks,
+      groupCount: groups.length,
+      color: shared ? null : groups[owners[0]].color,   // 只有 1 个分组需要时的整片同色底（观感与旧版一致）
       owners: shared ? null : owners,
       needCount: needCnt(everyone, id),
     };
   });
-  // ★0 → 共有1 → 第 k 组独占 2+k
-  const bucket = o => o.req ? 0 : (o.shared ? 1 : 2 + o.owners[0]);
+  /* 分层排序（与池生成 mergeSubUniform 同源，口径一致）：
+   *   必需（★）→ 普通需求（组内过半、且非条件词条）→ 可选（◇ 条件词条 与 个别人要的）；
+   *   档内按「组内使用人数」降序，人数相同按游戏常规顺序（双暴 → 攻击 → 生命 → 防御 → 精通 → 充能）。
+   *   ★ 档内再先按「需要它的分组数」降序：全员必需的排最前。
+   *   同一条目的档位 / 人数对整组唯一，同一角色群体的需求因此天然连续聚块，不被打断。 */
+  const ctx = subOrderCtxOf(everyone, [...req], [...optSet]);
   items.sort((a, b) => {
-    const d = bucket(a) - bucket(b);
-    if (d) return d;
     if (a.req && b.req) {
       const ds = b.starColors.length - a.starColors.length;  // 全员必需排最前
       if (ds) return ds;
     }
-    const ra = (a.shared || !a.owners) ? everyone : groups[a.owners[0]].roles;
-    const rb = (b.shared || !b.owners) ? everyone : groups[b.owners[0]].roles;
-    return avgW(rb, b.id) - avgW(ra, a.id);
+    return subOrderCmp(a.id, b.id, ctx);
   });
   return items;
 }
 
-/* 方案的「适用对象」标题：角色组 / 散件规则 / 手动合并后的混合
- *   次要属性不一致时角色名带上分组颜色，与下方追加属性的颜色一一对应 */
-function planForText(p) {
+/* 方案的「适用对象」标题：只有散件 / 过渡保留规则需要写。
+ *   角色组方案不再写「本方案角色（共 N 人）」计数行 —— 它已由方案卡片里的【件数分栏】
+ *   （pieceBoardHTML）取代：那里按 4 件套 / 2 件套两栏列出本方案全部角色，两栏人数之和即 N。
+ *   这样角色名在方案卡片里只出现一次，且必然归属到具体方案（同套装多方案不会混）。 */
+function planForText(p, b = null) {
   if (p.kind === 'rule') {
     return `<span class="gp-for gp-rule-for">🧩 ${t('散件 / 过渡保留：')}${esc(keepRuleName(p.ruleName))}</span>`;
   }
-  if (p.chars && p.chars.length) {
-    const groups = planColorGroups(p);
-    if (groups) {
-      const chips = groups.map(g => g.names.map(n =>
-        `<span class="gp-char-tag" style="--tc:${g.color}" title="次要属性偏好：${esc(g.minor)}">${esc(n)}</span>`
-      ).join('')).join('');
-      return `<span class="gp-for gp-for-groups">${chips}</span>`;
-    }
-    const more = p.chars.length > 6 ? ` <span class="gp-more">${tf('等 {n} 人', { n: p.chars.length })}</span>`
-      : (p.chars.length > 4 ? ` <span class="gp-more">${tf('共 {n} 人', { n: p.chars.length })}</span>` : '');
-    const who = p.chars.slice(0, 6).map(n => esc(charName(n))).join('、') + more;
-    return `<span class="gp-for">${tf('供 {x} 使用', { x: who })}</span>`;
-  }
-  return `<span class="gp-for">${t('（未指定角色）')}</span>`;
+  return '';
 }
 
-/* 纯文本版的角色分组（导出 / 复制用，无法上色就写在括号里） */
+/* 纯文本版的角色分组（导出 / 复制用，无法上色就写在括号里）
+ *   角色名标签只写角色名 —— 件数需求不在这里，由方案卡片里的件数分栏
+ *   （pieceBoardHTML / pieceColsPlain）输出 */
 function planCharsPlain(p) {
+  const plain = arr => arr.join('、');
   const groups = planColorGroups(p);
-  if (!groups) return (p.chars || []).join('、');
-  return groups.map(g => `${g.names.join('、')}（${g.minor}）`).join(' / ');
+  if (!groups) return plain(p.chars || []);
+  return groups.map(g => `${plain(g.names)}（${g.minor}）`).join(' / ');
 }
 
 /* 追加属性 chip 渲染：★必需 / 共有 / 分组专属（同色于对应角色）。
  *   属性说明不再是 title 悬停（触屏上根本出不来），改为点击展开小窗——见下方 statTipHTML。
- *   关联角色多的属性在 chip 上做强化显示（.gp-hot-*）+ 人数角标，提示这条优先度较高。 */
+ *   关联角色多的属性在 chip 上做强化显示（.gp-hot-*）+ 人数角标，提示这条优先度较高。
+ *   分组专属词条的形态由 groupMarkPlan 统一裁决 ——
+ *     1 个分组需要 → 单色 chip（沿用旧版观感）；
+ *     2–3 个分组需要 → 逐组一颗色点（多色 chip，一颗色点 = 一个分组）；
+ *     ≥4 个分组需要 → 不着色 + 「N 组需要」角标；
+ *     无人需要 / 全组共享 / 无分组 → 中性 chip，不着色。 */
 function planSubText(p, setName) {
   const items = planSubOrder(p);
   if (!items.length) return '<span class="gp-fixed">不限</span>';
@@ -2343,44 +2625,66 @@ function planSubText(p, setName) {
     if (it.opt) {
       return `<span class="gp-sub gp-opt gp-tipable${hot}"${tip}>◇${nm}${badge}</span>`;
     }
-    if (!it.color) return `<span class="gp-sub gp-tipable${hot}"${tip}>${nm}${badge}</span>`;
-    return `<span class="gp-sub gp-sub-g gp-tipable${hot}" style="--tc:${it.color}"${tip}>${nm}${badge}</span>`;
+    /* 分组着色：groupMarkPlan 统一裁决（与主要属性同一辅助函数、同一退化规则）——
+     *   single：整片同色底 + 单色点（.gp-sub-g::before），观感与改造前一致；
+     *   multi ：逐组一颗 .gp-sub-mark 色点，一颗色点 = 一个分组；
+     *   overflow：不着色，改挂「N 组需要」角标；
+     *   none ：无人需要 / 全组共享 / 无分组 —— 中性 chip，保持原样。 */
+    const plan = groupMarkPlan(it.marks, it.groupCount, 'gp-sub-mark');
+    if (plan.mode === 'single') {
+      return `<span class="gp-sub gp-sub-g gp-tipable${hot}" style="--tc:${it.color}"${tip}>${nm}${badge}</span>`;
+    }
+    if (plan.mode === 'multi') {
+      return `<span class="gp-sub gp-sub-multi gp-tipable${hot}"${tip}>${plan.dots}${nm}${badge}</span>`;
+    }
+    if (plan.mode === 'overflow') {
+      return `<span class="gp-sub gp-tipable${hot}"${tip}>${nm}${plan.badge}${badge}</span>`;
+    }
+    return `<span class="gp-sub gp-tipable${hot}"${tip}>${nm}${badge}</span>`;
   }).join('');
 }
 /* 导出文本用的追加属性顺序：与页面一致（共有在前、分组在后），无法上色所以保持纯文本 */
 function planSubPlain(p) {
   return planSubOrder(p).map(it => (it.req ? '★' : '') + subStatName(it.id)).join('、');
 }
-/* 命中条数文案：预设「至少两条」，用户可调 1–4；池为空 = 不限（返回空串） */
+/* 命中条数文案：系统按组内支持度推荐「至少 N 条」，用户可在方案卡片上改成 1–4 覆盖；
+ *   池为空 = 不限（返回空串） */
 function subHitPlain(sub) {
   const n = sub.minHit || 0;
   if (!n) return '';
-  return `至少${'一二三四'[n - 1]}条`;
+  return `推荐至少${'一二三四'[n - 1]}条`;
 }
 /* 命中条数的【界面】文案：数字拼出来的整串查不到词典，必须在这里就 t() 包掉。
  * 注意与 subHitPlain 分工：那个给复制 / 导出用，恒中文（游戏内锁定界面是中文）。 */
 function hitLabel(n) {
-  return t(`至少${'一二三四'[(n | 0) - 1] || '一'}条`);
+  return t(`推荐至少${'一二三四'[(n | 0) - 1] || '一'}条`);
 }
 function subHitText(sub) {
   const t = subHitPlain(sub);
   return t ? `<b>${t}</b>` : '<span class="gp-fixed">不限</span>';
 }
-/* 单部位主要属性：null = 固定（花 / 羽），[] = 不限。
- *   与追加属性一样「点击展开小窗」：小窗里按分组分行，列出该部位把它当首选 / 次选的角色。 */
+/* 单部位主要属性：null = 固定（花 / 羽，游戏内主属性恒定，展示时写出【具体值】） ，[] = 不限。
+ *   与追加属性一样「点击展开小窗」：小窗里按分组分行，列出该部位把它当首选 / 次选的角色。
+ *   着色也与追加属性同口径（见 mainColorMarks）：只有 1–2 个分组需要时才逐组打色点。 */
 function mainCondText(slotId, list, p, setName) {
-  if (list === null || list === undefined) return '<span class="gp-fixed">主要属性固定</span>';
+  if (list === null || list === undefined) {
+    // 花 / 羽主属性固定：直接写出「生命值（固定）」/「攻击力（固定）」，不再只写「固定」
+    const fixed = FIXED_MAIN_LABEL[slotId] || (slotId === 'flower' ? '生命值（固定）' : '攻击力（固定）');
+    return `<span class="gp-fixed" title="${esc(tf('花 / 羽的主要属性游戏内恒定：{n}，无需在工具里另设', { n: fixed }))}">${esc(fixed)}</span>`;
+  }
   if (!list.length) return '<span class="gp-fixed">不限</span>';
   const all = (p && p._group) || [];
   return list.map(id => {
     let first = 0, need = 0;
-    all.forEach(r => { const st = mainStatusOf(r, slotId, id); if (st) { need++; if (st === 'first') first++; } });
+    // 口径与 hot 角标一致：mainUseOf 已把「同组可互换词条」算作次选（暴击率 / 暴击伤害冠不会互相漏色）
+    all.forEach(r => { const st = mainUseOf(r, slotId, id); if (st) { need++; if (st === 'first') first++; } });
     // 主属性按「把它列为首选」的人数做强化：头号主属性通常最该锁
     const lv = statHotLevel(first || need, all.length);
     const hot = lv === 'normal' ? '' : ` gp-hot gp-hot-${lv}`;
     const badge = lv === 'normal' ? '' : `<i class="gp-hn">${first || need}</i>`;
+    const marks = mainColorMarks(p, slotId, id);
     const tip = p ? tipAttr(setName, p, slotId, id) : '';
-    return `<span class="gp-main gp-tipable${hot}"${tip}>${esc(mainStatName(slotId, id))}${badge}</span>`;
+    return `<span class="gp-main gp-tipable${marks ? ' gp-main-multi' : ''}${hot}"${tip}>${marks}${esc(mainStatName(slotId, id))}${badge}</span>`;
   }).join('');
 }
 
@@ -2416,6 +2720,40 @@ function mainStatusOf(role, slotId, id) {
   const list = (role.mains && role.mains[slotId]) || [];
   const i = list.findIndex(m => statIdOf(m) === id);
   return i < 0 ? null : (i === 0 ? 'first' : 'alt');
+}
+/* 可互换主要属性组（SWAP_GROUPS，当前只有冠部 暴击率 ↔ 暴击伤害）：两个词条落在同一格，
+ *   谁掉到哪个都能直接用 —— 所以同组成员必须「同判同色」：只写了其中一个的角色，
+ *   在另一个 chip 上算「可用（次选）」，否则给只写暴击伤害的人看暴击率 chip 就会漏色。 */
+function mainSwapAltOf(slotId, id) {
+  const gs = SWAP_GROUPS[slotId] || [];
+  for (let i = 0; i < gs.length; i++) {
+    if (gs[i].a === id) return gs[i].b;
+    if (gs[i].b === id) return gs[i].a;
+  }
+  return null;
+}
+/* 展示口径的主属性地位：本词条 → 'first' 首选 / 'alt' 次选；只写了可互换搭档 → 'alt'（能用但非头号）。 */
+function mainUseOf(role, slotId, id) {
+  const st = mainStatusOf(role, slotId, id);
+  if (st) return st;
+  const alt = mainSwapAltOf(slotId, id);
+  return (alt && mainStatusOf(role, slotId, alt)) ? 'alt' : null;
+}
+/* 主要属性 chip 的分组着色：与追加属性共用 groupMarkPlan（同一辅助函数、同一退化规则）——
+ *   需要它的分组逐个各打一颗色点（一颗色点 = 一个分组，色点即该分组颜色）；
+ *   ≥4 个分组需要 / 全组共享 → 不着色 + 「N 组需要」角标；
+ *   散件 / 过渡规则方案没有分组（planColorGroups 为 null）→ 同样不着色。
+ *   独立成不带空格的标记元素：chip 自身保持 inline-block，色点多时只挤压 chip 内部、不撑破单行。 */
+function mainColorMarks(p, slotId, id) {
+  const groups = p ? planColorGroups(p) : null;
+  if (!groups || !groups.length) return '';
+  const marks = groups
+    .filter(g => g.roles.some(r => mainUseOf(r, slotId, id)))
+    .map(g => ({ color: g.color, who: g.names.join('、') }));
+  const plan = groupMarkPlan(marks, groups.length, 'gp-main-mark');
+  // 与分支式调用（planSubText）等价：single / multi 只出色点、overflow 只出角标、none 全空。
+  // badge 兜底取空串 —— 这里是无条件拼接，缺字段会直接漏出字面量 undefined。
+  return (plan.dots || '') + (plan.badge || '');
 }
 /* 某角色对某追加属性的状态：'req' ★必需 / 'need' 需要 / 'opt' ◇条件 / null 不需要 */
 function subStatusOf(role, id) {
@@ -2467,11 +2805,12 @@ function planSubTip(p, id) {
 function planMainTip(p, slotId, id) {
   const all = (p._group || []).slice();
   let need = 0, first = 0;
-  all.forEach(r => { const st = mainStatusOf(r, slotId, id); if (st) { need++; if (st === 'first') first++; } });
+  // 与 chip 的着色 / hot 角标同一口径（mainUseOf）：可互换词条的搭档算「次选」
+  all.forEach(r => { const st = mainUseOf(r, slotId, id); if (st) { need++; if (st === 'first') first++; } });
   return {
     kind: 'main', stat: mainStatName(slotId, id), slot: slotName(slotId),
     level: statHotLevel(first || need, all.length), need, total: all.length, first,
-    rows: tipRows(p, r => mainStatusOf(r, slotId, id), [
+    rows: tipRows(p, r => mainUseOf(r, slotId, id), [
       { key: 'first', tag: t('首选'), cls: 'stt-tag-first' },
       { key: 'alt', tag: t('次选') },
     ]),
@@ -2498,7 +2837,7 @@ function statTipHTML(m) {
   if (m.kind === 'sub' && m.opt) notes.push('◇ ' + esc(m.optNote || t('满足条件时才需要')));
   if (!m.rule) notes.push(esc(m.kind === 'sub'
     ? t('颜色与卡片上的角色名一一对应，照搬时按同色给到对应角色')
-    : t('「首选」= 该角色在这个部位的头号主属性')));
+    : t('「首选」= 该角色在这个部位的头号主属性；可互换词条（如暴击率 / 暴击伤害冠）互为「次选」')));
   return head + `<div class="stt-sub">${esc(sum)}</div>` +
     (rows ? `<div class="stt-rows">${rows}</div>` : '') +
     notes.map(x => `<div class="stt-note">${x}</div>`).join('');
@@ -2546,6 +2885,192 @@ function openStatTip(chip) {
   box.style.top = top + 'px';
 }
 
+/* ============================================================
+ * 需求角色弹窗（#charTipBox）：方案卡片里件数分栏的展开视图【第一层】
+ * ------------------------------------------------------------
+ *   为什么要有：方案卡片里每组最多 3 人、每栏最多两行，人多的方案只能看到摘要；
+ *   想知道「本方案到底都有谁」就点开这里 —— 本方案全量、分组分行、不折叠。
+ *   作用域 = 一个方案：data-piece-board 带套装名、data-piece-plan 带方案 key，
+ *   所以同一套装的多套方案各弹各的，不会把别人的角色混进来。
+ *   第一层：4 件套 / 2 件套两栏 → 栏内按配色分组（同色 = 次要需求相同的一批人）分行；
+ *   第二层：点某个角色 → 另开【独立小窗 #charAttrBox】（层级高于本弹窗），
+ *          看该角色在这套配装下的具体推荐属性（主属性 + 追加属性池）。
+ *          命中条数不再进小窗 —— 那行「推荐至少 N 条」只保留在方案卡片上（唯一出口）。
+ *   交互同属性小窗：再点一次收起 / 点空白 / Esc / 滚动 / 缩放窗口都收起。
+ * ============================================================ */
+function planAltChecked() { const el = $('#planAltBuild'); return el ? el.checked : true; }
+/* 弹窗第一层的数据：某个【方案】的全部需求角色，按件数分栏 + 配色分组 */
+function pieceBoardTipData(setName, b, names, cands, planKey = '') {
+  const ord = pieceBoardOrder(b, names);
+  const col = (key, label, list) => {
+    if (!list.length) return null;
+    const groups = pieceBoardGroupsOf(cands, list).map(g => ({
+      color: g.color, minor: g.minor,
+      names: g.names.map(n => ({ name: n, alt: !!(b && b.users && b.users.get(n) && b.users.get(n).alt) })),
+    }));
+    return { key, label, total: list.length, groups };
+  };
+  return { setName, planKey, cols: [col('four', '4 件套', ord.four), col('two', '2 件套', ord.two)].filter(Boolean) };
+}
+function pieceBoardTipHTML(d) {
+  const cols = d.cols.map(c => {
+    const groups = c.groups.map(g => {
+      const chips = g.names.map(x =>
+        `<span class="ct-chip" data-char-tip="${esc(charAttrRaw(d.setName, d.planKey || '', x.name))}" role="button" tabindex="0"` +
+        `${g.color ? ` style="--tc:${g.color}"` : ''}>${esc(charName(x.name))}` +
+        `${x.alt ? `<i class="ct-alt">${esc(t('备选'))}</i>` : ''}</span>`
+      ).join('');
+      const lab = g.minor ? `<span class="ct-gl">${esc(g.minor)}</span>` : '';
+      return `<div class="ct-row"${g.color ? ` style="--tc:${g.color}"` : ''}>${lab}${chips}</div>`;
+    }).join('');
+    return `<div class="ct-col"><div class="ct-ch">${esc(t(c.label))}` +
+      `<i class="ct-cn">${esc(tf('{n} 人', { n: c.total }))}</i></div>${groups}</div>`;
+  }).join('');
+  return `<div class="ct-head"><span class="ct-title">${esc(setName(d.setName))} · ${esc(t('需求角色'))}</span>` +
+    `<button type="button" class="ct-x" data-char-tip-close="1" aria-label="${esc(t('关闭'))}">×</button></div>` +
+    `<div class="ct-cols">${cols}</div>` +
+    `<div class="ct-hint">${esc(t('点角色看该配装的具体推荐属性'))}</div>`;
+}
+/* 弹窗第二层（独立小窗 #charAttrBox）的数据：某角色在【某个方案】里的具体推荐属性
+ *   planKey = 方案 key：同一角色对同一套装可能有多套方案（重要属性 / 次要属性不同），
+ *   所以必须由调用方指名是哪套方案，不能只按角色名在第一套里瞎猜。 */
+function charTipData(setName, name, planKey = '') {
+  const b = computePlan(planAltChecked()).get(setName) || null;
+  const all = candsOfSet(setName);
+  const p = (planKey ? all.find(x => x.key === planKey) : null)
+    || all.find(x => x.chars && x.chars.includes(name)) || null;
+  const role = p ? ((p._group || []).find(r => r.name === name) || null) : null;
+  const grp = p ? ((planColorGroups(p) || []).find(g => g.names.includes(name)) || null) : null;
+  const mains = SLOTS.map(sd => {
+    let list;
+    if (sd.id === 'flower' || sd.id === 'plume') {
+      list = [{ name: fixedMainLabel(sd.id), first: true }];   // 跟随界面语言（导出仍走 _forceZh 口径）
+    } else {
+      list = role ? ((role.mains && role.mains[sd.id]) || []).map((m, i) =>
+        ({ name: mainStatName(sd.id, statIdOf(m)), first: i === 0 })) : [];
+    }
+    return { slot: slotName(sd.id), list };
+  });
+  const subs = p ? planSubOrder(p).map(it => ({
+    name: subStatName(it.id),
+    status: role ? subStatusOf(role, it.id) : null,
+    opt: !!it.opt,
+  })) : [];
+  return {
+    name, setName,
+    piece: b ? pieceNeedOf(b, name) : '',
+    alt: !!(b && b.users && b.users.get(name) && b.users.get(name).alt),
+    color: grp ? grp.color : null,
+    minor: grp ? grp.minor : '',
+    mains, subs, hasPlan: !!p,
+  };
+}
+/* 独立小窗的 HTML（点角色后弹出的小卡片）。★ 这里不再出现「推荐至少 N 条」：
+ *   命中条数是【方案级】条件（五个部位共用、按组内支持度推荐），只该挂在方案卡片上；
+ *   若同一方案里好几位角色的推荐条数不同（理论上不会），列在角色卡上只会自相矛盾。 */
+function charTipHTML(d) {
+  const pieceKey = d.piece === 'four' ? '4 件套' : (d.piece === 'two' ? '2 件套'
+    : (d.piece === 'both' ? '4 件套 / 2 件套' : ''));
+  const head = `<div class="ct-dh"><span class="ct-dn"${d.color ? ` style="--tc:${d.color}"` : ''}>${esc(charName(d.name))}</span>` +
+    `<span class="ct-tag${d.alt ? ' ct-tag-alt' : ' ct-tag-first'}">${esc(t(d.alt ? '备选' : '首选'))}</span>` +
+    (pieceKey ? `<span class="ct-tag">${esc(t(pieceKey))}</span>` : '') +
+    (d.minor ? `<span class="ct-tag ct-tag-minor">${esc(tf('次要属性偏好：{x}', { x: d.minor }))}</span>` : '') + '</div>';
+  if (!d.hasPlan) return head + `<div class="ct-note">${esc(t('这套配装由散件 / 过渡保留规则生成，不针对具体角色'))}</div>`;
+  const mains = d.mains.map(m => `<div class="ct-mrow"><span class="ct-mslot">${esc(m.slot)}</span>` +
+    (m.list.length
+      ? m.list.map(x => `<span class="ct-mv${x.first ? ' first' : ''}">${esc(x.name)}</span>`).join('')
+      : `<span class="ct-note">${esc(t('不限'))}</span>`) + '</div>').join('');
+  const subs = d.subs.map(s => `<span class="ct-sv${s.status === 'req' ? ' req' : (s.status === 'opt' ? ' opt' : '')}">` +
+    `${s.status === 'req' ? '★' : (s.status === 'opt' ? '◇' : '')}${esc(s.name)}</span>`).join('');
+  return head +
+    `<div class="ct-sec">${esc(t('主要属性'))}</div><div class="ct-mains">${mains}</div>` +
+    `<div class="ct-sec">${esc(t('追加属性'))}</div>` +
+    `<div class="ct-subs">${subs || `<span class="ct-note">${esc(t('不限'))}</span>`}</div>`;
+}
+/* 收起弹窗 */
+function closeCharTip() {
+  const box = $('#charTipBox');
+  if (!box || box.classList.contains('hidden')) return;
+  box.classList.add('hidden');
+  box.innerHTML = '';
+  box.removeAttribute('data-for');
+  box.removeAttribute('style');
+}
+/* 展开弹窗：套装名 + 方案 key 都来自分栏块（data-piece-board / data-piece-plan），
+ *   现算现画（不缓存，免得跟重渲染脱节）；作用域 = 该【方案】的角色。 */
+function openCharTip(el) {
+  const box = $('#charTipBox');
+  const ds = (el && el.dataset) || {};
+  const setName = ds.pieceBoard || '';
+  const planKey = ds.piecePlan || '';
+  if (!box || !setName) return;
+  const sig = setName + '|' + planKey;
+  if (box.dataset.for === sig && !box.classList.contains('hidden')) { closeCharTip(); return; }
+  closeCharAttr();   // 层级从属：打开第一层时先收起第二层的小窗
+  const b = computePlan(planAltChecked()).get(setName) || null;
+  const all = candsOfSet(setName);
+  const p = (planKey ? all.find(x => x.key === planKey) : null)
+    || all.find(x => x.chars && x.chars.length) || null;
+  /* 方案级：只列本方案的角色（= 分栏两栏的并集）；方案找不到（理论上不会）才退回套装全量 */
+  const names = (p && p.chars) || (b ? Array.from(b.users.keys()) : []);
+  box.dataset.for = sig;
+  box.innerHTML = pieceBoardTipHTML(pieceBoardTipData(setName, b, names, p ? [p] : null, planKey));
+  box.classList.remove('hidden');
+  /* 定位沿用属性小窗那套：贴在触发元素下方居中，下方放不下就翻到上方，最后夹进视口 */
+  const r = el.getBoundingClientRect();
+  const w = box.offsetWidth, h = box.offsetHeight;
+  const vw = document.documentElement.clientWidth || window.innerWidth;
+  const vh = document.documentElement.clientHeight || window.innerHeight;
+  let left = r.left + r.width / 2 - w / 2;
+  left = Math.max(8, Math.min(left, vw - w - 8));
+  let top = r.bottom + 6;
+  if (top + h > vh - 8) {
+    const up = r.top - h - 6;
+    top = up >= 8 ? up : Math.max(8, vh - h - 8);
+  }
+  box.style.left = left + 'px';
+  box.style.top = top + 'px';
+}
+/* 收起第二层小窗（独立浮层，先收起时无需碰第一层） */
+function closeCharAttr() {
+  const box = $('#charAttrBox');
+  if (!box || box.classList.contains('hidden')) return;
+  box.classList.add('hidden');
+  box.innerHTML = '';
+  box.removeAttribute('data-for');
+  box.removeAttribute('style');
+}
+/* 第二层小窗：点分栏 / 弹窗里的角色 → 【另开一个新窗】看它的配装属性。
+ *   ★ 为什么不再内联展开：角色列表弹窗本身可能很高，在它底部展开会把弹窗继续撑长，
+ *     还得在弹窗内部滚动才看得到（而且和「再看另一个角色」互相挤位置）；独立小窗有自己的
+ *     层级（z-index 高于列表弹窗）与定位，贴着被点的那个角色出现，两个窗口互不干扰。
+ *   data 编码「套装 | 方案 key | 角色名」：首尾各切一刀、中间整段当方案 key（key 自身可能含 '|'）。 */
+function openCharAttr(chip) {
+  const box = $('#charAttrBox');
+  const raw = (chip && chip.dataset) ? chip.dataset.charTip : '';
+  if (!box || !raw) return;
+  if (box.dataset.for === raw && !box.classList.contains('hidden')) { closeCharAttr(); return; }   // 再点同一个 = 收起
+  const i = raw.indexOf('|');
+  const j = raw.lastIndexOf('|');
+  if (i < 0 || j <= i) return;
+  const sn = raw.slice(0, i), pk = raw.slice(i + 1, j), cn = raw.slice(j + 1);
+  box.dataset.for = raw;
+  box.innerHTML = charTipHTML(charTipData(sn, cn, pk));
+  box.classList.remove('hidden');
+  /* 定位：优先贴在触发角色右侧，右边放不下翻到左侧，最后夹进视口 */
+  const r = chip.getBoundingClientRect();
+  const w = box.offsetWidth, h = box.offsetHeight;
+  const vw = document.documentElement.clientWidth || window.innerWidth;
+  const vh = document.documentElement.clientHeight || window.innerHeight;
+  let left = r.right + 8;
+  if (left + w > vw - 8) left = r.left - w - 8;
+  left = Math.max(8, Math.min(left, vw - w - 8));
+  let top = r.top;
+  if (top + h > vh - 8) top = Math.max(8, vh - h - 8);
+  box.style.left = left + 'px';
+  box.style.top = top + 'px';
+}
+
 /* 导出里的「★必需角色」：每条★列出把它标成必需的角色名（合并方案里多组都要就都列上，
  * 不写「第 N 组」这类分组编号——颜色只在页面上表达，纯文本里直接给名字） */
 function planStarWhoPlain(p) {
@@ -2568,19 +3093,25 @@ function planStarWhoPlain(p) {
   return rows.join('　｜　');
 }
 
-function planCopyText(setName, plan, idx) {
+function planCopyText(setName, plan, idx, bucket = null) {
   const who = plan.kind === 'rule'
     ? `散件 / 过渡保留：${plan.ruleName}`
     : `供 ${planCharsPlain(plan)} 使用`;
   const L = [`  方案${idx + 1}（${who}）`];
+  /* 套装件数需求与卡片同形：本方案角色里吃 4 件套 / 只吃 2 件套的，分两栏跟在方案头之后
+   *   （「4 件套：A、B　｜　2 件套：C」；没有 2 件套需求角色时只有前一栏）；
+   *   角色名标签里只留角色名。散件 / 过渡规则没有角色组（kind = 'rule'），不带这一行。 */
+  const pieceTxt = plan.kind === 'rule' ? '' : pieceColsPlain(bucket, plan.chars || []);
+  if (pieceTxt) L.push(`  件数需求：${pieceTxt}`);
   // 追加属性是全方案统一的一份，先说一遍，沙 / 杯 / 冠再各自列主要属性
   const subAll = planSubPlain(plan);
   const hitTxt = subHitPlain(plan.sub);
   L.push(`  追加属性（五个部位相同）：${subAll || '不限'}${hitTxt ? `　·　${hitTxt}` : ''}`);
   const reqWho = planStarWhoPlain(plan);
   if (reqWho) L.push(`  ★必需角色：${reqWho}`);
+  L.push(`  花 / 羽：${FIXED_MAIN_LABEL.flower} / ${FIXED_MAIN_LABEL.plume}（游戏内恒定，无需另设）`);
   SLOTS.forEach(sd => {
-    if (sd.id === 'flower' || sd.id === 'plume') return;   // 花 / 羽主属性固定，不必列
+    if (sd.id === 'flower' || sd.id === 'plume') return;   // 花 / 羽主属性固定，已在上行写出
     const list = plan.mains[sd.id];
     const mainTxt = !list || !list.length ? '不限' : list.map(id => mainStatName(sd.id, id)).join('、');
     L.push(`  ${sd.name}：${mainTxt}`);                    // 沙 / 杯 / 冠 后面列的就是主要属性
@@ -3842,6 +4373,8 @@ function tierClass(t) {
 
 function renderPlan() {
   closeStatTip();   // 方案页重渲染后旧的属性小窗会指向已经不存在的 chip，先收起
+  closeCharTip();   // 需求角色弹窗同理：它挂在 body 上，重渲染后必须收起
+  closeCharAttr();  // 第二层的角色属性小窗也一起收（它引用的是重渲染前的角色）
   const includeAlt = $('#planAltBuild').checked;
   const hideUnused = $('#planHideUnused').checked;
   const plan = computePlan(includeAlt);
@@ -3974,7 +4507,7 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
   const charsForPlan = state.characters.filter(c => c.enabled && b.users.has(c.name));
   const cands = charsForPlan.length
     ? setCandidates(charsForPlan, name) : [];
-  const gpHtml = cands.length ? renderGamePlans(name, cands, slotFilter) : '';
+  const gpHtml = cands.length ? renderGamePlans(name, cands, slotFilter, b) : '';
 
   // 该套装的追加属性需求排序（用于花/羽行提示）
   const rank = setWeights ? (setWeights.get(name) || {}).list : null;
@@ -4028,13 +4561,9 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
       <h3>${esc(setName(name))}</h3>
       <span class="set-bonus">${esc(bonus)}</span>
       ${bonus4 ? `<span class="set-bonus4" title="${esc(bonus4)}">4件套：${esc(briefSetBonus4(bonus4))}</span>` : ''}
-      ${b.need2 ? `<span class="set-badge2" title="${esc('这些角色的配装是「任选两套散搭（2+2）」，本套装只需 2 件；具体搭配哪两套由你决定。')}">${esc('仅需 2 件套')}</span>` : ''}
-      <span class="set-users">
-        ${unused
-          ? '<span class="tier-tag fodder">无角色需要 · 可整套清理</span>'
-          : users.map(([n, i]) => `<span class="user-pill ${i.alt ? 'alt' : ''}">${esc(charName(n))}${i.alt ? '·' + t('备选') : ''}</span>`).join('')}
-      </span>
-    </div>
+      ${unused
+        ? '<span class="set-none"><span class="tier-tag fodder">无角色需要 · 可整套清理</span></span>'
+        : ''}
     ${gpHtml}
     ${detailHtml}
   </div>`;
@@ -4053,7 +4582,7 @@ function showDetail() {
  *   ③ 每个方案给出「并入…」下拉，可与任意其它候选合并；合并后的方案可「拆回」
  *   ④ 采纳数 > 游戏上限（3）时提示用户自行收敛
  */
-function renderGamePlans(setName, cands, slotFilter = 'all') {
+function renderGamePlans(setName, cands, slotFilter = 'all', b = null) {
   const cfg = (state.planCfg && state.planCfg[setName]) || { merge: [], hide: [], minHit: {} };
   const hidden = new Set(cfg.hide || []);
   const slotsTodo = SLOTS.filter(sd => slotFilter === 'all' || sd.id === slotFilter);
@@ -4071,20 +4600,12 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
       </div>`).join('');
 
     const subTxt = planSubText(p, setName);
-    // 命中条数：池有多宽就能调到几（上限 SUB_MIN_HIT_MAX）；池为空 = 追加属性不限，不给下拉
+    /* 命中条数：系统按组内支持度给出的推荐值【即最终值】——
+     * 页面上只做只读展示（不再是可改的下拉），需要更细 / 更宽的筛选请到游戏内自行调整 */
     const poolN = (p.sub && p.sub.pool) || [];
-    const hitSel = poolN.length
-      ? (() => {
-          const max = Math.min(SUB_MIN_HIT_MAX, poolN.length);
-          const cur = Math.min(p.sub.minHit || SUB_MIN_HIT_DEFAULT, max);
-          let opts = '';
-          for (let n = 1; n <= max; n++) {
-            opts += `<option value="${n}"${n === cur ? ' selected' : ''}>${esc(hitLabel(n))}</option>`;
-          }
-          const hitTitle = t('追加属性池里命中任意 N 条就锁定（★计入）。默认「至少两条」；调大可做更细的筛选');
-          return `<select class="gp-hitsel" data-gp-minhit="${esc(setName)}|${esc(p.key)}"` +
-                 ` title="${esc(hitTitle)}">${opts}</select>`;
-        })()
+    const hitN = Math.min((p.sub && p.sub.minHit) || SUB_MIN_HIT_MIN, SUB_MIN_HIT_MAX);
+    const hitView = poolN.length
+      ? `<span class="gp-fixed gp-hit-ro" title="${esc(t('追加属性池里命中任意 N 条就锁定（★计入）。N 由系统按组内支持度推荐，即为该方案的最终值；如需更细 / 更宽的筛选请在游戏内自行调整'))}">${esc(hitLabel(hitN))}</span>`
       : '<span class="gp-fixed">不限</span>';
 
     return `
@@ -4095,7 +4616,7 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
           <span>采纳</span>
         </label>
         <span class="gp-idx">${i + 1}</span>
-        ${planForText(p)}
+        ${planForText(p, b)}
         ${p.mergedCount ? `<span class="gp-badge">已合并 ${p.mergedCount} 组</span>` : ''}
         <span class="gp-acts">
           ${opts
@@ -4109,12 +4630,13 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
           <button class="btn sm gp-copy" data-gp-copy="${esc(setName)}|${esc(p.key)}">复制</button>
         </span>
       </div>
+      ${p.kind === 'rule' ? '' : `<div class="gp-boardrow">${pieceBoardHTML(setName, b, p, [p])}</div>`}
       ${(p.kind === 'rule' && p.ruleDesc) ? `<div class="gp-rule-desc">${esc(p.ruleDesc)}</div>` : ''}
       <div class="gp-subline">
         <span class="gp-lab">追加属性（五部位相同）</span>
         <span class="gp-val">${subTxt}</span>
         <span class="gp-lab">包含（★计入）</span>
-        <span class="gp-val">${hitSel}</span>
+        <span class="gp-val">${hitView}</span>
       </div>
       <div class="gp-mains">${rows}</div>
     </div>`;
@@ -4138,12 +4660,10 @@ function renderGamePlans(setName, cands, slotFilter = 'all') {
       <span class="gp-title">${t('🎮 游戏内锁定方案候选')}</span>
       <span class="gp-meta${over ? ' warn' : ''}">${metaTxt}　· ${pickTxt}${over ? ' ⚠️' : ''}</span>
     </div>
-    <p class="gp-lead" data-en="Candidates are merged automatically by each character's <b>key stats</b> (CRIT, for example): same key stats merge into one plan; characters that differ only in <b>minor</b> stats (ATK% / HP% / DEF%) are told apart by <b>colour</b>. Supports (Energy Recharge / HP / Elemental Mastery) whose key stats differ are split automatically — <b>fully automatic, no tuning needed</b>. All five slots of a plan share <b>one substat condition</b>, while main stats are merged per slot; the hit count <b>defaults to &quot;at least 2&quot;</b> and can be set to 1&ndash;4 per plan below. Too many candidates? merge them with &quot;Merge into&hellip;&quot; or untick &quot;Adopt&quot;.">候选按角色的<b>重要属性</b>（如双暴）自动合并——重要属性相同就并为一套，次要属性（攻击% / 生命% / 防御%）不同的角色用<b>颜色</b>区分标注；
-      辅助（充能 / 生命 / 精通）重要属性不同，会自动拆开，<b>全自动、无需调参</b>。
-      每个方案的<b>五个部位共用同一份追加属性条件</b>，主要属性逐部位独立合并；命中条数<b>默认「至少两条」</b>，可在下方单独调到 1–4 做更细的筛选；觉得候选多了就用「并入…」合并、或取消勾选「采纳」。</p>
+    <p class="gp-lead" data-en="Candidates are auto-merged by each character's <b>key stats</b> (CRIT, for example); characters that differ only in <b>minor</b> stats are told apart by <b>colour</b>. Every plan's five slots share <b>one substat condition</b>, and the hit count is <b>recommended by the tool</b>. Too many candidates? Merge them with &quot;Merge into&hellip;&quot; or untick &quot;Adopt&quot;.">候选按角色的<b>重要属性</b>（如双暴）自动合并，次要属性（攻击% / 生命% / 防御%）不同的角色用<b>颜色</b>区分；每个方案的<b>五个部位共用同一份追加属性条件</b>，命中条数由系统按组内支持度<b>推荐「至少 N 条」</b>（即最终值）。候选太多就「并入…」合并、或取消勾选「采纳」。</p>
     <div class="gp-cards">${cards}</div>
-    <p class="gp-tip" data-en="In game: Inventory &rarr; Artifacts &rarr; Lock &rarr; pick this set &rarr; Edit, then set them up one by one as above. Each set takes <b>at most ${GAME_MAX_PRESET} custom presets</b> in game, so keep it tidy yourself. Artifacts with only 3 substats need one fewer.">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上方逐套设置；
-      每种套装游戏内<b>至多 ${GAME_MAX_PRESET} 个自定义预设</b>，请自行收敛。仅有 3 条追加属性的圣遗物，所需数量会自动减 1。</p>
+    <p class="gp-tip" data-en="In game: Inventory &rarr; Artifacts &rarr; Lock &rarr; pick this set &rarr; Edit, then set them up one by one as above. Each set takes <b>at most ${GAME_MAX_PRESET} custom presets</b> in game, so keep it tidy yourself.">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上方逐套设置；
+      每种套装游戏内<b>至多 ${GAME_MAX_PRESET} 个自定义预设</b>，请自行收敛。</p>
   </div>`;
 }
 
@@ -4184,8 +4704,8 @@ function gamePlansToText() {
       setCount++;
       if (plans.length > GAME_MAX_PRESET) over++;
       L.push('━━━━━━━━━━━━━━━━━━━━━━━━');
-      L.push(`【${name}】${setFormNote(name)}${plans.length} 个预设${plans.length > GAME_MAX_PRESET ? '（⚠️ 超过游戏上限 ' + GAME_MAX_PRESET + '）' : ''}`);
-      plans.forEach((p, i) => L.push(planCopyText(name, p, i)));
+      L.push(`【${name}】${setFormNote(name, b)}${plans.length} 个预设${plans.length > GAME_MAX_PRESET ? '（⚠️ 超过游戏上限 ' + GAME_MAX_PRESET + '）' : ''}`);
+      plans.forEach((p, i) => L.push(planCopyText(name, p, i, b)));
       L.push('');
       total += plans.length;
     });
@@ -4193,7 +4713,7 @@ function gamePlansToText() {
   L.push(`合计：${setCount} 个套装、${total} 个锁定方案`);
   if (over) L.push(`⚠️ 其中 ${over} 个套装超过 ${GAME_MAX_PRESET} 套，游戏内放不下，请在页面裡用「并入…」或取消勾选收敛后再复制。`);
   L.push(`提示：每种套装在游戏内至多 ${GAME_MAX_PRESET} 个自定义预设，多个预设共同生效；`);
-  L.push('      仅有 3 条追加属性的圣遗物，所需数量会自动减 1。');
+  L.push('      「推荐至少 N 条」由工具按组内支持度自动给出，即该方案的最终命中条数（如需更细 / 更宽请在游戏内自行调整）。');
   return L.join('\n');
 }
 
@@ -4211,12 +4731,12 @@ function planToText() {
     .filter(([, b]) => b.users.size > 0)
     .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
     .forEach(([name, b]) => {
-      lines.push('【' + name + '】' + setFormNote(name) + (allSetBonus()[name] ? '（' + allSetBonus()[name] + '）' : ''));
+      lines.push('【' + name + '】' + setFormNote(name, b) + (allSetBonus()[name] ? '（' + allSetBonus()[name] + '）' : ''));
       SLOTS.forEach(sd => {
         const rows = b.slots[sd.id] || [];
         if (!rows.length) { lines.push('  ' + sd.name + '：无需求，可全喂'); return; }
         if (sd.id === 'flower' || sd.id === 'plume') {
-          lines.push(`  ${sd.name}：主要属性固定，建议保留 ${rows[0].keep} 件（${rows[0].charsArr.map(x => x.name).join('、')}）`);
+          lines.push(`  ${sd.name}：${FIXED_MAIN_LABEL[sd.id] || '主要属性固定'}，建议保留 ${rows[0].keep} 件（${rows[0].charsArr.map(x => x.name).join('、')}）`);
           return;
         }
         const parts = rows.map(r =>
@@ -4238,7 +4758,7 @@ function planToCsv() {
     .filter(([, b]) => b.users.size > 0)
     .sort((a, b) => (b[1].users.size - a[1].users.size) || a[0].localeCompare(b[0], 'zh'))
     .forEach(([name, b]) => {
-      const note = setFormNote(name);
+      const note = setFormNote(name, b);
       SLOTS.forEach(sd => {
         (b.slots[sd.id] || []).forEach(r => {
           const statName = statLabel(sd.id, r) + (isSwap(r) ? '(二选一)' : '');
@@ -4787,6 +5307,7 @@ function fillRegionFilter() {
 function bind() {
   // Tab
   $$('.tab').forEach(t => t.onclick = () => {
+    closeStatTip(); closeCharTip(); closeCharAttr();   // 换页时三个浮层都别赖在别的页面上
     $$('.tab').forEach(x => x.classList.toggle('active', x === t));
     $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + t.dataset.tab));
     if (t.dataset.tab === 'plan') renderPlan();
@@ -5078,17 +5599,8 @@ function bind() {
       toast('已合并为一个方案');
       return;
     }
-    // ③ 命中条数（包含任意 N 条）
-    const hs = e.target.closest('[data-gp-minhit]');
-    if (hs) {
-      const raw = hs.dataset.gpMinhit;
-      const setName = raw.split('|')[0];
-      const key = raw.slice(setName.length + 1);
-      const cfg = planCfgOf(setName);
-      cfg.minHit[key] = clampHit(hs.value);
-      save(); renderPlan();
-      toast(tf('命中条数已设为「{v}」', { v: hitLabel(clampHit(hs.value)) }));
-    }
+    /* ③ 命中条数（包含任意 N 条）：页面已改为只读展示系统推荐值，
+     *    下拉入口与这里的事件监听一并移除；历史存档里的旧覆盖值由 applyMinHit 忽略。 */
   });
 
   $('#planBody').addEventListener('click', e => {
@@ -5114,18 +5626,58 @@ function bind() {
    *   捕获阶段监听，免得被卡片上的其它点击代理（复制 / 拆分 / 采纳）抢走；
    *   点空白 / 再点同一个 chip / Esc / 滚动 / 缩放窗口都会收起。 */
   document.addEventListener('click', e => {
-    const chip = e.target && e.target.closest ? e.target.closest('[data-stat-tip]') : null;
-    if (chip) { openStatTip(chip); return; }
-    if (!(e.target && e.target.closest && e.target.closest('#statTipBox'))) closeStatTip();
+    const tgt = e.target;
+    const closest = (tgt && tgt.closest) ? tgt.closest.bind(tgt) : null;
+    if (!closest) return;
+    /* 第二层小窗（#charAttrBox）自己也是一汪：点里面不做任何事（不穿透到下面的列表弹窗） */
+    if (closest('#charAttrBox')) return;
+    /* 需求角色弹窗自成一汪：点里面只认角色 chip 与关闭按钮，点空白不做任何事 */
+    if (closest('#charTipBox')) {
+      const cc = closest('[data-char-tip]');
+      if (cc) { openCharAttr(cc); return; }        // 角色 → 再开一个小窗（层级高过本弹窗）
+      if (closest('[data-char-tip-close]')) { closeCharTip(); return; }
+      return;
+    }
+    /* 方案卡片里的件数分栏：栏内角色 → 第二层小窗；分栏空白 → 开 / 收需求角色弹窗 */
+    const cchip = closest('[data-char-tip]');
+    if (cchip) { closeStatTip(); openCharAttr(cchip); return; }
+    const board = closest('[data-piece-board]');
+    if (board) { closeStatTip(); openCharTip(board); return; }
+    const chip = closest('[data-stat-tip]');
+    if (chip) { closeCharTip(); closeCharAttr(); openStatTip(chip); return; }
+    closeCharTip();
+    closeCharAttr();
+    if (!closest('#statTipBox')) closeStatTip();
   }, true);
   document.addEventListener('keydown', e => {
+    /* 分栏块与弹窗里的角色 chip 都能用键盘唤起（它们带 tabindex） */
+    if (e.key === 'Enter' || e.key === ' ') {
+      const el = document.activeElement;
+      const ds = el && el.dataset;
+      if (ds && ds.charTip) { e.preventDefault(); openCharAttr(el); return; }
+      if (ds && ds.pieceBoard) { e.preventDefault(); closeStatTip(); openCharTip(el); return; }
+    }
     if (e.key !== 'Escape') return;
     const chip = document.querySelector('[data-stat-tip]:focus');
     if (chip) chip.blur();
+    const cchip = document.querySelector('[data-char-tip]:focus');
+    if (cchip) cchip.blur();
     closeStatTip();
+    closeCharTip();
+    closeCharAttr();
   });
-  window.addEventListener('resize', closeStatTip);
-  window.addEventListener('scroll', closeStatTip, true);
+  /* 滚动 / 缩放窗口收起浮层；但浮层【自己内部】的滚动不吃这一下（内容长时要在里面滚） */
+  const onAnyScroll = e => {
+    const t2 = e.target;
+    if (t2 && typeof t2.closest === 'function'
+      && (t2.closest('#statTipBox') || t2.closest('#charTipBox') || t2.closest('#charAttrBox'))) return;
+    closeStatTip();
+    closeCharTip();
+    closeCharAttr();
+  };
+  const onAnyResize = () => { closeStatTip(); closeCharTip(); closeCharAttr(); };
+  window.addEventListener('resize', onAnyResize);
+  window.addEventListener('scroll', onAnyScroll, true);
 
   function copyOnePlan(raw) {
     const setName = raw.split('|')[0];
@@ -5133,7 +5685,10 @@ function bind() {
     const list = candsOf(setName);
     const idx = list.findIndex(p => p.key === key);
     if (idx < 0) return;
-    const txt = withZh(() => `【${setName}】\n` + planCopyText(setName, list[idx], idx));
+    // 单方案复制：件数需求要按套装查桶（与页面同一份 3+2 开关状态，保证与页面一致）
+    const altEl = $('#planAltBuild');
+    const bucket = computePlan(altEl ? altEl.checked : true).get(setName) || null;
+    const txt = withZh(() => `【${setName}】\n` + planCopyText(setName, list[idx], idx, bucket));
     navigator.clipboard.writeText(txt)
       .then(() => toast(`已复制「${setName}」的该方案`))
       .catch(() => fallbackCopy(txt));
@@ -5295,7 +5850,7 @@ function initScrollLock() {
     if (!document.documentElement.classList.contains('lock-scroll')) return;
     const t = e.target;
     if (!t || typeof t.closest !== 'function') return;
-    if (t.closest('#statTipBox')) return;                   // 属性小窗自成一层，不吃这把锁
+    if (t.closest('#statTipBox') || t.closest('#charTipBox')) return;   // 属性小窗 / 需求角色弹窗自成一层，不吃这把锁
     const dy = e.touches[0].clientY - y0;
     const scroller = findScroller(t);
     if (scroller) {

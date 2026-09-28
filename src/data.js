@@ -14,8 +14,98 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.09.26';
+const APP_VERSION = '2026.09.27.7';
 const CHANGELOG = [
+  {
+    v: '2026.09.27.7', date: '2026-09-27',
+    title: '修复主要属性 chip 漏出 undefined：分组着色辅助函数 groupMarkPlan 在单色 / 多色分支漏返 badge 字段，主要属性无条件拼接时把它渲染成字面量',
+    items: [
+      '现象：沙 / 杯 / 冠的主要属性 chip 会在属性名前漏出字面量 undefined（形如「〈色点〉undefined元素充能效率”）。凡是需要它的分组为 1–3 个、走「单色」或「逐组色点」分支的 chip 全部中招，全量遍历下共 385 枚（单色 239 + 逐组色点 146），≥4 组退化成角标与无人需要的 chip 不受影响。',
+      '原因：分组着色辅助函数 groupMarkPlan 的约定返回值是 { n, mode, dots, badge }，但 single / multi 两个分支只返回到 dots、漏掉了 badge。追加属性（planSubText）按 mode 分支取字段所以看不出问题，主要属性（mainColorMarks）是无条件的 plan.dots + plan.badge 拼接，字段缺失就直接把 undefined 拼进了 HTML。',
+      '修法：① 在 groupMarkPlan 的 single / multi 分支补上 badge 空串，让返回值与函数注释里的约定一致（单一来源修正，两个调用方同时受益）；② 主要属性拼接处改为 (plan.dots || "") + (plan.badge || "") 兜底，不再依赖「所有分支字段都齐全」，避免同类问题再次漏到界面上。',
+      '回归：Node 侧探针遍历全部 53 个有角色的套装方案、818 枚主要属性 chip，以及方案卡、部位需求、属性小窗、导出文本等全部渲染路径，undefined / NaN 命中数均为 0；主要属性 chip 的着色形态分布与修前一致（无标记 415 / 单色 239 / 逐组色点 146 / ≥4 组角标 18），色点数量与颜色未变，导出与复制文本逐字未变。',
+    ],
+  },
+  {
+    v: '2026.09.27.6', date: '2026-09-27',
+    title: '分组着色改为逐组打色点：一条属性被多个分组需要时每个分组各打一颗色点（2–3 组多色、≥4 组退化为「N 组需要」角标），追加属性与主要属性共用同一辅助函数与同一退化规则',
+    items: [
+      '一条属性被多个分组需要时不再只显示第一个分组的颜色：此前追加属性 chip 只取 owners[0] 那一组的颜色，其余分组等于没有提示（诊断发现 107 条多分组属性里只有首组有色）。现在改成【逐组打色点】——一颗色点 = 一个分组，色点色与该分组角色名同色，点开小窗即按分组列出「谁要它」。',
+      '退化规则统一（追加属性与主要属性共用 groupMarkPlan 一份辅助函数）：0 个分组需要 / 全组共享 → 不着色；1 个分组 → 单色（沿用旧观感，不额外加色点）；2–3 个分组 → 逐组一颗色点；≥4 个分组 → 不着色 + 「N 组需要」角标（单 chip 色点上限 3 颗）。',
+      '主要属性同步放宽到 3 组：此前主属性只有 1–2 个分组需要才逐组打色点、≥3 组即退化为单色，现在 2–3 组都能逐组区分，只有 ≥4 组才退化成「N 组需要」角标，与追加属性完全同一口径。',
+      '★必需仍是原来的形态（1–2 组多色星、>2 组退化单色星），本次只改「分组专属词条」的色点，不改 ★ 与小窗排版。',
+      '导出 / 复制仍是纯文本：着色只在渲染层，planSubPlain / planCopyText 等导出路径输出与改动前逐字一致。',
+      '帮助（中 / 英）、README、docs/DESIGN 里「1–2 个分组才逐组上色、≥3 组退化」的表述回写为新阈值，并补充「同一属性出现多个色点 = 分别对应多个分组，点开看谁要它」。',
+    ],
+  },
+  {
+    v: '2026.09.27.5', date: '2026-09-27',
+    title: '主要属性也能按分组着色：沙 / 杯 / 冠主属性 chip 与追加属性同一套分组配色（1–2 个分组需要才逐组打色点，≥3 组退化单色），可互换冠词条同判同色，详情小窗按分组分行',
+    items: [
+      '主要属性 chip 分组着色：沙 / 杯 / 冠的主属性此前只有「需要人数」强化显示，没有分组色。现在按分组色点标出「哪些分组需要它」——需要它的分组只有 1–2 个时，属性名前按分组各打一个色点（色点色与该分组角色名同色），点开小窗看是谁；需要它的分组 ≥3 个、或本来就是全组共享的属性，退化为默认单色（与追加属性 ★ 的退化规则同一套，不再逐组上色）；散件 / 过渡保留规则方案没有分组，同样不着色。',
+      '着色口径与追加属性完全一致：都由 planColorGroups 分配的那份分组色染（颜色同时用在角色名、追加属性 chip 与主要属性 chip 上），判定「谁需要」用同一份口径 —— 首选（头号主属性）与次选都算需要。',
+      '可互换冠词条同判同色：冠部的暴击率 / 暴击伤害是同一格可互换的词条，此前只写了其中一个的角色在另一个 chip 上不算「需要」，会出现同一分组有人被漏色。现在两者互为「次选」——同一个分组里的成员，无论方案写的是暴击率还是暴击伤害，两枚 chip 的判定与颜色都一致（不会一边有色点一边没有）。',
+      '详情小窗同步：点主要属性 chip 展开的小窗也改为按分组分行，行首色条与角色名同色，逐行列出该分组把这个词条列为首选 / 次选的角色，与追加属性小窗同一套排版；口径说明改为「可互换词条互为次选」。',
+      '导出 / 复制仍是纯文本：复制、导出清单与 CSV 不引入任何颜色标记，输出与改动前逐字一致；着色只影响界面上的 chip 与小窗。',
+      '帮助（中 / 英）、README、docs/DESIGN 里「着色只用追加属性」的表述一并回写为主要属性 + 追加属性同口径。',
+    ],
+  },
+  {
+    v: '2026.09.27.4', date: '2026-09-27',
+    title: '需求角色展示重构：分栏移入方案卡片内（取代「本方案角色（共 N 人）」计数行），点角色另开第二层属性小窗，修掉方案级分组退化，详情小窗不再写命中条数',
+    items: [
+      '分栏位置纠正：需求角色【只在方案卡片内】出现（每张方案卡片一块分栏），套装（圣遗物）标题行不再列任何角色、也不再挂分栏——同一角色对同一套装可能有多套方案，摊到套装级无法归属到具体方案。方案卡片头原先那行「本方案角色（共 N 人）」计数行由该分栏取代，分栏两栏（4 件套 / 2 件套）并集 = 本方案角色，不重不漏；方案卡片下方的追加属性 chip 仍保留原有配色分组。',
+      '卡片内分栏：按「4 件套」「2 件套」两栏列出本方案对应角色（本方案没有 2 件套需求角色时不出现这一栏，4 件套与 2+2 散搭都有配装的人两栏都出现）；栏内沿用配色分组（同色 = 同一份次要属性偏好），每组最多显示 3 人、超出折成「+n 人」占位，每栏最多两行、超出折成「共 N 人 M 组」摘要——角色再多也只是换行，不会拉伸卡片或撑破排版。',
+      '交互改层级：点分栏里的角色（或在需求角色弹窗里点角色）→ 另开【第二层「角色配装属性」小窗】——独立浮层、层级高于需求角色弹窗，可连点换人；不再在角色列表下方内联展开。小窗内展示该角色在这套配装下的推荐属性（★必需 / ◇可选追加属性、沙 / 杯 / 冠主要属性），不再重复写命中条数。',
+      '角色分组退化修复：方案级分栏此前在缺少方案内分组数据时会退化成「一人一组」（如教官 4 件套 23 人 23 组），现改为直接按【本方案角色】的次要属性偏好签名聚类，缺数据也不退化——教官、绝缘之旗印、战狂等全部方案组数恢复正常。',
+      '命中条数文案收敛：推荐「至少 N 条」只保留在锁定方案卡片上，角色属性小窗与角色列表弹窗都不再出现；角色顺序统一为「首选 → 备选 → both 殿后」，同级内保持角色原始顺序，栏内顺序、弹窗顺序与折叠摘要共用同一份排序。',
+      '导出不受影响：复制 / 导出的方案文本仍按「件数需求：4 件套：A　｜　2 件套：B」全量输出，与页面是否折叠无关；页面、弹窗与导出共用 pieceNeedOf / pieceColsOf / pieceBoardOrder / planColorGroups 同一份口径。帮助（中 / 英）、README、docs/DESIGN 的「套装件数需求」说明同步改写。',
+    ],
+  },
+  {
+    v: '2026.09.27.3', date: '2026-09-27',
+    title: '件数展示回退重做：角色名标签只留角色名，4 件套 / 2 件套改到套装名之后分两栏，修掉元素过度拉伸与排版错乱',
+    items: [
+      '角色名标签回归「只写角色名」：套装标题、方案卡片头、部位需求行的角色标签只保留角色名与「次选 / 备选」层级标注（如「托马·备选」），上一版接在名字后面的「·4 件套」「·2 件套」全部摘掉，标签宽度不再被件数字样撑长，角色多时随名字正常换行。',
+      '件数改为【套装（圣遗物）名之后】分两栏：一栏「4 件套」、一栏「2 件套」，栏内列出对应角色；某套装没有 2 件套需求角色时不出现「2 件套」栏，4 件套与 2+2 散搭都有配装的角色两栏都出现（虚线框单列）。两栏由一块 flex + flex-wrap 容器承载、栏内条目也随宽度换行，角色再多也不会把标题行撑开、元素不再被过度拉伸。',
+      '同步范围：套装标题行、方案卡片（每个方案列出本方案角色的件数分栏）、复制 / 导出的方案文本（「件数需求：4 件套：A　｜　2 件套：B」）、导出清单与 CSV 的套装备注（「（4 件套：A、B　｜　2 件套：C）」），全部由同一份件数归属（方案桶 need4Chars / need2Chars）算出，页面与导出逐条一致。',
+      '样式与文案：删除角色名标签内的件数标记，新增两栏容器与栏内条目样式（两栏都有的人用虚线框标出）；.set-head 允许换行、分栏整条独占标题行下方一行；打印态补上分栏配色；移除已无用途的「4 件套 / 两者皆可」词条。帮助（中 / 英）、README、docs/DESIGN 的「套装件数需求」说明同步改写。',
+    ],
+  },
+  {
+    v: '2026.09.27.2', date: '2026-09-27',
+    title: '件数标注并入角色名标签：4 件套 / 2 件套不再单独成块，修掉套装标题行被撑开的排版错乱',
+    items: [
+      '套装件数需求改成「角色名标签」形态：原先件数是独立分组块（候选区顶部「套装件数需求」一行 + 套装标题旁的实线 / 虚线角标），某套装下吃 4 件套或只吃 2 件套的角色一多，这一行不换行就把套装标题行整体撑开、元素被过度拉伸。现在件数直接接在角色名（含「次选 / 备选」等既有层级标注）之后，分隔符统一「·」——「奥黛塔·4 件套」「托马·备选·2 件套」，两种形态都有配装的角色仍是「4 件套 / 两者皆可」；件数标签自身是 inline 小块，角色多时随名字正常换行。',
+      '同步范围：套装标题的角色名标签、方案卡片头的角色名标签、部位需求行的「需求角色」标签、复制 / 导出的方案文本与 CSV 套装备注——四处同源同措辞，都由同一份件数归属（方案桶 need4Chars / need2Chars）算出，导出文本与页面展示逐条一致。',
+      '移除独立件数块：候选区顶部整行与套装标题角标样式（实线 / 虚线两种角标）删除，新增角色名标签内的件数标记作为替代；两个角色名标签的渲染入口都带上了方案桶，确保与件数归属同源。',
+      '帮助（中 / 英）与 README / docs/DESIGN 的「套装件数需求」说明同步改写，新增文案补齐英文词条。',
+    ],
+  },
+  {
+    v: '2026.09.27.1', date: '2026-09-27',
+    title: '锁定方案展示与排序五处调整：池内分层排序聚块、命中条数改为只读推荐、花羽主属性写具体值、标出 4 件套 / 2 件套需求、压缩候选简介',
+    items: [
+      '追加属性池排序重做：池内条目按【必需（★）→ 普通需求（组内过半、且非条件词条）→ 可选（◇ 条件词条 与 个别人要的）】分三层，同档内按【组内使用人数降序】，人数相同再按游戏常规顺序（暴击率 → 暴击伤害 → 攻击力% → 生命值% → 防御力% → 元素精通 → 元素充能效率）。同一角色群体的需求因此连续聚块，照抄时从上往下设即可；比较器在池生成（mergeSubUniform）与展示层（planSubOrder）共用同一份 subOrderCmp，保证「池里的顺序」=「页面上的顺序」。',
+      '命中条数改为只读：方案卡片上不再提供「1–4 条」下拉修改入口，页面上直接展示系统按组内支持度给出的推荐值（N = min(N_rec, 池宽, 4)）——该值即最终值。历史存档里旧的手动覆盖值不再参与计算（applyMinHit 忽略），需要更严 / 更松的筛选请在游戏内锁定界面自行调整。',
+      '花 / 羽主要属性写出具体值：锁定方案与导出文本里，原本笼统的「固定」改为「生命值（固定）」/「攻击力（固定）」，照抄时不用再回头确认这两个部位到底是什么主属性；沙 / 杯 / 冠仍逐部位列出方案要求的属性。',
+      '方案里标出套装件数需求：消除无主的「仅需 2 件套」——候选区顶部「套装件数需求」一行与套装标题角标，按角色分清谁吃 4 件套（实线角标）、谁只吃 2 件套（2+2 散搭，虚线角标），两种形态都有配装的角色标「需 4 件套 / 两者皆可」；复制 / 导出的纯文本里，每个方案也会写上「套装件数需求」一行（只列本方案相关角色）。',
+      '压缩「游戏内锁定方案候选」简介：候选区顶部说明收成一句话（按重要属性自动合并 + 每个方案五部位共用一份追加属性条件 + 命中条数为系统推荐），把「次要属性用颜色区分」「候选合并方式」等细节留给卡片本身与帮助页，减少打开方案页时的阅读负担。',
+      '文档与帮助同步：README（展示与排序表、候选合成流程）、AGENTS（常量表新增排序兜底顺序说明）、docs/DESIGN（命中条数只读 + 池内顺序约定）；界面帮助（中 / 英）与方案页动态文案一并更新，新增文案全部补齐英文词条。',
+    ],
+  },
+  {
+    v: '2026.09.27', date: '2026-09-27',
+    title: '追加属性合并规则重做：取消池宽 5 条上限，★ 改为标记语义（上限 4 条），命中条数改为系统推荐',
+    items: [
+      '取消「合并后追加属性池最多 5 条」（SUB_POOL_MAX）的硬上限：池宽现在等于合并结果本身（组内任一角色前 5 条需求的并集）。人多的组不再被砍掉池尾词条，「池尾排在 5 条之外就悄悄消失」的隐式丢失一并消除；连带不再需要旧的「按次要偏好补池」保底逻辑。',
+      '★必需（游戏内「必须」标记）语义纠偏：由「组内全员交集、最多 2 条」改为【标记语义】——组内任一角色标了「必选」就保留（并集），按「标它的人数 → 名次权重」排序后最多 4 条（SUB_REQ_MAX，与圣遗物最终 4 条追加属性对齐），并统一放到池首。是否真在游戏里设成「必须」由玩家按重要程度定，工具只做标记、不替玩家取舍。',
+      '修复：合并方案的 ★ 曾被静默截断——旧实现把 ★ 追加到池尾再按 5 条收口，同时标 ★ 的角色一多（★ + 常规词条超过上限）就会把排在池尾的 ★ 一起切掉，导致该角色最需要的词条反而不在池里。现与「手动并入」（fuseSub）统一口径：★ 置池首、不参与截断。',
+      '命中条数不再恒为「至少两条」：改由系统按【组内支持度】推荐 —— N_rec = clamp(池里支持度 ≥ 50% 的条目数, 2, 3)，实取 N = min(N_rec, 池宽, 4)；UI 文案改为「推荐至少 N 条」，当时仍可在每个方案卡片上手动调到 1–4 覆盖（当天晚些的 2026.09.27.1 已把该下拉入口去掉，改为只读展示推荐值）。散件 / 过渡规则与手动「并入…」没有角色组、算不出支持度，取推荐值下限 2 条。',
+      '删除「仅有 3 条追加属性的圣遗物所需数量自动减 1」的承诺与死实现意图：该行为属游戏侧强化规则，本工具只输出建议过滤条件，不模拟、不承诺件数。',
+      '文档同步纠偏：README 删掉代码中已不存在的 MERGE_SIM_TH / SLOT_STRICT 死引用并更新过时常量表，「★ = 组内全员交集最多 2 条」「池最多 5 条」「命中条数默认至少两条」全部改写为上列现状；DESIGN、AGENTS 同步；界面帮助（中 / 英）与导出说明一并更新。',
+    ],
+  },
   {
     v: '2026.09.26', date: '2026-09-26',
     title: '2+2 散搭从「塌缩成单套」回补为任选池，锁定方案改为池内每套各出一份',
@@ -603,11 +693,14 @@ const SUB_STATS = [
  *
  *   slot     —— 生效部位（sands / goblet / circlet；花 / 羽主要属性固定，不参与）
  *   mains    —— 要留的主要属性 id 列表（多个 = 任一即可）
- *   required —— ★必须追加属性（金标）
- *   pool     —— 追加属性池
+ *   required —— ★必需追加属性（金标，仅作标记，取并集后截到 4 条并置池首）
+ *   pool     —— 追加属性池（组内任一角色前 5 条需求的并集，池宽不收口）
  *
- * 命中条数不再由规则自带：所有方案统一预设「至少两条」，并可在每个方案卡片上单独调到 1–4
- *（见 app.js 的 SUB_MIN_HIT_DEFAULT / planCfg.minHit）。
+ * 命中条数不再由规则自带，也不恒为 2：角色聚类方案由系统按组内支持度推荐「至少 N 条」
+ *（N_rec = clamp(支持度 ≥ 50% 的池条目数, 2, 3)，N = min(N_rec, 池宽, 4)）；
+ * 本类规则没有角色组、算不出支持度，取推荐值下限 2 条。两者在页面上都只做【只读展示】，
+ * 不再提供下拉修改入口（需更细 / 更宽请在游戏内锁定界面调整）
+ *（见 app.js 的 SUB_MIN_HIT_MIN / SUB_MIN_HIT_RECOMMEND_MAX / SUB_MIN_HIT_SUPPORT / SUB_MIN_HIT_MAX）。
  */
 const KEEP_RULES = [
   {
@@ -2167,8 +2260,9 @@ const T_UI_EN = {
     '{n} characters need it in this slot, {k} list it first',
   '颜色与卡片上的角色名一一对应，照搬时按同色给到对应角色':
     'Colors match the character names on the card — give it to the same-colored character.',
-  '「首选」= 该角色在这个部位的头号主属性':
-    '"First choice" = that character\'s top main stat for this slot.',
+  '{n} 组需要': '{n} groups need it',
+  '「首选」= 该角色在这个部位的头号主属性；可互换词条（如暴击率 / 暴击伤害冠）互为「次选」':
+    '"First choice" = that character\'s top main stat for this slot; interchangeable stats (e.g. a CRIT Rate / CRIT DMG circlet) count as each other\'s "Backup choice".',
   '未设置': 'Not set',
   '未设置，可在下方添加': 'Not set — add one below',
   '命中': 'Hits',
@@ -2367,14 +2461,40 @@ const T_UI_EN = {
   '🎮 游戏内锁定方案候选': '🎮 In-game lock plan candidates',
   '追加属性（五部位相同）': 'Substats (same for all five slots)',
   '包含（★计入）': 'Include (★ counts)',
-  /* 命中条数下拉（JS 按数字拼出来的，必须进词典才翻得动） */
-  '至少一条': 'At least 1',
-  '至少二条': 'At least 2',
-  '至少三条': 'At least 3',
-  '至少四条': 'At least 4',
-  '追加属性池里命中任意 N 条就锁定（★计入）。默认「至少两条」；调大可做更细的筛选':
-    'Lock when any N substats in the pool hit (★ counts). Defaults to "at least 2"; raise it for a stricter filter.',
-  '命中条数已设为「{v}」': 'Hit count set to "{v}"',
+  /* 命中条数只读展示：系统按组内支持度推荐「至少 N 条」，即为最终值（JS 按数字拼出来的，必须进词典才翻得动） */
+  '推荐至少一条': 'At least 1 (recommended)',
+  '推荐至少二条': 'At least 2 (recommended)',
+  '推荐至少三条': 'At least 3 (recommended)',
+  '推荐至少四条': 'At least 4 (recommended)',
+  '追加属性池里命中任意 N 条就锁定（★计入）。N 由系统按组内支持度推荐，即为该方案的最终值；如需更细 / 更宽的筛选请在游戏内自行调整':
+    'Lock when any N substats in the pool hit (★ counts). N is recommended by the tool from in-group support and is final; adjust the filter in-game if you need it stricter or looser.',
+  /* 套装件数需求：套装标题行上【唯一一处分栏】—— 「4 件套」栏 / 「2 件套」栏
+   * （该套装没有 2 件套需求角色时不出现这一栏），栏内按配色分组，每组最多 3 人（多的折成「+n」），
+   * 每栏最多两行（多的折成「共 N 人 M 组」摘要）；整块可点 → 需求角色弹窗全量列出，
+   * 弹窗里点角色 → 展开 TA 在这套配装下的推荐属性。
+   * '4 件套' 复用旧件数角标词条（数据语言词典里已有），这里补一条界面词典，
+   * 保证「显示语言 = English、数据语言 = 中文」时分栏标题也翻得动；
+   * 旧的「并入角色名标签」时代的 {who} 长句词条已随三处重复渲染一起下线。 */
+  '2 件套': '2-piece',
+  '4 件套': '4-piece',
+  '4 件套 / 2 件套': '4-piece / 2-piece',
+  '需求角色': 'Characters needed',
+  '点击查看全部需求角色': 'Click to see all characters needed',
+  '点角色看该配装的具体推荐属性': 'Tap a character to see the recommended stats for that build',
+  '本组还有 {n} 人': '{n} more in this group',
+  '共 {n} 人 {g} 组': '{n} characters in {g} groups',
+  '{n} 人': '{n}',
+  '次要属性偏好：{x}': 'Substat preference: {x}',
+  '本方案角色（共 {n} 人）': 'Characters in this plan ({n})',
+  '这套配装由散件 / 过渡保留规则生成，不针对具体角色':
+    'This plan comes from an off-piece / transitional keep rule and targets no specific character',
+  '这些角色吃 4 件套效果，本套装要穿满 4 件：{who}': 'These characters use the 4-piece bonus, so this set must be worn as 4 pieces: {who}',
+  '这些角色的配装是「任选两套散搭（2+2）」，本套装只需 2 件，具体搭配哪两套由你决定：{who}': 'These characters run a 2+2 mix, so this set only needs 2 pieces; which two sets to pair is up to you: {who}',
+  '这些角色 4 件套与 2+2 散搭都有配装：{who}': 'These characters have both 4-piece and 2+2 builds: {who}',
+  /* 花 / 羽主属性：写出【具体值】并标固定（不再只写「固定」） */
+  '生命值（固定）': 'HP (fixed)',
+  '攻击力（固定）': 'ATK (fixed)',
+  '花 / 羽的主要属性游戏内恒定：{n}，无需在工具里另设': 'Flower / Plume main stats are constant in game: {n} — nothing to set here.',
   '个候选方案': 'candidates',
   '个候选（角色组': 'candidates (character group',
   '个预设': 'presets',
@@ -2389,23 +2509,22 @@ const T_UI_EN = {
   '主推': 'Main',
   '备选': 'Alt',
   '主推 / 备选」权重：主推': 'Main / alt weighting: main',
-  '（如双暴）自动合并——重要属性相同就并为一套，次要属性（攻击% / 生命% / 防御%）不同的角色用':
-    ' (like CRIT) — same key stats merge into one plan; characters that differ only in ATK% / HP% / DEF% are marked with ',
+  '（如双暴）自动合并，次要属性（攻击% / 生命% / 防御%）不同的角色用':
+    ' (CRIT, for example) are auto-merged; characters that differ only in minor stats (ATK% / HP% / DEF%) are told apart by ',
   '颜色': 'colour',
-  '区分标注；': ' instead; ',
+  '区分；每个方案的': '; every plan\'s ',
   '重要属性': 'Key stats',
   '候选按角色的': 'Candidates are grouped by each character\'s',
   '全自动、无需调参': 'fully automatic, no tuning needed',
   '每个方案的': 'Every plan\'s',
   '五个部位共用同一份追加属性条件': 'five slots share one substat condition',
-  '，主要属性逐部位独立合并；命中条数': '; main stats are merged per slot; the hit count',
-  '默认「至少两条」': 'defaults to "at least 2"',
-  '，可在下方单独调到 1–4 做更细的筛选；觉得候选多了就用「并入…」合并、或取消勾选「采纳」。':
-    ' and can be set to 1–4 per plan below; if there are too many candidates, use "Merge into…" or untick "Adopt".',
+  '，命中条数由系统按组内支持度': ', and the hit count is recommended by the tool from in-group support,',
+  '推荐「至少 N 条」': 'as "at least N"',
+  '（即最终值）。候选太多就「并入…」合并、或取消勾选「采纳」。':
+    ' (the final value). Too many candidates? Merge them with "Merge into…" or untick "Adopt".',
   '游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上方逐套设置；\n      每种套装游戏内':
     'In game: Inventory → Artifacts → Lock → pick this set → Edit, then apply the settings above; each set has ',
-  '，请自行收敛。仅有 3 条追加属性的圣遗物，所需数量会自动减 1。':
-    ' — keep it within that. Artifacts with only 3 substats need one less hit.',
+  '，请自行收敛。': ' — keep it within that.',
 
   /* 胚子评分器档位 */
   'S 级 · 必锁': 'S · Lock it',
@@ -2455,9 +2574,12 @@ const I18N_HTML = {
     '<ul>',
     '<li><b>Plan N</b>: built by merging characters with similar substat needs; the heading says who it is for. Several plans under one set are <b>all active at once</b> in the lock screen (they are ORed together).</li>',
     '<li><b>Adopt / Merge into… / Split back</b>: every candidate starts out adopted; "Merge into…" folds two candidates into one and "Split back" undoes it. Changes are saved. When the number of adopted plans passes the in-game limit (3 per set), an orange warning appears at the top.</li>',
-    '<li><b>Auto-merging</b>: plans are clustered by each character\'s <b>key stats</b> (the run of equally important entries from the top plus the &#9733;required ones — usually just CRIT): matching key stats merge into one plan. Differences in minor stats (ATK% / HP% and so on) do not block a merge — those are shown <b>colour-grouped per character</b>, and which one actually gets the piece depends on what you have. Main stats are merged <b>independently per slot</b>. No tuning needed.</li>',
-    '<li><b>&#9733;Required</b>: the gold entries — the artifact <b>must</b> have them or it is not locked. They come from substats <b>every character in the group ticked as "Required"</b> (set it with the ☆ in the character popup), at most 2.</li>',
-    '<li><b>At least 2</b>: the hit count <b>defaults to "at least 2"</b> — an artifact ends up with 4 substats and at least 2 of them must fall in the substat pool before it is locked; &#9733;required entries count towards those two. To be stricter, change the dropdown on that plan card <b>to 3 or 4</b> (or relax it to 1); each plan remembers its own value.</li>',
+    '<li><b>Auto-merging</b>: plans are clustered by each character\'s <b>key stats</b> (the run of equally important entries from the top plus the &#9733;required ones — usually just CRIT): matching key stats merge into one plan. Differences in minor stats (ATK% / HP% and so on) do not block a merge — those are shown <b>colour-grouped per character</b>, and which one actually gets the piece depends on what you have. Main stats are merged <b>independently per slot</b>. <b>Several colour dots in front of one stat = one dot per group — click to see who wants it.</b> No tuning needed.</li>',
+    '<li><b>&#9733;Required</b>: the gold entries — they <b>mark</b> &quot;this one is explicitly asked for by someone&quot;. Kept if <b>any character</b> in the group ticked it (set it with the ☆ in the character popup), capped at <b>4 per group</b> — over that, the most important ones survive by &quot;how many want it &rarr; rank&quot; — and put at the head of the pool. When several characters want it, a <b>multi-colour star</b> shows who (star colour = character name, click to see who wants it); with more than 2 groups or a uniform need it falls back to a single-colour &#9733;. Exports list the characters who marked it, without group numbers.</li>',
+    '<li><b>Main-stat colouring</b>: the sands / goblet / circlet main stats use the <b>same colour grouping</b> as substats (one dot = one group, same colour as that group\'s character names) — with <b>2&ndash;3 groups</b> wanting a stat, a <b>colour dot</b> per group appears before its name; with a <b>single group</b> it keeps the single colour (no extra dots, same look as before), and with <b>4+ groups</b> or a <b>whole-group need</b> the colour is left alone and an &quot;N groups need it&quot; badge is attached instead. <b>Several colour dots in front of one stat = one dot per group — click to see who wants it (and who lists it first).</b> <b>Interchangeable stats</b> (e.g. a CRIT Rate / CRIT DMG circlet) are judged and coloured alike: a character who listed only one of them counts as &quot;2nd choice&quot; on the other, so nothing is missed. Copy / export stays plain text: the dots are only a page hint and do not affect what you copy.</li>',
+    '<li><b>Recommended at least N</b>: the hit count is <b>recommended by the tool from in-group support</b> — count the pool entries that <b>more than half the group</b> wants, clamp to 2&ndash;3, then N = min(recommendation, pool width, 4); entries marked &#9733;required count towards the hits. That value <b>is final</b> and is shown read-only (no dropdown any more); if you want it stricter or looser, adjust it in the in-game lock screen.</li>',
+    '<li><b>Substat order</b>: pool entries come in three tiers — <b>required (&#9733;) &rarr; normal needs &rarr; optional (&#9671; conditional entries)</b>; inside a tier they sort by <b>in-group usage count, descending</b>, and ties follow the usual in-game order (CRIT Rate &rarr; CRIT DMG &rarr; ATK% &rarr; HP% &rarr; DEF% &rarr; EM &rarr; Energy Recharge). Needs of the same character group therefore stay together in one block — just set them top to bottom.</li>',
+    '<li><b>Piece requirement</b>: the characters that want a set appear <b>once</b>, on the set heading row — the character name tag only carries the name plus any &quot;2nd choice / alternate&quot; marker. The requirement sits in <b>two columns right after the set (artifact) name</b>: a &quot;4-piece&quot; column and a &quot;2-piece&quot; column (the 2-piece column is omitted when no character needs this set in 2 pieces); characters that work either way appear in both. Inside a column the characters keep the <b>colour grouping</b> (<b>same colour = same substat preference</b>), at most <b>3 per group</b> (the rest fold into &quot;+n&quot;), and at most <b>two rows per column</b> (the rest fold into a &quot;N characters in M groups&quot; summary). The order is <b>main build → alternate → 2-piece</b>. <b>Click the columns or the summary</b> to open the character popup, which lists <b>every</b> character that wants the set (same columns, same colours); <b>click a character there</b> to expand the recommended stats for that build (★required / ◇optional substats, Sands / Goblet / Circlet main stats and the hit count). Copied / exported text ignores the folding and still writes the full &quot;4-piece: A, B | 2-piece: C&quot;.</li>',
     '<li><b>Collapse</b>: the arrow on the left of the "🧩 Off-piece / Transitional Keep Rules" heading folds the block down to a single title line — it only hides it, enabled rules keep producing candidates.</li>',
     '<li>Tick <b>"Show piece counts"</b> in the toolbar to expand the suggested keep count and the source of each need; unticked, the page only shows the lock plans you can copy straight over.</li>',
     '</ul>',
@@ -2529,7 +2651,7 @@ Object.assign(T_UI_EN, {
     'Exception: a matching elemental DMG goblet of the same set is extremely rare — always keep it.',
   '（或你方角色所需的核心双词条）。': '(or the two core substats your characters need).',
   /* 方案页零碎 */
-  '预设「至少两条」': 'defaults to "at least 2"',
+  '推荐至少 N 条': 'recommended: at least N',
   '「保存」': '"Save"',
   '全部角色': 'all characters',
   '主要属性：': 'Main stat: ',

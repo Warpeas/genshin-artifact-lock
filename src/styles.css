@@ -631,7 +631,7 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 }
 .set-block.unused{opacity:.5;}
 .set-head{
-  display:flex;align-items:center;gap:var(--s2);padding:12px 16px;
+  display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;padding:12px 16px;
   background:linear-gradient(90deg,color-mix(in oklab,var(--panel2) 90%,var(--gold) 10%),var(--panel) 62%);
   border-bottom:1px solid var(--line-soft);cursor:pointer;
 }
@@ -639,14 +639,42 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 .set-head .set-bonus{font-size:var(--fs-xs);color:var(--txt3);}
 .set-head .set-bonus4{font-size:var(--fs-xs);color:var(--txt2);margin-left:8px;padding-left:8px;
   border-left:1px solid var(--line-soft);}
-.set-head .set-badge2{font-size:11px;padding:1px 8px;border-radius:var(--r-pill);margin-left:8px;
-  background:color-mix(in oklab,var(--panel2) 88%,var(--gold) 12%);
-  border:1px dashed color-mix(in srgb,var(--gold) 45%,transparent);color:var(--gold2);white-space:nowrap;}
-.set-head .set-users{margin-left:auto;font-size:var(--fs-sm);color:var(--txt2);
+/* 套装件数需求分栏（4 件套 / 2 件套）—— 需求角色在页面上【只出现于方案卡片内】
+   （.gp-boardrow，一个方案一块，一栏「4 件套」、一栏「2 件套」，该方案没有 2 件套需求角色
+   时不出现这一栏）。为什么不在套装标题行：同一角色对同一套装可能有多套方案，摊在套装级
+   对应不上是谁的方案；套装标题行因此不再列任何角色，方案卡片原先那行「本方案角色（共 N 人）」
+   计数行由本分栏取代（两栏并集 = 本方案角色，不重不漏）。
+   栏内按「次要属性偏好」配色分组（同色 = 次要需求相同的一批人）；
+   每组最多 3 人（多出来的折成「+n」），每栏最多两行（再多折成「共 N 人 M 组」摘要）。
+   点角色 → 另开第二层属性小窗（#charAttrBox，层级高于本弹窗）；点整块空白 → 弹窗看
+   本方案全部角色。整体 flex + wrap：角色再多也只换行，不拉伸、不错位。
+   全页面只此一块，先前「套装标题里的全量角色 pill / 候选区顶部的独立件数分栏块 /
+   方案卡片头重复列名字」几处各列一遍角色的做法已一并删除。 */
+/* 方案卡片里的分栏行：与上方方案头（.gp-ctitle）用一条细虚线分隔 */
+.gp-boardrow{margin:-2px 0 6px;padding-top:6px;border-top:1px dashed var(--line-soft);}
+.piece-board{display:flex;flex-wrap:wrap;align-items:flex-start;gap:3px var(--s2);
+  flex:1 1 100%;min-width:0;max-width:100%;font-size:var(--fs-xs);color:var(--txt3);
+  padding:1px 2px;margin:-1px -2px;border-radius:var(--r-xs);cursor:pointer;
+  transition:background .12s var(--ease-fast);}
+@media (hover:hover){.piece-board:hover{background:color-mix(in oklab,var(--panel) 80%,var(--gold) 8%);}}
+.piece-board:focus-visible{outline:2px solid color-mix(in srgb,var(--gold) 60%,transparent);outline-offset:2px;}
+.pb-col{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 5px;min-width:0;max-width:100%;}
+.pb-col+.pb-col{padding-left:var(--s2);border-left:1px solid var(--line-soft);}
+.pb-h{color:var(--txt2);font-weight:600;white-space:nowrap;cursor:default;}
+/* 一组 = 一个配色块：左侧色条与方案卡片上的追加属性 chip 同色（次要需求相同的一批人） */
+.pb-grp{display:inline-flex;align-items:baseline;gap:3px;flex-wrap:nowrap;min-width:0;
+  padding:0 5px;border-radius:var(--r-xs);background:var(--sunken);
+  border-left:3px solid var(--tc,var(--line-soft));}
+.pb-item{color:color-mix(in srgb,#fff 30%,var(--tc,var(--gold2)));white-space:nowrap;}
+.pb-item.pb-both{border-bottom:1px dashed currentColor;}   /* 4 件套与 2+2 都有配装 */
+.pb-plus{font-size:10px;color:var(--txt3);white-space:nowrap;font-variant-numeric:tabular-nums;}
+.pb-sum{margin-left:2px;padding:0 6px;border-radius:var(--r-pill);white-space:nowrap;
+  background:color-mix(in srgb,var(--blue) 16%,var(--panel2));
+  border:1px solid color-mix(in srgb,var(--blue) 32%,transparent);
+  color:color-mix(in srgb,#fff 22%,var(--blue));font-variant-numeric:tabular-nums;}
+/* .set-none 只留给「无角色需要 · 可整套清理」那枚灰标签（不再列角色名） */
+.set-head .set-none{margin-left:auto;font-size:var(--fs-sm);color:var(--txt2);
   display:flex;flex-wrap:wrap;gap:4px;max-width:62%;justify-content:flex-end;}
-.user-pill{font-size:11px;padding:1px 7px;border-radius:var(--r-pill);background:var(--panel2);
-  border:1px solid var(--line-soft);color:var(--txt2);}
-.user-pill.alt{border-style:dashed;opacity:.85;}
 .set-body{padding:0;}
 .slot-row{display:flex;border-bottom:1px solid var(--line-soft);transition:background .12s var(--ease-fast);}
 .slot-row:last-child{border-bottom:none;}
@@ -696,6 +724,7 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 .gp-meta.warn{color:var(--orange);font-weight:600;}
 .gp-lead{margin:0 0 10px;font-size:var(--fs-sm);color:var(--txt2);line-height:1.7;text-wrap:pretty;}
 .gp-lead b{color:var(--gold2);}
+/* 方案组卡片下方的说明行（件数分栏已在方案卡片内 .gp-boardrow，候选区顶部不再单独占一行） */
 .gp-tip{margin:9px 0 0;font-size:var(--fs-xs);color:var(--txt3);line-height:1.65;text-wrap:pretty;}
 /* minmax(min(320px,100%),…)：320 下限不能比容器还宽，否则窄屏轨道被顶开 */
 .gp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:10px;}
@@ -723,28 +752,22 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 .gp-adopt:hover{color:var(--txt);}
 .gp-adopt input{width:15px;height:15px;accent-color:var(--green);cursor:pointer;}
 .gp-for{font-size:var(--fs-xs);color:var(--txt2);flex:1;min-width:110px;line-height:1.5;}
-.gp-more{color:var(--txt3);}
-.gp-for-groups{display:flex;flex-wrap:wrap;gap:2px 0;align-items:center;}
-.gp-char-tag{
-  display:inline-block;font-size:11px;padding:1px 7px;border-radius:var(--r-pill);margin:1px 3px 1px 0;
-  background:color-mix(in oklab,var(--tc,#33506e) 16%,var(--panel));
-  color:color-mix(in srgb,#fff 42%,var(--tc,#bcd8f5));
-  border:1px solid color-mix(in srgb,var(--tc,#33506e) 65%,transparent);
-  white-space:nowrap;
-}
 .gp-badge{font-size:10.5px;color:var(--green);background:color-mix(in srgb,var(--green) 13%,var(--panel));
   border:1px solid color-mix(in srgb,var(--green) 30%,transparent);
   padding:1px 6px;border-radius:var(--r-xs);white-space:nowrap;}
 .gp-acts{display:inline-flex;align-items:center;gap:6px;margin-left:auto;}
-.gp-mergesel,.gp-hitsel{
+.gp-mergesel{
   font-size:var(--fs-xs);background:var(--bg1);color:#cfe3ff;
   border:1px solid color-mix(in srgb,var(--blue) 30%,transparent);
   border-radius:var(--r-xs);padding:3px 7px;
 }
 .gp-mergesel{max-width:190px;}
-.gp-hitsel{max-width:110px;}
 .gp-split,.gp-copy{font-size:var(--fs-xs);padding:2px 8px;}
 .gp-fixed{font-size:var(--fs-xs);color:var(--txt3);}
+/* 命中条数：只读展示系统推荐值（不再提供下拉修改入口） */
+.gp-subline .gp-hit-ro{color:#cfe3ff;background:color-mix(in srgb,var(--blue) 12%,var(--sunken));
+  border:1px solid color-mix(in srgb,var(--blue) 26%,transparent);
+  border-radius:var(--r-xs);padding:1px 7px;cursor:help;}
 
 /* 追加属性：方案级唯一一份，五部位共用 */
 .gp-subline{
@@ -792,9 +815,22 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
   border-color:color-mix(in srgb,var(--tc,#333d4a) 60%,var(--line));
   font-weight:600;cursor:help;
 }
-/* 色点：角色名与追加属性两处同形同色，不靠色相单通道也能配对 */
-.gp-char-tag::before,.gp-sub-g::before{content:"";display:inline-block;width:7px;height:7px;
+/* 色点：追加属性 chip 与需求角色色条同色，不靠色相单通道也能配对 */
+.gp-sub-g::before{content:"";display:inline-block;width:7px;height:7px;
   border-radius:50%;background:var(--tc,#8a94a6);margin-right:5px;vertical-align:1px;}
+
+/* 主要属性 chip 的分组着色：与追加属性共用同一套「逐组打色点」规则（见 app.js groupMarkPlan）——
+   2–3 个分组需要它时，每个分组在词条名前面打一颗色点（色点同于该分组的角色名）；
+   1 个分组需要沿用单颗色点、≥4 个分组需要退化为「N 组需要」角标（不着色）。
+   色点用独立元素而不是伪元素：一颗 chip 上最多并列三颗。 */
+.gp-main-multi{white-space:nowrap;}
+/* 多色色点：追加属性 .gp-sub-mark 与主要属性 .gp-main-mark 同款形状（7px 圆点，色取 --tc 分组色）。
+   一颗色点 = 一个分组；相邻两颗负边距收紧，避免 chip 被色点撑长。 */
+.gp-sub-mark,.gp-main-mark{display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--tc,#8a94a6);margin-right:4px;vertical-align:1px;}
+.gp-sub-mark + .gp-sub-mark,.gp-main-mark + .gp-main-mark{margin-left:-2px;}
+/* 多个分组需要的追加属性：多色没法用单一底色表达，底色保持中性，区分全交给色点 */
+.gp-sub-multi{white-space:nowrap;}
 
 /* ---- 属性详情小窗（点击展开；手机端点按同样生效） ----
    原先属性说明是 title 悬停提示，触屏上根本出不来 → 改为点 chip 弹小窗。
@@ -818,6 +854,9 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
   border-radius:var(--r-pill);background:color-mix(in srgb,var(--blue) 38%,var(--panel2));
   color:#e6f1ff;vertical-align:1px;font-variant-numeric:tabular-nums;}
 .gp-star .gp-hn{background:color-mix(in oklab,var(--gold) 42%,var(--panel2));color:#2b2313;}
+/* 「N 组需要」角标：≥4 个分组需要时不着色、改用角标提示组数（与 ★ 的 >2 组退化同一思路；
+   与 .gp-hn 的人数角标不同色调，避免和「N 名角色需要」看混） */
+.gp-gn{background:color-mix(in srgb,var(--txt3) 34%,var(--panel2));color:#dbe8f7;}
 
 #statTipBox{
   position:fixed;z-index:150;max-width:min(340px,calc(100vw - 20px));
@@ -852,6 +891,75 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
   border-color:color-mix(in srgb,var(--gold) 38%,transparent);border-style:dashed;}
 .stt-nm{font-size:var(--fs-xs);font-weight:600;color:color-mix(in srgb,#fff 32%,var(--tc,#cfe3ff));
   margin-right:7px;white-space:nowrap;}
+
+/* ---- 需求角色弹窗（点套装标题的件数分栏打开）----
+   第一层：按「4 件套 / 2 件套」两栏 + 配色分组全量列出（分栏上被折叠的「+n / 共 N 人 M 组」在这里全展开）；
+   #charTipBox = 第一层「需求角色」弹窗：点方案卡片里的件数分栏开，列出【本方案】的全部角色（配色分组）。
+   点分栏 / 弹窗里的某个角色 → 另开 #charAttrBox（第二层独立小窗，z-index 更高），看 TA 在这套配装下的
+   推荐属性（部位 / 主属性 / 追加属性）；命中条数是方案级条件，只显示在方案卡片上，两个窗口里都没有。
+   桌面端点开后跟随触发块定位，窄屏退化成居中一张卡。 */
+#charTipBox{
+  position:fixed;z-index:151;width:min(620px,calc(100vw - 20px));max-height:min(72vh,620px);overflow:auto;
+  background:color-mix(in oklab,var(--panel) 94%,var(--bg2));border:1px solid var(--line);
+  border-radius:var(--r);padding:11px 13px 12px;box-shadow:var(--sh3);
+  font-size:var(--fs-xs);line-height:1.6;color:var(--txt2);
+  animation:tip-in .16s var(--ease) 1;
+}
+/* 第二层「角色配装属性」小窗：独立浮层，z-index 高于第一层（151），窄一些、不挡角色列表 */
+#charAttrBox{z-index:161;width:min(360px,calc(100vw - 20px));max-height:min(70vh,560px);}
+#charTipBox.hidden{display:none;}
+#charAttrBox.hidden{display:none;}
+.ct-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.ct-title{font-size:var(--fs-sm);font-weight:700;color:var(--gold2);}
+.ct-x{margin-left:auto;width:22px;height:22px;flex:none;line-height:1;font-size:14px;padding:0;
+  border-radius:var(--r-xs);background:var(--panel2);border:1px solid var(--line-soft);color:var(--txt2);cursor:pointer;}
+.ct-x:hover{border-color:color-mix(in srgb,var(--gold) 55%,transparent);color:var(--gold2);}
+.ct-cols{display:flex;flex-wrap:wrap;gap:8px var(--s3);align-items:flex-start;}
+.ct-col{flex:1 1 230px;min-width:0;}
+.ct-ch{font-size:11px;font-weight:700;color:var(--gold2);margin-bottom:5px;}
+.ct-cn{font-style:normal;font-weight:400;margin-left:6px;color:var(--txt3);font-variant-numeric:tabular-nums;}
+/* 一行 = 一组（配色分组）：左侧色条与分栏 / 卡片上的同色 */
+.ct-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px;margin-bottom:3px;
+  padding:3px 7px;border-radius:var(--r-xs);background:var(--sunken);
+  border-left:3px solid var(--tc,var(--line));}
+.ct-gl{font-size:10px;color:var(--txt3);white-space:nowrap;}
+.ct-chip{display:inline-block;font-size:11px;padding:1px 7px;border-radius:var(--r-pill);
+  background:color-mix(in oklab,var(--tc,#33506e) 16%,var(--panel));
+  color:color-mix(in srgb,#fff 42%,var(--tc,#bcd8f5));
+  border:1px solid color-mix(in srgb,var(--tc,#33506e) 62%,transparent);
+  white-space:nowrap;cursor:pointer;transition:border-color .12s var(--ease-fast);}
+.ct-chip:hover{border-color:color-mix(in srgb,var(--gold) 60%,transparent);}
+.ct-alt{font-style:normal;font-size:9.5px;margin-left:4px;opacity:.8;}
+.ct-hint{margin-top:7px;font-size:10.5px;color:var(--txt3);}
+.ct-dh{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+.ct-dn{font-size:var(--fs-sm);font-weight:700;color:color-mix(in srgb,#fff 32%,var(--tc,var(--txt)));}
+.ct-tag{font-size:10px;padding:0 5px;border-radius:var(--r-xs);white-space:nowrap;
+  background:color-mix(in srgb,var(--blue) 18%,var(--panel2));color:#cfe3ff;
+  border:1px solid color-mix(in srgb,var(--blue) 30%,transparent);}
+.ct-tag-first{background:color-mix(in srgb,var(--green) 16%,var(--panel2));color:var(--green);
+  border-color:color-mix(in srgb,var(--green) 34%,transparent);}
+.ct-tag-alt{background:color-mix(in oklab,var(--gold) 8%,var(--panel));color:var(--gold2);
+  border-color:color-mix(in srgb,var(--gold) 38%,transparent);border-style:dashed;}
+.ct-tag-minor{background:var(--sunken);color:var(--txt3);border-color:var(--line-soft);}
+.ct-sec{font-size:11px;font-weight:700;color:var(--txt2);margin:7px 0 4px;display:flex;align-items:baseline;}
+.ct-mains{display:flex;flex-direction:column;gap:3px;}
+.ct-mrow{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;padding:3px 7px;
+  border-radius:var(--r-xs);background:var(--sunken);}
+.ct-mslot{flex:none;width:52px;font-size:11px;color:var(--txt3);}
+.ct-mv{font-size:var(--fs-xs);font-weight:600;color:var(--txt);}
+.ct-mv.first{color:var(--gold2);}
+.ct-subs{display:flex;flex-wrap:wrap;gap:3px 5px;}
+.ct-sv{font-size:11px;padding:1px 7px;border-radius:var(--r-pill);white-space:nowrap;
+  background:var(--panel2);border:1px solid var(--line-soft);color:var(--txt2);}
+.ct-sv.req{background:color-mix(in oklab,var(--gold) 18%,var(--panel2));color:var(--gold2);
+  border-color:color-mix(in srgb,var(--gold) 42%,transparent);}
+.ct-sv.opt{background:color-mix(in oklab,var(--gold) 6%,var(--panel));color:var(--txt3);
+  border-color:color-mix(in srgb,var(--gold) 34%,transparent);border-style:dashed;}
+.ct-note{font-size:var(--fs-xs);color:var(--txt3);}
+@media (max-width:640px){
+  #charTipBox{left:10px !important;right:10px;top:auto !important;bottom:12px;width:auto;}
+  #charAttrBox{left:10px !important;right:10px;top:auto !important;bottom:12px;width:auto;max-height:52vh;}
+}
 
 /* ---- 顶部采纳提示 ---- */
 .pick-info:empty{display:none;}
@@ -1297,7 +1405,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   /* --- 套装块：套装名换行后，需求角色独占一行 --- */
   .set-head{flex-wrap:wrap;padding:10px 12px;gap:8px;}
   .set-head h3{font-size:14px;}
-  .set-head .set-users{max-width:100%;width:100%;margin-left:0;justify-content:flex-start;}
+  .set-head .set-none{max-width:100%;width:100%;margin-left:0;justify-content:flex-start;}
   /* 详细件数：部位名改为整行标题 */
   .slot-row{flex-direction:column;}
   .slot-name{width:100%;padding:7px 12px;border-right:none;border-bottom:1px solid var(--line-soft);}
@@ -1312,7 +1420,6 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .gp-for{min-width:0;flex-basis:100%;order:3;}
   .gp-acts{width:100%;margin-left:0;justify-content:flex-end;flex-wrap:wrap;}
   .gp-mergesel{flex:1;max-width:none;min-width:120px;padding:6px 8px;min-height:34px;}
-  .gp-hitsel{min-height:34px;}
   .gp-mini{grid-template-columns:52px 1fr;}
 
   /* --- 追加属性页 --- */
@@ -1375,7 +1482,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
 
   /* iOS 聚焦输入框会自动放大页面，字号 ≥16px 可避免 */
   .toolbar input[type=search],.fld select,.fld input,input[type=text],input.txt,
-  .sub-input input,.build-item select,.ms-item select,.gp-mergesel,.gp-hitsel,
+  .sub-input input,.build-item select,.ms-item select,.gp-mergesel,
   .copy-row select,#edAddSub,.sm-row input[type=text],.src-url,#edNote{font-size:16px;}
 
   /* 备注框：手机端同样「1 行起步 → 随内容长高 → 最多 3 行封顶 → 框内上下滚动」。
@@ -1435,7 +1542,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
 
 /* ---------- print ---------- */
 @media print{
-  .topbar,.tabs,.toolbar,.summary-strip,.btn,.drawer,.modal,.modal-mask,.toast,.set-users{display:none !important;}
+  .topbar,.tabs,.toolbar,.summary-strip,.btn,.drawer,.modal,.modal-mask,.toast,.set-none{display:none !important;}
   .tabpane{display:none !important;}
   #tab-plan.tabpane{display:block !important;}
   .print-only{display:block;}
@@ -1443,6 +1550,11 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .set-block{border-color:#bbb;page-break-inside:avoid;box-shadow:none;}
   .set-head{background:#f0f0f0 !important;}
   .gp-card,.gp-wrap{background:#fff !important;border-color:#ccc !important;box-shadow:none !important;}
+  /* 件数分栏收在各方案卡片内、是唯一列出需求角色的地方，打印时保留（折叠的「+n / 共 N 人 M 组」摘要留给屏幕） */
+  .gp-boardrow{border-top-color:#bbb !important;}
+  .piece-board,.pb-h,.pb-item{color:#222 !important;cursor:auto;}
+  .pb-grp{background:#f6f6f6 !important;border-left-color:#bbb !important;}
+  .pb-sum{background:#eef2f7 !important;border-color:#bbb !important;color:#333 !important;}
   .stat-badge{border-color:#999;}
   .stat-badge.t1{background:#fff6dd !important;color:#7a5c00 !important;}
   .slot-name{background:#f6f6f6 !important;color:#333 !important;}
@@ -1450,6 +1562,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .gp-lead,.gp-tip,.gp-meta,.gp-for,.gp-rule-desc{color:#444 !important;}
   main{padding:0;max-width:none;}
   #statTipBox{display:none !important;}   /* 打印时小窗不出现 */
+  #charTipBox{display:none !important;}   /* 需求角色弹窗同理 */
 }
 
 /* ---------- 启用栏三态 · 窄屏（≤560px）----------
