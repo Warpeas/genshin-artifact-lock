@@ -776,15 +776,21 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
   border:1px solid var(--line-soft);border-radius:var(--r-xs);
 }
 .gp-subline .gp-lab{font-size:10.5px;color:var(--txt3);white-space:nowrap;}
+/* 英文说明文字（Substats (same for all five slots)）比中文长一倍，窄卡里 nowrap 会顶出容器；
+   仅英文放开折行，配合 .gp-subline 的 flex-wrap，说明与其后的追加属性名就不会压在一起。 */
+html[lang="en"] .gp-subline .gp-lab{white-space:normal;}
 .gp-subline .gp-val{font-size:var(--fs-xs);color:#dbe8f7;line-height:1.6;}
 .gp-subline .gp-val+.gp-lab{margin-left:8px;}
 /* 主要属性：一行一个部位 */
 .gp-mains{display:flex;flex-direction:column;gap:2px;}
-.gp-mini{display:grid;grid-template-columns:56px 1fr;align-items:start;gap:6px;
+/* 部位名列：minmax(56px,max-content) —— 中文 3 字名仍按原 56px 排（max-content 39px 被 56px 下限兜住，
+   布局与旧版一致）；英文名最长 Goblet of Eonothem（约 122px）时轨道跟着内容长，不再把名字挤出列外
+   压到右侧主要属性文字上（旧写法 56px 固定列 + .gp-slot nowrap = 溢出 22~66px 重叠）。 */
+.gp-mini{display:grid;grid-template-columns:minmax(56px,max-content) minmax(0,1fr);align-items:start;gap:6px;
   padding:3px 4px;border-bottom:1px dashed color-mix(in srgb,var(--line) 60%,transparent);
   font-size:var(--fs-xs);}
 .gp-mini:last-child{border-bottom:none;}
-.gp-mini .gp-cell{line-height:1.7;}
+.gp-mini .gp-cell{line-height:1.7;min-width:0;overflow-wrap:anywhere;}
 .gp-slot,.gp-mini .gp-slot{color:var(--txt2);white-space:nowrap;font-weight:600;}
 
 /* ---- 属性 chip：四种语义，同形状不同描边 ---- */
@@ -1204,10 +1210,6 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
 .sm-rrow{display:flex;align-items:flex-start;gap:8px;min-width:0;}
 .sm-rlabel{flex:none;min-width:46px;padding-top:3px;font-size:var(--fs-xs);color:var(--txt3);}
 .sm-infer{grid-column:1 / -1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-/* 定位标记图例（表头下方只出现一次，属说明性文案，不参与点选） */
-.sm-legend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:2px 3px 8px;
-  font-size:var(--fs-xs);color:var(--txt3);}
-.sm-legend .role-chip{cursor:default;}
 /* 两块并排只在桌面宽度成立（≥1000px 时 .modal-lg = 900px，块内 chip 行还有 ~350px）；
    窄屏退回单列：2 件套块在上、4 件套块在下，各自仍保持「大类 + 关键词」两行。
    注意：这里只在「块」这一层调整列数，块内部永远不换行 —— 块内 auto-fit 正是错位的根因。 */
@@ -1217,17 +1219,9 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   background:var(--panel2);color:var(--txt3);cursor:pointer;user-select:none;line-height:1.5;}
 .role-chip:hover{border-color:var(--line);color:var(--txt2);}
 .role-chip.on{background:color-mix(in oklab,var(--gold) 22%,var(--panel2));border-color:var(--gold);color:var(--gold2);font-weight:600;}
-/* 定位标签三态（套装管理用，只作用于传了「系统内置基线」的芯片）：
- *   金 = 内置已选（跟随系统）  ·  蓝 = 你自己选的（改过的）
- *   虚线灰 + 删除线 = 内置项已被你取消（点一下就回来，不丢信息） */
-.role-chip.on.user{background:color-mix(in srgb,var(--blue) 16%,var(--panel2));
-  border-color:color-mix(in srgb,var(--blue) 46%,transparent);
-  color:color-mix(in srgb,#fff 22%,var(--blue));}
-.role-chip.on.user:hover{border-color:var(--blue);}
-.role-chip.bi-off{background:transparent;border-style:dashed;
-  border-color:color-mix(in srgb,var(--gold) 32%,transparent);
-  color:var(--txt3);text-decoration:line-through;}
-.role-chip.bi-off:hover{border-color:color-mix(in srgb,var(--gold) 55%,transparent);color:var(--txt2);}
+/* 定位标签两态（套装管理用）：金 = 已选（实心），无类名 = 未选（普通描边）。
+   「是不是内置项 / 改没改过」只在块头的 .sm-badge.bi/.cu 徽标上体现，芯片层不再上色区分，
+   旧的 .role-chip.on.user（蓝=你选的）与 .role-chip.bi-off（虚线灰+删除线=内置项已取消）已删除。 */
 /* 配装浮窗里的定位只读展示 */
 .role-chks.readonly{display:block;margin-bottom:2px;}
 .role-chks.readonly .brole-list{display:inline-flex;flex-wrap:wrap;gap:5px;margin-right:8px;}
@@ -1460,7 +1454,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .gp-for{min-width:0;flex-basis:100%;order:3;}
   .gp-acts{width:100%;margin-left:0;justify-content:flex-end;flex-wrap:wrap;}
   .gp-mergesel{flex:1;max-width:none;min-width:120px;padding:6px 8px;min-height:34px;}
-  .gp-mini{grid-template-columns:52px 1fr;}
+  .gp-mini{grid-template-columns:minmax(52px,max-content) minmax(0,1fr);}
 
   /* --- 追加属性页 --- */
   .sub-inputs{grid-template-columns:1fr;}

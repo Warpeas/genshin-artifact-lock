@@ -99,7 +99,7 @@ genshin-artifact-lock/
 - 回写脚本与 `buildDefaultCharacters` 都按这个格式读写。
 - `subs` 是 wiki 原始顺序，不自动表示必需；`subRules.required/equal` 才表达 ★必需和 `=` 同等优先。
 - `source:'manual'` 的规则由人工维护，离线回写不会覆盖；`source:'heuristic'` 是根据定位生成的可重算规则。
-- 当前：**125 个角色**（118 具名 + 旅行者 7 形态）、**46 套**圣遗物。
+- 当前：**127 个角色**（120 具名 + 旅行者 7 形态）、**55 套**圣遗物。
 
 ### 3.2 其他数据位置（`src/data.js`）
 
@@ -201,11 +201,20 @@ genshin-artifact-lock/
 - 界面上是**一个单按钮** `#btnLang`（「中 / EN」，当前态金色高亮），点一下**同时**切 `ui` + `data`。
 - 复制/导出文本**始终保持中文**（游戏内锁定界面是中文）；更新日志是历史记录，保留中文。
 - ⚠️ 数据名切换英文后会**变长**（Sands / Goblet / Circlet、DPS / Transform…），容器要能收缩 / 换行，否则会把卡片顶宽、文字重叠。
+  - 已踩过的坑：方案卡迷你部位格 `.gp-mini` 曾是「死宽 56px 部位列 + `.gp-slot` nowrap」，英文部位名（`Goblet of Eonothem` ≈ 122px）直接溢出去压右侧主要属性文字（1440 / 1024 / 860 / 520 四档宽度各 24 处重叠）。现写法：`.gp-mini{grid-template-columns:minmax(56px,max-content) minmax(0,1fr)}` + `.gp-cell{min-width:0;overflow-wrap:anywhere}`，并只在英文下给 `.gp-subline .gp-lab` 放开折行（`html[lang="en"] .gp-subline .gp-lab{white-space:normal}`）。**不要**退回「固定 px + nowrap」。
 - ⚠️ `applyI18n` 是**整段替换**，会重置动态计数；改这块时注意别把计数清掉。
 - ⚠️ 调试 i18n 时每个场景要**重新构造一份 DOM**——`_i18nOrigHtml` 用 WeakMap 缓存，跨场景会串味导致误判。
 - **套装简称（B 口径）**：`SET_SHORT` / `SET_SHORT_EN` 只收有公认短呼的套装（当前中英各 36 条、55 套内置套装余 19 套**不登记**，不臆造简称）。取值三层——**用户覆盖 `state.setShort[lang]`** → 内置表 → 全称（英文界面回落官方英文名）；`setShortDefault()` 只给「系统自带那层」（套装管理输入框回显 + 「跟随系统」判定），**展示一律用 `setShortName()`**。
 - ⚠️ **简称只出现在角色卡片**：唯一开关是 `buildSetsLabel(b, short)`，`app.js` 里只有角色卡片那一处传 `true`（`const stxt = esc(buildSetsLabel(b, true))`），其余（配装卡片 / 方案页 / 锁定清单 / 编辑浮窗下拉 / 导出与复制）都走全称。搜索索引是例外：`SET_SHORT` / `SET_SHORT_EN` 的简称也进 `hay`，方便按简称搜到角色。
 - 简称的用户改动**只落用户数据层**（`state.setShort`，随「导出用户数据」走，`SET_SHORT` 本身一个字不动）；套装改名时用户覆盖跟着迁移，导入备份 / 清空存档即回到系统自带。改简称表后记得 `node build.js`，简称在 `index.html` 里是**内联的**，不重新构建线上不会变。
+
+### 4.6 套装管理 · 2 / 4 件套定位编辑
+
+- **布局按件套分块**：`posBlockHtml(s, i, part)`（part = 2 / 4）一个块 = 一个件套，块内「大类」「关键词」两行；`.sm-roles` 是 `repeat(2,minmax(0,1fr))` 双列（`@media (max-width:999px)` 转单列）。**不要**把 4 行塞回一个 `auto-fit` 网格——换行位置随宽度漂移，4 件套关键词会被挤到 2 件套大类旁边甚至上方。
+- **两层取值不许串味**：大类池 `catPoolOf()` **恒**为 `BUILD_CATS`（输出 / 辅助 / 生存 / 功能，4 项，不按已选值扩容）；关键词池 `kwPoolOf(kws)` = `BUILD_KWS` 22 项 + 该层已有的额外取值（历史自定义值不丢）。旧存档里混进大类层的关键词由 `data.js` 的 `splitPosLayers()` 在 `normalize()` **末尾**逐套归位到同件套的关键词层（反向也提回大类层，按词表排序去重，**归位不丢已选值**）；放在末尾是为了不被工厂值回填覆盖。
+- **内置 / 已修改只看块头**：`factoryPosOf()` 取出厂定位（`splitPosLayers` 洗过的 `SETS` 值，自定义套装返回 `null`）、`posPartDirty(s, part)` 只比该件套 → 块头 `.sm-badge.bi`（内置）/ `.cu`（已修改）+ ↺ 单件套重置（`data-smpospart` = 2 / 4，未改动时 `disabled`）；块底「全部重置为内置」用 `data-smpospart="0"`。重置目标恒为**图鉴出厂值**（不是「本档案初次值」），所以自己加的关键词会被删、自己取消的内置项会回来。
+- **芯片只有两态**：`.role-chip.on`（金色 = 当前选中）/ 无类（未选）。旧三态（`.on.user` 蓝 = 你选的、`.bi-off` 虚线灰 = 内置项已取消）与三色图例 `.sm-legend` **已删除**——「是不是内置项 / 改没改过」这件事只由块头徽标表达，别再引入第二套色谱。
+- ⚠️ 点击绑定在 `renderSets()` 里按容器属性取：`[data-smpos2] / [data-smpos2kw] / [data-smpos4] / [data-smpos4kw]`（对应写 `pos2 / pos2kw / pos4 / pos4kw`），芯片自身带 `data-smrole`（大类层）/ `data-smrolekw`（关键词层）。改属性名必须同步改绑定，否则点了不生效。点选即 `save()` + `afterSetsChange()`，弹层不整表重渲染。
 
 ---
 
@@ -296,7 +305,7 @@ node tools/check_data.js   # 结果写 tools/out/_scan_result.md
 - [ ] `node build.js` 成功，输出里出现「版本号 / 日期已由 git 提交时间注入：…」
 - [ ] 打开 `index.html`：四个页面都能正常渲染，控制台无报错
 - [ ] 若动了数据：`node tools/check_data.js` 无异常项（允许 wiki 原文写「不强求」导致的空主词条）
-- [ ] 若动了数据：角色数 / 套装数符合预期（当前 125 / 46）
+- [ ] 若动了数据：角色数 / 套装数符合预期（当前 127 / 55）
 - [ ] 若动了合并或阈值：确认「② 锁定方案」输出仍合理（重要属性相同的能合并、不同的被拆开）
 - [ ] 若动了套装简称表 `SET_SHORT` / `SET_SHORT_EN`：`node build.js` 后回读 `index.html`，两张表的条目数与 `src/data.js` 对得上、新条目在产物里抓得到；角色卡片与配装按钮显示简称，方案页 / 编辑页 / 导出仍是全称（`withZh` 下英文界面也取中文全称）
 - [ ] 若动了版本号 / 更新日志：数据管理页「更新日志」每天一块、当天条目已合并；公告只弹最新未看过的大版本；构建产物里 `APP_VERSION` 与 `CHANGELOG[0].v` 字符串相等

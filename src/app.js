@@ -1475,23 +1475,19 @@ function rolePoolOf(extra) {
   return catPoolOf().concat(kwPoolOf(extra).filter(x => !BUILD_CATS.includes(x)));
 }
 /* 定位点选芯片（套装管理用）：点选即保存，不做自定义输入。
- * base = 该套装该层「系统内置」的取值，用来把标签分成可辨识的三态：
- *   已选 + 内置   → .on        金色（跟随系统内置）
- *   已选 + 非内置 → .on.user   蓝色（你自己加的）
- *   未选 + 内置   → .bi-off    虚线灰（内置项被你取消了）
- * 自定义套装没有内置基线（base 为空）→ 已选的一律按「你选的」显示。 */
-function tagChipsHtml(selected, attr, pool, base) {
+ * 只有两态：已选 = 金色实心（.on），未选 = 普通描边。
+ * 「这一套的定位是不是系统内置」由块头的「内置 / 已修改」徽标说明，芯片层不再区分
+ * 内置项与自定义项（旧的三态：金=内置已选 / 蓝=你选的 / 虚线灰=内置项已取消，已废弃）。 */
+function tagChipsHtml(selected, attr, pool) {
   const on = normRoleTags(selected);
-  const bi = normRoleTags(base);
   return (pool || []).map(r => {
-    const isOn = on.includes(r), isBi = bi.includes(r);
-    const cls = isOn ? (isBi ? 'on' : 'on user') : (isBi ? 'bi-off' : '');
-    const tip = isOn ? (isBi ? '内置已选' : '你选的') : (isBi ? '内置项·已取消' : '点选即保存');
-    return `<span class="role-chip ${cls}" data-${attr}="${esc(r)}" title="${esc(t(tip))}">${esc(r)}</span>`;
+    const isOn = on.includes(r);
+    const tip = isOn ? '再点一下取消' : '点选即保存';
+    return `<span class="role-chip${isOn ? ' on' : ''}" data-${attr}="${esc(r)}" title="${esc(t(tip))}">${esc(r)}</span>`;
   }).join('');
 }
 function roleChipsHtml(selected, attr) {
-  return tagChipsHtml(selected, attr, rolePoolOf(selected), selected);
+  return tagChipsHtml(selected, attr, rolePoolOf(selected));
 }
 
 /* ============================================================
@@ -5069,11 +5065,11 @@ function posBlockHtml(s, i, part) {
           </div>
           <div class="sm-rrow">
             <span class="sm-rlabel">${t('大类')}</span>
-            <span class="role-chips" data-${four ? 'smpos4' : 'smpos2'}="${i}">${tagChipsHtml(cats, 'smrole', catPoolOf(), f ? (four ? f.pos4 : f.pos2) : [])}</span>
+            <span class="role-chips" data-${four ? 'smpos4' : 'smpos2'}="${i}">${tagChipsHtml(cats, 'smrole', catPoolOf())}</span>
           </div>
           <div class="sm-rrow sm-rkw">
             <span class="sm-rlabel">${t('关键词')}</span>
-            <span class="role-chips" data-${four ? 'smpos4kw' : 'smpos2kw'}="${i}">${tagChipsHtml(kws, 'smrolekw', kwPoolOf(kws), f ? (four ? f.pos4kw : f.pos2kw) : [])}</span>
+            <span class="role-chips" data-${four ? 'smpos4kw' : 'smpos2kw'}="${i}">${tagChipsHtml(kws, 'smrolekw', kwPoolOf(kws))}</span>
           </div>
         </div>`;
 }
@@ -5119,12 +5115,6 @@ function renderSets() {
   box.innerHTML = `
     <div class="sm-row sm-head">
       <span class="sm-no">#</span><span>${t('套装名称')}</span><span>${t('简称')}</span><span>${t('2 / 4 件套效果与定位')}</span><span class="sm-ops">${t('操作')}</span>
-    </div>
-    <div class="sm-legend">
-      <span class="sm-legend-lb">${t('定位标记：')}</span>
-      <span class="role-chip on">${t('内置已选')}</span>
-      <span class="role-chip on user">${t('你选的')}</span>
-      <span class="role-chip bi-off">${t('内置项·已取消')}</span>
     </div>
     ${rows || `<p class="muted small">${t('没有可显示的套装。')}</p>`}
     <p class="muted small" style="margin-top:10px">
