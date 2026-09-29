@@ -1,3 +1,14 @@
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: b6cfada211841cacada780bcf9558b1e_6338b3b1bbfd11f1b172525400248c00
+    ReservedCode1: Sw6ip/dgW36QvtQs5khEoo+/VqutlN3EM7wvgdRwxyoQUEy4zT5pS/KvKik/wEUiK/2rwTE3HlIF2rZGwIuEFQMPAlQcetpGrPnQwPJLmolOD8THRGFlTcuCDWKaVz8eGANeZTf7Ka0eeKv+uECrf4yl5Gso3sp37Ne4ClKxN/sbM7Xd8BMXNw8oWv0=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: b6cfada211841cacada780bcf9558b1e_6338b3b1bbfd11f1b172525400248c00
+    ReservedCode2: Sw6ip/dgW36QvtQs5khEoo+/VqutlN3EM7wvgdRwxyoQUEy4zT5pS/KvKik/wEUiK/2rwTE3HlIF2rZGwIuEFQMPAlQcetpGrPnQwPJLmolOD8THRGFlTcuCDWKaVz8eGANeZTf7Ka0eeKv+uECrf4yl5Gso3sp37Ne4ClKxN/sbM7Xd8BMXNw8oWv0=
+---
+
 # AGENTS.md —— 给接手本仓库的 AI Agent
 
 > 面向代码的开发文档。**给人看的项目说明在 [`README.md`](README.md)，设计思路与算法取舍在 [`docs/DESIGN.md`](docs/DESIGN.md)。**
@@ -206,7 +217,7 @@ genshin-artifact-lock/
 - ⚠️ 调试 i18n 时每个场景要**重新构造一份 DOM**——`_i18nOrigHtml` 用 WeakMap 缓存，跨场景会串味导致误判。
 - **套装简称（B 口径）**：`SET_SHORT` / `SET_SHORT_EN` 只收有公认短呼的套装（当前中英各 36 条、55 套内置套装余 19 套**不登记**，不臆造简称）。取值三层——**用户覆盖 `state.setShort[lang]`** → 内置表 → 全称（英文界面回落官方英文名）；`setShortDefault()` 只给「系统自带那层」（套装管理输入框回显 + 「跟随系统」判定），**展示一律用 `setShortName()`**。
 - ⚠️ **简称只出现在角色卡片**：唯一开关是 `buildSetsLabel(b, short)`，`app.js` 里只有角色卡片那一处传 `true`（`charCardHtml` 里 `const setTxt = buildSetsLabel(b, true)`），其余（配装卡片 / 方案页 / 锁定清单 / 编辑浮窗下拉 / 导出与复制）都走全称。搜索索引是例外：`SET_SHORT` / `SET_SHORT_EN` 的简称也进 `hay`，方便按简称搜到角色。
-- ⚠️ **角色卡片配装条（`.cc-bp`）的折行规则**：行结构 = `.cc-bp-idx`（编号，不折行）+ `.cc-bp-name`（套装名，`nameBreakW2()` 定 `.n2` / `.nfull`）+ `.cc-bp-tag`（定位，词包 `.bt-w`）。套装名**只在 2 字边界折行**——`.n2` 是「恒 2 字宽的名列 + 按字断行」，两字名绝不折成两行、三字 2+1、四字 2+2；≥5 字（含「如雷 + 宗室」这类 2+2 组合）走 `.nfull` 整段保留，别做 2 字切分（会切在名字中间）。定位标签**词内不许断**（`.bt-w{white-space:nowrap}`），标签整段可换行，所以窄屏上换行只发生在 `·` / `｜` 处。JS 与 CSS 是一对（`nameBreakW2()` ↔ `.cc-bp-name.n2 / .nfull`），**别只改一边**，也别退回「三样东西拼成一串纯文本随便断」的旧写法。
+- ⚠️ **角色卡片配装条（`.cc-bp`）的折行规则**：行结构 = `.cc-bp-idx`（编号，不折行）+ `.cc-bp-name`（套装名，`nameBreakW2()` 定 `.n2` / `.nfull`）+ `.cc-bp-tag`（定位，词包 `.bt-w`）。**版式是「名称左栏 / 定位右栏」两栏**：`.cc-bp` 基础 `flex-wrap:nowrap`（普通条名与定位恒在同一行；定位段 `margin-left:auto` + `text-align:right` 钉在右侧，名段 `flex:0 1 auto` 让宽），定位段**不设 `min-width:0`**（保留 min-content 下限——窄屏宁可挤窄左栏名称，也不让定位词溢出或被压断）；`.cc-builds` 竖排 + `.cc-bp{width:100%}` 保证同角色每条按钮等宽撑满卡片。长多套名（名里含 `/`）走 `.cc-bp.wide`：该条局部放开 `flex-wrap:wrap`，名段 `flex:1 1 0` 留在编号同列、定位段 `flex:1 1 100%` 独占下一行右对齐，两栏互不挤压。套装名折行**按角色卡实际可用宽度拆两档**：① 手机窄屏（≤560px）**只在 2 字边界折行**——`.n2` = 「恒 2 字宽的名列 + 按字断行」，两字名绝不折成两行、三字 2+1、四字 2+2；② 宽屏（≥561px）**四字及以下一律单行不折**——由 `@media(min-width:561px)` 把 `.n2` 的定宽与按字断行放开（`width:auto` + `white-space:nowrap`），**别再把「2 字定宽」套到桌面端**（上一笔的桌面回归就是这么出来的）。两档分界不是拍脑袋的视口值，而是 `.char-grid` 的列宽切换点（`@media(max-width:560px)` 把最小列降到 150px；`.cc-bp` 只出现在 `.char-grid` 里，视口宽度≈角色卡可用宽度）。≥5 字（含「如雷 + 宗室」这类 2+2 组合）两档下都走 `.nfull` 整段保留，别做 2 字切分（会切在名字中间）。定位标签**词内不许断**（`.bt-w{white-space:nowrap}`），标签整段可换行，所以换行只发生在 `·` / `｜` 处。JS 与 CSS 是一对（`nameBreakW2()` ↔ `.cc-bp-name.n2 / .nfull`），**别只改一边**，也别退回「三样东西拼成一串纯文本随便断」的旧写法；改动后必须在桌面档（≥1280px）与手机档（390 / 360px）用真实渲染各量一遍（桌面四字名折行数必须为 0，手机两字名不折、四字 2+2；另须同时复核四条：同角色每条按钮等宽且撑满卡片、普通条「名左标右」恒同行不折、`.wide` 长名不压编号也不撑破按钮、页面无横向溢出）。
 - 简称的用户改动**只落用户数据层**（`state.setShort`，随「导出用户数据」走，`SET_SHORT` 本身一个字不动）；套装改名时用户覆盖跟着迁移，导入备份 / 清空存档即回到系统自带。改简称表后记得 `node build.js`，简称在 `index.html` 里是**内联的**，不重新构建线上不会变。
 
 ### 4.6 套装管理 · 2 / 4 件套定位编辑
@@ -313,3 +324,4 @@ node tools/check_data.js   # 结果写 tools/out/_scan_result.md
 - [ ] 若动了 i18n：中英文各切一遍，动态计数没被 `applyI18n` 清掉；英文下无残留中文（含卡片配装按钮的定位标签、部位名、来源「数据源 / 攻略」标注），英文长词不撑破卡片（角色卡 `.cc-top` 可换行、沙杯冠标签不写死宽度）
 - [ ] 手机端（≤560px）无横向滚动
 - [ ] `git status` 里没有 `.workbuddy/`、没有临时脚本残留
+*（内容由AI生成，仅供参考）*

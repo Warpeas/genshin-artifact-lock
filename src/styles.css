@@ -474,17 +474,27 @@ input[type=range]{accent-color:var(--gold);}
 .bm-addrole{display:flex;gap:6px;align-items:center;}
 .bm-addrole input{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);
   color:var(--txt);border-radius:var(--r-xs);padding:5px 8px;font-size:var(--fs-sm);}
-/* 卡片配装条：编号 + 套装名 + 定位 合成一行可点选按钮。
-   ⚠️ 手机窄屏（≤560px 卡片只有一百多 px）下这套折行规则是硬约束，别退回「整串文本随便断」：
-   ① 套装名只在 2 字边界折行 —— .cc-bp-name.n2 = 恒 2 字宽的名列 + 允许按字断行：
-      两字名一行放得下（绝不折成两行）、三字折 2+1、四字折 2+2；
+/* 卡片配装条：编号 + 套装名（左栏）+ 定位（右栏） 合成一行可点选按钮。
+   版式：同角色下每条按钮一律等宽 —— .cc-builds 竖排、.cc-bp 宽 100%，按钮不再按内容收缩，
+   于是「名称靠左、定位靠右」在每条上是同一套栏位（不再出现“名段 + 定位段顺次流式排列、
+   定位被长名挤到下一行”的形态）。
+   ⚠️ 套装名的折行规则按「角色卡实际可用宽度」分两档，两档都是硬约束，别退回「整串文本随便断」：
+   ① 手机窄屏（≤560px，.char-grid 最小列 150px、按钮常只有一百多 px）—— 只在 2 字边界折行：
+      .cc-bp-name.n2 = 恒 2 字宽的名列 + 按字断行 → 两字名绝不折成两行、三字折 2+1、四字折 2+2；
       更长的名字（含「如雷 + 宗室」这类 2+2 组合）走 .nfull，不做 2 字切分（会切在名字中间）。
-   ② 定位标签里每个词（「攻击·增伤」「元素伤害」…）由 .bt-w 单独包住并 nowrap，词内绝不拆行；
-      标签整体（一整段）仍可在按钮里换到下一行，所以窄屏不会把词挤碎。
-   行列结构：.cc-bp-idx（编号，不折行）/ .cc-bp-name（套装名段）/ .cc-bp-tag（定位段）。 */
-.cc-builds{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+   ② 宽屏（≥561px，.char-grid 最小列 200px、角色卡内容区 ≥170px）—— 见文件下方的 @media(min-width:561px)：
+      放开 .n2 的定宽，四字及以下套装名一律单行不折（列宽足够，不该再被 2 字定宽折成两行）。
+   .nfull 在两档下都是整段保留。
+   ③ 定位标签里每个词（「攻击·增伤」「元素伤害」…）由 .bt-w 单独包住并 nowrap，词内绝不拆行；
+      标签整段贴按钮右缘（margin-left:auto）；一行放不下时整段折到名段下方，仍贴右缘。
+   ④ 多套任选长名（.wide，如米卡「少女 / 海染 / 昔时（任选2套）」）：名段不跟定位段抢同一行 ——
+      定位段 basis 100% 独占下一行并贴右缘，名段在左栏内自行折行；按钮既不被撑破、两栏也不互挤。
+      长名里的「 / 」由 app.js 用 &nbsp; 绑在前一个名字后（换行只允许发生在斜杠之后），
+      避免窄屏换行时「/」落在行首。
+   行列结构：.cc-bp-idx（编号，不折行）/ .cc-bp-name（套装名段，左栏）/ .cc-bp-tag（定位段，右栏）。 */
+.cc-builds{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
 .cc-bp{
-  display:flex;flex-wrap:wrap;align-items:flex-start;align-content:center;column-gap:4px;
+  display:flex;flex-wrap:nowrap;align-items:flex-start;align-content:center;column-gap:4px;width:100%;
   font-size:11px;max-width:100%;padding:3px 8px;border-radius:var(--r-xs);
   background:var(--panel2);border:1px solid var(--line-soft);color:var(--txt2);
   cursor:pointer;font-family:inherit;line-height:1.5;text-align:left;
@@ -497,14 +507,30 @@ input[type=range]{accent-color:var(--gold);}
 }
 /* 编号：独立一段、不折行，永远对齐套装名的第一行行首 */
 .cc-bp-idx{flex:none;}
-/* 套装名段：n2 = ≤4 字纯中文名（名列 2 字宽 + 按字断行 → 只在 2 字边界折行）；
-   nfull = 更长 / 非中文名，整段保留（keep-all 下只剩空格可断，极窄时才用 anywhere 兜底防溢出） */
-.cc-bp-name{flex:none;line-height:1.35;}
-.cc-bp-name.n2{width:2.2em;word-break:break-all;}
-.cc-bp-name.nfull{max-width:100%;word-break:keep-all;overflow-wrap:anywhere;}
-/* 定位段：整段可换行、词内不许断（词由 .bt-w 包住） */
-.cc-bp-tag{flex:1 1 auto;min-width:0;font-size:var(--fs-xs);opacity:.85;font-weight:400;line-height:1.35;}
+/* 套装名段（左栏）：n2 = ≤4 字纯中文名（名列 2 字宽 + 按字断行 → 只在 2 字边界折行）；
+   nfull = 更长 / 非中文名，整段保留（keep-all 下只剩空格可断，极窄时才用 anywhere 兜底防溢出）。
+   nfull 允许占满定位段之外的空间并在栏内自行折行（flex:0 1 auto + min-width:0），长多套名只见于 .wide 按钮。 */
+.cc-bp-name{flex:0 1 auto;line-height:1.35;}
+.cc-bp-name.n2{flex:0 0 auto;width:2.2em;word-break:break-all;}
+.cc-bp-name.nfull{max-width:100%;flex:0 1 auto;min-width:0;word-break:keep-all;overflow-wrap:anywhere;}
+/* 定位段（右栏）：同行右侧固定成栏（margin-left:auto + text-align:right）；
+   不设 min-width:0 —— 保留 flex 默认 min-content 下限，窄屏时宁可挤窄左栏名称，也不让定位词溢出/断在词内 */
+.cc-bp-tag{flex:1 1 auto;margin-left:auto;text-align:right;
+  font-size:var(--fs-xs);opacity:.85;font-weight:400;line-height:1.35;}
 .cc-bp-tag .bt-w{white-space:nowrap;}
+/* 多套任选长名（.wide）：普通条「名左标右恒定同行」的规则在此让位 —— 定位段 basis 100% 独占下一行（仍右对齐），
+   名段 basis 0 保证它留在编号同一行、只在左栏内自行折行，两栏互不挤压 */
+.cc-bp.wide{flex-wrap:wrap;}
+.cc-bp.wide .cc-bp-name{flex:1 1 0;min-width:0;}
+.cc-bp.wide .cc-bp-tag{flex:1 1 100%;margin-left:0;}
+/* 宽屏拆档：≥561px 时角色卡不再走「150px 最小列」，内容区回到 170px 以上，
+   四字套装名（≈44px）单行放得下 —— 放开 .n2 的「恒 2 字宽 + 按字断行」，
+   让四字及以下名一律单行、不被固定列宽折成两行。
+   断点与 .char-grid 的列宽切换同源（只认「窄屏最小列 150px」那一段，见 @media(max-width:560px)），
+   不是凭感觉取的视口值；≤560px 手机档保持上面的 2 字边界折行规则不变。 */
+@media (min-width:561px){
+  .cc-bp-name.n2{width:auto;word-break:normal;overflow-wrap:normal;white-space:nowrap;}
+}
 .cc-mod,.bm-mod{font-size:11px;color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);
   border-radius:var(--r-xs);padding:0 5px;line-height:16px;}
 

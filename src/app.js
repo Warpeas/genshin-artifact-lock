@@ -41,6 +41,12 @@ function buildSetsLabel(b, short) {
   if (p.length <= k) return p.join(' + ');
   return p.join(' / ') + (k === W_PICK ? '（任选2套）' : '（任选1套）');
 }
+/* 角色卡套装名（HTML）：多套任选名里的「 / 」用不换行空格绑在前一个名字之后，
+ * 换行只允许发生在「斜杠之后」的空格处 —— 否则窄屏折行时斜杠会落到行首（破形）。
+ * 与 styles.css 的 .cc-bp ④ 是一条规则，改一边务必改另一边。 */
+function cardSetNameHtml(s) {
+  return esc(s).replace(/ \/ /g, '&nbsp;/ ');
+}
 /* 某套装在锁定方案里的【件数需求】备注（导出清单 / CSV 用）：
  * 件数跟在【套装（圣遗物）名之后】分两栏 —— 「4 件套：…　｜　2 件套：…」，
  * 与方案卡片里的分栏（.gp-boardrow / pieceBoardHTML）同措辞；没有 2 件套需求角色时只写 4 件套一栏。
@@ -1413,10 +1419,11 @@ function buildTagInline(tags, max) {
   const body = join(r.cats) + (r.cats.length && r.kws.length ? (en ? ' | ' : '｜') : '') + join(r.kws);
   return en ? ` (${body})` : `（${body}）`;
 }
-/* 角色卡片的套装名该不该套进「2 字宽」的名列（只在 2 字边界折行）：
- *   纯中文且 1–4 字 → 名列宽 2 字 + 允许按字断行：两字名一行放得下（绝不折成两行）、
- *   三字折 2+1、四字折 2+2；
- *   5 字以上（含「如雷 + 宗室」这类 2+2 组合）不做 2 字切分——切了会切在名字中间，
+/* 角色卡片的套装名该不该套进「2 字宽」的名列（窄屏下只在 2 字边界折行）：
+ *   纯中文且 1–4 字 → .n2：手机窄屏（≤560px）名列宽 2 字 + 允许按字断行 —— 两字名一行放得下
+ *   （绝不折成两行）、三字折 2+1、四字折 2+2；宽屏（≥561px，见 styles.css @media(min-width:561px)）
+ *   把定宽放开，四字及以下一律单行不折。
+ *   5 字以上（含「如雷 + 宗室」这类 2+2 组合）→ .nfull：不做 2 字切分——切了会切在名字中间，
  *   所以整段保留，只在容器真的放不下时才整段换行。
  * 用 Array.from 数码点，避免 emoji / 组合字按 UTF-16 长度算错。
  * 与 styles.css 的 .cc-bp-name.n2 / .nfull 是一对，改一边务必改另一边。 */
@@ -3342,18 +3349,20 @@ function charCardHtml(c) {
       }).join('')
     }</span></div>`;
   };
-  // 套装名 + 配装切换 合并为一行可点选按钮：编号 套装名（定位）
+  // 套装名 + 配装切换 合并为一个等宽按钮：左栏【编号 套装名】、右栏【定位】
   // 选中（viewIdx）= 绿色高亮；未选中 = 普通色
   const builds = list.length
     ? list.map((b, i) => {
       const setTxt = buildSetsLabel(b, true);        // 角色卡片：套装用二字简称（其余位置一律全称）
-      const stxt = esc(setTxt);
+      const stxt = cardSetNameHtml(setTxt);
       const dt = buildTagsOf(b);                     // 定位（大类 + 关键词）由套装派生，b.roles 不再参与展示
       const rTitle = dt.cats.concat(dt.kws).map(r => t(r)).join('/');
       const rInline = buildTagInline(dt, ROLE_SHOW_MAX);
       // 套装名段只在 2 字边界折行（两字名绝不折成两行、三字 2+1、四字 2+2，更长的名字整段保留）
       const nCls = nameBreakW2(setTxt) ? ' n2' : ' nfull';
-      return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="${t('配装')} ${i + 1}${rTitle ? ' · ' + rTitle : ''}"><span class="cc-bp-idx">${i + 1}</span><span class="cc-bp-name${nCls}">${stxt}</span>${rInline ? `<span class="cc-bp-tag">${rInline}</span>` : ''}</button>`;
+      // 多套任选长名（名里带「 / 」）走 .wide：定位段独占下一行，不与长名挤同一行（见 styles.css）
+      const wCls = setTxt.indexOf('/') >= 0 ? ' wide' : '';
+      return `<button type="button" class="cc-bp${i === viewIdx ? ' on' : ''}${wCls}" data-vi="${i}" title="${t('配装')} ${i + 1}${rTitle ? ' · ' + rTitle : ''}"><span class="cc-bp-idx">${i + 1}</span><span class="cc-bp-name${nCls}">${stxt}</span>${rInline ? `<span class="cc-bp-tag">${rInline}</span>` : ''}</button>`;
     }).join('')
   : `<span class="set-tag">${t('未配置套装')}</span>`;
   return `
