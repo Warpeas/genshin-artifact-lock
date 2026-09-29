@@ -205,7 +205,8 @@ genshin-artifact-lock/
 - ⚠️ `applyI18n` 是**整段替换**，会重置动态计数；改这块时注意别把计数清掉。
 - ⚠️ 调试 i18n 时每个场景要**重新构造一份 DOM**——`_i18nOrigHtml` 用 WeakMap 缓存，跨场景会串味导致误判。
 - **套装简称（B 口径）**：`SET_SHORT` / `SET_SHORT_EN` 只收有公认短呼的套装（当前中英各 36 条、55 套内置套装余 19 套**不登记**，不臆造简称）。取值三层——**用户覆盖 `state.setShort[lang]`** → 内置表 → 全称（英文界面回落官方英文名）；`setShortDefault()` 只给「系统自带那层」（套装管理输入框回显 + 「跟随系统」判定），**展示一律用 `setShortName()`**。
-- ⚠️ **简称只出现在角色卡片**：唯一开关是 `buildSetsLabel(b, short)`，`app.js` 里只有角色卡片那一处传 `true`（`const stxt = esc(buildSetsLabel(b, true))`），其余（配装卡片 / 方案页 / 锁定清单 / 编辑浮窗下拉 / 导出与复制）都走全称。搜索索引是例外：`SET_SHORT` / `SET_SHORT_EN` 的简称也进 `hay`，方便按简称搜到角色。
+- ⚠️ **简称只出现在角色卡片**：唯一开关是 `buildSetsLabel(b, short)`，`app.js` 里只有角色卡片那一处传 `true`（`charCardHtml` 里 `const setTxt = buildSetsLabel(b, true)`），其余（配装卡片 / 方案页 / 锁定清单 / 编辑浮窗下拉 / 导出与复制）都走全称。搜索索引是例外：`SET_SHORT` / `SET_SHORT_EN` 的简称也进 `hay`，方便按简称搜到角色。
+- ⚠️ **角色卡片配装条（`.cc-bp`）的折行规则**：行结构 = `.cc-bp-idx`（编号，不折行）+ `.cc-bp-name`（套装名，`nameBreakW2()` 定 `.n2` / `.nfull`）+ `.cc-bp-tag`（定位，词包 `.bt-w`）。套装名**只在 2 字边界折行**——`.n2` 是「恒 2 字宽的名列 + 按字断行」，两字名绝不折成两行、三字 2+1、四字 2+2；≥5 字（含「如雷 + 宗室」这类 2+2 组合）走 `.nfull` 整段保留，别做 2 字切分（会切在名字中间）。定位标签**词内不许断**（`.bt-w{white-space:nowrap}`），标签整段可换行，所以窄屏上换行只发生在 `·` / `｜` 处。JS 与 CSS 是一对（`nameBreakW2()` ↔ `.cc-bp-name.n2 / .nfull`），**别只改一边**，也别退回「三样东西拼成一串纯文本随便断」的旧写法。
 - 简称的用户改动**只落用户数据层**（`state.setShort`，随「导出用户数据」走，`SET_SHORT` 本身一个字不动）；套装改名时用户覆盖跟着迁移，导入备份 / 清空存档即回到系统自带。改简称表后记得 `node build.js`，简称在 `index.html` 里是**内联的**，不重新构建线上不会变。
 
 ### 4.6 套装管理 · 2 / 4 件套定位编辑

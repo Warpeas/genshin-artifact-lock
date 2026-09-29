@@ -474,10 +474,17 @@ input[type=range]{accent-color:var(--gold);}
 .bm-addrole{display:flex;gap:6px;align-items:center;}
 .bm-addrole input{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);
   color:var(--txt);border-radius:var(--r-xs);padding:5px 8px;font-size:var(--fs-sm);}
-/* 卡片配装条：编号 + 套装名 + 定位 合成一行可点选按钮 */
+/* 卡片配装条：编号 + 套装名 + 定位 合成一行可点选按钮。
+   ⚠️ 手机窄屏（≤560px 卡片只有一百多 px）下这套折行规则是硬约束，别退回「整串文本随便断」：
+   ① 套装名只在 2 字边界折行 —— .cc-bp-name.n2 = 恒 2 字宽的名列 + 允许按字断行：
+      两字名一行放得下（绝不折成两行）、三字折 2+1、四字折 2+2；
+      更长的名字（含「如雷 + 宗室」这类 2+2 组合）走 .nfull，不做 2 字切分（会切在名字中间）。
+   ② 定位标签里每个词（「攻击·增伤」「元素伤害」…）由 .bt-w 单独包住并 nowrap，词内绝不拆行；
+      标签整体（一整段）仍可在按钮里换到下一行，所以窄屏不会把词挤碎。
+   行列结构：.cc-bp-idx（编号，不折行）/ .cc-bp-name（套装名段）/ .cc-bp-tag（定位段）。 */
 .cc-builds{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
 .cc-bp{
-  display:inline-flex;align-items:center;gap:3px;
+  display:flex;flex-wrap:wrap;align-items:flex-start;align-content:center;column-gap:4px;
   font-size:11px;max-width:100%;padding:3px 8px;border-radius:var(--r-xs);
   background:var(--panel2);border:1px solid var(--line-soft);color:var(--txt2);
   cursor:pointer;font-family:inherit;line-height:1.5;text-align:left;
@@ -488,7 +495,16 @@ input[type=range]{accent-color:var(--gold);}
   background:color-mix(in oklab,var(--gold) 16%,var(--panel2));
   color:var(--gold2);border-color:color-mix(in srgb,var(--gold) 34%,transparent);font-weight:600;
 }
-.cc-bp-tag{font-size:var(--fs-xs);opacity:.85;font-weight:400;}
+/* 编号：独立一段、不折行，永远对齐套装名的第一行行首 */
+.cc-bp-idx{flex:none;}
+/* 套装名段：n2 = ≤4 字纯中文名（名列 2 字宽 + 按字断行 → 只在 2 字边界折行）；
+   nfull = 更长 / 非中文名，整段保留（keep-all 下只剩空格可断，极窄时才用 anywhere 兜底防溢出） */
+.cc-bp-name{flex:none;line-height:1.35;}
+.cc-bp-name.n2{width:2.2em;word-break:break-all;}
+.cc-bp-name.nfull{max-width:100%;word-break:keep-all;overflow-wrap:anywhere;}
+/* 定位段：整段可换行、词内不许断（词由 .bt-w 包住） */
+.cc-bp-tag{flex:1 1 auto;min-width:0;font-size:var(--fs-xs);opacity:.85;font-weight:400;line-height:1.35;}
+.cc-bp-tag .bt-w{white-space:nowrap;}
 .cc-mod,.bm-mod{font-size:11px;color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);
   border-radius:var(--r-xs);padding:0 5px;line-height:16px;}
 

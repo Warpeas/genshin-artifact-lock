@@ -1402,14 +1402,27 @@ function buildTagBadges(tags, max) {
     + r.kws.map(k => `<span class="brole kw">${esc(k)}</span>`).join('');
 }
 /* 配装按钮后缀：把「最重要的一两个」标签拼成「（输出·增伤｜攻击·暴击）」，`｜` 前是大类、后是关键词。
- * 标签名属于「数据语言」，按当前语言翻译（英文下为 (DPS · Buff | ATK)），否则会残留中文。 */
+ * 标签名属于「数据语言」，按当前语言翻译（英文下为 (DPS · Buff | ATK)），否则会残留中文。
+ * 每个标签词单独包一层 .bt-w（CSS: white-space:nowrap）——手机窄屏下标签整体可以换行，
+ * 但「攻击·增伤」「元素伤害」这类词内部绝不被拆成两行（见 styles.css .cc-bp-tag .bt-w）。 */
 function buildTagInline(tags, max) {
   const r = rankBuildTags(tags, max);
   if (!r.cats.length && !r.kws.length) return '';
   const en = (typeof isDataEn === 'function' && isDataEn());
-  const join = xs => (en ? xs.map(x => t(x)).join(' · ') : xs.map(esc).join('·'));
+  const join = xs => xs.map(x => `<span class="bt-w">${esc(en ? t(x) : x)}</span>`).join(en ? ' · ' : '·');
   const body = join(r.cats) + (r.cats.length && r.kws.length ? (en ? ' | ' : '｜') : '') + join(r.kws);
   return en ? ` (${body})` : `（${body}）`;
+}
+/* 角色卡片的套装名该不该套进「2 字宽」的名列（只在 2 字边界折行）：
+ *   纯中文且 1–4 字 → 名列宽 2 字 + 允许按字断行：两字名一行放得下（绝不折成两行）、
+ *   三字折 2+1、四字折 2+2；
+ *   5 字以上（含「如雷 + 宗室」这类 2+2 组合）不做 2 字切分——切了会切在名字中间，
+ *   所以整段保留，只在容器真的放不下时才整段换行。
+ * 用 Array.from 数码点，避免 emoji / 组合字按 UTF-16 长度算错。
+ * 与 styles.css 的 .cc-bp-name.n2 / .nfull 是一对，改一边务必改另一边。 */
+function nameBreakW2(s) {
+  const a = Array.from(String(s || ''));
+  return a.length >= 1 && a.length <= 4 && /^[\u3400-\u9fff\uf900-\ufaff]+$/.test(a.join(''));
 }
 function buildRoleInline(roles, max) {
   const a = topBuildRoles(roles, max).filter(Boolean);
@@ -3333,11 +3346,14 @@ function charCardHtml(c) {
   // 选中（viewIdx）= 绿色高亮；未选中 = 普通色
   const builds = list.length
     ? list.map((b, i) => {
-      const stxt = esc(buildSetsLabel(b, true));   // 角色卡片：套装用二字简称（其余位置一律全称）
+      const setTxt = buildSetsLabel(b, true);        // 角色卡片：套装用二字简称（其余位置一律全称）
+      const stxt = esc(setTxt);
       const dt = buildTagsOf(b);                     // 定位（大类 + 关键词）由套装派生，b.roles 不再参与展示
       const rTitle = dt.cats.concat(dt.kws).map(r => t(r)).join('/');
       const rInline = buildTagInline(dt, ROLE_SHOW_MAX);
-      return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="${t('配装')} ${i + 1}${rTitle ? ' · ' + rTitle : ''}">${i + 1} ${stxt}${rInline ? `<span class="cc-bp-tag">${rInline}</span>` : ''}</button>`;
+      // 套装名段只在 2 字边界折行（两字名绝不折成两行、三字 2+1、四字 2+2，更长的名字整段保留）
+      const nCls = nameBreakW2(setTxt) ? ' n2' : ' nfull';
+      return `<button type="button" class="cc-bp ${i === viewIdx ? 'on' : ''}" data-vi="${i}" title="${t('配装')} ${i + 1}${rTitle ? ' · ' + rTitle : ''}"><span class="cc-bp-idx">${i + 1}</span><span class="cc-bp-name${nCls}">${stxt}</span>${rInline ? `<span class="cc-bp-tag">${rInline}</span>` : ''}</button>`;
     }).join('')
   : `<span class="set-tag">${t('未配置套装')}</span>`;
   return `
