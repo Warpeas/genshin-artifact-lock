@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>配装条版式 Playground · S1a / S1c / S2 对照</title>
+<style>
+/* ============================================================
+ * Playground 自身 UI（左侧控制面板 + 舞台外壳）
+ * 舞台内部（.cc-* 系列）是从 src/styles.css 复刻并改成作用域类的版本，
+ * 见下方 <style id="stage-css">，勿与本段混用。
+ * ============================================================ */
+:root{
+  color-scheme:dark;
+  --bg:#101419; --bg1:#0c1015; --bg2:#151a21; --bg3:#1e242e;
+  --panel:#1a212a; --panel2:#222a35; --sunken:#141b24;
+  --line:#2f3a48; --line-soft:#26303c;
+  --txt:#e8eef6; --txt2:#b3bfcd; --txt3:#8d9aab;
+  --gold:#e9c87d; --gold2:#f7e2ab; --gold-ink:#2b2313;
+  --blue:#7fb6ee; --green:#72d9a4; --orange:#f5a86b; --red:#ff8a8a; --purple:#bd9bf7;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+  --r-xs:5px; --r-sm:7px; --r:10px; --r-lg:14px;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);color:var(--txt);
+  font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  padding:0;height:100vh;overflow:hidden;
+}
+/* 两栏同屏：左控制面板（自己滚） + 右舞台（自己滚）。
+   之前面板在上、舞台在下，调一个参数要滚半屏才看到结果 —— 参数与效果必须同屏才能对比。 */
+.app{display:grid;grid-template-columns:minmax(420px,480px) 1fr;gap:10px;height:100vh;padding:8px;box-sizing:border-box;}
+#panel{overflow-y:auto;overflow-x:hidden;padding-right:4px;min-width:0;}
+#main{display:flex;flex-direction:column;min-width:0;min-height:0;}
+#stageWrap{flex:1;min-height:0;}
+@media (max-width:1020px){
+  body{height:auto;overflow:auto;}
+  .app{grid-template-columns:1fr;height:auto;}
+  #stageWrap{min-height:60vh;}
+}
+h1{font-size:16px;margin:0 0 2px;color:var(--gold2);}
+.sub{font-size:12px;color:var(--txt3);margin:0 0 10px;}
+.sub code{font-family:var(--mono);font-size:11px;color:var(--txt2);}
+.ui-card{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r);padding:10px 12px;margin-bottom:10px;}
+.ui-row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;}
+.ui-row+.ui-row{margin-top:8px;}
+label.lbl{font-size:12px;color:var(--txt3);min-width:64px;}
+input[type=text],input[type=number]{
+  background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+  border-radius:var(--r-xs);padding:4px 8px;font-size:12px;font-family:inherit;
+}
+input[type=text]:focus,input[type=number]:focus{outline:1px solid var(--gold);border-color:var(--gold);}
+input[type=number]{width:76px;font-family:var(--mono);}
+input[type=range]{accent-color:var(--gold);height:20px;}
+.chip{
+  font-size:11px;padding:2px 8px;border-radius:var(--r-xs);cursor:pointer;
+  background:var(--panel2);border:1px solid var(--line-soft);color:var(--txt2);
+  font-family:inherit;
+}
+.chip:hover{border-color:var(--gold);color:var(--gold2);}
+.chip.on{background:linear-gradient(150deg,var(--gold2),var(--gold));color:var(--gold-ink);font-weight:600;border-color:transparent;}
+.chip.mono{font-family:var(--mono);}
+.btn{
+  font-size:12px;padding:4px 10px;border-radius:var(--r-xs);cursor:pointer;font-family:inherit;
+  background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+}
+.btn:hover{border-color:var(--gold);color:var(--gold2);}
+.hintline{font-size:11px;color:var(--txt3);font-family:var(--mono);}
+.warnbox{border-color:color-mix(in srgb,var(--red) 40%,var(--line-soft));background:color-mix(in srgb,var(--red) 8%,var(--panel));}
+hr.sep{border:0;border-top:1px dashed var(--line);margin:8px 0;}
+#stageInfo{font-family:var(--mono);font-size:11.5px;color:var(--txt2);}
+#stageInfo b{color:var(--gold2);font-weight:600;}
+/* 舞台外壳：横向可滚动，宽度 = 模拟视口 */
+#stageWrap{overflow-x:auto;background:var(--bg1);border:1px solid var(--line);border-radius:var(--r);padding:8px;}
+#stageShell{width:max-content;min-width:100%;}
+#ruler{font-family:var(--mono);font-size:11px;color:var(--txt3);height:16px;position:relative;}
+#ruler span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;}
+/* 自定义方案面板 */
+#cxGroups{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:5px;align-items:start;}
+#cxGroups .grp{display:flex;flex-direction:column;gap:2px;min-width:0;padding:5px 7px;
+  background:var(--sunken);border:1px solid var(--line-soft);border-radius:var(--r-xs);}
+#cxGroups .grp>h4{font-size:10.5px;color:var(--gold2);font-weight:600;margin:0 0 1px;letter-spacing:.2px;}
+#cxGroups label{display:flex;align-items:flex-start;gap:4px;font-size:11px;color:var(--txt2);
+  line-height:1.3;cursor:pointer;}
+#cxGroups label b{font-weight:500;}
+#cxGroups .grp>h4{cursor:help;}
+#cxGroups input[type=checkbox]{accent-color:var(--gold);margin:1px 0 0;flex:none;}
+#cxGroups label.off{color:var(--txt3);}
+/* 方案简述弹窗 */
+dialog#dlg{
+  width:min(460px,92vw);border:1px solid var(--line);border-radius:var(--r-lg);
+  background:var(--panel);color:var(--txt);padding:0;font-family:inherit;
+}
+dialog#dlg::backdrop{background:rgba(6,9,13,.62);}
+dialog#dlg .dlg-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;border-bottom:1px solid var(--line-soft);}
+dialog#dlg .dlg-head b{font-size:13px;color:var(--gold2);}
+dialog#dlg #dlgBody{padding:10px 12px 12px;font-size:12px;line-height:1.65;color:var(--txt2);}
+dialog#dlg #dlgBody p{margin:0 0 8px;}
+dialog#dlg #dlgBody p:last-child{margin-bottom:0;}
+dialog#dlg #dlgBody b{color:var(--txt);}
+dialog#dlg #dlgBody .k{font-family:var(--mono);font-size:11px;color:var(--gold2);}
+dialog#dlg #dlgBody .warn{color:var(--red);}
+dialog#dlg #dlgBody .tag{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:var(--r-xs);
+  border:1px solid var(--line);color:var(--txt3);margin:0 4px 4px 0;}
+</style>
+
+<!-- ============================================================
+     舞台 CSS：src/styles.css 的 .cc-bp 相关规则的最小复刻。
+     宽度模型：舞台是一排【等宽角色卡】，卡内容区宽 = --cw（滑块直接控制），
+     「视口 → .char-grid auto-fill → 卡宽」那一层被去掉 —— 每张卡独立、宽度精确、不受卡数影响。
+     断点改写（关键）：真实文件按视口分档，而这里卡宽是独立变量、@media 不会跟着变，
+     所以换成作用域类，分界 160px（实测映射：真实 ≤560px 视口 → 卡内容区 140–155px；≥561px → 170px+）：
+        #stage.vpn   ←→  @media (max-width:560px)     卡内容区 ≤160px
+        #stage.vpw   ←→  @media (min-width:561px)     卡内容区 >160px
+     （原 .vpm / 1000px 那一档只改 .char-grid 列宽；grid 已不用，连带合并进 .vpw ——
+       两档的 .cc-bp 规则本来就完全相同。）
+     容器查询 @container 是【真的】（container-type 在 div 上照常工作，量的就是卡内容区宽），
+     但内部选择器都带 #stage.vpn 前缀 —— 防止它在宽屏下 fallback 到视口查询而误命中。
+     ============================================================ -->
+<style id="stage-css">
+/* 舞台 = 一排【等宽角色卡】，每张卡独立、互不影响（2026-10-05 起）。
+   宽度直接由 --cw（角色卡内容区宽）控制，不再走「模拟视口 → .char-grid auto-fill 分列」那一层 ——
+   那样卡宽要靠列数反推、既不直观也不精确（每加一张卡列宽就变）。
+   代价：断点从「视口宽」改成「卡内容区宽」判定，依据是实测映射：
+     真实 ≤560px 视口时卡内容区 140–155px；≥561px 视口时 170px+（1440 档 246px）。
+   所以 CARDP_NARROW = 160px 作为分界。 */
+#stage{
+  width:max-content;background:var(--bg);padding:12px;
+  /* 与 body 同色，靠描边把「画布」范围标出来 —— 竖排后右侧留白很大，没边界会看不出卡宽是多少 */
+  border:1px solid var(--line-soft);border-radius:var(--r);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
+#stage .char-grid{display:flex;flex-direction:column;gap:10px;width:max-content;align-items:flex-start;}
+#stage .char-card{
+  position:relative;background:var(--panel);border:1px solid var(--line-soft);
+  border-radius:10px;padding:12px 13px;
+  /* content-box：--cw 就是【卡内容区宽】，与滑块标签一致；padding / border 另加在外侧。
+     若用默认 border-box，滑块值就变成卡的总宽，与页面里「卡内容区」的表述差一个 padding。 */
+  flex:none;width:var(--cw,150px);box-sizing:content-box;
+}
+#stage.vpn .char-card{padding:10px 11px;}
+#stage .cc-builds{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
+/* 方案标题：点击展开设计简述 */
+#stage .vname{
+  display:block;width:100%;text-align:left;font:inherit;font-size:12px;font-weight:600;
+  color:var(--gold2);background:none;border:0;padding:0 0 6px;cursor:pointer;
+}
+#stage .vname.bad{color:var(--red);}
+#stage .vname:hover{text-decoration:underline;text-underline-offset:2px;}
+#stage .vname::after{content:" ⓘ";font-size:10px;color:var(--txt3);}
+#stage .vname.bad::after{color:var(--red);}
+
+/* ---- 配装条基础（src/styles.css 的 .cc-bp 块原样复刻） ---- */
+#stage .cc-bp{
+  display:flex;flex-wrap:nowrap;align-items:flex-start;align-content:center;column-gap:4px;
+  width:100%;max-width:100%;
+  font-size:11px;padding:6px;border-radius:5px;
+  background:color-mix(in srgb,var(--panel2) 88%,transparent);
+  border:1px solid color-mix(in srgb,var(--line-soft) 70%,transparent);color:var(--txt);
+  cursor:pointer;font-family:inherit;line-height:1.5;text-align:left;font-weight:400;
+  box-shadow:inset 2px 0 0 transparent;
+}
+#stage .cc-bp.on{
+  background:color-mix(in oklab,var(--gold) 14%,var(--panel2));
+  color:var(--gold2);border-color:color-mix(in srgb,var(--gold) 38%,transparent);
+  box-shadow:inset 2px 0 0 var(--gold);
+}
+#stage .cc-bp-idx{
+  flex:none;min-width:1.5ch;height:1.35em;padding:0 1px;white-space:nowrap;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:3px;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1;
+  background:color-mix(in srgb,var(--txt2) 12%,transparent);color:var(--txt3);
+}
+#stage .cc-bp.on .cc-bp-idx{background:color-mix(in srgb,var(--gold) 38%,transparent);color:var(--gold2);}
+#stage .cc-bp-name{flex:0 1 auto;line-height:1.35;font-weight:600;}
+#stage .cc-bp-name.n2{flex:0 0 auto;width:2.2em;word-break:break-all;}
+#stage .cc-bp-name.nfull{max-width:100%;flex:0 1 auto;min-width:0;word-break:keep-all;overflow-wrap:anywhere;}
+#stage .cc-bp-tag{flex:1 1 auto;margin-left:auto;text-align:right;
+  font-size:11px;font-weight:400;line-height:1.35;color:var(--txt3);}
+#stage .cc-bp-tag .bt-w{white-space:nowrap;}
+#stage .cc-bp-tag .bt-cat{color:var(--txt2);}
+#stage .cc-bp-tag .bt-sep{opacity:.62;font-weight:400;}
+#stage .cc-bp.on .cc-bp-tag{color:color-mix(in srgb,var(--gold2) 66%,var(--txt3));}
+#stage .cc-bp.on .cc-bp-tag .bt-cat{color:var(--gold2);}
+/* 多套任选长名 */
+#stage .cc-bp.wide{flex-wrap:wrap;row-gap:4px;width:100%;}
+#stage .cc-bp.wide .cc-bp-name{flex:1 1 0;min-width:0;}
+#stage .cc-bp.wide .cc-bp-tag{flex:1 1 100%;margin-left:0;}
+
+/* ---- 宽屏（卡内容区 >160px，对应真实 ≥561px 视口）：放开 .n2 定宽；data-lad 分档；
+       名称↔定位 8px；nmwrap 独占下行 ---- */
+#stage.vpw .cc-bp-name.n2{width:auto;word-break:normal;overflow-wrap:normal;white-space:nowrap;}
+#stage.vpw .k-ladder .cc-bp{width:auto;align-self:flex-start;}
+#stage.vpw .k-ladder .cc-bp.wide{width:100%;}
+#stage.vpw .k-ladder .cc-bp[data-lad="1"]{min-width:min(100%,10em);}
+#stage.vpw .k-ladder .cc-bp[data-lad="2"]{min-width:min(100%,13.5em);}
+#stage.vpw .k-ladder .cc-bp[data-lad="3"]{min-width:min(100%,17.5em);}
+#stage.vpw .k-ladder .cc-bp-tag{margin-left:8px;}
+#stage.vpw .k-ladder .cc-bp.wide .cc-bp-tag{margin-left:0;}
+#stage.vpw .k-nm .cc-bp.nmwrap{flex-wrap:wrap;row-gap:2px;}
+#stage.vpw .k-nm .cc-bp.nmwrap .cc-bp-tag{flex:1 1 100%;margin-left:0;text-align:right;}
+
+/* ---- 窄屏（卡内容区 ≤160px，对应真实 ≤560px 视口）各方案规则 ---- */
+/* S1a：横向 padding 6 → 4（配套 .nfull 的 max-width 减法项同步） */
+#stage.vpn .k-pad4 .cc-bp{padding-left:4px;padding-right:4px;}
+#stage.vpn .k-pad4 .cc-bp-name.nfull{max-width:calc(100% - 1.5ch - 4px - 8px);}
+/* T4：强制「上行名 + 下行位」两行 */
+#stage.vpn .k-t4 .cc-bp:not(.wide){flex-wrap:wrap;row-gap:0;}
+#stage.vpn .k-t4 .cc-bp-name{flex:0 1 auto;min-width:0;}
+#stage.vpn .k-t4 .cc-bp:not(.wide) .cc-bp-tag{flex:1 1 100%;margin-left:0;text-align:right;}
+/* S2：「能同行就同行」—— flex-wrap:wrap 下 tag 放不下就自然落到下一行 */
+#stage.vpn .k-fit .cc-bp:not(.wide){flex-wrap:wrap;row-gap:0;}
+#stage.vpn .k-fit .cc-bp-name{flex:0 1 auto;min-width:0;}
+#stage.vpn .k-fit .cc-bp:not(.wide) .cc-bp-tag{flex:1 1 auto;margin-left:0;text-align:right;}
+/* X 方案：位允许内部换行 —— 放在 k-fit 之后（同特异性、靠后生效）把它从 basis:auto 改成 0。
+   ⚠️ 两个关键点，少一个都不行：
+     ① 只给 min-width:0 没用：flex 换行判定用的是【假想主尺寸】（由 flex-basis 决定），
+        basis:auto = 内容宽 → 即使 shrink 后放得下，也先判「放不下」而整段换行；
+     ② 选择器必须与 k-fit【同特异性且在其后】才压得住它 ——
+        k-fit 那条是 `#stage.vpn .k-fit .cc-bp:not(.wide) .cc-bp-tag` = id×1 + class×5
+        （.vpn 也算一个 class），所以本条要写成 `#stage .cc-builds.k-xsame .cc-bp:not(.wide) .cc-bp-tag` 同样是 5 个。
+   效果：短名 + 长定位时「名」与「位的第一行」同行、其余折到第二行。 */
+/* 定位段「首行能放多少放多少」—— flex-basis:min-content 是关键：
+   假想主尺寸 = 最长的那个不可拆词单元（约 31px），所以 flex 换行判定只看「名右边放不放得下这个词」，
+   放得下就同行、位吃剩余空间并内部折行；放不下才整段落下一行。
+   对比另两种口径（都试过）：
+     flex:1 1 0        假想 0 → 永远同行 → 位被压到最窄、每单元一行、整块往中间偏；
+     flex:1 1 auto     假想 = 整段 max-content（约 191px）→ 几乎总是落行，永远不部分同行。 */
+/* flex-grow:0 —— 定位段【不 grow】：盒宽 = 内容宽，剩余空间交给按钮收缩去消化。
+   若让它 grow（原来是 1），盒子会撑满剩余宽度，而文字右对齐 → 所有空白堆在文字左边，
+   名与定位之间出现「很大间隔」（237 卡宽实测：盒 133px / 内容 101px / 名→文字 49.6px）。 */
+/* ⚠️ flex-wrap 必须写在 xsame 规则里，不能只依赖 k-fit：
+   fit 与 xsame 是互斥开关（自定义面板里勾一个会取消另一个），而 `flex-wrap:wrap` 原本挂在 fit 上
+   → 只勾 xsame 时按钮还是 nowrap，定位永远与名同行、盒宽超过剩余空间，
+   文字被推到按钮最左端（实测「定位行超出圣遗物名第一个字」）。
+   xsame 的语义就是「首行放多少放多少」，它必然包含换行能力，所以这条归它。 */
+#stage .cc-builds.k-xsame .cc-bp:not(.wide){flex-wrap:wrap;row-gap:0;}
+#stage .cc-builds.k-xsame .cc-bp:not(.wide) .cc-bp-tag{flex:0 1 min-content;min-width:var(--tg-min,0px);}
+/* ④ 单行长度上限：由引擎算成 --tg-cap（见 layoutSx ④），CSS 只负责套用。
+   定位右对齐 → 首字位置 = 框右 − 盒宽，所以「盒宽上限」直接决定「首字落在哪」。 */
+#stage .cc-builds.k-xcap .cc-bp:not(.wide) .cc-bp-tag{max-width:var(--tg-cap,100%);}
+#stage .cc-builds.k-xcname .cc-bp:not(.wide) .cc-bp-name{max-width:var(--nm-cap,100%);}
+/* --tg-min 由引擎算：定位前 3 个词单元 + 间隔下限（= 主人那条「同行时定位至少 2 行」的名义规则）。
+   判定交给 flex 算法（假想主尺寸 vs 容器宽），JS 只提供这个有含义的下限值、不做分支判断。 */
+/* 勾了「间隔有上下限」时，定位段靠右摆（margin-left:auto 吃掉剩余空间）。
+   ⚠️ 为什么不能把间隔直接设成 tag 的 margin-left：90% 上限把 tag 盒子限到 90% 宽，
+   再给一个固定的 margin-left → 盒子从左边起摆，右边反而空出一截（看起来「没右对齐」）。
+   正确分工：**间隔加在【名段右边】**（margin-right），**定位段用 margin-left:auto 靠右**。
+   这样 90% 上限的语义正好是「从右往左占、最多 90%」—— 右边贴框尾，左边留 10%。 */
+#stage .cc-builds.k-xgap .cc-bp:not(.wide) .cc-bp-tag{margin-left:auto;flex:0 1 auto;}
+/* S1c：定位折行时均衡两行长度（Chromium 114+，不支持则优雅降级） */
+#stage.vpn .k-bal .cc-bp-tag{text-wrap:balance;}
+/* S3：名段一律整段保留 —— 窄屏也放开 .n2 的「恒 2 字宽 + 按字断行」，
+   规则并入 .nfull（同样的 max-width 扣编号 + keep-all + anywhere 兜底）。 */
+#stage.vpn .k-n2auto .cc-bp-name.n2{width:auto;max-width:calc(100% - 1.5ch - 4px - 8px);
+  word-break:keep-all;overflow-wrap:anywhere;}
+/* ============================================================
+ * X 方案（主人 2026-10-05 给的约束）—— 纯 CSS 能表达的部分
+ * 间隔 clamp / 90% 上限 / 同行交叠由 JS 引擎 layoutSx() 逐行算（见脚本）
+ * ============================================================ */
+/* X0 定位段允许内部换行 —— 这是「短名 + 长定位时名与位的第一行同行」的关键：
+   flex item 默认 min-width:auto（= min-content），定位段永远被撑到整段宽、只能整段落下一行；
+   给 min-width:0 后它可以收缩到比内容窄 → 内部折行，于是「如雷」与「输出·功能·生存｜」同行、
+   「元素伤害·冷却」落到第二行。（= 主人第 4/7 条要的那个效果） */
+/* X2 重心对角：名贴左上、定位贴右下
+   ① align-items:stretch —— 同行时两栏被拉到等高（原来是 flex-start，都在顶部）；
+   ② 定位段 margin-top:auto —— 在 stretch 的一行里吸收剩余空间，把整块定位推到【下】边。
+   合起来：名在左上角、定位在右下角，中间那段自然留白 —— 就是主人要的「重心左上右下」。 */
+/* ⚠️ 别用 align-items:stretch + margin-top:auto：stretch 会把定位段拉到与行等高，
+   auto margin 就没剩余空间可分配了（实测下沉量 −1px，等于没生效）。
+   正确做法：名保持顶端（flex-start，基础值），定位段 align-self:flex-end 贴行底。 */
+#stage .k-xcorner .cc-bp{align-items:flex-start;}
+#stage .k-xcorner .cc-bp-tag{align-self:flex-end;}
+/* X1 框长可变：内容不满时收缩到内容宽度，顶到卡内容区宽为止 */
+#stage .k-xbox .cc-bp{width:fit-content;max-width:100%;}
+/* X4 两行可重叠：行间距压到负值（视觉上两行交叠） */
+#stage .k-xrow .cc-bp{row-gap:-3px;}
+/* X5 名优先填满首行：pretty 会避免「末行只剩一个字」的孤字（Chromium 117+，不支持则忽略） */
+#stage .k-xpretty .cc-bp-name{text-wrap:pretty;}
+/* X6b 大类段内部不断行（「｜」前的大类整体视为一个单元） */
+#stage .k-xbar .cc-bp-tag .bt-cat{white-space:nowrap;}
+/* 实验：每字一档（7 档）—— data-lad 改为按汉字数逐字分档（2字→1 … 7字以上→7）。
+   阶梯值按「名段实测自然宽 + 定位/编号/留白约 60px」估的，⚠️ 近似值，撞档率待全量实测。
+   ⚠️ 自成一套（不挂在 .k-ladder 下）：lad7 与 ladder 互斥，ladder 被取消后就没有
+   「width:auto + align-self:flex-start」这套收缩基础规则了，所以这里自带一份。 */
+#stage.vpk7.vpw .cc-bp{width:auto;align-self:flex-start;}
+#stage.vpk7.vpw .cc-bp.wide{width:100%;}
+#stage.vpk7.vpw .cc-bp-tag{margin-left:8px;}
+#stage.vpk7.vpw .cc-bp.wide .cc-bp-tag{margin-left:0;}
+#stage.vpk7.vpw .cc-bp[data-lad="1"]{min-width:min(100%,7.5em);}
+#stage.vpk7.vpw .cc-bp[data-lad="2"]{min-width:min(100%,8.5em);}
+#stage.vpk7.vpw .cc-bp[data-lad="3"]{min-width:min(100%,9.5em);}
+#stage.vpk7.vpw .cc-bp[data-lad="4"]{min-width:min(100%,11.5em);}
+#stage.vpk7.vpw .cc-bp[data-lad="5"]{min-width:min(100%,12.5em);}
+#stage.vpk7.vpw .cc-bp[data-lad="6"]{min-width:min(100%,14em);}
+#stage.vpk7.vpw .cc-bp[data-lad="7"]{min-width:min(100%,17.5em);}
+#stage.vpk7.vpn .cc-builds{container-type:inline-size;}
+#stage.vpk7.vpn .cc-bp{width:auto;align-self:flex-start;}
+#stage.vpk7.vpn .cc-bp.wide{width:100%;}
+#stage.vpk7.vpn .cc-bp[data-lad="1"]{min-width:53%;}
+#stage.vpk7.vpn .cc-bp[data-lad="2"]{min-width:60%;}
+#stage.vpk7.vpn .cc-bp[data-lad="3"]{min-width:67%;}
+#stage.vpk7.vpn .cc-bp[data-lad="4"]{min-width:84%;}
+#stage.vpk7.vpn .cc-bp[data-lad="5"]{min-width:91%;}
+#stage.vpk7.vpn .cc-bp[data-lad="6"],
+#stage.vpk7.vpn .cc-bp[data-lad="7"]{min-width:100%;}
+/* H：按卡内容区实际宽度决定是否收缩 —— 必须同时撤离 k-ct 才等于「等宽」 */
+#stage.vpn .cc-builds.k-ct{container-type:inline-size;}
+@container (min-width:145px){
+  #stage.vpn .k-ct .cc-bp{width:auto;align-self:flex-start;}
+  #stage.vpn .k-ct .cc-bp.wide{width:100%;}
+  #stage.vpn .k-ct .cc-bp[data-lad="1"]{min-width:72%;}
+  #stage.vpn .k-ct .cc-bp[data-lad="2"]{min-width:88%;}
+  #stage.vpn .k-ct .cc-bp[data-lad="3"]{min-width:100%;}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+<aside id="panel">
+<h1 style="margin:2px 0 4px;font-size:16px">配装条版式 Playground</h1>
+<p class="sub" style="margin:2px 0">
+  改【名字】【定位】【卡片宽度】，各卡独立重排；点方案名看设计简述；左栏勾选 → 实时应用到「自定义」卡。
+</p>
+
+<div class="ui-card">
+  <div class="ui-row">
+    <label class="lbl" for="wRange">卡片宽度</label>
+    <input type="range" id="wRange" min="120" max="300" step="1" value="150" style="width:260px">
+    <input type="number" id="wNum" min="120" max="300" step="1" value="150">
+    <span style="font-size:11px;color:var(--txt3)">px（角色卡内容区，不含卡内边距）</span>
+    <span id="stageInfo"></span>
+  </div>
+  <div class="ui-row" id="vwChips">
+    <span style="font-size:12px;color:var(--txt3)">快切真实视口：</span>
+  </div>
+  <hr class="sep">
+  <div class="ui-row">
+    <label class="lbl" for="nmInput">名字</label>
+    <input type="text" id="nmInput" value="苍白之火" style="width:210px">
+    <span style="font-size:11px;color:var(--txt3)">字数</span>
+    <input type="range" id="nmLen" min="1" max="30" step="1" value="4" style="width:150px">
+    <span id="nmLenVal" class="hintline">4</span>
+  </div>
+  <div class="ui-row" id="nmChips"><span style="font-size:12px;color:var(--txt3)">预设：</span></div>
+  <div class="ui-row">
+    <label class="lbl" for="tgInput">定位</label>
+    <input type="text" id="tgInput" value="输出·功能｜元素伤害" style="width:230px">
+    <span style="font-size:11px;color:var(--txt3)">词条数</span>
+    <input type="range" id="tgLen" min="1" max="10" step="1" value="3" style="width:150px">
+    <span id="tgLenVal" class="hintline">3</span>
+    <span style="font-size:11px;color:var(--txt3)">（<code>·</code>同类连 / <code>｜</code>接关键词；<b>5 是真实上限</b> = 3 大类 + 2 关键词、最长 126.3px，<b>调到 6 以上是压力测试</b>）</span>
+  </div>
+  <hr class="sep">
+  <div class="ui-row">
+    <label class="lbl">行长上限</label>
+    <span style="font-size:11px;color:var(--txt3)">名·从框左数</span>
+    <input type="range" id="capName" min="50" max="100" step="1" value="100" style="width:110px">
+    <span id="capNameVal" class="hintline">100%</span>
+    <span style="font-size:11px;color:var(--txt3);margin-left:6px">位·从框右数</span>
+    <input type="range" id="capTag" min="50" max="100" step="1" value="85" style="width:110px">
+    <span id="capTagVal" class="hintline">85%</span>
+    <span style="font-size:11px;color:var(--txt3)">（分别对应下方 ④ 的两个开关；位的比例调小，首字就右移）</span>
+  </div>
+  <div class="ui-row">
+    <button class="chip" id="btnDemo">演示：balance 生效场景</button>
+    <button class="chip" id="tgCopy">复制当前配置链接</button>
+    <span id="copied" style="font-size:11px;color:var(--green)"></span>
+  </div>
+  <hr class="sep">
+  <div class="ui-row" style="align-items:flex-start">
+    <b style="font-size:12px;color:var(--gold2);min-width:100%">自定义方案：勾选分项条件 → 实时应用到最下面那张「自定义」卡</b>
+  </div>
+  <div class="ui-row" id="cxGroups"></div>
+  <div class="ui-row">
+    <label class="lbl" for="cxOut">导出</label>
+    <button class="btn" id="cxCopy">一键复制方案（开关 + CSS）</button>
+    <button class="btn" id="cxPresetS3">载入现行 S3</button>
+    <button class="btn" id="cxPresetS2">载入 S2</button>
+    <button class="btn" id="cxPresetX">载入 X 方案</button>
+    <button class="btn" id="cxClear">全不勾</button>
+    <span id="cxCopied" style="font-size:11px;color:var(--green)"></span>
+  </div>
+  <details class="ui-row" style="display:block">
+    <summary style="font-size:12px;color:var(--txt3);cursor:pointer;user-select:none">展开 / 折叠「方案配置导出」</summary>
+    <textarea id="cxOut" readonly rows="8" style="width:100%;margin-top:6px;background:var(--bg1);color:var(--txt2);
+      border:1px solid var(--line);border-radius:var(--r-xs);padding:6px 8px;font:11px/1.5 var(--mono);"></textarea>
+  </details>
+</div>
+</aside>
+
+<main id="main">
+<div id="stageWrap">
+  <div id="stageShell">
+    <div id="ruler"></div>
+    <div id="stage" class="vpn"><div class="char-grid" id="grid"></div></div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- 方案设计简述弹窗 -->
+<dialog id="dlg">
+  <div class="dlg-head"><b id="dlgTitle"></b><button class="btn" id="dlgClose" type="button">关闭</button></div>
+  <div id="dlgBody"></div>
+</dialog>
+
+<script>
+/* ============================================================
+ * 数据构造：完全对齐 src/app.js 的 buildTagInline / nameBreakW2 / nameLadder
+ * ============================================================ */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* app.js nameBreakW2：纯中文 1–4 字 → .n2（窄屏 2 字边界折行），更长/含符号 → .nfull 整段保留 */
+function nameBreakW2(s){
+  const a = Array.from(String(s||''));
+  return a.length >= 1 && a.length <= 4 && /^[\u3400-\u9fff\uf900-\ufaff]+$/.test(a.join(''));
+}
+/* app.js nameLadder：只数汉字 ≤2 → lad1；3–4 → lad2；≥5 → lad3 */
+function nameLadder(s){
+  const cjk = (String(s||'').match(/[\u3400-\u9fff\uf900-\ufaff]/g)||[]).length;
+  return cjk <= 2 ? '1' : (cjk <= 4 ? '2' : '3');
+}
+/* app.js buildTagInline：每个「词 + 它后面的分隔符」合成一个 .bt-w 单元，单元之间 <wbr> */
+function tagUnits(cats, kws){
+  const DOT='·', BAR='｜', out=[];
+  cats.forEach((name,i)=>out.push({name, cls:'bt-cat', sep: i<cats.length-1 ? DOT : (kws.length ? BAR : '')}));
+  kws .forEach((name,i)=>out.push({name, cls:'bt-kw',  sep: i<kws.length -1 ? DOT : ''}));
+  return out;
+}
+function tagHtml(units){
+  return units.map(u => `<span class="bt-w ${u.cls}">${esc(u.name)}${u.sep?`<span class="bt-sep">${u.sep}</span>`:''}</span>`).join('<wbr>');
+}
+function tagText(units){ return units.map(u => u.name + (u.sep||'')).join(''); }
+/* 「输出·功能｜元素伤害」→ units；兼容手动编辑 */
+function parseTagText(s){
+  const [c, k] = String(s||'').split('｜');
+  const cats = (c||'').split('·').filter(Boolean);
+  const kws  = (k||'').split('·').filter(Boolean);
+  return tagUnits(cats, kws);
+}
+/* 词条池按【真实数据的上限】给：大类 ≤3、关键词 ≤2。
+   tools/out/_mw.mjs 在真实 index.html 上量到：定位整段自然宽最长 126.3px，全部是「3 大类 + 2 关键词」
+   （输出·功能｜元素伤害·冷却 这类）；词条数分布上 4 词与 5 词都真实存在，6 词不存在。
+   早前上限放到 6 会造出 185.6px 的定位（比现实长 47%），配上真实不存在的窄卡宽就成了假象。 */
+function unitsByCount(n){
+  /* 真实数据上限是 3 大类 + 2 关键词 = 5 词（最长 126.3px）；
+     滑块放到 10 是给「压力测试」用 —— 池子按需循环取词，同词会重复，现实中不会出现。 */
+  const CATS = ['输出','功能','生存','增益'];
+  const KWS  = ['元素伤害','冷却','减抗','攻击力','暴击','充能','护盾'];
+  const catN = Math.min(CATS.length, Math.max(1, Math.ceil(n/2)));
+  const kwN  = Math.max(0, n - catN);
+  const pick = (arr, k) => Array.from({length: k}, (_, i) => arr[i % arr.length]);
+  return tagUnits(pick(CATS, catN), pick(KWS, kwN));
+}
+
+/* ---- 方案变体：开关类的组合（与 #stage-css 里的 k-* 一一对应）。
+       每张卡只渲染【一个】配装框 —— 内容由上面【名字 / 定位】控件统一驱动，
+       方案之间唯一的变量就是 flags，所以对比是公平的。
+       note = 点标题弹出的设计简述（默认收起，别把版面塞满文字）。 ---- */
+const VARIANTS = [
+  { id:'s2c', name:'S2 + balance', flags:'k-ladder k-nm k-pad4 k-ct k-n2auto k-fit k-bal',
+    note:'<p>S2 与 balance 的组合：短名短定位走同行（像桌面端），实在放不下落到下一行的定位由 '
+       + '<span class="k">balance</span> 摊匀两行长度。</p>'
+       + '<p>实测（真实最坏工况：卡宽 130px + 5 词定位）：两行差 79% → 21%。</p>' },
+  { id:'sx', name:'X · 两端对齐 + 间隔上下限（你的约束）',
+    flags:'k-ladder k-nm k-pad4 k-ct k-n2auto k-fit k-bal k-xsame k-xcorner k-xbox k-xgap k-xcname k-xcap k-xbar',
+    note:'<p><b>你的 7 条 → 5 条规则</b>（澄清后：所谓「重叠」不是让两者交叠，而是'
+       + '<b>名与位各占各的行、不超过最大限制就行</b>）：</p>'
+       + '<p><b>① 框长可变</b> <code>width:fit-content</code> + <code>max-width:100%</code> —— '
+       + '内容不满时收缩、顶到卡内容区宽为止；名左位右两端对齐。（你的 1）</p>'
+       + '<p><b>② 间隔有上下限</b> <code>gap = clamp(4px, 可用宽 − 名 − 位, 14px)</code> —— '
+       + '框没顶满取上限、顶满自动缩到下限再试一次。（你的 2）</p>'
+       + '<p><b>③ 定位 ≤ 框长 90%</b>：只约束右对齐的定位段（从右往左占、最多 90%、右边贴框尾）；'
+       + '名段不受此限 —— 它的上限由 CSS 的 <code>.nfull/.n2</code> 给，那条已精确扣掉编号列。'
+       + '若连名一起限，长名会少放一个字、多折一行。（你的 5）</p>'
+       + '<p><b>④ 短名 + 长定位时「名」与「位的第一行」同行</b>，位内部折行 —— 靠 '
+       + '<code>flex-basis:0</code> 让定位段能收缩到比内容窄。（你的 4 / 7，截图里要的那个效果）</p>'
+       + '<p><b>⑤ 换行优先级</b>：名用<b>默认的贪心换行</b> —— 第一行尽量多放、后续行递减'
+       + '（<code>/</code> 与前一个套装名绑在一起、留在行尾）；位在 <code>｜</code> 之后换行'
+       + '（大类一段、关键词另起），大类段内部不断。（你的 6）</p>'
+       + '<p class="warn">面板里的 <code>xpretty</code>（text-wrap:pretty）默认<b>不勾</b>：'
+       + '它会把「苍白之火 / 昔时之歌 / 绝缘之旗印」均衡成 3 行，而你要的是第一行尽量多放的 2 行。'
+       + '想要第一行短一点、末行匀一点时才勾它。</p>'
+       + '<p><b>⑥ 重心左上右下</b> <code>align-items:flex-start</code> + 定位段 '
+       + '<code>align-self:flex-end</code>：名贴左上角、定位的末行贴右下角（同一行里两栏不等高时才会看到错位）。</p>'
+       + '<p><b>④ 定位首行能放多少放多少</b>：定位段 <code>flex-basis:min-content</code> —— '
+       + '只要名右边放得下「最长的那个不可拆词单元」就同行，吃剩余空间、内部折行；放不下才整段落下一行。'
+       + '这样「名 + 定位第一行」在一行里，既满足间隔规则、框长又能按内容收缩。</p>'
+       + '<p class="warn">只有 ② 间隔 clamp 需要一小段逐行 JS（剩余空间与上下限都是实测值）；'
+       + '④ 的判据是【名的自然宽 &gt; 可用宽 × 0.9】纯计算（不读渲染高度，避免两态循环）：'
+       + '名会折行 → 定位独占第二行；名 1 行 → 定位与名同行、内部折行。</p>' },
+  { id:'custom', name:'自定义（勾选下方条件）', flags:'',
+    note:'<p>这张卡由页面下方的<b>分项复选框</b>驱动：勾哪个条件就应用哪条 CSS 规则，实时重排。</p>'
+       + '<p>配好之后点「一键复制方案」—— 剪贴板里是<b>开关串 + 与 <code>src/styles.css</code> 等价的 CSS</b>，'
+       + '粘给我就能直接落地。互斥项（t4/fit、ladder/lad7）会自动二选一，'
+       + '同组同时勾选时以列表靠后者优先生效（导出框里会提示）。</p>'
+       + '<p>可勾的条件：定位段版式（强制两行 / 能同行就同行）、名段折行（整段保留 / 2 字定宽）、'
+       + '定位段（balance / 词内断行 / 8px 留白）、窄屏宽度（@container 自适应）、'
+       + '宽屏分档（三档 / 每字一档 7 档 / nmwrap）。</p>'
+       + '<p class="warn">导出框末尾那三条复核项别跳过：撞档率是这套方案的命门，'
+       + '窄屏还有溢出 / 压编号 / 行首标点三条红线。</p>' },
+];
+const NAME_PRESETS = ['苍白','如雷','苍白之火','绝缘之旗印','如雷 + 宗室','如雷的盛怒苍白之火'];
+/* 纯中文连续串：只用于几何测试（看字数对折行的影响），不是真实套装名 */
+const NM_SEQ = '苍白之火昔时之歌绝缘之旗印追忆之注连';
+/* 名字滑块拉长时，按【真实套装名】逐个累积并用 ' / ' 分隔（而不是一串连续汉字）——
+   真实数据里「多套任选」的名就是这样写的（少女 / 海染 / 昔时（任选2套））。 */
+const NM_PARTS = ['苍白之火', '昔时之歌', '绝缘之旗印', '追忆之注连', '如雷的盛怒', '宗室'];
+function composeName(cjkCount){
+  /* 滑块最大 30 字 → NM_PARTS 不够长，按需循环取名（出现同名重复，纯粹为了撑长看折行） */
+  let used = 0, parts = [], i = 0;
+  while (used < cjkCount){
+    const seg = NM_PARTS[i % NM_PARTS.length];
+    parts.push(seg); used += Array.from(seg).length; i++;
+  }
+  if (!parts.length) parts.push(Array.from(NM_SEQ).slice(0, Math.max(1, cjkCount)).join(''));
+  /* 超过目标字数时把最后一段截到目标字数（截在汉字边界，不会切出半个词） */
+  let out = '', n = 0;
+  for (const seg of parts){
+    if (n >= cjkCount) break;
+    const take = Array.from(seg).slice(0, cjkCount - n);
+    out += (out ? ' / ' : '') + take.join('');
+    n += take.length;
+  }
+  return out;
+}
+
+/* ============================================================
+ * 自定义方案：分项开关 → 开关串 → 等价 CSS
+ * 每个开关都对应 src/styles.css 里真实存在（或待验证）的一条规则，
+ * 导出的 CSS 可以直接贴进 styles.css，这就是「一键复制反馈」的意义。
+ * ============================================================ */
+const FLAG_DEFS = [
+  { g: '① 框的长度', items: [
+    { k: 'xbox', t: '随内容收缩', d: 'width:fit-content + max-width:100%（默认）' },
+  ]},
+  { g: '② 名与位是否同行', items: [
+    { k: 'xsame', t: '定位首行能放多少放多少', d: 'flex-basis:min-content + 同行下限（三个词单元+间隔）；放不下才整段落行' },
+    { k: 'fit',   t: '整段放不下就落行', d: 'flex-basis:auto（现行版式）；与上一项二选一' },
+  ]},
+  { g: '③ 名↔位 间隔', items: [
+    { k: 'xgap', t: '有上下限', d: 'clamp(4px, 剩余, 14px)：框没顶满用上限、顶满缩到下限（默认）' },
+  ]},
+  { g: '④ 行长上限（两个独立开关）', items: [
+    { k: 'xcname', t: '名 ≤ 框长的 N%（从左数）', d: '控制圣遗物名那一行能占多宽；不勾 = 只受 CSS 的防压编号规则约束' },
+    { k: 'xcap',   t: '位 ≤ 框长的 N%（从右数）', d: '控制定位那一行能占多宽；比例调小，首字自然右移（这就是「首字在名首字右移半字之后」的实现）' },
+  ]},
+  { g: '⑤ 重心位置', items: [
+    { k: 'xcorner', t: '名左上 · 位右下', d: '定位 align-self:flex-end；同行且两栏不等高时位贴行底（默认）' },
+  ]},
+  { g: '⑥ 换行策略', items: [
+    { k: 'xpretty', t: '名各行均衡', d: 'text-wrap:pretty，与「第一行尽量多放」相反，仅备选' },
+    { k: 'bal',     t: '定位两行摊匀', d: 'text-wrap:balance，Chromium 114+（备选）' },
+    { k: 'xbar',    t: '位按 ｜ 断行', d: '大类段整体不断、｜ 后是优先断点（默认）' },
+  ]},
+  { g: '⑦ 窄屏宽度策略', items: [
+    { k: 'ct',    t: '卡够宽才收缩', d: '@container(min-width:145px) 按档位收缩，≤136px 回退等宽（现行）' },
+    { k: 'pad4',  t: '横向内边距 4px', d: '6 → 4px，让定位整段放得下（现行）' },
+  ]},
+  { g: '⑧ 名段折行', items: [
+    { k: 'n2auto', t: '整段保留（四字名不折）', d: '窄屏放开 2 字定宽（现行）' },
+  ]},
+];
+/* 开关 → 等价 CSS（窄屏/宽屏分开写，导出时按勾选拼） */
+const FLAG_CSS = {
+  /* pad4 不在 FLAG_DEFS 面板里（它是现行版式的默认：横向内边距 6 → 4px），
+     但必须列在这里 —— 否则「载入某方案」按 flags 派生开关时会把它过滤掉，
+     自定义卡就少了 2px 内边距、断行点与原方案对不上。 */
+  pad4: ['/* 横向内边距 6 → 4px（k-pad4，现行版式的默认项） */'],
+  fit: ['@media (max-width:560px){', '.cc-bp{flex-wrap:wrap;row-gap:0;}', '.cc-bp .cc-bp-name{flex:0 1 auto;min-width:0;}',
+        '.cc-bp .cc-bp-tag{flex:1 1 auto;margin-left:0;text-align:right;}', '}'],
+  n2auto: ['@media (max-width:560px){', '.cc-bp .cc-bp-name.n2{width:auto;max-width:calc(100% - 1.5ch - 4px - 8px);word-break:keep-all;overflow-wrap:anywhere;}', '}'],
+  bal: ['@media (max-width:560px){', '.cc-bp .cc-bp-tag{text-wrap:balance;}', '}'],
+  ct: ['@media (max-width:560px){', '.cc-builds{container-type:inline-size;}',
+       '@container (min-width:145px){', '  .cc-bp{width:auto;align-self:flex-start;}', '  .cc-bp.wide{width:100%;}',
+       '  .cc-bp[data-lad="1"]{min-width:72%;}', '  .cc-bp[data-lad="2"]{min-width:88%;}', '  .cc-bp[data-lad="3"]{min-width:100%;}', '}', '}'],
+  xsame: ['.cc-builds.k-xsame .cc-bp{flex-wrap:wrap;row-gap:0;}',
+          '.cc-builds.k-xsame .cc-bp .cc-bp-tag{flex:0 1 min-content;min-width:var(--tg-min,0px);}',
+          '/* 位允许内部换行：flex-basis:0 是关键 —— 只写 min-width:0 的话，flex 换行判定',
+          '   用的还是「假想主尺寸」（= 内容宽），会先判定放不下而整段落行。改成 0 起手后，',
+          '   短名 + 长定位时「名」与「位的第一行」同行、其余折到第二行 */'],
+  xcorner: ['.cc-bp{align-items:flex-start;}', '.cc-bp-tag{align-self:flex-end;}',
+            '/* 重心对角：名贴左上、定位贴右下（同行时定位整块被推到下边） */'],
+  xbox: ['.cc-bp{width:fit-content;max-width:100%;}',
+         '/* ① 框长可变：内容不满时收缩到内容宽，顶到卡内容区宽为止（名左位右靠两端对齐） */'],
+  xgap: ['/* ② 间隔有上下限 —— 必须 JS 逐行算，见导出框里的 layoutSx() */'],
+  xcname: ['.cc-builds.k-xcname .cc-bp-name{max-width:var(--nm-cap,100%);}',
+           '/* 名 ≤ 框长的 N%（从框左往右数）；--nm-cap 由面板滑块给 */'],
+  xcap: ['.cc-builds.k-xcap .cc-bp-tag{max-width:var(--tg-cap,100%);}',
+         '/* 位 ≤ 框长的 N%（从框右往左数）；比例调小 = 首字右移，',
+         '   即「首字落在名首字右移半字之后」，不必另设一条规则 */'],
+  xpretty: ['.cc-bp-name{text-wrap:pretty;}', '/* ⑥ 名优先填满首行（Chromium 117+，不支持则忽略） */'],
+  xbar: ['.cc-bp-tag .bt-cat{white-space:nowrap;}', '/* ⑥ 大类段（｜ 前）整体不断行，｜ 后是优先断点 */'],
+};
+const JS_X = `
+const GAP_MIN = 4, GAP_MAX = 14, CAP_RATIO = 0.9, SAME_MIN_UNITS = 3;
+/* 间隔下限/上限、单内容占框长上限；定位独占整行时左边缩进 = 当前字号 × 0.5（见 layoutSx ③'） */
+function bpNaturalWidth(el){
+  const c = el.cloneNode(true);
+  c.style.cssText = 'position:absolute;left:-9999px;top:0;width:max-content;white-space:nowrap;max-width:none';
+  document.body.appendChild(c); const w = c.getBoundingClientRect().width; c.remove(); return w;
+}
+function layoutBpRow(bp){
+  const nm = bp.querySelector('.cc-bp-name'), tg = bp.querySelector('.cc-bp-tag');
+  const box = bp.closest('.cc-builds'); if (!nm || !tg || !box) return;
+  /* 每轮从干净状态重算 —— 直接改布局再量会两态自洽、来回摆动 */
+  nm.style.maxWidth = ''; tg.style.maxWidth = ''; tg.style.marginLeft = '';
+  const cs = getComputedStyle(bp);
+  const avail = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+              - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+  if (!(avail > 20)) return;
+  /* ③ 单内容不超过框长 90% */
+  nm.style.maxWidth = tg.style.maxWidth = (avail * CAP_RATIO) + 'px';
+  /* ② 间隔 clamp —— 只在浏览器已排成同行时设；落行时归 0（独占整行靠 text-align:right 贴右） */
+  const sameLine = Math.abs(nm.getBoundingClientRect().top - tg.getBoundingClientRect().top) < 3;
+  if (!sameLine){ tg.style.marginLeft = '0px'; return; }
+  const room = avail - bpNaturalWidth(nm) - bpNaturalWidth(tg);
+  tg.style.marginLeft = Math.max(GAP_MIN, Math.min(GAP_MAX, room)) + 'px';
+}
+`;
+const CX_DEFAULT = ['xsame','xbox','xgap','xcname','xcap','xcorner','xbar','n2auto','ct','pad4'];   // 默认 = S2（短名短定位要同行）
+
+/* ---- 状态 ---- */
+const st = { cw:150, name:'苍白之火', units: unitsByCount(3), manualTag:false,
+             capName:100, capTag:85,          /* 行长上限：名从框左数 / 位从框右数 */
+             custom: new Set(CX_DEFAULT) };
+
+const $ = id => document.getElementById(id);
+const stage = $('stage'), grid = $('grid');
+
+/* ============================================================
+ * 渲染：每方案一卡、一框
+ * ============================================================ */
+/* 7 档（每字一档）ladder：2字→1 … 7字以上→7。真实分布（tools/out/_lad.mjs）：
+   2字 22px ｜ 3字 33 ｜ 4字 44(带符号 58.9) ｜ 5字 69.9 ｜ 6字 80.9 ｜ 7字以上 97.8~122.8 */
+function nameLadder7(s){
+  const cjk = (String(s||'').match(/[\u3400-\u9fff\uf900-\ufaff]/g)||[]).length;
+  return String(Math.min(7, Math.max(1, cjk - 1)));
+}
+function rowHtml(r, i){
+  const nCls = nameBreakW2(r.name) ? 'n2' : 'nfull';
+  const nm = esc(r.name).replace(/ \/ /g, '\u00a0/ ');   // wide 名里斜杠绑在前一个名字后
+  const lad = st.custom.has('lad7') ? nameLadder7(r.name) : nameLadder(r.name);
+  return `<div class="bprow">`
+    + `<button type="button" class="cc-bp${r.on?' on':''}${r.wide?' wide':''}" data-lad="${lad}">`
+    + `<span class="cc-bp-idx">${i+1}</span><span class="cc-bp-name ${nCls}">${nm}</span>`
+    + `<span class="cc-bp-tag">${tagHtml(r.units)}</span></button></div>`;
+}
+function cardHtml(v){
+  /* ⚠️ 必须补 k- 前缀：复选框的 key 是 'fit'/'pad4'…，而样式类名是 k-fit / k-pad4。
+     漏了前缀 → 自定义卡的类名变成 "fit pad4 …"，所有开关静默失效（看着像「复制方案没效果」）。 */
+  const flags = v.id === 'custom' ? Array.from(st.custom).map(k => 'k-' + k).join(' ') : v.flags;
+  return `<section class="char-card" data-v="${v.id}">`
+    + `<button type="button" class="vname${v.bad?' bad':''}${v.id==='custom'?' custom':''}" data-dlg="${v.id}" title="点击查看设计简述">${esc(v.name)}</button>`
+    + `<div class="cc-builds ${flags}">${rowHtml({ name:st.name, units:st.units, on:true }, 0)}</div>`
+    + `</section>`;
+}
+function render(){
+  grid.innerHTML = VARIANTS.map(cardHtml).join('');
+  applyWidth();
+  layoutSx();          /* 同步跑一次：rAF 链之外的兜底，避免时序不确定 */
+  scheduleLayout();
+}
+
+/* ---- 宽度：--cw = 角色卡内容区宽；断点按卡宽分（≤160 窄屏 / >160 宽屏） ---- */
+/* 断点分界：176px —— 这是唯一能让【所有真实卡宽都判对】的取值。
+   tools/out/_cw.mjs 在真实 index.html 上量到的卡内容区宽（视口 → 卡内容区）：
+     340→130 ｜ 360→140 ｜ 390→155 ｜ 410→165 ｜ 430→175 ｜ 560→149   ← 窄屏档（视口 ≤560）
+     700→177 ｜ 480→200 ｜ 561→221 ｜ 600→239 ｜ 640→258 ｜ 1024→283 ｜ 1440→237  ← 宽屏档（≥561）
+     320→272（窄屏单列、1fr 撑满）
+   真实取值是离散跳跃的：窄屏档最大 175、宽屏档最小 177，**空档只有 176px 这一档**。
+   ⚠️ 卡宽↔视口不是单调映射（320 视口 272px > 340 视口 130px），所以任何「按卡宽自动推断点」
+      都有误差；176 是误差最小的取法（除 176 本身外全部判对）。
+   ⚠️ 早前取 160 会让 160–220 整段落给宽屏版式，出现「同行版式 + 极窄卡」：定位栏被名段
+      挤到 ~79px，而定位整段 186px → 被迫折 3–4 行。真实页面不存在这个工况，纯属工具制造的假象。 */
+const CARDP_NARROW = 176;
+function applyWidth(){
+  stage.style.setProperty('--cw', st.cw + 'px');
+  stage.classList.remove('vpn','vpw');
+  stage.classList.add(st.cw <= CARDP_NARROW ? 'vpn' : 'vpw');
+  layoutSx();          /* 宽度变了：名/位自然宽与可用宽都变，间隔与 90% 上限要重算 */
+  updateInfo();
+}
+
+/* ============================================================
+ * 量测：宽屏 nmwrap 判定 + 每行几何数据
+ * 口径沿用 tools/out/_bal.mjs：行数取 getClientRects 的不同 top 数，
+ * 溢出取 scrollWidth-clientWidth，「压编号」取 idx 实际宽度是否被挤到 <14px（原 1.5ch≈16.5px）。
+ * ============================================================ */
+/* ⚠️ .cc-bp-name / .cc-bp-tag 都是 flex item（会被 blockify），对它们调
+   getClientRects() 只会拿到一个整块的 border box —— 拿不到「几行」。
+   所以行盒靠 Range 逐字符扫、按 top 归并（这里只用来判名段是否折行 → .nmwrap）。 */
+function lineRects(el){
+  const rows = new Map();
+  const wk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let nd;
+  while ((nd = wk.nextNode())){
+    for (let i = 0; i < nd.data.length; i++){
+      const rg = document.createRange(); rg.setStart(nd, i); rg.setEnd(nd, i + 1);
+      const r = rg.getBoundingClientRect();
+      if (!r.width && !r.height) continue;
+      const key = Math.round(r.top * 2) / 2;
+      const cur = rows.get(key);
+      if (cur){ cur.r = Math.max(cur.r, r.right); cur.l = Math.min(cur.l, r.left); }
+      else rows.set(key, { top:r.top, l:r.left, r:r.right });
+    }
+  }
+  return Array.from(rows.values()).sort((a, b) => a.top - b.top)
+    .map(x => ({ w: x.r - x.l, top: x.top }));
+}
+/* ============================================================
+ * X 方案引擎：每行只定三件事（2026-10-05 主人澄清后的口径）
+ * ------------------------------------------------------------
+ * 之前把「重叠」理解成 ①名与位水平交叠（负 margin）②两行字形压叠（row-gap 负值），
+ * 主人澄清：**本意是「名与位各占各的行，不超过最大限制就行」** ——
+ *   同行：名 1 行 + 位 1 行 放得下 → 同行，间隔取 clamp(下限, 剩余, 上限)
+ *   放不下：名独占第一行、位整段落到第二行（右对齐），各自内部换行（位用 balance 摊匀）
+ * 引擎只做「间隔 clamp」和「90% 上限」两件事：
+ *   - 90% 上限：名与位各自 max-width = 可用宽 × 0.9（两行时位独占整行，右缘仍贴齐）
+ *   - 间隔 clamp：只在【浏览器判定为同行】时设 margin-left = clamp(4, 剩余, 14)；
+ *     落行时归 0（独占整行靠 text-align:right 贴右缘）
+ * 换行优先级交给 CSS：名 text-wrap:pretty 填满首行，位在 ｜ 后断、大类段整体不断。
+ * ============================================================ */
+const GAP_MIN = 4, GAP_MAX = 14, CAP_RATIO = 0.9, SAME_MIN_UNITS = 3;
+function naturalWidth(el){
+  /* ⚠️ 克隆体必须挂在 #stage 内，不能挂 body：
+     舞台里的规则都带 `#stage` 前缀（letter-spacing / .bt-w 的 white-space 等），
+     挂到 body 就脱离上下文，量出来的词单元宽度偏大 31%（实测 24.4 → 33），
+     于是 --tg-min 被撑到 133px、min-width 又把定位盒撑宽 32px，
+     右对齐后空白全堆在文字左边 —— 表现为「名与定位之间有很大间隔」。 */
+  const c = el.cloneNode(true);
+  c.style.cssText = 'position:absolute;left:-9999px;top:0;width:max-content;white-space:nowrap;max-width:none';
+  stage.appendChild(c);
+  const w = c.getBoundingClientRect().width;
+  c.remove();
+  return w;
+}
+/* 定位开头 N 个词单元的宽度和（每个 .bt-w 是不可拆的词单元，后面跟一个 <wbr>） */
+function firstUnitsWidth(tg, n){
+  const units = tg.querySelectorAll('.bt-w');
+  let sum = 0;
+  for (let i = 0; i < Math.min(n, units.length); i++) sum += naturalWidth(units[i]);
+  return sum || naturalWidth(tg);
+}
+function layoutSx(){
+  /* 只处理自己声明了 k-x* 的卡（判定看 .cc-builds 的类名，别看全局 st.custom） */
+  for (const bp of document.querySelectorAll('#grid .cc-bp')){
+    const nm = bp.querySelector('.cc-bp-name'), tg = bp.querySelector('.cc-bp-tag');
+    /* ⚠️ 必须 closest('.cc-builds')：按钮外面还包了一层 .bprow */
+    const builds = bp.closest('.cc-builds');
+    if (!nm || !tg || !builds) continue;
+    const cls = Array.from(builds.classList);
+    if (!cls.some(c => c.startsWith('k-x'))) continue;
+    const on = k => cls.includes('k-' + k);
+
+    /* 每轮从干净状态重算：先清行内样式，再量 —— 直接改布局再量会两态自洽、来回摆动 */
+    nm.style.maxWidth = ''; nm.style.marginRight = '';
+    tg.style.maxWidth = ''; tg.style.marginLeft = ''; tg.style.flex = ''; tg.style.minWidth = '';
+    tg.style.textAlign = ''; tg.style.paddingLeft = '';
+    tg.style.removeProperty('--tg-min'); tg.style.removeProperty('--tg-cap');
+    /* ⚠️ 这里【不能】按「只处理开了 xgap/xcap 的行」来守卫 —— 那会让「取消这两个开关」连带
+       把 xsame 的同行下限（--tg-min）也一起关掉，出现名义规则之外的怪现象：
+       取消 90% + 间隔 → 同行下限失效 → 定位被压成 3 行（主人 21:55 截图）。
+       每条规则只由自己的开关决定，互不影响。 */
+
+    const cs = getComputedStyle(bp);
+    const avail = builds.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+                - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+    if (!(avail > 20)) continue;
+
+    /* ③ 单内容不超过「名+位可用总宽」的 90%
+       ⚠️ 可用总宽要先扣掉【编号徽标 + column-gap】—— 直接拿 avail × 0.9 会让
+       「编号 16.5 + gap 4 + 名 0.9×avail」超出 avail，名段被挤到按钮左边界之外（压编号）。 */
+    if (on('xcap') || true){
+      const ixEl = bp.querySelector('.cc-bp-idx');
+      const ixW = ixEl ? ixEl.getBoundingClientRect().width : 0;
+      const gapPx = parseFloat(getComputedStyle(bp).columnGap) || 0;
+      const pair = Math.max(20, avail - ixW - gapPx);       /* 名 + 位 真正能用的宽 */
+      /* ⚠️ 90% 上限只给【定位段】，不给名段（主人 2026-10-06 指出）。
+         名是左对齐的，它的宽度上限该由 CSS 的 `.nfull / .n2` 规则给 ——
+         那条已经精确扣掉了编号列与 gap（防压编号），实测 140 卡宽下是 108.8px。
+         若再用 90%（105.2px）压一层，就比 S2 少 3.6px —— 「苍白之火 / 昔时之歌 /」放不下、
+         多折一行（3 行 vs S2 的 2 行），正是主人截图里看到的「第一行没放满」。
+         90% 的语义落在右对齐的定位段上：它从右往左占、最多 90%、右边贴框尾。 */
+      tg.dataset.cap = (pair * CAP_RATIO).toFixed(1) + 'px';   /* 同行时才用得上 */
+    }
+    /* ④ 同行还是落行：交给 flex 算法（假想主尺寸 vs 容器宽），JS 只给一个下限值 ——
+       `--tg-min` = 定位前 3 个词单元的宽度和 + 间隔下限（≈104px）。
+       含义就是主人那条名义规则：**同行时，定位至少要放得下「三个词单元 + 最小间隔」**，
+       否则整段落下一行、独占整行（此时它能排几行就是几行）。
+       为什么是「三个」：定位通常 4–6 个词单元，放得下 3 个 → 最多 2 行，观感整齐；
+       只放得下 1–2 个 → 定位被压成每行一单元、整块往中间偏，不如落行（166 卡宽实测 3–4 行 vs 2 行）。
+       ⚠️ 不再由 JS 写 `tg.style.flex` 做二选一 —— 那样每个工况都要单独调参（主人 21:41 的批评）。 */
+    if (on('xsame')){
+      /* 同行下限 = min(前三个词单元 + 间隔下限, 整段内容宽)
+         —— 加 min() 是因为 min-width 一旦大于内容宽，就会把盒子撑宽，
+         而定位是右对齐的：撑出来的空白全落在文字左边，
+         表现成「名与定位之间有很大间隔」（237 卡宽实测 32px 空白 → 名→文字 49.6px）。
+         min() 让这条对测量误差免疫：无论实测偏大多少，下限都不会超过内容本身。 */
+      const need0 = Math.min(firstUnitsWidth(tg, SAME_MIN_UNITS) + GAP_MIN, naturalWidth(tg));
+      /* ⚠️ 下限必须夹住上限：两条规则会打架，min-width 优先级高于 max-width ——
+         主人把位上限调到 50%（≈73px）而下限是 105px 时，盒宽被下限撑到 105、
+         看上去「上限没生效」。上限更小时说明这一行放不下有意义的部分 → 下限让位给上限，
+         flex 换行判定随即按 min-content 走 → 定位落到下一行，符合「上限优先」的预期。 */
+      const capPx = on('xcap') ? avail * st.capTag / 100 : Infinity;
+      const need = Math.min(need0, capPx);
+      tg.style.setProperty('--tg-min', need.toFixed(1) + 'px');
+    }
+    /* ③' 90% 上限（名义规则）：**任何内容独占一行时，它在该行占的长度 ≤ 框长的 90%。**
+       左对齐的（名）从左往右数到 90%；右对齐的（位）从右往左数到 90% —— 同一个系数、同一条规则。
+       名段不另设上限：它左对齐、前面还有编号列，CSS 的 `.nfull/.n2` 已经精确扣掉编号与 gap。
+       位段 maxWidth = (行宽 − 编号宽 − gap) × 0.9；右对齐后它的首字落在框宽 10% 处，
+       天然与「名首字右移半字」错开（主人 2026-10-06 定的观感目标）。 */
+    /* ③b 圣遗物名的行长上限（**从框左往右数**，与定位分成两个独立开关）。
+       百分比直接交给 CSS 算（浏览器对 % 的基准就是框内容宽，比在 JS 里换算稳）。 */
+    if (on('xcname')) nm.style.setProperty('--nm-cap', st.capName + '%');
+    else nm.style.removeProperty('--nm-cap');
+
+    /* ④ 定位的行长上限（**从框右往左数**）。
+       主人 23:20 澄清：「首字落在名首字右移半字之后」就是这条百分比规则的效果。
+       ⚠️ 上限必须先算 —— 它还要用来夹住「同行下限」（见下面 ⑤）。 */
+    if (on('xcap')) tg.style.setProperty('--tg-cap', st.capTag + '%');
+    else tg.style.removeProperty('--tg-cap');
+
+    /* ② 间隔 clamp —— 间隔加在【名段右边】，定位段交给 margin-left:auto 靠右摆。
+       落行时名右侧不需要间隔，定位段 margin-left 归 0（独占整行、靠 text-align:right 贴右缘）。 */
+    if (on('xgap')){
+      const sameLine = Math.abs(nm.getBoundingClientRect().top - tg.getBoundingClientRect().top) < 3;
+      if (sameLine){
+        const room = avail - naturalWidth(nm) - naturalWidth(tg);
+        nm.style.marginRight = Math.max(GAP_MIN, Math.min(GAP_MAX, room)) + 'px';
+        tg.style.marginLeft = 'auto';
+      } else {
+        /* 落行：名右侧不需要间隔；定位段仍然 margin-left:auto 靠右 ——
+           它独占整行且带 90% 上限，靠左摆会让右边空出一截（看着没右对齐）。 */
+        nm.style.marginRight = '0px';
+        tg.style.marginLeft = 'auto';
+      }
+    }
+  }
+}
+
+/* ============================================================
+ * 布局重算：宽屏的 .nmwrap 判定
+ * 与 app.js markWrappedBuildNames 同口径：名段实际行高 > 1.5 倍行高 → 加类。
+ * 宽度变化时先全清再单遍重算（真实是 resize 触发 reset，这里每帧也这么做，结果稳定）。
+ * ============================================================ */
+function applyNmwrap(){
+  for (const bp of grid.querySelectorAll('.k-nm .cc-bp.nmwrap')) bp.classList.remove('nmwrap');
+  if (!stage.classList.contains('vpw')) return;
+  for (const bp of grid.querySelectorAll('.k-nm .cc-bp')){
+    const nm = bp.querySelector('.cc-bp-name');
+    if (!nm) continue;
+    /* 同样不能用 getClientRects().length：名段也是 flex item，会被算成一块 */
+    if (lineRects(nm).length > 1) bp.classList.add('nmwrap');
+  }
+}
+let pending = false;
+function scheduleLayout(){
+  if (pending) return;
+  pending = true;
+  requestAnimationFrame(() => {
+    pending = false;
+    applyNmwrap();
+    requestAnimationFrame(() => { layoutSx(); updateInfo(); });
+  });
+}
+function updateInfo(){
+  const card = grid.querySelector('.char-card');
+  let inner = 0;
+  if (card){
+    const cs = getComputedStyle(card);
+    /* clientWidth 已排除 border，但含 padding —— 内容区要再减掉左右 padding */
+    inner = card.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  }
+  const narrow = stage.classList.contains('vpn');
+  /* 这个卡宽在真实页面里存不存在？窄屏档实测 130–175、宽屏档 177–283，之间是断点空档 */
+  const real = inner >= 130 && inner <= 175 ? '真实窄屏档（视口 ≤560px）'
+    : inner >= 177 ? '真实宽屏档（视口 ≥561px）'
+    : '★ 真实页面没有这个卡宽（断点空档 176px 附近）';
+  $('stageInfo').innerHTML =
+    `卡内容区 <b>${inner.toFixed(0)}</b>px ｜ 版式 <b>${narrow ? '窄屏（≤' + CARDP_NARROW + '）' : '宽屏（>' + CARDP_NARROW + '）'}</b>`
+    + ` ｜ ${real}`;
+  const ruler = $('ruler');
+  const pad = card ? parseFloat(getComputedStyle(card).paddingLeft) : 13;
+  ruler.innerHTML = `<span style="left:${inner / 2 + pad}px">← ${inner.toFixed(0)}px</span>`;
+}
+
+/* ============================================================
+ * 控件
+ * ============================================================ */
+const CW_MIN = 120, CW_MAX = 300;
+function setWidth(v, fromNum){
+  st.cw = Math.max(CW_MIN, Math.min(CW_MAX, Math.round(+v || 150)));
+  $('wRange').value = st.cw;
+  if (!fromNum) $('wNum').value = st.cw;
+  applyWidth(); scheduleLayout(); writeHash();
+}
+function syncName(len){
+  st.name = composeName(len);
+  $('nmInput').value = st.name;
+  $('nmLenVal').textContent = len;
+}
+function syncTag(n){
+  st.manualTag = false;
+  st.units = unitsByCount(n);
+  $('tgInput').value = tagText(st.units);
+  $('tgLenVal').textContent = n;
+}
+$('wRange').addEventListener('input', e => setWidth(e.target.value));
+$('wNum')  .addEventListener('input', e => setWidth(e.target.value, true));
+/* 快切 = 真实视口：点了直接给出该视口下【真实的卡宽】与【真实的断点档】（tools/out/_cw.mjs 实测） */
+[[340,130],[360,140],[390,155],[410,165],[430,175],[480,200],[560,149],[561,221],[600,239],[640,258],[700,177],[768,199],[1024,283],[1440,237],[320,272]]
+  .forEach(([vw, cw]) => {
+    const b = document.createElement('button');
+    b.className = 'chip mono';
+    b.textContent = vw;
+    b.title = vw + 'px 视口 → 角色卡内容区 ' + cw + 'px ｜ ' + (vw <= 560 ? '窄屏版式' : '宽屏版式');
+    b.addEventListener('click', () => setWidth(cw));
+    $('vwChips').appendChild(b);
+  });
+NAME_PRESETS.forEach(n => {
+  const b = document.createElement('button');
+  b.className = 'chip'; b.textContent = n;
+  b.addEventListener('click', () => {
+    st.name = n; $('nmInput').value = n;
+    $('nmLen').value = Math.min(14, Math.max(1, Array.from(n).length));
+    $('nmLenVal').textContent = $('nmLen').value;
+    render(); writeHash();
+  });
+  $('nmChips').appendChild(b);
+});
+$('nmInput').addEventListener('input', e => {
+  st.name = e.target.value;
+  $('nmLen').value = Math.min(14, Math.max(1, Array.from(st.name).length));
+  $('nmLenVal').textContent = $('nmLen').value;
+  render(); writeHash();
+});
+$('nmLen').addEventListener('input', e => { syncName(+e.target.value); render(); writeHash(); });
+$('tgInput').addEventListener('input', e => {
+  st.manualTag = true; st.units = parseTagText(e.target.value);
+  render(); writeHash();
+});
+$('tgLen').addEventListener('input', e => { syncTag(+e.target.value); render(); writeHash(); });
+$('capName').addEventListener('input', e => {
+  st.capName = +e.target.value; $('capNameVal').textContent = st.capName + '%';
+  layoutSx(); scheduleLayout();
+});
+$('capTag').addEventListener('input', e => {
+  st.capTag = +e.target.value; $('capTagVal').textContent = st.capTag + '%';
+  layoutSx(); scheduleLayout();
+});
+/* 一键跳到真实最坏工况：卡宽 130px（= 340 视口，真实最小窄屏卡宽）+ 5 词定位
+   （= 真实最长定位 126.3px「输出·功能·生存｜元素伤害·冷却」）→ 定位折 2 行 104.3 / 22px，
+   两行长度差 ~79%；勾上 balance 能摊匀到 ~21%。 */
+$('btnDemo').addEventListener('click', () => {
+  setWidth(130);
+  $('nmLen').value = 4; syncName(4);
+  $('tgLen').value = 5; syncTag(5); $('tgLenVal').textContent = 5;
+  render(); writeHash();
+});
+$('tgCopy').addEventListener('click', async () => {
+  const url = location.href.split('#')[0] + buildHash();
+  try { await navigator.clipboard.writeText(url); $('copied').textContent = '已复制'; }
+  catch { const t=document.createElement('textarea'); t.value=url; document.body.appendChild(t); t.select();
+          document.execCommand('copy'); t.remove(); $('copied').textContent = '已复制'; }
+  setTimeout(() => $('copied').textContent = '', 1800);
+});
+
+/* ---- 自定义方案面板 ---- */
+const CX_EXCL = [['xsame','fit']];   /* 「首行放多少」与「整段落行」二选一 */
+function buildCxPanel(){
+  const host = $('cxGroups');
+  host.innerHTML = '';
+  FLAG_DEFS.forEach(g => {
+    const box = document.createElement('div');
+    box.className = 'grp';
+    box.innerHTML = '<h4>' + g.g + '</h4>';
+    box.title = g.items.map(x => x.t + '：' + x.d).join('\n');
+    g.items.forEach(it => {
+      const id = 'cx_' + it.k;
+      /* 说明放进 title（悬停才显示）—— 内联展开会把面板撑到两屏，
+         一屏看不到全部开关就等于没有分组 */
+      const lab = document.createElement('label');
+      lab.title = it.d;
+      lab.innerHTML = '<input type="checkbox" id="' + id + '" data-k="' + it.k + '"'
+        + (st.custom.has(it.k) ? ' checked' : '') + '>'
+        + '<b>' + it.t + '</b>';
+      box.appendChild(lab);
+    });
+    host.appendChild(box);
+  });
+  host.onchange = e => {
+    const k = e.target.dataset.k;
+    if (!k) return;
+    if (e.target.checked){
+      CX_EXCL.forEach(pair => { if (pair.includes(k)) st.custom.delete(pair.find(x => x !== k)); });
+      st.custom.add(k);
+    } else st.custom.delete(k);
+    syncCxPanel();
+  };
+}
+function syncCxPanel(){
+  $('cxGroups').querySelectorAll('input[type=checkbox]').forEach(cb => {
+    const on = st.custom.has(cb.dataset.k);
+    cb.checked = on;
+    cb.closest('label').classList.toggle('off', !on);
+  });
+  applyCustomFlags();
+  updateCxOut();
+}
+function applyCustomFlags(){
+  /* lad7 走作用域类；互斥对里 lad7 优先（laddder 会被它的规则压过） */
+  stage.classList.toggle('vpk7', st.custom.has('lad7'));
+  render();
+}
+/* 导出：开关串 + 等价 CSS + 注意事项 */
+function cxText(){
+  const keys = Array.from(st.custom);
+  const L = [];
+  L.push('【自定义方案 · 配装条】');
+  L.push('开关：' + (keys.length ? keys.join(' ') : '（空）'));
+  L.push('');
+  L.push('/* —— 与 src/styles.css 的等价写法（可直接贴）—— */');
+  const nar = keys.filter(k => FLAG_CSS[k] && (k === 't4' || k === 'fit' || k === 'n2auto'
+    || k === 'bal' || k === 'tagbreak' || k === 'gap8' || k === 'ct'));
+  const wide = keys.filter(k => FLAG_CSS[k] && (k === 'ladder' || k === 'lad7' || k === 'nm'));
+  const xs = keys.filter(k => FLAG_CSS[k] && k.startsWith('x'));
+  if (st.custom.has('ladder') && st.custom.has('lad7')) L.push('/* ⚠️ ladder 与 lad7 同时勾选：lad7 阶梯优先生效 */');
+  if (keys.includes('t4') && keys.includes('fit')) L.push('/* ⚠️ t4 与 fit 同时勾选：fit 写在后面、优先生效 */');
+  if (!keys.includes('t4') && !keys.includes('fit')) L.push('/* 未选版式 = 维持现状（普通条名左标右同行） */');
+  nar.forEach(k => L.push(...FLAG_CSS[k]));
+  L.push('');
+  wide.forEach(k => L.push(...FLAG_CSS[k]));
+  if (xs.length){
+    L.push('/* —— X 方案：CSS 部分 —— */');
+    xs.forEach(k => L.push(...FLAG_CSS[k]));
+    L.push('');
+    L.push('/* —— X 方案：逐行 JS（间隔 clamp / 90% 上限 / 交叠）——');
+    L.push('   必须逐行算：这三个量都依赖同行内三个矩形的实测宽度，CSS 表达不了。');
+    L.push('   接在 renderChars() 末尾（与 markWrappedBuildNames 同批调用），resize 也要重算。 */');
+    L.push(JS_X.trim());
+  }
+  L.push('');
+  L.push('/* 落地前需要复核的三件事：');
+  L.push('   1) 窄屏：溢出 / 压编号 / 行首标点（探针 tools/out/_n2.mjs 同口径量 492 行 × 17 档）；');
+  L.push('   2) 宽屏：撞档率（同角色内「不同方案但宽度差 <6px」），现行基线 18.9%；');
+  L.push('   3) lad7 若要落地，阶梯值需按全量实测重新拟合（playground 里这组是估值）；');
+  L.push('   落地后跑 node tools/check_card_labels.js --built + node build.js。 */');
+  return L.join('\n');
+}
+function updateCxOut(){ $('cxOut').value = cxText(); }
+$('cxCopy').addEventListener('click', async () => {
+  const txt = cxText();
+  try { await navigator.clipboard.writeText(txt); }
+  catch { const t = document.createElement('textarea'); t.value = txt; document.body.appendChild(t); t.select();
+          document.execCommand('copy'); t.remove(); }
+  $('cxCopied').textContent = '已复制到剪贴板';
+  setTimeout(() => $('cxCopied').textContent = '', 2200);
+});
+/* 「载入某方案」= 直接从那张方案卡的 flags 派生，不再手写一份开关列表。
+   ⚠️ 之前手写漏了 k-pad4（横向 padding 4px），结果「载入 S2」与 S2 卡差 2px 内边距、断行点不同 ——
+   看着就像「复制过来没生效」。派生式写法从根上避免这类漏项。 */
+function presetFrom(id){
+  const v = VARIANTS.find(x => x.id === id);
+  if (!v) return;
+  const keys = v.flags.split(/\s+/).map(c => c.replace(/^k-/, '')).filter(k => FLAG_CSS[k]);
+  st.custom = new Set(keys);
+  syncCxPanel();
+}
+$('cxPresetS3').addEventListener('click', () => presetFrom('s2c'));   // 现行 + balance
+$('cxPresetS2').addEventListener('click', () => {                     // 现行版式（S2 口径）
+  st.custom = new Set(['fit','n2auto','ct','pad4']);
+  syncCxPanel();
+});
+$('cxPresetX').addEventListener('click', () => presetFrom('sx'));
+$('cxClear').addEventListener('click', () => { st.custom = new Set(); syncCxPanel(); });
+
+/* ---- 方案简述弹窗 ---- */
+const dlg = $('dlg');
+grid.addEventListener('click', e => {
+  const btn = e.target.closest('.vname');
+  if (!btn) return;
+  const v = VARIANTS.find(x => x.id === btn.dataset.dlg);
+  if (!v) return;
+  $('dlgTitle').textContent = v.name;
+  $('dlgBody').innerHTML = v.note;
+  dlg.showModal();
+});
+$('dlgClose').addEventListener('click', () => dlg.close());
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });   // 点遮罩关闭
+
+/* ---- URL hash：可分享/复盘某个组合（cw = 卡片内容区宽） ---- */
+function buildHash(){
+  const p = new URLSearchParams();
+  p.set('cw', st.cw); p.set('nm', st.name); p.set('tg', tagText(st.units));
+  return '#' + p.toString();
+}
+function writeHash(){ history.replaceState(null, '', buildHash()); }
+function readHash(){
+  if (!location.hash) return false;
+  const p = new URLSearchParams(location.hash.slice(1));
+  /* cw 是现在的键名；w 是旧版「视口宽」键，兼容旧链接做个粗换算 */
+  if (p.has('cw')) st.cw = Math.max(CW_MIN, Math.min(CW_MAX, +p.get('cw') || 150));
+  else if (p.has('w')) st.cw = Math.max(CW_MIN, Math.min(CW_MAX, Math.round((+p.get('w') - 24) / 2.05)));
+  else return false;
+  if (p.has('nm')) st.name = p.get('nm');
+  if (p.has('tg')){ st.units = parseTagText(p.get('tg')); st.manualTag = true; }
+  return true;
+}
+
+/* ---- 初始化 ---- */
+(function init(){
+  readHash();
+  $('wRange').value = st.cw; $('wNum').value = st.cw;
+  $('nmInput').value = st.name;
+  $('nmLen').value = Math.min(14, Math.max(1, Array.from(st.name).length));
+  $('nmLenVal').textContent = $('nmLen').value;
+  $('tgInput').value = tagText(st.units);
+  buildCxPanel(); updateCxOut();
+  render();
+  window.addEventListener('resize', () => scheduleLayout());
+})();
+</script>
+<style>
+/* 每方案一卡一框：卡内只有一条配装条，.cc-builds 的下外边距去掉（真实卡里它下面还有别的块） */
+#grid .bprow{display:flex;flex-direction:column;}
+#grid .cc-builds{margin-bottom:0;}
+</style>
+</body>
+</html>
