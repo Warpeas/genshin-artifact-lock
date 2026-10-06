@@ -475,54 +475,114 @@ input[type=range]{accent-color:var(--gold);}
 .bm-addrole input{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line);
   color:var(--txt);border-radius:var(--r-xs);padding:5px 8px;font-size:var(--fs-sm);}
 /* 卡片配装条：编号 + 套装名（左栏）+ 定位（右栏） 合成一行可点选按钮。
-   版式：同角色下每条按钮一律等宽 —— .cc-builds 竖排、.cc-bp 宽 100%，按钮不再按内容收缩，
-   于是「名称靠左、定位靠右」在每条上是同一套栏位（不再出现“名段 + 定位段顺次流式排列、
-   定位被长名挤到下一行”的形态）。
+   版式：按钮【按内容量分档收缩】、不再一律撑满卡宽 —— .cc-builds 竖排、.cc-bp align-self:flex-start
+   + data-lad 三档 min-width，于是「名称 → 定位」之间不再留大片空白，
+   且同一角色下每条长度不同，本身成为区分方案的视觉线索（实测 1440 档空隙中位 85px → 4px）。
+   ⚠️ 档位数值与 app.js 的 nameLadder() 是一对，改一边务必改另一边。
+   档位依据（实测 1440 档 492 行，名段宽按纯汉字数单调）：
+     lad1 ≤2 汉字（名段恒 22px）· lad2 3–4 字（22–59px）· lad3 ≥5 字（69–103px）
+   分档只数汉字不数总字符：「如雷 + 宗室」总字符 7 但纯中文 4 字，与「苍白之火」同档。
+   阶梯用 min-width 而非 width:max-content —— 后者会让「.wide 长多套名」按 max-content 撑到
+   一行不折（实测米卡/菲谢尔/凝光行高 62px → 192–281px，名段被逐字拆成 9 行）。
+   min-width 只定下限、shrink-to-fit 仍受 max-width:100% 与内部换行约束，长名行因此安全。
+   档位说明：.wide 长名行（多套任选）不参与分档，恒 100% 宽 —— 见下方 .cc-bp.wide。
    ⚠️ 套装名的折行规则按「角色卡实际可用宽度」分两档，两档都是硬约束，别退回「整串文本随便断」：
-   ① 手机窄屏（≤560px，.char-grid 最小列 150px、按钮常只有一百多 px）—— 只在 2 字边界折行：
-      .cc-bp-name.n2 = 恒 2 字宽的名列 + 按字断行 → 两字名绝不折成两行、三字折 2+1、四字折 2+2；
-      更长的名字（含「如雷 + 宗室」这类 2+2 组合）走 .nfull，不做 2 字切分（会切在名字中间）。
+   ① 手机窄屏（≤560px，.char-grid 最小列 150px、按钮常只有一百多 px）—— 2026-10-05 起【一律整段保留】：
+      .n2 与 .nfull 同规则（max-width 扣掉编号列 + keep-all + anywhere 兜底），不再有「2 字定宽 + 按字断行」。
+      旧规则是「名段与定位同行」时代的产物（把名段压到 2 字宽以对齐 2 字边界）；T4 强制两行后名段独占
+      第一行、可用宽 ≈124px，定宽纯属负债，曾造成「四字名被折成 2+2、五字名反而一行」的反直觉观感。
+      放开后实测（492 行 × 320–560）名段折行 123→24（560 档）/ 121→22（390 档）/ 103→4（320 档），
+      零溢出 / 零压编号 / 零行首标点；详见下方窄屏段那条规则的完整实测数据。
    ② 宽屏（≥561px，.char-grid 最小列 200px、角色卡内容区 ≥170px）—— 见文件下方的 @media(min-width:561px)：
       放开 .n2 的定宽，四字及以下套装名一律单行不折（列宽足够，不该再被 2 字定宽折成两行）。
-   .nfull 在两档下都是整段保留。
-   ③ 定位标签里每个词（「攻击·增伤」「元素伤害」…）由 .bt-w 单独包住并 nowrap，词内绝不拆行；
-      标签整段贴按钮右缘（margin-left:auto）；一行放不下时整段折到名段下方，仍贴右缘。
+   .n2 / .nfull 在两档下现在都是整段保留（区别只剩 .n2 保留 JS 类名、宽屏额外 nowrap）。
+   ③ 定位标签里每个「词 + 它后面的分隔符」合成一个 .bt-w 单元（nowrap），单元之间才是断行点（<wbr>）——
+      词内绝不拆行，且每行都以一个完整的词开头，行首不会挂出「·」「｜」；
+      标签整段贴按钮右缘（margin-left:auto）；普通条在右栏内于单元间换行，不落到左侧名段下方。
    ④ 多套任选长名（.wide，如米卡「少女 / 海染 / 昔时（任选2套）」）：名段不跟定位段抢同一行 ——
       定位段 basis 100% 独占下一行并贴右缘，名段在左栏内自行折行；按钮既不被撑破、两栏也不互挤。
       长名里的「 / 」由 app.js 用 &nbsp; 绑在前一个名字后（换行只允许发生在斜杠之后），
       避免窄屏换行时「/」落在行首。
    行列结构：.cc-bp-idx（编号，不折行）/ .cc-bp-name（套装名段，左栏）/ .cc-bp-tag（定位段，右栏）。 */
-.cc-builds{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
+.cc-builds{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
 .cc-bp{
-  display:flex;flex-wrap:nowrap;align-items:flex-start;align-content:center;column-gap:4px;width:100%;
-  font-size:11px;max-width:100%;padding:3px 8px;border-radius:var(--r-xs);
-  background:var(--panel2);border:1px solid var(--line-soft);color:var(--txt2);
-  cursor:pointer;font-family:inherit;line-height:1.5;text-align:left;
-  transition:border-color .15s var(--ease-fast),color .15s var(--ease-fast),background .15s var(--ease-fast);
+  display:flex;flex-wrap:nowrap;align-items:flex-start;align-content:center;column-gap:4px;
+  width:100%;max-width:100%;
+  font-size:11px;padding:6px;border-radius:var(--r-xs);
+  background:color-mix(in srgb,var(--panel2) 88%,transparent);
+  border:1px solid color-mix(in srgb,var(--line-soft) 70%,transparent);color:var(--txt);
+  cursor:pointer;font-family:inherit;line-height:1.5;text-align:left;font-weight:400;
+  box-shadow:inset 2px 0 0 transparent;
+  transition:border-color .15s var(--ease-fast),color .15s var(--ease-fast),background .15s var(--ease-fast),box-shadow .15s var(--ease-fast);
 }
-.cc-bp:hover{border-color:color-mix(in srgb,var(--gold) 40%,var(--line));color:var(--txt);}
+@media (hover:hover){
+  .cc-bp:hover{border-color:color-mix(in srgb,var(--gold) 36%,var(--line));
+    background:color-mix(in oklab,var(--gold) 6%,var(--panel2));}
+}
 .cc-bp.on{
-  background:color-mix(in oklab,var(--gold) 16%,var(--panel2));
-  color:var(--gold2);border-color:color-mix(in srgb,var(--gold) 34%,transparent);font-weight:600;
+  background:color-mix(in oklab,var(--gold) 14%,var(--panel2));
+  color:var(--gold2);border-color:color-mix(in srgb,var(--gold) 38%,transparent);
+  box-shadow:inset 2px 0 0 var(--gold);
 }
-/* 编号：独立一段、不折行，永远对齐套装名的第一行行首 */
-.cc-bp-idx{flex:none;}
-/* 套装名段（左栏）：n2 = ≤4 字纯中文名（名列 2 字宽 + 按字断行 → 只在 2 字边界折行）；
+/* 编号对齐名称首行，宽度允许两位数；切换主推不改变文字尺寸，避免折行跳动。 */
+.cc-bp-idx{
+  flex:none;min-width:1.5ch;height:1.35em;padding:0 1px;white-space:nowrap;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:3px;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1;
+  background:color-mix(in srgb,var(--txt2) 12%,transparent);color:var(--txt3);
+}
+.cc-bp.on .cc-bp-idx{
+  background:color-mix(in srgb,var(--gold) 38%,transparent);color:var(--gold2);
+}
+/* 套装名段（左栏）：n2 = ≤4 字纯中文名（窄屏曾在「恒 2 字宽名列」内按 2 字边界折行，
+   ⚠️ 2026-10-05 起窄屏已放开定宽、改为整段保留，见下方窄屏段；此处保留类名供 JS 与宽屏规则使用）；
    nfull = 更长 / 非中文名，整段保留（keep-all 下只剩空格可断，极窄时才用 anywhere 兜底防溢出）。
    nfull 允许占满定位段之外的空间并在栏内自行折行（flex:0 1 auto + min-width:0），长多套名只见于 .wide 按钮。 */
-.cc-bp-name{flex:0 1 auto;line-height:1.35;}
+.cc-bp-name{flex:0 1 auto;line-height:1.35;font-weight:600;}
 .cc-bp-name.n2{flex:0 0 auto;width:2.2em;word-break:break-all;}
 .cc-bp-name.nfull{max-width:100%;flex:0 1 auto;min-width:0;word-break:keep-all;overflow-wrap:anywhere;}
 /* 定位段（右栏）：同行右侧固定成栏（margin-left:auto + text-align:right）；
+   亮度层次 = 套装名(--txt) > 大类(--txt2) > 关键词(--txt3) > 分隔符(.bt-sep，最淡)，定位整体不压过名称。
+   ⚠️ 每个 .bt-w = 「词 + 它后面的分隔符」，分隔符在【单元内部】——断行点（<wbr>）只落在单元之间，
+   所以每行都以一个完整的词开头，行首不会挂出「·」或「｜」（行首禁则）。
    不设 min-width:0 —— 保留 flex 默认 min-content 下限，窄屏时宁可挤窄左栏名称，也不让定位词溢出/断在词内 */
 .cc-bp-tag{flex:1 1 auto;margin-left:auto;text-align:right;
-  font-size:var(--fs-xs);opacity:.85;font-weight:400;line-height:1.35;}
+  font-size:11px;font-weight:400;line-height:1.35;color:var(--txt3);}
 .cc-bp-tag .bt-w{white-space:nowrap;}
+.cc-bp-tag .bt-cat{color:var(--txt2);}
+.cc-bp-tag .bt-sep{opacity:.62;font-weight:400;}
+.cc-bp.on .cc-bp-tag{color:color-mix(in srgb,var(--gold2) 66%,var(--txt3));}
+.cc-bp.on .cc-bp-tag .bt-cat{color:var(--gold2);}
+.cc-bp.on .cc-bp-tag .bt-sep{opacity:.55;}
 /* 多套任选长名（.wide）：普通条「名左标右恒定同行」的规则在此让位 —— 定位段 basis 100% 独占下一行（仍右对齐），
-   名段 basis 0 保证它留在编号同一行、只在左栏内自行折行，两栏互不挤压 */
-.cc-bp.wide{flex-wrap:wrap;}
+   名段 basis 0 保证它留在编号同一行、只在左栏内自行折行，两栏互不挤压。
+   ⚠️ .wide 恒 100% 宽、不参与 data-lad 分档：长多套名（「磐岩 / 角斗士 / 追忆 / 来歆余响 / 辰砂（任选2套）」）
+   内容量本就撑满，任何收缩下限都会把它挤成逐字折行的窄条（实测按 max-content 收缩时该行 62px → 281px）。 */
+.cc-bp.wide{flex-wrap:wrap;row-gap:4px;width:100%;}
 .cc-bp.wide .cc-bp-name{flex:1 1 0;min-width:0;}
 .cc-bp.wide .cc-bp-tag{flex:1 1 100%;margin-left:0;}
+/* 名段已折行时（app.js markWrappedBuildNames() 量行高后打的 .nmwrap），定位段独占下一行、整段不折。
+ * 场景：名段（如「如雷 + 宗室」「苍白之火」）在窄屏已经占了第二行，定位再挤在右侧折成两三行
+ * 既碎又难读。实测 390 档该行定位占 3 行、而整段自然宽只有 101.7px、卡宽 155px —— 本该一行放下。
+ * ⚠️ 只在【宽屏】生效：窄屏（≤560px）另有「全部两行」的版式（见文件下方的窄屏段），
+ *   那条规则让每条都是上行名 + 下行位，.nmwrap 在窄屏本就多余。
+ *   两组规则必须按断点分开 —— 窄屏段也用 .nmwrap 的话，它的 row-gap:2px 会覆盖窄屏段的 row-gap:0。
+ * 独占下行后实测（768 / 1440 档）：定位折行 29 → 18（768）、文字行数/条 2.1 → 2.05，溢出/重叠/压编号 0。
+ * ⚠️ 定位段仍保留 .bt-w 的 <wbr> 断行点：独占整行后若整段自然宽超过卡宽，词组之间仍可换行兜底。
+ * ⚠️ margin-left 必须归 0 —— 定位段独占整行后不再靠右自动贴边，改由 text-align:right 右对齐。 */
+@media (min-width:561px){
+  .cc-bp.nmwrap{flex-wrap:wrap;row-gap:2px;}
+  .cc-bp.nmwrap .cc-bp-tag{flex:1 1 100%;margin-left:0;text-align:right;}
+}
+/* 分档下限：min-width 只定下限，实际宽度 = max(档位下限, 内容自然宽) 再被 max-width:100% 夹住。
+   1em = 按钮自身 font-size（11px），所以档位值与字号无关，改字号不会错位。
+   10 / 13.5 / 17.5em 是量出来的落点：1440 档实测行宽 min/med/max = 110 / 155.8 / 237px，
+   同角色内 853 个方案对里 161 对（18.9%）宽度差 <6px 属「长度恰好撞档」，其余 81% 长度可区分。
+   ⚠️ 声明位置在文件下方的 @media(min-width:561px) 里（与 .n2 放开定宽同一档）——
+   窄屏不能用分档：≤560px 单列 minmax(150px,100%)、卡内容区只有 140–155px，
+   定位标签本来就在折行（390 档 256/492 条折行），此时 min(100%,10em/13.5em/17.5em) 会退化成
+   「恒等于卡宽」：实测 390 档 60.5% 的 lad1 行与 100% 的 lad3 行撑满 155px，撞档 161 → 311；
+   360 档更糟（lad2/lad3 全部撑满 140px，撞档 716）。窄屏没有收缩空间可让，一律等宽 100%。 */
 /* 宽屏拆档：≥561px 时角色卡不再走「150px 最小列」，内容区回到 170px 以上，
    四字套装名（≈44px）单行放得下 —— 放开 .n2 的「恒 2 字宽 + 按字断行」，
    让四字及以下名一律单行、不被固定列宽折成两行。
@@ -530,6 +590,102 @@ input[type=range]{accent-color:var(--gold);}
    不是凭感觉取的视口值；≤560px 手机档保持上面的 2 字边界折行规则不变。 */
 @media (min-width:561px){
   .cc-bp-name.n2{width:auto;word-break:normal;overflow-wrap:normal;white-space:nowrap;}
+  /* 宽屏起按 data-lad 分档收缩（理由见上方档位注释）：窄屏单列只有 140–155px，
+     收缩下限会退化成恒等于卡宽，反而让同角色各行重新等长、失去区分度。
+     ⚠️ 必须同时把 width 从 100% 改成 auto —— align-self 只在 width:auto 时才起作用，
+     留着 width:100% 会让 min-width 完全失效（实测 12 档全部退回等宽、空隙回到 85px）。 */
+  .cc-bp{width:auto;align-self:flex-start;}
+  .cc-bp.wide{width:100%;}
+  .cc-bp[data-lad="1"]{min-width:min(100%,10em);}
+  .cc-bp[data-lad="2"]{min-width:min(100%,13.5em);}
+  .cc-bp[data-lad="3"]{min-width:min(100%,17.5em);}
+  /* 名称与定位之间的额外留白（8px）。收缩后按钮按内容收紧，原来的 column-gap:4px
+     只剩 4px、名称与定位几乎贴在一起；这里给定位段补 8px 左外边距。
+     实测（1440 档 492 行）空隙中位 4px → 12px，撞档率不变（161/853）、
+     定位折行 768 档 20 → 29、溢出 0 —— 12px 是「分得清」与「不引发折行」之间的平衡点。
+     改 column-gap 会连带拉开「编号↔名称」，所以只给定位段加外边距。 */
+  .cc-bp-tag{margin-left:8px;}
+  /* .wide 的定位段在【下一行】且自带 margin-left:0（独占行、右对齐），
+     不能继承上面那条 8px 左外边距 —— 否则整段右移 8px、与名段不对齐。 */
+  .cc-bp.wide .cc-bp-tag{margin-left:0;}
+}
+
+/* ============================================================
+ * 窄屏（≤560px）角色卡配装条：定位段【能同行就同行】+ 按卡宽自适应收缩
+ * ============================================================
+ * 1) 定位段「能同行就同行」（2026-10-05 .2 起，取代上一版的「强制两行」）：
+ *    定位段 flex:1 1 auto —— 放得下就与名段同行，放不下才落到下一行（桌面端一直是这个行为）。
+ *    上一版强制两行（basis:100% 独占下行）是为了消灭「同一角色下短名行一行、长名行两行」的参差感，
+ *    但它有个更刺眼的问题：**短名 + 短定位时上行只有一个短名字，整行白掉**（如「如雷」+「输出·功能」），
+ *    观感比参差更糟。实测（492 行 × 17 档，A=强制两行 / B=能同行就同行）：
+ *      同行率：560 档 34% ｜ 480 档 95% ｜ 430 档 79% ｜ 390 档 73% ｜ 360 档 26% ｜ 340 档 25% ｜ 320 档 95%
+ *      文字行数/条、定位折行数、撞档率、溢出/重叠/压编号/行首标点/超高行 —— **与强制两行逐项相同**
+ *      按钮均高 44.7 → 39.1px（390 档），更紧凑
+ *      最小可点面积 4875 → 4017px²（390 档，−18%，仍远高于 44px 触摸阈值）
+ *    ⚠️ 已知代价（主人已知情后选的）：同行率对卡宽非常敏感 —— 480 视口 95% vs 370 视口 34%，
+ *      同为手机竖屏、机型不同长相差别很大；且同一张卡里同行/两行混排。
+ *    ⚠️ 名段必须 flex:0 1 auto（配合 flex-wrap:wrap），不能用 flex-basis:100% ——
+ *      编号徽标（.cc-bp-idx，flex:none）是兄弟 item，basis:100% 会把它挤到下一行、压住编号。
+ *    ⚠️ 这段与上面的 .nmwrap 分断点：.nmwrap 只在宽屏生效，窄屏由这里的规则全量接管。
+ * 2) 按卡宽自适应收缩（container query）：窄屏单列，卡内容区只有 130–155px，
+ *    一律等宽则每条一样长、长度不提供区分信息；但盲目按宽屏那套固定 px 下限收缩会退化
+ *    （下限 ≥ 卡宽时 min-width:min(100%,X) 恒等于卡宽 = 等宽）。逐 10px 扫 320–480 档的实测结论：
+ *      卡内容区 ≥145px 时弹性能把「不同方案撞档率」降到 ≤48%；≤136px 时恒为 84%（几何下限，
+ *      可行行宽取值被压到 2–3 个，任何方案都救不了 —— 340/350/360 三档全部如此）。
+ *    所以用 @container 直接量【卡内容区实际宽度】决定收不收缩：≥145px 才收缩、≤136px 自动回退等宽。
+ *    比「视口宽度近似」可靠：视口和卡宽不是线性关系（见 @media(max-width:560px) 的 minmax(150px,100%)），
+ *    将来改 .char-grid 列宽也不用重调断点。
+ *    ⚠️ .cc-builds 声明 container-type 后，其内部不能再用百分比参照自身宽度以外的量（这里只用 min-width%，安全）。
+ *    ⚠️ .wide 恒 100% 宽、不参与收缩：长多套名内容量本就撑满，收缩会把它挤成逐字折行。 */
+@media (max-width:560px){
+  /* 横向内边距 6 → 4px：这 4px 正好把「定位段独占整行却仍差一点」的临界行救回来。
+   * 实测（360 视口 / 卡宽 140px）：改之前定位折行 63 条、整段自然宽 126.3px vs 可用 126px
+   * 刚好差一点放不下（丽莎「如雷」的「输出·功能｜元素伤害·冷却」被折成 104.3 / 22px 两行，
+   * 第二行只剩「冷却」两个字）；改之后 63 → 0，全部一行写完。
+   * 零代价：不改行数（2.40 → 2.27）、不产生溢出/压编号、视觉上左右各留 4px 仍对称。 */
+  .cc-bp{flex-wrap:wrap;row-gap:0;padding-left:4px;padding-right:4px;}
+  /* 名段一行：basis 用 auto（按内容），让它跟在编号徽标右侧同一行 */
+  .cc-bp .cc-bp-name{flex:0 1 auto;min-width:0;}
+  /* 定位段能同行就同行：basis 用 auto（按内容），同行时贴右缘靠 flex 剩余空间、放不下时落到下一行
+     仍是右对齐（text-align:right），两种形态下右缘都对齐按钮右边 */
+  .cc-bp .cc-bp-tag{flex:1 1 auto;margin-left:auto;text-align:right;
+    /* S2 + balance：定位折成多行时把两行长度摊匀（Chromium 114+，旧内核静默忽略）。
+       不改行数、不改盒宽，只改「行长内文字落在哪一格」——
+       实测真实最坏工况（卡宽 130px / 5 词定位 126.3px）：两行长度差 79% → 21%。 */
+    text-wrap:balance;}
+  /* .nfull 宽度上限扣掉编号列：基础规则给的是 max-width:100%（= 整个按钮宽），
+     卡很窄时（实测 340 档卡宽 130px）长套装名会撑到 102.9px，把编号徽标从
+     1.5ch（16.5px）挤扁到 10.2px、名段左缘越界压住编号。
+     扣掉「编号 1.5ch + column-gap 4px + 按钮左右 padding 8px（窄屏已从 6 收到 4）」后编号保住原宽。
+     ⚠️ 试过的其他修法都更差：flex-shrink:0 / min-width:2em / min-content / 禁 anywhere
+     —— 全部无效（名段照样 102.9px，因为它是被 max-width 放开的）；
+     改编号为绝对定位虽能修好，但双折行从 0 涨到 46，直接抵消「定位折行 = 0」的收益。 */
+  .cc-bp-name.nfull{max-width:calc(100% - 1.5ch - 4px - 8px);}
+  /* 名段一律整段保留（2026-10-05，.5）：窄屏【不再】把 ≤4 字纯中文名塞进「恒 2.2em 名列 + 按字断行」。
+     旧规则是「名段与定位同行」时代的产物 —— 名段被压到 2 字宽是为了让「两字名一行、三字 2+1、
+     四字 2+2」按 2 字边界对齐；T4 强制两行之后名段独占第一行、可用宽 ≈124px（卡内容区 145 − 编号 16.5 − gap 4），
+     2.2em 定宽变成纯负债：四字名（44px）明明一行放得下却被切成 2+2，而 5 字以上走 .nfull 整段保留、反而不折 ——
+     造成「字少的反而折、字多的反而不折」的反直觉观感。
+     实测（492 行 × 320–560 七档）放开后：名段折行 123→24（560 档）、121→22（390 档）、103→4（320 档）；
+     文字行数 1112→1013、按钮均高 47.8→44.8px；零溢出 / 零重叠 / 零压编号 / 零行首标点 / 零超高行；
+     宽屏（≥561px）本来就放开了定宽，指标逐档完全不变。
+     代价：撞档率（同行内不同方案宽度差 <6px）390 档 355→375、370 档 393→485 —— 名段按内容自然宽之后
+     更多行落到 @container 的同一档下限，长度线索略变弱。换来的是 100 行名段从 2 行变 1 行、卡片更矮更整齐。 */
+  .cc-bp .cc-bp-name.n2{width:auto;max-width:calc(100% - 1.5ch - 4px - 8px);
+    word-break:keep-all;overflow-wrap:anywhere;}
+  /* 容器查询【必须嵌在窄屏 media 内】：@container 不带断点，宽屏（卡宽 199–258px）也会匹配，
+     那样它的 72%/88%/100% 会覆盖掉 @media(min-width:561px) 里的 10/13.5/17.5em 档位 ——
+     实测宽屏撞档从 18.9% 恶化到 40%（1440 档）、取值档数从 3 涨到 6。
+     嵌套后宽屏完全不受容器查询影响，容器查询只服务窄屏。 */
+  .cc-builds{container-type:inline-size;}
+  @container (min-width:145px){
+    .cc-bp{width:auto;align-self:flex-start;}
+    .cc-bp.wide{width:100%;}
+    /* 下限用百分比：跟着卡宽走，卡越宽档位留白越多（固定 px 在 145–200px 区间容易退化） */
+    .cc-bp[data-lad="1"]{min-width:72%;}
+    .cc-bp[data-lad="2"]{min-width:88%;}
+    .cc-bp[data-lad="3"]{min-width:100%;}
+  }
 }
 .cc-mod,.bm-mod{font-size:11px;color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);
   border-radius:var(--r-xs);padding:0 5px;line-height:16px;}

@@ -41,8 +41,10 @@ function buildSetsLabel(b, short) {
   if (p.length <= k) return p.join(' + ');
   return p.join(' / ') + (k === W_PICK ? '（任选2套）' : '（任选1套）');
 }
-/* 角色卡套装名（HTML）：多套任选名里的「 / 」用不换行空格绑在前一个名字之后，
- * 换行只允许发生在「斜杠之后」的空格处 —— 否则窄屏折行时斜杠会落到行首（破形）。
+/* 角色卡套装名（HTML）：多套任选名里的「 / 」用不换行空格绑在前一个名字之后 ——
+ * 断行点只留在斜杠之后，避免窄屏折行时斜杠落到行首（破形）。
+ * 「 + 」（2+2 组合）不绑：与内置行为一致，且「+」不属于中文行首禁则的标点；
+ * 长多套名走 .nfull 的 overflow-wrap:anywhere，绑了也拦不住（实测反而把「+」顶到行首）。
  * 与 styles.css 的 .cc-bp ④ 是一条规则，改一边务必改另一边。 */
 function cardSetNameHtml(s) {
   return esc(s).replace(/ \/ /g, '&nbsp;/ ');
@@ -1407,17 +1409,25 @@ function buildTagBadges(tags, max) {
   return r.cats.map(c => `<span class="brole">${esc(c)}</span>`).join('')
     + r.kws.map(k => `<span class="brole kw">${esc(k)}</span>`).join('');
 }
-/* 配装按钮后缀：把「最重要的一两个」标签拼成「（输出·增伤｜攻击·暴击）」，`｜` 前是大类、后是关键词。
- * 标签名属于「数据语言」，按当前语言翻译（英文下为 (DPS · Buff | ATK)），否则会残留中文。
- * 每个标签词单独包一层 .bt-w（CSS: white-space:nowrap）——手机窄屏下标签整体可以换行，
- * 但「攻击·增伤」「元素伤害」这类词内部绝不被拆成两行（见 styles.css .cc-bp-tag .bt-w）。 */
+/* 配装按钮定位：大类与关键词分层展示，不加外层括号，减少窄栏标点噪声。
+ * 标签名属于「数据语言」，按当前语言翻译（英文下为 DPS·Buff | ATK），否则会残留中文。
+ * 每个「词 + 它后面的分隔符」合成一个 .bt-w 单元（CSS: white-space:nowrap），单元之间才是断行点（<wbr>）——
+ * 手机窄屏下定位整体可以换行，但词内绝不拆行，且每行都以一个完整的词开头：
+ * 行首不会挂出「·」「｜」（分隔符留在上一个单元末尾，断行只可能发生在分隔符之后）。
+ * 分隔符另包一层 .bt-sep 单独压低亮度（见 styles.css .cc-bp-tag .bt-sep），保持「词 > 分隔符」的层次。
+ * ⚠️ 别把分隔符改回「夹在两个 span 之间」：窄栏下浏览器会优先在分隔符【之前】断行，行首就挂上一个「·」。 */
 function buildTagInline(tags, max) {
   const r = rankBuildTags(tags, max);
   if (!r.cats.length && !r.kws.length) return '';
   const en = (typeof isDataEn === 'function' && isDataEn());
-  const join = xs => xs.map(x => `<span class="bt-w">${esc(en ? t(x) : x)}</span>`).join(en ? ' · ' : '·');
-  const body = join(r.cats) + (r.cats.length && r.kws.length ? (en ? ' | ' : '｜') : '') + join(r.kws);
-  return en ? ` (${body})` : `（${body}）`;
+  const DOT = '·', BAR = '｜';
+  const cell = u => `<span class="bt-w ${u.cls}">${esc(en ? t(u.name) : u.name)}${u.sep ? `<span class="bt-sep">${u.sep}</span>` : ''}</span>`;
+  const units = r.cats.map((name, i) => ({
+    name, cls: 'bt-cat', sep: i < r.cats.length - 1 ? DOT : (r.kws.length ? BAR : ''),
+  })).concat(r.kws.map((name, i) => ({
+    name, cls: 'bt-kw', sep: i < r.kws.length - 1 ? DOT : '',
+  })));
+  return units.map(cell).join('<wbr>');
 }
 /* 角色卡片的套装名该不该套进「2 字宽」的名列（窄屏下只在 2 字边界折行）：
  *   纯中文且 1–4 字 → .n2：手机窄屏（≤560px）名列宽 2 字 + 允许按字断行 —— 两字名一行放得下
@@ -1430,6 +1440,19 @@ function buildTagInline(tags, max) {
 function nameBreakW2(s) {
   const a = Array.from(String(s || ''));
   return a.length >= 1 && a.length <= 4 && /^[\u3400-\u9fff\uf900-\ufaff]+$/.test(a.join(''));
+}
+/* 配装条长度档位（data-lad）：按钮不再一律撑满卡宽，改按内容量分三档收缩，
+ * 顺带让「每行不同长度」成为区分方案的视觉线索。
+ *   lad1 = 名段 ≤2 个汉字（实测名段恒 22px）  → min-width 10em
+ *   lad2 = 名段 3–4 字（22–59px）           → min-width 13.5em
+ *   lad3 = 名段 ≥5 字                        → min-width 17.5em
+ * 分档只数【汉字】不数总字符：「如雷 + 宗室」总字符 7 但纯中文 4 字、名段实测 58.9px，
+ * 与「苍白之火」同档；若按总字符分会被误判成 lad3 而无谓撑宽。
+ * 实测（1440 档 492 行）名段宽按汉字数单调：≤2 字 22px / 3–4 字 44px / ≥5 字 81px，档位边界可靠。
+ * ⚠️ 与 styles.css 的 .cc-bp[data-lad=…] 是一对，改档位数值务必两边同步。 */
+function nameLadder(s) {
+  const cjk = (String(s || '').match(/[\u3400-\u9fff\uf900-\ufaff]/g) || []).length;
+  return cjk <= 2 ? '1' : (cjk <= 4 ? '2' : '3');
 }
 function buildRoleInline(roles, max) {
   const a = topBuildRoles(roles, max).filter(Boolean);
@@ -3278,6 +3301,43 @@ function sortedCharList(list) {
 }
 
 /* 把 src（攻略链接数组）渲染成可点击来源；空数组不显示 */
+/* 配装条「名段已折行」标记：名段（套装名）真的换成两行时，给整条加 .nmwrap。
+ * 有了它，窄屏下定位标签可以【独占下一行、整段不折】—— 名段都已经占了第二行，
+ * 定位再挤在右侧折成两三行既碎又难读（实测 390 档「如雷 + 宗室」的定位占 3 行，
+ * 而整段自然宽只有 101.7px、卡宽 155px，本该一行放得下）。
+ * 为什么必须用 JS：CSS 判断不了「元素是否已折行」。纯 CSS 的近似做法
+ * （给 .cc-bp-tag 加 white-space:nowrap）实测在 360 档会溢出 0.3px（定位整段最宽 126.3px
+ * vs 可用 126px），所以不用那条路。
+ * ⚠️ 关键：判定是【只增不减】的（已经标过就永不再撤），这不是偷懒，而是被一个二态循环逼出来的：
+ *   加 .nmwrap → 定位换到下一行、不再挤名段 → 名段【变回 1 行】
+ *   → 撤掉 .nmwrap → 定位回到同行 → 名段【又变 2 行】……两个状态都自洽，迭代必然左右摆动。
+ * 若做「按当前行数来回切换」，收敛循环会一直用满轮数上限、最终停在一个取决于轮数奇偶的中间态
+ * （实测 360 档有 50 行卡在这种态：名段占 2 行、定位也折行，正是主人指出的那一类）。
+ * 「只增不减」让每行落到【名折行 → 定位独占整行】这个更好的终态，不会摆动，实测 2 轮内收敛。
+ * 代价：窗口从窄拉宽、名段变回 1 行后仍保留 .nmwrap —— 那样定位会多占一行。
+ * 所以 resize 时【整批重算】（先全撤再量），而不是沿用旧标记。
+ * 阈值 1.5 倍行高：留 0.5 倍余量避免亚像素抖动误判。 */
+function markWrappedBuildNames(root) {
+  const scope = root || document;
+  const rows = scope.querySelectorAll('.cc-bp');
+  if (!rows.length) return 0;
+  let changed = 0;
+  for (const b of rows) {
+    const nm = b.querySelector('.cc-bp-name');
+    if (!nm) continue;
+    if (b.classList.contains('nmwrap')) continue;   // 只增不减（见上）
+    const lh = parseFloat(getComputedStyle(nm).lineHeight) || 14.85;
+    if (nm.getBoundingClientRect().height > lh * 1.5) { b.classList.add('nmwrap'); changed++; }
+  }
+  return changed;
+}
+/* 从零重算：先清掉所有旧标记再重新判定。
+ * resize / 字体就绪时必须走这条 —— 窗口宽度变了，之前的折行判定全部作废。 */
+function resetWrappedBuildNames(root) {
+  const scope = root || document;
+  for (const b of scope.querySelectorAll('.cc-bp.nmwrap')) b.classList.remove('nmwrap');
+}
+
 function renderChars() {
   const grid = $('#charGrid');
   const list = filteredChars();
@@ -3285,6 +3345,7 @@ function renderChars() {
   if (csb) csb.innerHTML = sortBtnHtml('char');
 
   grid.innerHTML = list.map(charCardHtml).join('') || '<p class="muted">没有匹配的角色。</p>';
+  markWrappedBuildNames(grid); markWrappedBuildNames(grid);   // 只增不减，两轮足够收敛
 
   $('#enabledCount').textContent = state.characters.filter(c => c.enabled).length;
   $('#statCharCount').textContent = state.characters.length;
@@ -3350,7 +3411,7 @@ function charCardHtml(c) {
     }</span></div>`;
   };
   // 套装名 + 配装切换 合并为一个等宽按钮：左栏【编号 套装名】、右栏【定位】
-  // 选中（viewIdx）= 绿色高亮；未选中 = 普通色
+  // 选中（viewIdx）= 金色高亮；未选中 = 普通色
   const builds = list.length
     ? list.map((b, i) => {
       const setTxt = buildSetsLabel(b, true);        // 角色卡片：套装用二字简称（其余位置一律全称）
@@ -3362,7 +3423,7 @@ function charCardHtml(c) {
       const nCls = nameBreakW2(setTxt) ? ' n2' : ' nfull';
       // 多套任选长名（名里带「 / 」）走 .wide：定位段独占下一行，不与长名挤同一行（见 styles.css）
       const wCls = setTxt.indexOf('/') >= 0 ? ' wide' : '';
-      return `<button type="button" class="cc-bp${i === viewIdx ? ' on' : ''}${wCls}" data-vi="${i}" title="${t('配装')} ${i + 1}${rTitle ? ' · ' + rTitle : ''}"><span class="cc-bp-idx">${i + 1}</span><span class="cc-bp-name${nCls}">${stxt}</span>${rInline ? `<span class="cc-bp-tag">${rInline}</span>` : ''}</button>`;
+      return `<button type="button" class="cc-bp${i === viewIdx ? ' on' : ''}${wCls}" data-vi="${i}" data-lad="${nameLadder(setTxt)}" aria-pressed="${i === viewIdx}" title="${esc(t('配装') + ' ' + (i + 1) + ' · ' + buildSetsLabel(b) + (rTitle ? ' · ' + rTitle : ''))}"><span class="cc-bp-idx">${i + 1}</span><span class="cc-bp-name${nCls}">${stxt}</span>${rInline ? `<span class="cc-bp-tag">${rInline}</span>` : ''}</button>`;
     }).join('')
   : `<span class="set-tag">${t('未配置套装')}</span>`;
   return `
@@ -5847,9 +5908,21 @@ function bind() {
     closeCharTip();
     closeCharAttr();
   };
-  const onAnyResize = () => { closeStatTip(); closeCharTip(); closeCharAttr(); };
+  const onAnyResize = () => {
+    closeStatTip(); closeCharTip(); closeCharAttr();
+    // 名段是否折行取决于卡片实际宽度 —— 窗口一变就得重算 .nmwrap，
+    // 否则从宽屏拖到窄屏（或旋转手机）后标记停留在旧值，定位标签版式会错。
+    resetWrappedBuildNames(document); markWrappedBuildNames(document); markWrappedBuildNames(document);
+  };
   window.addEventListener('resize', onAnyResize);
   window.addEventListener('scroll', onAnyScroll, true);
+  /* 字体就绪后重测一次：字体未加载时量到的是回退字体行高，会把「已折行」误判成「未折行」，
+     窄屏下就退化成定位挤在右侧折行。document.fonts 在老浏览器上不存在，用 load 兜底。 */
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(() => { resetWrappedBuildNames(document); markWrappedBuildNames(document); markWrappedBuildNames(document); });
+  } else {
+    window.addEventListener('load', () => { resetWrappedBuildNames(document); markWrappedBuildNames(document); markWrappedBuildNames(document); });
+  }
 
   function copyOnePlan(raw) {
     const setName = raw.split('|')[0];
