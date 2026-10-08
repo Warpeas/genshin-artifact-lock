@@ -1912,11 +1912,11 @@ const RAW_CHARS = [
   ['薇斯纳',      'anemo', [
     {sets:['血红之证'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['输出', '精通', '剧变反应']},
     {sets:['饰金之梦'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['精通']},
-  ],   [],   ''],
+  ],  [['https://baike.mihoyo.com/ys/obc/content/509803/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/78338020', 'Asgater'], ['https://www.miyoushe.com/ys/article/78334767', 'HoYo青枫']],   ''],
   ['沃雅妮莎',    'hydro', [
     {sets:['千岩牢固'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'hp'], roles:['辅助']},
     {sets:['千岩牢固', '花海甘露之光'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'hp'], roles:['辅助']},
-  ],   [],   ''],
+  ],  [['https://baike.mihoyo.com/ys/obc/content/509804/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/78338047', 'Asgater'], ['https://www.miyoushe.com/ys/article/78334819', 'HoYo青枫']],   ''],
   /* ---------- 旅行者：按「元素形态」各设一个条目，各自独立配装 ---------- */
   ['旅行者·风',      'anemo', [
     {sets:['翠绿之影'], sands:['er', 'atkP'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['输出', '增伤', '减抗', '充能']},
