@@ -41,7 +41,7 @@ node tools/check_card_labels.js --built                # 动了角色卡配装�
 2. **安全校验**：`data.js` / `app.js` 里若出现 `</script` 直接抛错（会提前闭合内联 script 标签）。**注释里也不能写**。
 3. 注入：把 `<link rel="stylesheet" href="styles.css">` 换成内联 `<style>`，两个 `<script src=...>` 换成内联 `<script>`。
    > 替换必须用**函数形式** `() => ...`，否则内容里的 `$$` / `$&` / `$'` 会被 `replace` 当转义序列吃掉。
-4. **版本号注入**：执行 `git log -1 --format=%cs` 取最新提交时间，改写 `APP_VERSION` 与 `CHANGELOG[0]` 的 `v`（点分隔）/ `date`（横杠分隔）。
+4. **版本日期校验**：校验 `APP_VERSION` 与 `CHANGELOG[0].v` 完全相等；若源码顶部日志日期与最新提交日期不符，只提示、**绝不改写源码声明的版本 / 日期**（新日志通常在提交前构建，套用旧 HEAD 会把日期刷错）。
 5. **内联签名校验**：`['const $$', 'const $ ', '$$(', 'querySelectorAll(s)']` 必须全部存在，否则判定内联失败。
 6. 写出根目录 `index.html`。
 

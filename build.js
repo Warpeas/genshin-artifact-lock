@@ -25,28 +25,23 @@ let out = html
   .replace('<script src="app.js"></script>',
            () => '<script>\n' + app.trim() + '\n</script>');
 
-// 版本号 / 更新日志日期由 git 提交时间驱动，避免手填日期跑偏（沙箱时钟可能滞后于真实日期）
-// 同日多次发布用「子版本」YYYY.MM.DD.n 区分：dev 在 src/data.js 的 APP_VERSION 上手填 .n，
-// 打包时只覆盖前面的日期部分、保留 .n（CHANGELOG[0].v 同步）；date 同步为本次提交时间。
+// 版本号 / 更新日志日期由源码声明，构建只校验其是否等于最新提交日期。
+// 不能在构建时直接套用 HEAD 日期：新日志通常在提交前构建，旧 HEAD 会把新条目错写成旧日期。
 try {
   const gd = execSync('git -C "' + __dirname + '" log -1 --format=%cs', { encoding: 'utf8' }).trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(gd)) {
-    const base = gd.replace(/-/g, '.'); // 2026-09-13 -> 2026.09.13
-    // 取 dev 在源码里手填的子版本后缀 .n（同日多次发布时才有；一旦跨天则归零）
-    const m0 = data.match(/const APP_VERSION = '(\d{4}\.\d{2}\.\d{2})(\.\d+)?'/);
-    const oldBase = m0 ? m0[1] : '';
-    const suf = (m0 && m0[2] && oldBase === base) ? m0[2] : '';
-    const v = base + suf; // 2026.09.13 或 2026.09.13.2
-    out = out.replace(/const APP_VERSION = '[^']*'/, "const APP_VERSION = '" + v + "'");
-    // CHANGELOG[0] 的 v 与 APP_VERSION 必须【完全相等】（否则更新公告不弹或重复弹），
-    // 所以两者共用同一个 suf：.n 只认 APP_VERSION 上填的那个，跨天一起归零。
-    // date（横杠分隔）同步为本次提交时间。
-    out = out.replace(/(CHANGELOG = \[[\s\S]*?\{[\s\S]*?v: ')(\d{4}\.\d{2}\.\d{2})(\.\d+)?(',\s*date: ')([^']*)(')/,
-      (m, p1, p2, p3, p4, p5, p6) => p1 + base + suf + p4 + gd + p6);
-    console.log('版本号 / 日期已由 git 提交时间注入：' + v + '（' + gd + '）');
+  const m0 = data.match(/const APP_VERSION = '([^']+)'/);
+  const c0 = data.match(/CHANGELOG = \[[\s\S]*?v: '([^']+)',\s*date: '([^']+)'/);
+  if (!m0 || !c0 || m0[1] !== c0[1]) {
+    throw new Error('APP_VERSION 必须与 CHANGELOG[0].v 完全相等');
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(gd) && gd !== c0[2]) {
+    console.warn('版本日期待提交校验：源码 ' + c0[2] + '，当前 HEAD ' + gd + '（保留源码日期）');
+  } else {
+    console.log('版本号 / 日期校验通过：' + m0[1] + '（' + c0[2] + '）');
   }
 } catch (e) {
-  console.log('（未检测到 git，沿用 data.js 内的静态版本号）');
+  if (e instanceof Error && e.message.includes('APP_VERSION')) throw e;
+  console.log('（未检测到 git，跳过版本日期校验）');
 }
 
 // 校验：内联后关键标识符必须原样存在

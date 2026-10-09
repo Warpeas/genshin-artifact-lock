@@ -2253,6 +2253,7 @@ function pieceBoardHTML(setName, b, plan, cands = null) {
       const chips = take.map(n =>
         `<span class="pb-item${pieceNeedOf(b, n) === 'both' ? ' pb-both' : ''}"` +
         ` data-char-tip="${esc(charAttrRaw(setName, key, n))}" role="button" tabindex="0"` +
+        ` onclick="event.stopPropagation();openCharAttr(this)"` +
         ` aria-label="${esc(t('点角色看该配装的具体推荐属性'))}">${esc(charName(n))}</span>`
       ).join('');
       const more = left > 0 ? `<span class="pb-plus" title="${esc(tf('本组还有 {n} 人', { n: left }))}">+${left}</span>` : '';
@@ -2268,7 +2269,7 @@ function pieceBoardHTML(setName, b, plan, cands = null) {
   if (!html) return '';
   const tip = esc(t('点击查看全部需求角色'));
   return `<span class="piece-board" data-piece-board="${esc(setName)}" data-piece-plan="${esc(key)}"` +
-    ` role="button" tabindex="0" aria-label="${tip}" title="${tip}">${html}</span>`;
+    ` role="button" tabindex="0" onclick="openCharTip(this)" aria-label="${tip}" title="${tip}">${html}</span>`;
 }
 
 /* ③④⑤ 合并一组角色的追加属性条件 —— 【全方案唯一一份，五个部位共用】
@@ -3085,6 +3086,7 @@ function pieceBoardTipHTML(d) {
     const groups = c.groups.map(g => {
       const chips = g.names.map(x =>
         `<span class="ct-chip" data-char-tip="${esc(charAttrRaw(d.setName, d.planKey || '', x.name))}" role="button" tabindex="0"` +
+        ` onclick="event.stopPropagation();openCharAttr(this)"` +
         `${g.color ? ` style="--tc:${g.color}"` : ''}>${esc(charName(x.name))}` +
         `${x.alt ? `<i class="ct-alt">${esc(t('备选'))}</i>` : ''}</span>`
       ).join('');
@@ -5571,6 +5573,13 @@ function bindSegFilter(sel, key, attr) {
 }
 function camelOf(attr) { return attr.replace(/^data-/, '').replace(/-([a-z])/g, (m, s) => s.toUpperCase()); }
 
+/* 事件委托兜底：点击文本节点时 event.target 可能不是 Element，
+   统一提升到可用元素后再做 closest，避免角色 chip 点击偶发失效。 */
+function eventTargetEl(target) {
+  if (!target) return null;
+  return target.nodeType === 1 ? target : (target.parentElement || null);
+}
+
 /* 国度下拉：按 REGIONS 顺序填充（含「全部国度」） */
 function fillRegionFilter() {
   const sel = $('#regionFilter');
@@ -5592,10 +5601,12 @@ function bind() {
   // 列表排序：三处共用一套控件（角色页 / 方案页 / 追加属性表格）
   // 「图鉴 / 推荐」两档 = [data-sortby] 容器里的 [data-by] 按钮；「正序 / 倒序」= [data-sort]
   document.addEventListener('click', e => {
-    const byBtn = e.target.closest('[data-by]');
+    const t = eventTargetEl(e.target);
+    if (!t) return;
+    const byBtn = t.closest('[data-by]');
     const seg = byBtn && byBtn.closest('[data-sortby]');
     if (seg && byBtn) { setSortBy(seg.dataset.sortby, byBtn.dataset.by); return; }
-    const b = e.target.closest('[data-sort]');
+    const b = t.closest('[data-sort]');
     if (b) toggleSort(b.dataset.sort);
   });
 
@@ -5834,8 +5845,10 @@ function bind() {
   const candsOf = candsOfSet;
 
   $('#planBody').addEventListener('change', e => {
+    const t = eventTargetEl(e.target);
+    if (!t) return;
     // ① 采纳勾选
-    const cb = e.target.closest('[data-gp-adopt]');
+    const cb = t.closest('[data-gp-adopt]');
     if (cb) {
       const setName = cb.dataset.gpAdopt.split('|')[0];
       const key = cb.dataset.gpAdopt.slice(setName.length + 1);
@@ -5848,7 +5861,7 @@ function bind() {
       return;
     }
     // ② 并入…
-    const sel = e.target.closest('[data-gp-merge]');
+    const sel = t.closest('[data-gp-merge]');
     if (sel && sel.value) {
       const raw = sel.dataset.gpMerge;
       const setName = raw.split('|')[0];
@@ -5879,10 +5892,12 @@ function bind() {
   });
 
   $('#planBody').addEventListener('click', e => {
-    const copy = e.target.closest('[data-gp-copy]');
+    const t = eventTargetEl(e.target);
+    if (!t) return;
+    const copy = t.closest('[data-gp-copy]');
     if (copy) { copyOnePlan(copy.dataset.gpCopy); return; }
 
-    const split = e.target.closest('[data-gp-split]');
+    const split = t.closest('[data-gp-split]');
     if (split) {
       const raw = split.dataset.gpSplit;
       const setName = raw.split('|')[0];
@@ -5901,23 +5916,38 @@ function bind() {
    *   捕获阶段监听，免得被卡片上的其它点击代理（复制 / 拆分 / 采纳）抢走；
    *   点空白 / 再点同一个 chip / Esc / 滚动 / 缩放窗口都会收起。 */
   document.addEventListener('click', e => {
-    const tgt = e.target;
+    const tgt = eventTargetEl(e.target);
     const closest = (tgt && tgt.closest) ? tgt.closest.bind(tgt) : null;
     if (!closest) return;
     /* 第二层小窗（#charAttrBox）自己也是一汪：点里面不做任何事（不穿透到下面的列表弹窗） */
     if (closest('#charAttrBox')) return;
-    /* 需求角色弹窗自成一汪：点里面只认角色 chip 与关闭按钮，点空白不做任何事 */
+    /* 需求角色窗内的角色：捕获阶段独占处理，避免后续监听又把刚开的窗关掉。 */
     if (closest('#charTipBox')) {
       const cc = closest('[data-char-tip]');
-      if (cc) { openCharAttr(cc); return; }        // 角色 → 再开一个小窗（层级高过本弹窗）
+      if (cc) {
+        e.stopImmediatePropagation();
+        openCharAttr(cc);
+        return;
+      }
       if (closest('[data-char-tip-close]')) { closeCharTip(); return; }
       return;
     }
-    /* 方案卡片里的件数分栏：栏内角色 → 第二层小窗；分栏空白 → 开 / 收需求角色弹窗 */
+    /* 方案卡片里的角色 / 件数分栏也在捕获阶段独占处理。 */
     const cchip = closest('[data-char-tip]');
-    if (cchip) { closeStatTip(); openCharAttr(cchip); return; }
+    if (cchip) {
+      e.stopImmediatePropagation();
+      closeStatTip();
+      closeCharTip();
+      openCharAttr(cchip);
+      return;
+    }
     const board = closest('[data-piece-board]');
-    if (board) { closeStatTip(); openCharTip(board); return; }
+    if (board) {
+      e.stopImmediatePropagation();
+      closeStatTip();
+      openCharTip(board);
+      return;
+    }
     const chip = closest('[data-stat-tip]');
     if (chip) { closeCharTip(); closeCharAttr(); openStatTip(chip); return; }
     closeCharTip();
@@ -5925,12 +5955,11 @@ function bind() {
     if (!closest('#statTipBox')) closeStatTip();
   }, true);
   document.addEventListener('keydown', e => {
-    /* 分栏块与弹窗里的角色 chip 都能用键盘唤起（它们带 tabindex） */
+    /* 分栏块与角色 chip 各自绑定键盘唤起；这里只处理属性 chip 与 Escape。 */
     if (e.key === 'Enter' || e.key === ' ') {
       const el = document.activeElement;
       const ds = el && el.dataset;
-      if (ds && ds.charTip) { e.preventDefault(); openCharAttr(el); return; }
-      if (ds && ds.pieceBoard) { e.preventDefault(); closeStatTip(); openCharTip(el); return; }
+      if (ds && ds.statTip) { e.preventDefault(); closeCharTip(); closeCharAttr(); openStatTip(el); return; }
     }
     if (e.key !== 'Escape') return;
     const chip = document.querySelector('[data-stat-tip]:focus');
@@ -5941,7 +5970,7 @@ function bind() {
     closeCharTip();
     closeCharAttr();
   });
-  /* 滚动 / 缩放窗口收起浮层；但浮层【自己内部】的滚动不吃这一下（内容长时要在里面滚） */
+  /* 滚动 / 缩放窗口收起浮层；浮层内部滚动不触发关闭。 */
   const onAnyScroll = e => {
     const t2 = e.target;
     if (t2 && typeof t2.closest === 'function'

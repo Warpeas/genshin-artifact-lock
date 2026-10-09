@@ -1102,7 +1102,7 @@ html[lang="en"] .gp-subline .gp-lab{white-space:normal;}
    点分栏 / 弹窗里的某个角色 → 另开 #charAttrBox（第二层独立小窗，z-index 更高），看 TA 在这套配装下的
    推荐属性（部位 / 主属性 / 追加属性）；命中条数是方案级条件，只显示在方案卡片上，两个窗口里都没有。
    桌面端点开后跟随触发块定位，窄屏退化成居中一张卡。 */
-#charTipBox{
+#charTipBox,#charAttrBox{
   position:fixed;z-index:151;width:min(620px,calc(100vw - 20px));max-height:min(72vh,620px);overflow:auto;
   background:color-mix(in oklab,var(--panel) 94%,var(--bg2));border:1px solid var(--line);
   border-radius:var(--r);padding:11px 13px 12px;box-shadow:var(--sh3);
