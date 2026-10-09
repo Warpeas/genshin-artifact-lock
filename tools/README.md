@@ -22,6 +22,7 @@
 | `role_infer.py` | 提供 `infer_roles(...)` 推断功能定位、`infer_subrules(roles, subs, optional)` 生成 `subRules`；角色级定位兜底读 `src/data.js` 的 `CHAR_META` | —（被上面脚本 import，不直接跑） |
 | `check_data.js` | 数据自检：主词条空 / 缺字段 / 非法值，配装组完整性，**派生字段门禁**（死字段 / 空 roles / optional 异常 / 未识别片段） | `out/_scan_result.md` |
 | `check_card_labels.js` | 角色卡配装条标签的**聚焦回归**（无依赖）：分层结构 / 去括号 / 换行标记 / 转义 / 截断 / 英文 / 名称折行规则 / `aria-pressed` / 按钮长度分档（`nameLadder()` 档位边界、三档 `min-width` 必须在 `@media(min-width:561px)` 内、窄屏不得出现 `data-lad`、`.wide` 恒 100%）；`--built` 额外比对 `index.html` 与 `src/` 是否同步 | 终端 PASS/FAIL，失败退出码非 0 |
+| `check_merge_clusters.js` | 自动聚类与锁定方案**聚焦回归**（无依赖）：短列表乱序 / 高优先冲突 / 人工规则 / 完整链接 / 输入顺序稳定性；另遍历 55 套实际组装方案，检查成员的头号主属性、需求池、★ 与 ◇ 是否保留，并报告大组支持度 | 终端 PASS/FAIL，失败退出码非 0 |
 | `set_short_suggest.py` | 套装简称半自动工具：缺口检测 + 中英候选 + 回测（**只读，不写任何源文件**） | 默认只打终端；`--out FILE.md` 才额外落盘清单 |
 
 ## 配装条版式 Playground（`tools/playground.html`）

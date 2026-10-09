@@ -1765,9 +1765,8 @@ function globalWeights() {
  *     此时需求角色会按次要属性【颜色分组】显示，便于照搬时区分
  *
  * 固定算法（结果可复现）：
- *   ① 角色分组：按【重要属性】凝聚聚类——两组的重要属性重合度够高才合并，
- *      次要属性不同无所谓。追加属性需求相近的角色（主C / 副C 都要双暴）会自然
- *      并成一套；辅助（充能 / 生命 / 精通）的重要属性不同，自动被拆开
+ *   ① 角色分组：双方短列表（≤3 条）集合相同且无人工规则时容忍顺序差异；其他情况检查
+ *      高优先需求。整组按完整链接约束，次要属性不同无所谓，最终由组内偏好分组区分。
  *   ② 主属性：花/羽固定；沙/杯/冠【逐部位独立合并】——组内每个角色的 rank1 主属性
  *      【全部保留】（合并只放宽条件，不允许吞掉某位角色的头号主属性），其余按
  *      「票数 × 优先级」降序补足，补到累计覆盖 ≥ MAIN_COVER 或总条数达 MAIN_MAX 为止
@@ -1782,7 +1781,6 @@ function globalWeights() {
  *   ⑥ 池内顺序：必需（★）→ 普通需求（组内过半、且非条件词条）→ 可选（◇ 条件词条 与 个别人要的）；档内按使用人数降序，
  *      人数相同按游戏常规顺序（双暴 → 攻击 → 生命 → 防御 → 精通 → 充能）
  * ============================================================ */
-const CAND_SOFT_CAP  = 24;   // 候选数保护上限（防止极端数据下列表过长，正常不会触发）
 const GAME_MAX_PRESET = 3;   // 游戏内每种套装至多 3 个自定义预设（仅作提示，工具侧不再硬限制）
 const MAIN_MAX    = 3;       // 单部位主属性上限（条件过宽会「存伪」）；
                              // 仅约束「次要主属性补足」，rank1 保底不受其限制，故实际可能多于 3 条
@@ -1829,14 +1827,15 @@ function groupSim(g1, g2) {
  * 角色的追加属性需求是【有序】数组，且用 op 显式表达了「与上一条是否同等重要」：
  *   op === '=' → 与上一条同重要（数据里双暴就是这样并列的）
  *   其余        → 比上一条更低
- * 所以「重要属性块」可以直接从数据里读出来，不需要另设阈值：
- *   从第 1 条起沿 op='=' 一直延伸的前缀块，再并入所有 ★必选。
+ * 重要属性块取从第 1 条起沿 op='=' 延伸的前缀；但需求总数不超过 2 条时，
+ * 两条都纳入核心，避免同一组两条需求仅因排列顺序不同而被拆开；之后再并入所有 ★必选。
  * 例：crit / critHp / critDef 三种预设的重要块都是 {暴击率, 暴击伤害}，
  *     次要属性则分别是 攻击力% / 生命值% / 防御力%。
  */
 function coreSetOf(role) {
   const list = role.subList || [];
   const out = new Set();
+  if (list.length <= 2) list.forEach(item => out.add(statIdOf(item)));
   for (let i = 0; i < list.length; i++) {
     out.add(statIdOf(list[i]));
     if (i + 1 >= list.length || list[i + 1].op !== '=') break;
@@ -1873,15 +1872,37 @@ function minorPreferenceGroups(group) {
   }));
 }
 
-/* 两组能否合并 —— 【只看重要属性】：
- *   重要属性重合度够高就合，次要属性（攻击力% / 生命值% / 防御力% 等）不同没关系：
- *   反正「组核心一致」的重要属性已经满足了，具体次要属性再按实际圣遗物给到适配的角色；
- *   想更细筛请在游戏内锁定界面自行调整（页面不再提供命中条数修改入口）。
- *   判据：交集 ≥ min(2, 较小的核心大小)（核心只有 1 条时要求相同），
- *         且交集各自占本组核心 ≥ 一半。
- *   {暴击,暴击伤害} vs {暴击,暴击伤害} → 合并；{暴击,暴击伤害,攻击%} vs {暴击,暴击伤害,生命%} → 合并；
- *   {精通} vs {精通} → 合并；{精通} vs {充能} → 分开；{暴击,暴击伤害} vs {充能} → 分开。
- */
+/* 自动合并使用独立的需求视图，避免改动 coreSetOf 后连带改变配色 / 次要偏好分组。 */
+function mergeItemsOf(role) {
+  const byId = new Map();
+  (role.subList || []).forEach(item => {
+    const id = statIdOf(item);
+    if (!id || byId.has(id)) return;
+    byId.set(id, {
+      id,
+      op: item && item.op === '=' ? '=' : '>',
+      opt: !!(item && typeof item === 'object' && item.opt),
+    });
+  });
+  return [...byId.values()];
+}
+
+function mergeHeadOf(role) {
+  const items = mergeItemsOf(role);
+  const head = new Set();
+  const ordinary = items.filter(item => !item.opt);
+  const initialCount = Math.min(2, ordinary.length);
+  for (let i = 0; i < initialCount; i++) head.add(ordinary[i].id);
+  let last = initialCount - 1;
+  while (last >= 0 && last + 1 < ordinary.length && ordinary[last + 1].op === '=') {
+    last++;
+    head.add(ordinary[last].id);
+  }
+  (role.req || []).forEach(id => { if (statIdOf(id)) head.add(statIdOf(id)); });
+  return head;
+}
+
+/* 高优先需求有足够重合即可；次要属性不同仍可合并。 */
 function coreCanMerge(A, B) {
   if (!A.size || !B.size) return false;
   let inter = 0;
@@ -1891,49 +1912,69 @@ function coreCanMerge(A, B) {
   return inter >= need && (inter / A.size) >= 0.5 && (inter / B.size) >= 0.5;
 }
 
-/* ①-a 自然分组：按【重要属性】凝聚聚类
- *   每轮在「重要属性重合度达标」的组合里，挑追加属性需求【全量余弦相似度】最高的一对
- *   合并——判据管「能不能合」，相似度管「先合谁」，保留「按追加属性需求合并」的语义。
- *   合并后的组核心 = 两边核心的交集（保证组里每个人都认这些是重要属性）。
- *   全自动，不暴露任何阈值给界面。
- */
-function naturalClusters(roles) {
-  const groups = roles.map(r => ({ roles: [r], core: coreSetOf(r) }));
+function sameShortNeedSet(a, b) {
+  const aItems = mergeItemsOf(a).filter(item => !item.opt);
+  const bItems = mergeItemsOf(b).filter(item => !item.opt);
+  if (!aItems.length || !bItems.length || aItems.length > 3 || bItems.length > 3) return false;
+  const aIds = new Set(aItems.map(item => item.id));
+  return aIds.size === bItems.length && bItems.every(item => aIds.has(item.id));
+}
 
-  /* 当前最值得合并的一对：先看重要属性能不能合，再按全量相似度排序 */
-  const bestPair = (requireCore) => {
+function mergePairCompatible(a, b) {
+  const hasManualRules = a.subRuleSource === 'manual' || b.subRuleSource === 'manual';
+  if (!hasManualRules && sameShortNeedSet(a, b)) return true;
+  return coreCanMerge(mergeHeadOf(a), mergeHeadOf(b));
+}
+
+function clustersCompatible(a, b) {
+  return a.roles.every(left => b.roles.every(right => mergePairCompatible(left, right)));
+}
+
+function clusterKey(group) {
+  return group.roles.map(role => JSON.stringify([
+    role.name || '',
+    mergeItemsOf(role).map(item => [item.id, item.op, item.opt]),
+    (role.req || []).map(statIdOf).sort(),
+    role.subRuleSource || 'unset',
+  ])).sort().join('|');
+}
+
+function clusterMergeScore(a, b) {
+  let score = Infinity;
+  a.roles.forEach(left => b.roles.forEach(right => {
+    score = Math.min(score, roleSimilarity(left, right));
+  }));
+  return Number.isFinite(score) ? score : 0;
+}
+
+/* 完整链接聚类：合并后的组中任意两人都必须直接兼容，避免传递式桥接。 */
+function naturalClusters(roles) {
+  const inputOrder = new Map(roles.map((role, index) => [role, index]));
+  const groups = roles.map(role => ({ roles: [role] }));
+
+  while (groups.length > 1) {
     let best = null;
     for (let i = 0; i < groups.length; i++) {
       for (let j = i + 1; j < groups.length; j++) {
-        if (requireCore && !coreCanMerge(groups[i].core, groups[j].core)) continue;
-        const s = groupSim(groups[i].roles, groups[j].roles);
-        if (!best || s > best.s) best = { s, i, j };
+        if (!clustersCompatible(groups[i], groups[j])) continue;
+        const score = clusterMergeScore(groups[i], groups[j]);
+        const keyA = clusterKey(groups[i]);
+        const keyB = clusterKey(groups[j]);
+        const tieKey = keyA < keyB ? keyA + '\u001e' + keyB : keyB + '\u001e' + keyA;
+        if (!best || score > best.score || (score === best.score && tieKey < best.tieKey)) {
+          best = { i, j, score, tieKey };
+        }
       }
     }
-    return best;
-  };
-
-  while (groups.length > 1) {
-    const best = bestPair(true);
     if (!best) break;
-    groups[best.i] = {
-      roles: groups[best.i].roles.concat(groups[best.j].roles),
-      core: coreIntersect(groups[best.i].core, groups[best.j].core),
-    };
+
+    const merged = groups[best.i].roles.concat(groups[best.j].roles);
+    merged.sort((a, b) => inputOrder.get(a) - inputOrder.get(b));
+    groups[best.i] = { roles: merged };
     groups.splice(best.j, 1);
   }
 
-  // 保护上限：极端数据下防止候选列表过长（此时不再要求重要属性重合，纯贪心兜底）
-  while (groups.length > CAND_SOFT_CAP) {
-    const best = bestPair(false);
-    if (!best) break;
-    groups[best.i] = {
-      roles: groups[best.i].roles.concat(groups[best.j].roles),
-      core: coreIntersect(groups[best.i].core, groups[best.j].core),
-    };
-    groups.splice(best.j, 1);
-  }
-  return groups.map(g => g.roles);
+  return groups.map(group => group.roles);
 }
 
 /* ②-a 一组角色在某部位的主属性计票
@@ -2418,6 +2459,7 @@ function toRoles(charList, setName) {
         subs: subWeights(b.subs),   // 名次权重向量（用于相似度 / 评分）
         subList: b.subs || [],      // 原始词条（含 op），供追加属性池按重要度打分
         req:  reqSubs(b.subs),      // ★必选标记
+        subRuleSource: (b.subRules && b.subRules.source) || 'unset',
         pool: poolSubs(b.subs),     // 追加属性池
       };
     });
@@ -4831,7 +4873,7 @@ function renderGamePlans(setName, cands, slotFilter = 'all', b = null) {
       <span class="gp-title">${t('🎮 游戏内锁定方案候选')}</span>
       <span class="gp-meta${over ? ' warn' : ''}">${metaTxt}　· ${pickTxt}${over ? ' ⚠️' : ''}</span>
     </div>
-    <p class="gp-lead" data-en="Candidates are auto-merged by each character's <b>key stats</b> (CRIT, for example); characters that differ only in <b>minor</b> stats are told apart by <b>colour</b>. Every plan's five slots share <b>one substat condition</b>, and the hit count is <b>recommended by the tool</b>. Too many candidates? Merge them with &quot;Merge into&hellip;&quot; or untick &quot;Adopt&quot;.">候选按角色的<b>重要属性</b>（如双暴）自动合并，次要属性（攻击% / 生命% / 防御%）不同的角色用<b>颜色</b>区分；每个方案的<b>五个部位共用同一份追加属性条件</b>，命中条数由系统按组内支持度<b>推荐「至少 N 条」</b>（即最终值）。候选太多就「并入…」合并、或取消勾选「采纳」。</p>
+    <p class="gp-lead" data-en="Candidates are auto-clustered by compatible <b>substat priorities</b>; identical need sets of up to three ordinary stats tolerate order differences unless manually calibrated. Every role pair across merged groups must remain compatible. Differences in <b>minor</b> stats are shown by <b>colour</b>. Every plan's five slots share <b>one substat condition</b>, and the hit count is <b>recommended by the tool</b>. Too many candidates? Merge them with &quot;Merge into&hellip;&quot; or untick &quot;Adopt&quot;.">候选按追加属性优先级兼容性自动分组：双方普通需求都不超过 3 条且集合相同、没有人工校准时，顺序不同也可合并；合并后的组内任意角色对仍须兼容。次要属性差异用<b>颜色</b>区分；每个方案的<b>五个部位共用同一份追加属性条件</b>，命中条数由系统按组内支持度<b>推荐「至少 N 条」</b>（即最终值）。候选太多就「并入…」合并、或取消勾选「采纳」。</p>
     <div class="gp-cards">${cards}</div>
     <p class="gp-tip" data-en="In game: Inventory &rarr; Artifacts &rarr; Lock &rarr; pick this set &rarr; Edit, then set them up one by one as above. Each set takes <b>at most ${GAME_MAX_PRESET} custom presets</b> in game, so keep it tidy yourself.">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上方逐套设置；
       每种套装游戏内<b>至多 ${GAME_MAX_PRESET} 个自定义预设</b>，请自行收敛。</p>
