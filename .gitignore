@@ -1,23 +1,64 @@
-# 抓取原始响应缓存（体积大，可随时删除后重跑）
+# ─────────────────────────────────────────────────────────────────────────────
+# 临时文件规范（完整版见 tools/README.md「临时文件放哪里」一节）
+#
+#   1. 一次性 / 调试脚本      → tools/_<用途>.py|js|mjs        （_ 前缀 = 永不入库）
+#   2. 临时产物（截图/报告/量测）→ tools/out/_tmp/<日期>-<用途>/  （永不入库）
+#   3. 大体积中间素材          → tools/out/<素材名>/             （默认不入库，要入库须加白名单例外）
+#   4. 抓取缓存                → tools/out/<名字>_cache/         （永不入库）
+#
+# 判据一句话：**凡是能重跑生成的东西，都不入库。**
+# 提交前跑 `git status --short`，输出里不应出现任何 `??` 与任何 `_` 前缀条目。
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ① 一次性 / 调试 / 本地自用脚本（_ 前缀，含其产物：截图、报告、量测脚本）
+tools/_*
+tools/out/_*
+tools/out/_tmp/
+
+# ② tools/out/ 是抓取与分析产物目录：**默认全部不入库**，
+#    只白名单保留有长期参考价值的快照（改这里要说明理由）。
+tools/out/*
+!tools/out/guides.json
+!tools/out/wiki_builds.json
+!tools/out/set_effects.json
+!tools/out/parse_warnings.json
+!tools/out/sets_warnings.json
+!tools/out/report.md
+!tools/out/sources.md
+!tools/out/sources.html
+
+# ③ 抓取原始响应缓存（体积大，删掉会重新联网）
 tools/out/*cache*/
 
-# index.html 由 CI（GitHub Pages）从 src/ 构建产出，不入库
+# ④ 浏览器 / CDP 调试残留（脚本本应写系统临时目录，这里兜底）
+.chrome-*/
+.chrome-cdp-*/
+chrome-profile/
+
+# ⑤ 构建产物：index.html 由 CI（GitHub Pages）从 src/ 构建，不入库
 index.html
 
-# 临时诊断产物（tools/check_data.js 等脚本自动生成，可随时重跑）
-tools/out/_*
-
-# WorkBuddy 项目数据，不入库
-.workbuddy/
-
-# Qoder 编辑器本地数据，不入库
-.qoder/
-
-# ohmyagent 编辑器本地数据，不入库
-.ohmyagent/
-
-# 其他机器生成的 Git 辅助脚本，不入库
-tools/_gitrun.js
-
-# Python 字节码缓存（运行 tools/*.py 时自动生成，可随时删除）
+# ⑥ Python / Node 运行残留
 __pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+
+# ⑦ 编辑器与 AI 工具的项目本地数据，不入库
+.workbuddy/
+.qoder/
+.ohmyagent/
+.codebuddy/
+.cursor/
+.idea/
+.vscode/
+
+# ⑧ 系统垃圾与补丁/备份残留
+.DS_Store
+Thumbs.db
+desktop.ini
+*.bak
+*.orig
+*.rej
+*.log

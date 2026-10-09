@@ -315,6 +315,26 @@ node tools/check_card_labels.js --built  # 额外断言 index.html 内联的 CSS
 
 `--reparse` 写 `wiki_builds.json` 必须 `indent=1`（与 fetch 输出一致），否则 diff 炸成几万行。
 
+### 5.5 临时文件放哪里（硬规范，2026-10-10 立）
+
+**判据一句话：凡是能重跑生成的东西，都不入库。** 分类照抄这张表，不要自创位置：
+
+| 类型 | 位置 | 命名 | 入库 |
+|---|---|---|---|
+| 一次性 / 调试脚本 | `tools/` | `_<用途>.py` / `.js` / `.mjs` | ❌（`tools/_*` 已忽略） |
+| 临时产物：截图 / 报告 / 量测脚本 | `tools/out/_tmp/<YYYYMMDD>-<用途>/` | 沿用 `_` 前缀 | ❌ |
+| 大体积中间素材（图片、批次抓取） | `tools/out/<素材名>/` | 如 `guide_subtiers/`、`main_c/` | ❌ 默认；要入库须在 `.gitignore` 加 `!` 例外 |
+| 抓取缓存 | `tools/out/<名字>_cache/` | `cache/`、`guides_cache/` | ❌（`*cache*` 已忽略） |
+| 正式产物（重跑成本高、有参考价值） | `tools/out/<名字>.json` / `.md` | **不带**下划线 | ✅ 且必须在 `.gitignore` 白名单里 |
+
+五条硬规则：
+
+1. **`_` 前缀 = 本地自用，永不 `git add`。** 以前这只是软约定（多次被误提交后又 `git rm --cached` 摘除），现在 `.gitignore` 的 `tools/_*` 强制兜住。
+2. **脚本不要在仓库里造垃圾目录。** CDP / Playwright 的 `user-data-dir` 必须指向系统临时目录（Python `tempfile.mkdtemp()`、Node `os.tmpdir()`），**不许落在 `tools/` 或 `tools/out/`**——历史遗留 17 个 `.chrome-x*` 共约 1.1 GB，已清。`.gitignore` 里的 `.chrome-*/` 只是兜底，不是许可。
+3. **产物统一落 `tools/out/`，不散在 `tools/` 根。** 已散落的（如 `tools/_cdp_*.png`）归档到 `out/_tmp/<日期>-<用途>/`。
+4. **`tools/out/` 是白名单制**：`tools/out/*` 默认全忽略，只有 8 个正式快照用 `!` 放行（`guides.json` / `wiki_builds.json` / `set_effects.json` / `parse_warnings.json` / `sets_warnings.json` / `report.md` / `sources.md` / `sources.html`）。要新增入库产物，先问：别人 checkout 下来是否用得上、重跑是否很贵？两个都「是」才加例外。
+5. **提交前必查 `git status --short`**：输出里不应有任何 `??`，也不应有任何 `_` 前缀条目。
+
 ---
 
 ## 6. 红线（不要做）
@@ -324,7 +344,7 @@ node tools/check_card_labels.js --built  # 额外断言 index.html 内联的 CSS
 3. **不要编造游戏数据** —— 角色/套装/配装必须能溯源到观测枢 wiki 或官方公告；历史上清理过编造角色与编造套装，别再引入。
 4. **不要把攻略文章当数据源解析** —— 它们是一图流，工具从不读取。
 5. **源码（含注释）里不能出现 `</script`** —— build.js 会直接抛错。
-6. **不要提交 `.workbuddy/`**。
+6. **不要提交 `.workbuddy/`，也不要提交任何 `_` 前缀的文件** —— 那是本地草稿与调试产物（详见 §5.5）。
 7. **改了 `src/` 必须跑 `node build.js`**，否则线上 `index.html` 不会变。
 
 ---
@@ -342,5 +362,5 @@ node tools/check_card_labels.js --built  # 额外断言 index.html 内联的 CSS
 - [ ] 若动了版本号 / 更新日志：数据管理页「更新日志」每天一块、当天条目已合并；公告只弹最新未看过的大版本；构建产物里 `APP_VERSION` 与 `CHANGELOG[0].v` 字符串相等
 - [ ] 若动了 i18n：中英文各切一遍，动态计数没被 `applyI18n` 清掉；英文下无残留中文（含卡片配装按钮的定位标签、部位名、来源「数据源 / 攻略」标注），英文长词不撑破卡片（角色卡 `.cc-top` 可换行、沙杯冠标签不写死宽度）
 - [ ] 手机端（≤560px）无横向滚动
-- [ ] `git status` 里没有 `.workbuddy/`、没有临时脚本残留
+- [ ] `git status --short` 里没有 `??`、没有 `.workbuddy/`、没有任何 `_` 前缀的临时脚本 / 产物残留（规范见 §5.5）
 *（内容由AI生成，仅供参考）*
