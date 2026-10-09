@@ -21,7 +21,8 @@
 | `apply_wiki_builds.py` | 把快照写回 `src/data.js`（配装、主词条、副词条、功能定位、`subRules.optional` 条件词条、来源链接） | `out/report.md` |
 | `fetch_set_effects.py` | 抓套装「基础信息」中的 2 件套 / 4 件套效果，并把 4 件套效果写回 `src/data.js` | `out/set_effects.json` |
 | `fetch_guides.py` | 按作者白名单 + 热度为每个角色挑攻略链接 | `out/guides.json` |
-| `fetch_guide_subtiers.py` | **副词条分级校准**：下载 Asgater / HoYo青枫 攻略的圣遗物候选页到本地，供人工/模型读图核对分级顺序（不解析、不回写） | `out/guide_subtiers/` |
+| `fetch_guide_subtiers.py` | **副词条分级校准**：下载 Asgater / HoYo青枫 攻略的圣遗物候选页到本地，供人工/模型读图核对分级顺序与条件（不解析、不回写） | `out/guide_subtiers/`（主C 批次在 `main_c/`） |
+| `apply_guide_subtiers.py` | 把读图得到的「低优 / 条件副词条」固化进 `src/data.js` 的 `subRules.optional`（`[['id','note']]` 元组）。`--dry` 只预览。⚠️ 只处理 wiki 给了 subs 的配装组，wiki 空行（兜底行）自动跳过 | `src/data.js` |
 | `gen_sources.py` | 生成人读的来源清单（可点开） | `out/sources.md`、`out/sources.html` |
 | `role_infer.py` | 提供 `infer_roles(...)` 推断功能定位、`infer_subrules(roles, subs, optional)` 生成 `subRules`；角色级定位兜底读 `src/data.js` 的 `CHAR_META` | —（被上面脚本 import，不直接跑） |
 | `check_data.js` | 数据自检：主词条空 / 缺字段 / 非法值，配装组完整性，**派生字段门禁**（死字段 / 空 roles / optional 异常 / 未识别片段） | `out/_scan_result.md` |
