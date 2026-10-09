@@ -282,6 +282,18 @@ dialog#dlg #dlgBody .tag{display:inline-block;font-size:10.5px;padding:1px 6px;b
 #stage .k-xpretty .cc-bp-name{text-wrap:pretty;}
 /* X6b 大类段内部不断行（「｜」前的大类整体视为一个单元） */
 #stage .k-xbar .cc-bp-tag .bt-cat{white-space:nowrap;}
+/* 名续行悬挂缩进 —— 修「序号孤立在第一行、名的续行顶到序号左缘」
+   机制：text-indent 只作用于【首行】，padding-left 作用于【整段】，两者等量抵消。
+     首行 = padding − indent = 0 → 顶格，紧贴序号右侧（column-gap 4px）；
+     续行只有 padding 13.2px → 向右缩进 13.2px，让到序号右缘之后。
+   13.2 = 序号 min-width 1.5ch(≈9.2px) + column-gap(4px)，实测 10–20px 全区间安全。
+   ⚠⚠ 绝对不要为了 hang 去放宽 `.nfull` 的 `max-width:calc(100% - 1.5ch - 4px - 8px)`：
+      那条上限的作用是**让名盒整体右移、避开序号列**，是「防压编号」的正确值。
+      曾试过补 13.2px 把它放宽成 calc(100% - 8px) 想让 padding 完整生效 ——
+      实测名盒直接左移到 x=537、盖住序号（序号 537..546.2），135 组里 12 组压序号 9.2px。
+      ⚠ 教训：`.nfull` 的 calc 上限与 hang 的 padding 是【互斥的两套避让机制】，
+         序号列的让位只认max-width，不认 padding。hang 只管续行缩进，别碰上限。 */
+#stage .cc-builds.k-hang .cc-bp-name{padding-left:13.2px;text-indent:-13.2px;}
 /* 实验：每字一档（7 档）—— data-lad 改为按汉字数逐字分档（2字→1 … 7字以上→7）。
    阶梯值按「名段实测自然宽 + 定位/编号/留白约 60px」估的，⚠️ 近似值，撞档率待全量实测。
    ⚠️ 自成一套（不挂在 .k-ladder 下）：lad7 与 ladder 互斥，ladder 被取消后就没有
@@ -494,6 +506,21 @@ const VARIANTS = [
        + '<p class="warn">只有 ② 间隔 clamp 需要一小段逐行 JS（剩余空间与上下限都是实测值）；'
        + '④ 的判据是【名的自然宽 &gt; 可用宽 × 0.9】纯计算（不读渲染高度，避免两态循环）：'
        + '名会折行 → 定位独占第二行；名 1 行 → 定位与名同行、内部折行。</p>' },
+  { id:'s2cap', name:'S2 + balance + 行长限制', flags:'k-ladder k-nm k-pad4 k-ct k-n2auto k-fit k-bal k-xcname k-xcap k-hang',
+    note:'<p>S2 的同行版式不动，<b>只加两条行长上限</b>：<code>k-xcname</code>（名 ≤ 框长 N%，从左数）+ '
+       + '<code>k-xcap</code>（位 ≤ 框长 N%，从右数）。上限值取面板「④ 行长上限」的两个滑块。'
+       + '外加 <code>k-hang</code> 修「序号孤立」。</p>'
+       + '<p>与 X 的区别：<b>不含 k-xsame</b>。所以仍是 <code>flex-basis:auto</code>、'
+       + '定位放不下就整段落行 —— 不像 X 那样被同行下限（<code>--tg-min</code>）'
+       + '把定位假想尺寸抬到 100px+ 而永远落行。</p>'
+       + '<p>实测（153px 卡／长名 ／4 词定位）：名 121.8→131.2px（第二行「绝缘」被收回第一行），'
+       + '位 143→85.8px 折 2 行，框溢出 0。名限 100% + 位限 60–70% 是这组参数的甜点区。</p>'
+       + '<p><b>为什么必须带 k-hang</b>：<code>k-xcname</code> 把名段上限放宽到 100% 后，'
+       + '120–130px 的长名组会让续行<b>退到序号左缘</b>（实测 6/120 组真孤立，'
+       + '续行 x=537 = 序号 x）—— 名折行不可怕，可怕的是序号被留在第一行、续行不给它让位。'
+       + '悬挂缩进让首行顶格、续行缩进到序号右侧，240 组实测全部归零。</p>'
+       + '<p class="warn">两个上限都是 <code>max-width</code>，只影响「内容超限时怎么断行」，'
+       + '不改变同行/落行判定本身。真要「名与位首行同行」，仍需 X 的 <code>basis:0</code> 路线（见 X 方案）。</p>' },
   { id:'custom', name:'自定义（勾选下方条件）', flags:'',
     note:'<p>这张卡由页面下方的<b>分项复选框</b>驱动：勾哪个条件就应用哪条 CSS 规则，实时重排。</p>'
        + '<p>配好之后点「一键复制方案」—— 剪贴板里是<b>开关串 + 与 <code>src/styles.css</code> 等价的 CSS</b>，'
@@ -547,7 +574,7 @@ const FLAG_DEFS = [
     { k: 'xgap', t: '有上下限', d: 'clamp(4px, 剩余, 14px)：框没顶满用上限、顶满缩到下限（默认）' },
   ]},
   { g: '④ 行长上限（两个独立开关）', items: [
-    { k: 'xcname', t: '名 ≤ 框长的 N%（从左数）', d: '控制圣遗物名那一行能占多宽；不勾 = 只受 CSS 的防压编号规则约束' },
+    { k: 'xcname', t: '名 ≤ 框长的 N%（从左数）', d: '控制圣遗物名那一行能占多宽；⚠ 别用 100% —— 实测 120–153px 卡宽下会把名盒左移盖住序号（压 9.2px），85% 以下安全' },
     { k: 'xcap',   t: '位 ≤ 框长的 N%（从右数）', d: '控制定位那一行能占多宽；比例调小，首字自然右移（这就是「首字在名首字右移半字之后」的实现）' },
   ]},
   { g: '⑤ 重心位置', items: [
@@ -564,6 +591,7 @@ const FLAG_DEFS = [
   ]},
   { g: '⑧ 名段折行', items: [
     { k: 'n2auto', t: '整段保留（四字名不折）', d: '窄屏放开 2 字定宽（现行）' },
+    { k: 'hang',   t: '名续行缩进到序号右侧', d: '悬挂缩进：padding-left 与等量负 text-indent抵消 —— 首行顶格贴序号、续行缩进，序号不再孤立在第一行' },
   ]},
 ];
 /* 开关 → 等价 CSS（窄屏/宽屏分开写，导出时按勾选拼） */
@@ -590,12 +618,23 @@ const FLAG_CSS = {
          '/* ① 框长可变：内容不满时收缩到内容宽，顶到卡内容区宽为止（名左位右靠两端对齐） */'],
   xgap: ['/* ② 间隔有上下限 —— 必须 JS 逐行算，见导出框里的 layoutSx() */'],
   xcname: ['.cc-builds.k-xcname .cc-bp-name{max-width:var(--nm-cap,100%);}',
-           '/* 名 ≤ 框长的 N%（从框左往右数）；--nm-cap 由面板滑块给 */'],
+           '/* 名 ≤ 框长的 N%（从框左往右数）；--nm-cap 由面板滑块给。',
+           '   ⚠ 别取 100%：`.nfull` 的 calc(100% - 1.5ch - 4px - 8px) 正是靠这个上限',
+           '   把名盒右移、避开序号列；一旦被 100% 覆盖，名盒就左移贴住序号。',
+           '   实测（长名 + 4 词定位）：100%/95%/90% 在120–153px 卡宽下压序号 9.2px，',
+           '   85% 起不压 —— 名段避让序号的安全上限是 85%。 */'],
   xcap: ['.cc-builds.k-xcap .cc-bp-tag{max-width:var(--tg-cap,100%);}',
          '/* 位 ≤ 框长的 N%（从框右往左数）；比例调小 = 首字右移，',
          '   即「首字落在名首字右移半字之后」，不必另设一条规则 */'],
   xpretty: ['.cc-bp-name{text-wrap:pretty;}', '/* ⑥ 名优先填满首行（Chromium 117+，不支持则忽略） */'],
   xbar: ['.cc-bp-tag .bt-cat{white-space:nowrap;}', '/* ⑥ 大类段（｜ 前）整体不断行，｜ 后是优先断点 */'],
+  hang: ['.cc-bp-name{padding-left:13.2px;text-indent:-13.2px;}',
+         '/* ⑧ 名续行缩进到序号右侧（悬挂缩进）—— 修「序号被孤立在第一行、名的续行顶到序号左缘」。',
+         '   机制：text-indent 只作用于首行、padding-left 作用于整段，两者等量抵消 →',
+         '   首行顶格（紧贴序号右侧 4px gap），续行向右缩进 13.2px（= 序号 1.5ch≈9.2 + gap 4）。',
+         '   ⚠ 不额外占宽：padding 加了、indent 减回来，max-width 判定用的仍是原盒宽。',
+         '   实测（8 卡宽 × 5 名长 × 3 词数 × 2 flag 组 = 240 组）框溢出 0、续行全部缩进。',
+         '   不勾 = 现状：续行与序号左缘只差 column-gap 的 4px，视觉上序号悬空在首行。 */'],
 };
 const JS_X = `
 const GAP_MIN = 4, GAP_MAX = 14, CAP_RATIO = 0.9, SAME_MIN_UNITS = 3;
@@ -627,7 +666,10 @@ const CX_DEFAULT = ['xsame','xbox','xgap','xcname','xcap','xcorner','xbar','n2au
 
 /* ---- 状态 ---- */
 const st = { cw:150, name:'苍白之火', units: unitsByCount(3), manualTag:false,
-             capName:100, capTag:85,          /* 行长上限：名从框左数 / 位从框右数 */
+             capName:85, capTag:85,
+             /* ⚠ capName 默认 85 而不是 100：100% 会覆盖 .nfull 的 calc 上限、让名盒左移
+                盖住序号（实测 120–153px 卡宽下压序号 9.2px），85% 是名段避让序号的安全上限。
+                位capTag 用 85 是另一回事——位是右对齐，不存在避让序号的问题。 */
              custom: new Set(CX_DEFAULT) };
 
 const $ = id => document.getElementById(id);
@@ -1028,7 +1070,7 @@ function cxText(){
   L.push('');
   L.push('/* —— 与 src/styles.css 的等价写法（可直接贴）—— */');
   const nar = keys.filter(k => FLAG_CSS[k] && (k === 't4' || k === 'fit' || k === 'n2auto'
-    || k === 'bal' || k === 'tagbreak' || k === 'gap8' || k === 'ct'));
+    || k === 'bal' || k === 'tagbreak' || k === 'gap8' || k === 'ct' || k === 'hang'));
   const wide = keys.filter(k => FLAG_CSS[k] && (k === 'ladder' || k === 'lad7' || k === 'nm'));
   const xs = keys.filter(k => FLAG_CSS[k] && k.startsWith('x'));
   if (st.custom.has('ladder') && st.custom.has('lad7')) L.push('/* ⚠️ ladder 与 lad7 同时勾选：lad7 阶梯优先生效 */');
