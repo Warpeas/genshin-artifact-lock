@@ -860,10 +860,13 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 .pb-col+.pb-col{padding-left:var(--s2);border-left:1px solid var(--line-soft);}
 .pb-h{color:var(--txt2);font-weight:600;white-space:nowrap;cursor:default;}
 /* 一组 = 一个配色块：左侧色条与方案卡片上的追加属性 chip 同色（次要需求相同的一批人） */
-.pb-grp{display:inline-flex;align-items:baseline;gap:3px;flex-wrap:nowrap;min-width:0;
+.pb-grp{display:inline-flex;align-items:baseline;gap:3px;flex-wrap:wrap;min-width:0;max-width:100%;
   padding:0 5px;border-radius:var(--r-xs);background:var(--sunken);
   border-left:3px solid var(--tc,var(--line-soft));}
-.pb-item{color:color-mix(in srgb,#fff 30%,var(--tc,var(--gold2)));white-space:nowrap;}
+.pb-item{display:inline-block;padding:0 4px;border:1px solid color-mix(in srgb,var(--tc,var(--line-soft)) 42%,var(--line-soft));
+  border-radius:var(--r-xs);background:color-mix(in srgb,var(--tc,var(--panel2)) 10%,var(--panel2));
+  color:color-mix(in srgb,#fff 42%,var(--tc,var(--gold2)));white-space:nowrap;}
+.pb-item[hidden]{display:none;}
 .pb-item.pb-both{border-bottom:1px dashed currentColor;}   /* 4 件套与 2+2 都有配装 */
 .pb-plus{font-size:10px;color:var(--txt3);white-space:nowrap;font-variant-numeric:tabular-nums;}
 .pb-sum{margin-left:2px;padding:0 6px;border-radius:var(--r-pill);white-space:nowrap;
@@ -915,7 +918,7 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 .no-need{padding:16px;text-align:center;color:var(--txt3);font-size:var(--fs-sm);background:var(--sunken);}
 
 /* ---- 候选方案区（游戏内锁定方案） ---- */
-.gp-wrap{margin:10px 0;padding:12px 14px 14px;background:var(--sunken);border-radius:var(--r);}
+.gp-wrap{container-type:inline-size;width:100%;min-width:0;margin:10px 0;padding:12px 14px 14px;background:var(--sunken);border-radius:var(--r);}
 .gp-head{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;margin-bottom:8px;}
 .gp-title{font-size:var(--fs-sm);font-weight:700;color:var(--gold2);}
 .gp-meta{font-size:var(--fs-xs);color:var(--txt3);font-variant-numeric:tabular-nums;}
@@ -924,8 +927,11 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 .gp-lead b{color:var(--gold2);}
 /* 方案组卡片下方的说明行（件数分栏已在方案卡片内 .gp-boardrow，候选区顶部不再单独占一行） */
 .gp-tip{margin:9px 0 0;font-size:var(--fs-xs);color:var(--txt3);line-height:1.65;text-wrap:pretty;}
-/* minmax(min(320px,100%),…)：320 下限不能比容器还宽，否则窄屏轨道被顶开 */
-.gp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:10px;}
+/* 默认单列；容器足够宽时再切双列，避免卡片过窄 */
+.gp-cards{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;}
+@container (min-width:660px){
+  .gp-cards{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
 .gp-card{
   background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r);
   padding:10px 12px;box-shadow:var(--sh1);
@@ -1471,7 +1477,6 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
 /* ---- 平板竖屏 / 小笔电：双列内容区、更密的卡片 ---- */
 @media (min-width:561px) and (max-width:999px){
   .char-grid{grid-template-columns:repeat(auto-fill,minmax(min(200px,100%),1fr));}
-  .gp-cards{grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));}
   .modal-lg{width:min(760px,96vw);}
   .toolbar input[type=search]{width:100%;}
 }
@@ -1645,9 +1650,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
 
   /* --- 游戏内方案：候选卡堆叠，操作区换行铺满 --- */
   .gp-wrap{padding:10px 12px 12px;}
-  /* minmax(0,1fr)：1fr 的 auto 下限 = 卡片 min-content（约 344px），
-     比 360 屏内容盒还宽，会把整排方案卡顶出屏幕右缘 */
-  .gp-cards{grid-template-columns:minmax(0,1fr);gap:10px;}
+    .gp-cards{gap:10px;}
   .gp-ctitle{gap:6px;}
   .gp-for{min-width:0;flex-basis:100%;order:3;}
   .gp-acts{width:100%;margin-left:0;justify-content:flex-end;flex-wrap:wrap;}

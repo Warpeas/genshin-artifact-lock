@@ -2107,11 +2107,9 @@ function orderSubIds(ids, ctx) {
  *     套装级把所有人的名字摊在一处，既没法对应到具体方案，也会让不同方案的分组互相覆盖。
  *     套装标题行（.set-head）不再列任何角色；方案卡片原先的「本方案角色（共 N 人）」计数行
  *     由本分栏取代（两栏人数之和 = 本方案角色数）。
- *   栏内按「次要属性偏好」的配色分组（同色 = 次要需求相同的一批人，见 planColorGroups）：
- *     ① 每组最多列 3 人（PIECE_GRP_MAX），多出来的折成「+n」；
- *     ② 每栏最多列 6 人（PIECE_COL_CHIP_MAX，约两行），再多的折成「共 N 人 M 组」摘要；
- *     ③ 点某个角色 → 第二层属性小窗（#charAttrBox）看该角色在这套配装下的具体推荐属性；
- *        点分栏空白 → 弹窗（#charTipBox）分组分行列出【本方案】全部角色。
+ *   栏内按「次要属性偏好」的配色分组（同色 = 次要需求相同的一批人，见 planColorGroups），完整列出并按可用宽度折行；
+ *   点某个角色 → 第二层属性小窗（#charAttrBox）看该角色在这套配装下的具体推荐属性；
+ *   点分栏空白 → 弹窗（#charTipBox）分组分行列出【本方案】全部角色。
  *   角色顺序：首选 → 备选 → 2 件套（「两种形态都有（both）」的角色殿后）；同级内保持原始顺序。
  *   分组与顺序同源（pieceBoardGroupsOf 在【已排序名单】上切连续段），所以「共 N 人 M 组」里的 M
  *   就是栏内实际画出的段数，摘要 / 弹窗 / 复制文本三处顺序完全一致。
@@ -2148,9 +2146,6 @@ function pieceColsText(cols) {
   return parts.join('　｜　');
 }
 function pieceColsPlain(b, names = null) { return pieceColsText(pieceColsOf(b, names)); }
-/* 每组 / 每栏的展开上限：组内多出来的折成「+n」，栏内多出来的折成「共 N 人 M 组」摘要 */
-const PIECE_GRP_MAX = 3;        // 每组最多列 3 人
-const PIECE_COL_CHIP_MAX = 6;   // 每栏最多列 6 人（≈ 两行）
 /* 栏内顺序：① 首选 → ② 备选 → ③ 2 件套（both：4 件套与 2+2 散搭都能用）殿后；④ 同级内保持原始顺序。
  *   alt 取方案桶里的 users（b.users: Map<name, {alt}>）；原始顺序取传进来的 names 次序。
  *   与 README / DESIGN / 页面说明里的「首选 → 备选 → 2 件套」完全同口径。 */
@@ -2175,12 +2170,8 @@ function pieceMinorSigOf(role) {
   return { sig: ids.join(','), minor: ids.map(subStatName).join(d('、', ', ')) };
 }
 /* 栏内分组：沿用方案卡片的配色分组（planColorGroups）——同色 = 同一份次要属性偏好。
- *   ★ 顺序与分组的一致性口径：分组必须落在【已经排好序】的名单上，否则组块顺序会盖掉排名顺序。
- *     旧实现按方案顺序输出组块，导致「组块连续但不满足 首选→备选→2 件套」的统一口径（诊断 6/7/8 里
- *     能观察到 26 列与之冲突）；现改为：先按 list（= pieceBoardOrder 排好的名次序）逐人走一遍，
- *     取该人第一次出现的语义分组（color / minor / sig）作为它的分组，再把【分组完全相同】的
- *     相邻人合并成一段。于是——① 段内段间顺序 = 名次序（= 分栏摘要 / 弹窗 / 复制的唯一顺序）；
- *     ② 段与段互斥且并集 = 名单（不重不漏）；③ 同组只在相邻时聚拢，被别的组隔开时自然分成两段。
+ *   按 list（= pieceBoardOrder 排好的名次序）逐人归组；同一语义组即使被其他角色隔开也只显示为一组，
+ *   组顺序按首位成员排名，组内成员顺序也保持排名。组间互斥且并集 = 名单（不重不漏）。
  *   ★ 退化修复：cands 传进来的就是【本方案自己】（方案级分栏），同一角色不会再被别的方案的分组
  *     覆盖（旧套装级实现里，教官 4 件套 23 人因此被切成了 23 段）；万一该方案确实没有分组数据
  *     （planColorGroups 返回 null：全组次要偏好一致 或 _group 缺失 / 不完整），一律按
@@ -2216,14 +2207,17 @@ function pieceBoardGroupsOf(cands, list) {
       });
     }
   });
-  const out = [];
+  const out = [], bySig = new Map();
   (list || []).forEach(n => {
     const m = meta.get(n) || { color: null, minor: '', sig: '' };
-    const last = out[out.length - 1];
-    if (last && last.color === m.color && last.minor === m.minor && last.sig === m.sig) {
-      last.names.push(n); return;
+    const key = JSON.stringify([m.color, m.minor, m.sig]);
+    let group = bySig.get(key);
+    if (!group) {
+      group = { color: m.color, minor: m.minor, sig: m.sig, names: [] };
+      bySig.set(key, group);
+      out.push(group);
     }
-    out.push({ color: m.color, minor: m.minor, sig: m.sig, names: [n] });
+    group.names.push(n);
   });
   return out;
 }
@@ -2244,32 +2238,54 @@ function pieceBoardHTML(setName, b, plan, cands = null) {
   const col = (ck, label, list) => {
     if (!list.length) return '';
     const groups = pieceBoardGroupsOf(main, list);
-    let shown = 0;
     const inner = groups.map(g => {
-      if (shown >= PIECE_COL_CHIP_MAX) return '';
-      const take = g.names.slice(0, Math.min(PIECE_GRP_MAX, PIECE_COL_CHIP_MAX - shown));
-      shown += take.length;
-      const left = g.names.length - take.length;
-      const chips = take.map(n =>
+      const chips = g.names.map(n =>
         `<span class="pb-item${pieceNeedOf(b, n) === 'both' ? ' pb-both' : ''}"` +
         ` data-char-tip="${esc(charAttrRaw(setName, key, n))}" role="button" tabindex="0"` +
         ` onclick="event.stopPropagation();openCharAttr(this)"` +
         ` aria-label="${esc(t('点角色看该配装的具体推荐属性'))}">${esc(charName(n))}</span>`
       ).join('');
-      const more = left > 0 ? `<span class="pb-plus" title="${esc(tf('本组还有 {n} 人', { n: left }))}">+${left}</span>` : '';
       const tip = g.minor ? ` title="${esc(tf('次要属性偏好：{x}', { x: g.minor }))}"` : '';
-      return `<span class="pb-grp"${g.color ? ` style="--tc:${g.color}"` : ''}${tip}>${chips}${more}</span>`;
+      return `<span class="pb-grp"${g.color ? ` style="--tc:${g.color}"` : ''}${tip}>${chips}</span>`;
     }).join('');
-    const sum = list.length > shown
-      ? `<span class="pb-sum">${esc(tf('共 {n} 人 {g} 组', { n: list.length, g: groups.length }))}</span>`
-      : '';
-    return `<span class="pb-col pb-${ck}"><span class="pb-h">${esc(t(label))}</span>${inner}${sum}</span>`;
+    return `<span class="pb-col pb-${ck}"><span class="pb-h">${esc(t(label))}</span>${inner}</span>`;
   };
   const html = col('four', '4 件套', ord.four) + col('two', '2 件套', ord.two);
   if (!html) return '';
   const tip = esc(t('点击查看全部需求角色'));
   return `<span class="piece-board" data-piece-board="${esc(setName)}" data-piece-plan="${esc(key)}"` +
     ` role="button" tabindex="0" onclick="openCharTip(this)" aria-label="${tip}" title="${tip}">${html}</span>`;
+}
+
+/* 角色组按实际宽度最多展示两行，剩余名字折叠为 +N。 */
+function fitPieceBoardGroups(root = document) {
+  root.querySelectorAll('.pb-grp').forEach(group => {
+    const items = Array.from(group.querySelectorAll(':scope > .pb-item'));
+    let more = group.querySelector(':scope > .pb-plus');
+    if (!items.length) return;
+    items.forEach(item => { item.hidden = false; });
+    if (more) more.remove();
+
+    const rowCount = () => {
+      const visible = items.filter(item => !item.hidden);
+      if (more) visible.push(more);
+      return new Set(visible.map(item => Math.round(item.getBoundingClientRect().top))).size;
+    };
+    if (rowCount() <= 2) return;
+
+    more = document.createElement('span');
+    more.className = 'pb-plus';
+    group.appendChild(more);
+    let hidden = 0;
+    for (let i = items.length - 1; i >= 0; i--) {
+      items[i].hidden = true;
+      hidden++;
+      more.textContent = '+' + hidden;
+      more.title = tf('本组还有 {n} 人', { n: hidden });
+      if (rowCount() <= 2) break;
+    }
+    if (!hidden) more.remove();
+  });
 }
 
 /* ③④⑤ 合并一组角色的追加属性条件 —— 【全方案唯一一份，五个部位共用】
@@ -3057,7 +3073,7 @@ function openStatTip(chip) {
 /* ============================================================
  * 需求角色弹窗（#charTipBox）：方案卡片里件数分栏的展开视图【第一层】
  * ------------------------------------------------------------
- *   为什么要有：方案卡片里每组最多 3 人、每栏最多两行，人多的方案只能看到摘要；
+ *   为什么要有：方案卡片按宽度最多显示两行，人多的方案会折叠为 +N；
  *   想知道「本方案到底都有谁」就点开这里 —— 本方案全量、分组分行、不折叠。
  *   作用域 = 一个方案：data-piece-board 带套装名、data-piece-plan 带方案 key，
  *   所以同一套装的多套方案各弹各的，不会把别人的角色混进来。
@@ -3094,7 +3110,7 @@ function pieceBoardTipHTML(d) {
       return `<div class="ct-row"${g.color ? ` style="--tc:${g.color}"` : ''}>${lab}${chips}</div>`;
     }).join('');
     return `<div class="ct-col"><div class="ct-ch">${esc(t(c.label))}` +
-      `<i class="ct-cn">${esc(tf('{n} 人', { n: c.total }))}</i></div>${groups}</div>`;
+      `<i class="ct-cn">${esc(tf('{n} 人', { n: c.total }))} · ${esc(tf('{n} 组', { n: c.groups.length }))}</i></div>${groups}</div>`;
   }).join('');
   return `<div class="ct-head"><span class="ct-title">${esc(setName(d.setName))} · ${esc(t('需求角色'))}</span>` +
     `<button type="button" class="ct-x" data-char-tip-close="1" aria-label="${esc(t('关闭'))}">×</button></div>` +
@@ -4666,6 +4682,7 @@ function renderPlan() {
     '　|　生成时间：' + new Date().toLocaleString('zh-CN');
 
   $('#planBody').innerHTML = html || '<div class="card"><p class="muted">没有符合条件的套装。</p></div>';
+  fitPieceBoardGroups($('#planBody'));
 }
 
 const ELEM_DMG_STATS = ['pyro', 'hydro', 'cryo', 'electro', 'anemo', 'geo', 'dendro', 'phys'];
@@ -4875,10 +4892,7 @@ function renderGamePlans(setName, cands, slotFilter = 'all', b = null) {
       <span class="gp-title">${t('🎮 游戏内锁定方案候选')}</span>
       <span class="gp-meta${over ? ' warn' : ''}">${metaTxt}　· ${pickTxt}${over ? ' ⚠️' : ''}</span>
     </div>
-    <p class="gp-lead" data-en="Candidates are auto-clustered by compatible <b>substat priorities</b>; identical need sets of up to three ordinary stats tolerate order differences unless manually calibrated. Every role pair across merged groups must remain compatible. Differences in <b>minor</b> stats are shown by <b>colour</b>. Every plan's five slots share <b>one substat condition</b>, and the hit count is <b>recommended by the tool</b>. Too many candidates? Merge them with &quot;Merge into&hellip;&quot; or untick &quot;Adopt&quot;.">候选按追加属性优先级兼容性自动分组：双方普通需求都不超过 3 条且集合相同、没有人工校准时，顺序不同也可合并；合并后的组内任意角色对仍须兼容。次要属性差异用<b>颜色</b>区分；每个方案的<b>五个部位共用同一份追加属性条件</b>，命中条数由系统按组内支持度<b>推荐「至少 N 条」</b>（即最终值）。候选太多就「并入…」合并、或取消勾选「采纳」。</p>
     <div class="gp-cards">${cards}</div>
-    <p class="gp-tip" data-en="In game: Inventory &rarr; Artifacts &rarr; Lock &rarr; pick this set &rarr; Edit, then set them up one by one as above. Each set takes <b>at most ${GAME_MAX_PRESET} custom presets</b> in game, so keep it tidy yourself.">游戏内：背包 → 圣遗物 → 锁定功能 → 选中本套装 → 编辑，按上方逐套设置；
-      每种套装游戏内<b>至多 ${GAME_MAX_PRESET} 个自定义预设</b>，请自行收敛。</p>
   </div>`;
 }
 
@@ -5619,6 +5633,7 @@ function bind() {
       const next = langOf('ui') === 'en' ? 'zh' : 'en';
       setLanguagePair(next);
       syncLangBtn();
+      fitPieceBoardGroups(document);
     };
     syncLangBtn();
   }
@@ -5929,7 +5944,8 @@ function bind() {
         openCharAttr(cc);
         return;
       }
-      if (closest('[data-char-tip-close]')) { closeCharTip(); return; }
+      if (closest('[data-char-tip-close]')) { closeCharAttr(); closeCharTip(); return; }
+      closeCharAttr();
       return;
     }
     /* 方案卡片里的角色 / 件数分栏也在捕获阶段独占处理。 */
@@ -5981,6 +5997,7 @@ function bind() {
   };
   const onAnyResize = () => {
     closeStatTip(); closeCharTip(); closeCharAttr();
+    fitPieceBoardGroups(document);
     // 名段是否折行取决于卡片实际宽度 —— 窗口一变就得重算 .nmwrap，
     // 否则从宽屏拖到窄屏（或旋转手机）后标记停留在旧值，定位标签版式会错。
     resetWrappedBuildNames(document); markWrappedBuildNames(document); markWrappedBuildNames(document);

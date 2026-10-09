@@ -2756,8 +2756,8 @@ const T_UI_EN = {
   '追加属性池里命中任意 N 条就锁定（★计入）。N 由系统按组内支持度推荐，即为该方案的最终值；如需更细 / 更宽的筛选请在游戏内自行调整':
     'Lock when any N substats in the pool hit (★ counts). N is recommended by the tool from in-group support and is final; adjust the filter in-game if you need it stricter or looser.',
   /* 套装件数需求：套装标题行上【唯一一处分栏】—— 「4 件套」栏 / 「2 件套」栏
-   * （该套装没有 2 件套需求角色时不出现这一栏），栏内按配色分组，每组最多 3 人（多的折成「+n」），
-   * 每栏最多两行（多的折成「共 N 人 M 组」摘要）；整块可点 → 需求角色弹窗全量列出，
+   * （该套装没有 2 件套需求角色时不出现这一栏），栏内按配色分组、每人单独成框，
+   * 每组按实际宽度最多两行（多的折成「+n」）；整块可点 → 需求角色弹窗全量列出，
    * 弹窗里点角色 → 展开 TA 在这套配装下的推荐属性。
    * '4 件套' 复用旧件数角标词条（数据语言词典里已有），这里补一条界面词典，
    * 保证「显示语言 = English、数据语言 = 中文」时分栏标题也翻得动；
@@ -2769,6 +2769,7 @@ const T_UI_EN = {
   '点击查看全部需求角色': 'Click to see all characters needed',
   '点角色看该配装的具体推荐属性': 'Tap a character to see the recommended stats for that build',
   '本组还有 {n} 人': '{n} more in this group',
+  '{n} 组': '{n} groups',
   '共 {n} 人 {g} 组': '{n} characters in {g} groups',
   '{n} 人': '{n}',
   '次要属性偏好：{x}': 'Substat preference: {x}',
