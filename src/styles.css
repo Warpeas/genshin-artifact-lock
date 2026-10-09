@@ -1166,9 +1166,11 @@ html[lang="en"] .gp-subline .gp-lab{white-space:normal;}
 .ct-sv.opt{background:color-mix(in oklab,var(--gold) 6%,var(--panel));color:var(--txt3);
   border-color:color-mix(in srgb,var(--gold) 34%,transparent);border-style:dashed;}
 .ct-note{font-size:var(--fs-xs);color:var(--txt3);}
+/* 窄屏只缩 max-height（配合组合选择器的 overflow:auto 滚动），位置一律交给 JS 的
+   getBoundingClientRect() 定位；绝不在媒体查询里钉 top/bottom，否则窄视口下浮层会脱离触发元素跑到视口最底。 */
 @media (max-width:640px){
-  #charTipBox{left:10px !important;right:10px;top:auto !important;bottom:12px;width:auto;}
-  #charAttrBox{left:10px !important;right:10px;top:auto !important;bottom:12px;width:auto;max-height:52vh;}
+  #charTipBox{max-height:min(72vh,520px);}
+  #charAttrBox{max-height:min(62vh,460px);}
 }
 
 /* ---- 顶部采纳提示 ---- */
