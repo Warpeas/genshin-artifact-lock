@@ -1779,7 +1779,8 @@ function globalWeights() {
  *      再取 N = min(N_rec, 池宽, SUB_MIN_HIT_MAX)；UI 文案是「推荐至少 N 条」，
  *      该推荐值即最终值（只在页面上展示，不提供手动修改入口）
  *   ⑥ 池内顺序：必需（★）→ 普通需求（组内过半、且非条件词条）→ 可选（◇ 条件词条 与 个别人要的）；档内按使用人数降序，
- *      人数相同按游戏常规顺序（双暴 → 攻击 → 生命 → 防御 → 精通 → 充能）
+ *      人数相同按角色推荐里的名次（组内平均名次权重降序，打平时比平均原始名次），
+ *      都相同才按游戏常规顺序（双暴 → 攻击 → 生命 → 防御 → 精通 → 充能）
  * ============================================================ */
 const GAME_MAX_PRESET = 3;   // 游戏内每种套装至多 3 个自定义预设（仅作提示，工具侧不再硬限制）
 const MAIN_MAX    = 3;       // 单部位主属性上限（条件过宽会「存伪」）；
@@ -2049,8 +2050,15 @@ function fixedMainLabel(slotId) {
 
 /* ---------- 追加属性池的【分层排序口径】（池生成与展示层共用同一份比较器） ----------
  *   一级：必需（★必需）→ 普通需求 → 可选（◇ 条件词条 与 仅个别人要的次要偏好）；
- *   二级：同档内按「组内使用人数」降序；
- *   三级：人数相同按游戏常规顺序：暴击率 → 暴击伤害 → 攻击力% → 生命值% → 防御力% → 元素精通 → 元素充能效率。
+ *   二级：同档内按「组内使用人数」降序（支持度越高越靠前）；
+ *   三级：人数相同按「组内平均名次权重」降序 —— 权重来自角色自己推荐里的名次
+ *         （subWeights：第 1 名 1.0、其后按 SUB_RANK_DECAY 衰减，★ ×1.25、◇ ×OPT_W），
+ *         即【角色 / 组内公认的重要度】，不是外部预设的通用顺序。
+ *         单角色方案下人数恒相等，顺序因此完全等于该角色推荐的原始名次（与角色卡一致）。
+ *   四级：权重打平（常见于 subRules.equal 标了「= 同等优先」的一组词条）时，比组内平均
+ *         【原始名次】——越小越靠前，等于沿用数据源里写出来的先后，不另造顺序。
+ *   五级：名次也相同（例如手动合并的散件方案，无角色组可统计）才退回游戏常规顺序：
+ *         暴击率 → 暴击伤害 → 攻击力% → 生命值% → 防御力% → 元素精通 → 元素充能效率。
  *   「普通 / 可选」的界线 = 使用人数 ≥ 组内半数（与命中条数推荐值同一个支持度阈值）：
  *   全组过半都要的算普通需求，只有个别人要的次要偏好归可选，排在全组共有需求之后自然收尾。
  *   注：同一条目的档位 / 人数对整组唯一，因此同一角色群体的需求条目天然连续聚块，不会被别的档位插断。 */
@@ -2074,25 +2082,48 @@ function subNeedCount(roles, id) {
   return (roles || []).filter(r => (r.subList || []).some(s => statIdOf(s) === id)).length;
 }
 function subOrderCtxOf(roles, reqIds, optIds) {
-  const total = (roles || []).length;
+  const list = roles || [];
+  const total = list.length;
   const reqSet = new Set(reqIds || []);
   const optSet = new Set(optIds || []);
+  /* 组内平均名次权重：subWeights 已按「该角色推荐里的名次」算好（含 ★ / ◇ 修正），
+   * 取平均即这组人对该词条的公认重要度。不在这位角色推荐里的词条权重为 0，自然垫底。 */
+  const avgW = id => total
+    ? list.reduce((s, r) => s + ((r.subs && r.subs[id]) || 0), 0) / total
+    : 0;
+  /* 组内平均【原始名次】：只统计「把该词条写进推荐」的角色，越小越靠前。
+   * 用于权重打平（= 同等优先）时沿数据源写出的先后，不另造顺序；无人推荐时给大数垫底。 */
+  const NO_RANK = 999;
+  const avgRank = id => {
+    let sum = 0, hit = 0;
+    list.forEach(r => {
+      const i = (r.subList || []).findIndex(s => statIdOf(s) === id);
+      if (i >= 0) { sum += i; hit++; }
+    });
+    return hit ? sum / hit : NO_RANK;
+  };
   return {
     total,
     tier(id) {
       if (reqSet.has(id)) return 0;
       if (optSet.has(id)) return 2;
-      return (total > 0 && subNeedCount(roles, id) * 2 >= total) ? 1 : 2;
+      return (total > 0 && subNeedCount(list, id) * 2 >= total) ? 1 : 2;
     },
-    count(id) { return subNeedCount(roles, id); },
+    count(id) { return subNeedCount(list, id); },
+    weight(id) { return avgW(id); },
+    rank(id) { return avgRank(id); },
   };
 }
 function subOrderCmp(a, b, ctx) {
   const ta = ctx.tier(a), tb = ctx.tier(b);
   if (ta !== tb) return ta - tb;
   const ca = ctx.count(a), cb = ctx.count(b);
-  if (ca !== cb) return cb - ca;                 // 使用人数降序
-  return subOrderRankOf(a) - subOrderRankOf(b);  // 人数相同 → 游戏常规顺序
+  if (ca !== cb) return cb - ca;                            // 使用人数降序
+  const wa = ctx.weight ? ctx.weight(a) : 0, wb = ctx.weight ? ctx.weight(b) : 0;
+  if (Math.abs(wa - wb) > 1e-9) return wb - wa;             // 人数相同 → 组内重要度（推荐名次）降序
+  const ra = ctx.rank ? ctx.rank(a) : 0, rb = ctx.rank ? ctx.rank(b) : 0;
+  if (Math.abs(ra - rb) > 1e-9) return ra - rb;             // 权重打平（= 同等优先）→ 原始名次升序
+  return subOrderRankOf(a) - subOrderRankOf(b);             // 都相同 → 游戏常规顺序兜底
 }
 function orderSubIds(ids, ctx) {
   return [...ids].sort((a, b) => subOrderCmp(a, b, ctx));   // ES2019+ 稳定排序，同键保持原相对次序
@@ -2298,7 +2329,7 @@ function fitPieceBoardGroups(root = document) {
  *      ——【池宽就是合并结果本身，不再收口】：池只是给用户的建议过滤条件，收口会把某位角色
  *      赖以筛装的词条砍掉（旧实现收口到 5 条，正好也把排在池尾的 ★ 一起截断）
  *   ④ 池内顺序【分层排序】：必需（★）→ 普通需求（过半且非条件词条）→ 可选（◇ 与 个别人要的）；档内按组内使用人数降序，
- *      人数相同按游戏常规顺序（双暴 → 攻击 → 生命 → 防御 → 精通 → 充能）。
+ *      人数相同按组内平均名次权重（角色推荐里的名次）降序，权重也相同才退回游戏常规顺序。
  *      展示层 planSubOrder 用同一份比较器，保证「池里的顺序」=「页面上的顺序」
  *   ⑤ 命中条数：系统按【组内支持度】给推荐值——N_rec = clamp(池里支持度 ≥ 50% 的条目数, 2, 3)，
  *      N = min(N_rec, 池宽, SUB_MIN_HIT_MAX)；UI 文案为「推荐至少 N 条」，
@@ -2347,7 +2378,7 @@ function mergeSubUniform(group) {
   if (!poolIds.length) return { required: [], pool: [], minHit: 0, opt: [] };  // 只挑主要属性，追加属性不限
 
   /* ④ 排序【分层口径】：必需（★）→ 普通需求（过半且非条件词条）→ 可选（◇ 与 个别人要的）；档内按组内使用人数降序，
-   *    人数相同按游戏常规顺序（双暴 → 攻击 → 生命 → 防御 → 精通 → 充能）。
+   *    人数相同按组内平均名次权重（角色推荐里的名次）降序，权重也相同才退回游戏常规顺序。
    *    与展示层 planSubOrder 共用同一份比较器，避免「池里的顺序」与「页面上的顺序」漂移。 */
   const ctx = subOrderCtxOf(group, required, optIds);
   const pool = orderSubIds(poolIds, ctx);
@@ -2380,6 +2411,8 @@ function fuseSub(a, b) {
     total: 0,
     tier: id => (required.includes(id) ? 0 : (optSet.has(id) ? 2 : 1)),
     count: () => 0,
+    weight: () => 0,   // 无角色组 → 统计不出名次权重，档内直接落到游戏常规顺序
+    rank: () => 0,
   };
   const pool = orderSubIds(poolIds, ctx);
   if (!pool.length) return { required: [], pool: [], minHit: 0, opt: [] };
@@ -2679,8 +2712,8 @@ function groupMarkPlan(marks, total, dotCls) {
 
 /* 追加属性的【展示顺序 + 着色】——颜色不再单独占一块图例，直接打在属性上。
  *   排序：① 必需（★必需）→ ② 普通需求（组内过半、且非条件词条）→ ③ 可选（◇ 条件词条 与 个别人要的次要偏好）
- *   档内按「组内使用人数」降序；人数相同按游戏常规顺序：
- *   暴击率 → 暴击伤害 → 攻击力% → 生命值% → 防御力% → 元素精通 → 元素充能效率。
+ *   档内按「组内使用人数」降序；人数相同按「组内平均名次权重」降序 —— 即角色推荐里的重要度名次，
+ *   权重也相同才退回游戏常规顺序（暴击率 → 暴击伤害 → 攻击力% → 生命值% → 防御力% → 元素精通 → 元素充能效率）。
  *   与池生成 mergeSubUniform 共用同一份比较器（subOrderCmp），「池里的顺序」=「页面上的顺序」。
  *   ★ 的分组命中数（starColors.length）同时决定展示形态：
  *     1–2 组 → 多色★（每个分组一颗星，星色同于角色名）；>2 组 → 退化为单色★
@@ -2744,7 +2777,8 @@ function planSubOrder(p) {
   });
   /* 分层排序（与池生成 mergeSubUniform 同源，口径一致）：
    *   必需（★）→ 普通需求（组内过半、且非条件词条）→ 可选（◇ 条件词条 与 个别人要的）；
-   *   档内按「组内使用人数」降序，人数相同按游戏常规顺序（双暴 → 攻击 → 生命 → 防御 → 精通 → 充能）。
+   *   档内按「组内使用人数」降序，人数相同按组内平均名次权重（角色推荐名次）降序，
+   *   权重也相同才按游戏常规顺序（双暴 → 攻击 → 生命 → 防御 → 精通 → 充能）。
    *   ★ 档内再先按「需要它的分组数」降序：全员必需的排最前。
    *   同一条目的档位 / 人数对整组唯一，同一角色群体的需求因此天然连续聚块，不被打断。 */
   const ctx = subOrderCtxOf(everyone, [...req], [...optSet]);
