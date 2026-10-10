@@ -14,8 +14,33 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.10.10.1';
+const APP_VERSION = '2026.10.10.3';
 const CHANGELOG = [
+  {
+    v: '2026.10.10.3', date: '2026-10-10',
+    title: '条件词条理由措辞再精简，并修好数据回填链路',
+    items: [
+      '精简：条件词条（◇）的理由措辞收敛为「需要」式短句——「携带<武器>时需要」/「<玩法>需要」/「<命座>后需要」/「需少量，<用途>」。悬停浮窗比此前更短，也更容易一眼扫完。理由只回答「什么条件下才需要」，不再重复词条名与「值得堆」这类评价性措辞。',
+      '修复：重建内置数据时，条件词条的理由此前会丢失——回填脚本按纯词条输出、不认「词条 + 理由」的成对写法。现在理由能完整带回，wiki 上写明的条件推荐不会被重跑抹平。',
+      '修复：回填时曾把「词条 + 理由」写成了错位的字符串，生成出无法解析的内容。现在两种写法都能正确处理，重建后的数据可正常打开。',
+      '修复：回填链路里有个环节会把条件词条整体清空（清单推导改成循环后引入），导致 31 组理由消失。现已恢复。',
+      '加固：来自攻略图、观测枢未收录的 6 条条件词条（基尼奇 / 阿蕾奇诺 / 瓦雷莎 / 宵宫 / 卡维 / 叶洛亚），其配装组改标为「人工校准」，确保下次重建不会被重新计算的规则覆盖。',
+      '工具：tools/_probe_pipeline.py 可一键验证回填链路是否完好（生成结果能否被正确解析、理由是否还在、图外词条是否受保护）。',
+    ],
+  },
+  {
+    v: '2026.10.10.2', date: '2026-10-10',
+    title: '条件词条理由统一格式并补全，英文界面不再残留中文',
+    items: [
+      '统一：条件词条（◇）的前提理由此前有 13 种自由措辞（wiki 原文对同一条「西风武器」条件就写了 8 种）。现统一为三类——「携带<武器>时值得堆」/「<玩法>值得堆」/「可少量堆，用于优化大招循环」，命座类单独成「六命解锁后防御力可作补充」。悬停时一眼能看出这是条件而非必堆。',
+      '补全：49 处条件词条现在全部带理由。此前 31 处只有词条没有理由（悬停只能显示笼统的「满足条件时才需要」），涉及辛焱、芭芭拉、迪奥娜、夏洛蒂、久岐忍、欧洛伦、希诺宁、柯莱、莱依拉、雅珂达共 10 个角色——理由全部取自观测枢词条原文，逐字核对无一处臆造。',
+      '英文界面：补齐 14 个定位关键词的译文（攻击 / 暴击 / 生命 / 防御 / 元素伤害 / 物理伤害 / 攻速 / 冷却 / 减伤 / 普攻 / 重击 / 下落攻击 / 战技 / 爆发）以及「辅助」「功能」两个定位大类；此前这些词在英文界面下会原样显示中文。',
+      '英文界面：条件词条理由与套装名后的「（任选N套）」改为按界面语言翻译。此前是写死的中文，即使切到英文界面也照旧显示中文。',
+      '数据语言与界面语言仍是两个独立开关（顶栏「数据 / 显示」分开控制），套装名与角色名跟随数据语言，不受本次改动影响。',
+      '工具：新增 tools/backfill_optional_notes.py（note 归一 + 措辞白名单校验，--dry 可预览）；tools/apply_guide_subtiers.py 写入的 note 同样走统一格式。',
+      '验收：check_data.js 全绿、角色卡标签回归通过；tools/_check_en_dict.js 实测词典缺译 0（直接扫构建产物，不依赖模拟环境）。',
+    ],
+  },
   {
     v: '2026.10.10.1', date: '2026-10-10',
     title: '6 位角色的低优 / 条件副词条补进内置数据：新增前提理由悬停说明',
@@ -1237,9 +1262,9 @@ const RAW_CHARS = [
     {sets:['战狂'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/55/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/73738502', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/73525061', '风伤幽冥']],   ''],
   ['宵宫',      'pyro', [
-    {sets:['追忆之注连'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['em', '仅在蒸发队玩法下值得堆元素精通']], source:'heuristic'}, roles:['输出', '增伤', '精通']},
-    {sets:['沙上楼阁史话'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['em', '仅在蒸发队玩法下值得堆元素精通']], source:'heuristic'}, roles:['增伤', '精通']},
-    {sets:['来歆余响'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['em', '仅在蒸发队玩法下值得堆元素精通']], source:'heuristic'}, roles:['增伤', '精通']},
+    {sets:['追忆之注连'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['em', '蒸发队需要']], source:'manual'}, roles:['输出', '增伤', '精通']},
+    {sets:['沙上楼阁史话'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['em', '蒸发队需要']], source:'manual'}, roles:['增伤', '精通']},
+    {sets:['来歆余响'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['em', '蒸发队需要']], source:'manual'}, roles:['增伤', '精通']},
     {sets:['武人'], sands:['atkP'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], roles:['增伤']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/2124/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64575893', 'Asgater'], ['https://www.miyoushe.com/ys/article/64629774', '风伤幽冥']],   ''],
   ['林尼',      'pyro', [
@@ -1265,10 +1290,10 @@ const RAW_CHARS = [
     {sets:['战狂'], sands:['atkP', 'em'], goblet:['pyro', 'atkP'], circlet:['cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'em'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['增伤', '精通']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/503613/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75883027', 'Asgater'], ['https://www.miyoushe.com/ys/article/75777988', 'HoYo青枫']],   ''],
   ['阿蕾奇诺',      'pyro', [
-    {sets:['谐律异想断章'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '可堆叠20-35%充能优化大招循环']], source:'heuristic'}, roles:['输出', '增伤']},
-    {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '可堆叠20-35%充能优化大招循环']], source:'heuristic'}, roles:['输出', '增伤']},
-    {sets:['逐影猎人'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '可堆叠20-35%充能优化大招循环']], source:'heuristic'}, roles:['增伤']},
-    {sets:['饰金之梦'], sands:['em', 'atkP'], goblet:['em', 'pyro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'em', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '可堆叠20-35%充能优化大招循环']], source:'heuristic'}, roles:['增伤', '精通', '增幅反应']},
+    {sets:['谐律异想断章'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '需少量，用于优化大招循环']], source:'manual'}, roles:['输出', '增伤']},
+    {sets:['角斗士的终幕礼'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '需少量，用于优化大招循环']], source:'manual'}, roles:['输出', '增伤']},
+    {sets:['逐影猎人'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '需少量，用于优化大招循环']], source:'manual'}, roles:['增伤']},
+    {sets:['饰金之梦'], sands:['em', 'atkP'], goblet:['em', 'pyro', 'atkP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'em', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '需少量，用于优化大招循环']], source:'manual'}, roles:['增伤', '精通', '增幅反应']},
     {sets:['战狂', '武人'], sands:['atkP'], goblet:['pyro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/501157/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77185586', 'Asgater'], ['https://www.miyoushe.com/ys/article/77156164', 'HoYo青枫']],   ''],
   ['托马',      'pyro', [
@@ -1304,9 +1329,9 @@ const RAW_CHARS = [
     {sets:['战狂'], sands:['atkP', 'em'], goblet:['pyro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤', '精通']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/500672/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/48532329', 'Asgater'], ['https://www.miyoushe.com/ys/article/71813629', 'HoYo青枫']],   ''],
   ['辛焱',      'pyro', [
-    {sets:['苍白之火'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], optional:['defP'], source:'heuristic'}, roles:['增伤']},
-    {sets:['染血的骑士道', '苍白之火'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], optional:['defP'], source:'heuristic'}, roles:['增伤']},
-    {sets:['追忆之注连'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], optional:['defP'], source:'heuristic'}, roles:['输出', '增伤', '充能']},
+    {sets:['苍白之火'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['defP', '六命后需要']], source:'heuristic'}, roles:['增伤']},
+    {sets:['染血的骑士道', '苍白之火'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['defP', '六命后需要']], source:'heuristic'}, roles:['增伤']},
+    {sets:['追忆之注连'], sands:['atkP', 'defP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['defP', '六命后需要']], source:'heuristic'}, roles:['输出', '增伤', '充能']},
     {sets:['昔日宗室之仪'], sands:['defP'], goblet:['defP'], circlet:['defP', 'cd'], subs:['defP', 'er', 'cd', 'cr'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['护盾', '辅助']},
     {sets:['武人'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/1291/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/49461187', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/57070050', '风伤幽冥']],   ''],
@@ -1376,9 +1401,9 @@ const RAW_CHARS = [
     {sets:['武人'], sands:['hpP'], goblet:['hydro'], circlet:['cr', 'cd', 'hpP'], subs:['cr', 'cd', 'hpP'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['增伤']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/500207/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72892872', 'Asgater'], ['https://www.miyoushe.com/ys/article/72778260', 'HoYo青枫']],   ''],
   ['芭芭拉',      'hydro', [
-    {sets:['被怜爱的少女'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['治疗']},
-    {sets:['海染砗磲'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['输出', '治疗']},
-    {sets:['昔时之歌'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['输出', '治疗']},
+    {sets:['被怜爱的少女'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风秘典时需要']], source:'heuristic'}, roles:['治疗']},
+    {sets:['海染砗磲'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风秘典时需要']], source:'heuristic'}, roles:['输出', '治疗']},
+    {sets:['昔时之歌'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['heal', 'hpP'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风秘典时需要']], source:'heuristic'}, roles:['输出', '治疗']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/61/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68736041', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/50809699', '风伤幽冥']],   ''],
   ['玛拉妮',      'hydro', [
     {sets:['黑曜秘典'], sands:['hpP', 'em'], goblet:['hydro', 'hpP'], circlet:['cd', 'hpP'], subs:['cd', 'hpP', 'em', 'cr'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['增伤', '精通']},
@@ -1439,8 +1464,8 @@ const RAW_CHARS = [
     {sets:['战狂'], sands:['atkP'], goblet:['cryo', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['增伤']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/500286/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62418468', 'Asgater'], ['https://www.miyoushe.com/ys/article/76302270', 'HoYo青枫']],   ''],
   ['迪奥娜',      'cryo', [
-    {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['辅助']},
-    {sets:['千岩牢固'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['治疗', '护盾', '充能']},
+    {sets:['昔日宗室之仪'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风猎弓时需要']], source:'heuristic'}, roles:['辅助']},
+    {sets:['千岩牢固'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风猎弓时需要']], source:'heuristic'}, roles:['治疗', '护盾', '充能']},
     {sets:['被怜爱的少女'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal'], subs:['er', 'hpP'], roles:['治疗']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/1221/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/76347079', 'Asgater'], ['https://www.miyoushe.com/ys/article/76479642', 'HoYo青枫']],   ''],
   ['罗莎莉亚',      'cryo', [
@@ -1475,9 +1500,9 @@ const RAW_CHARS = [
     {sets:['武人'], sands:['atkP'], goblet:['phys'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/7257/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/43154250', 'Asgater'], ['https://www.miyoushe.com/ys/article/76548802', 'HoYo青枫']],   ''],
   ['夏洛蒂',      'cryo', [
-    {sets:['被怜爱的少女', '绝缘之旗印'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['治疗', '充能']},
-    {sets:['昔时之歌'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['治疗']},
-    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['辅助']},
+    {sets:['被怜爱的少女', '绝缘之旗印'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风秘典时需要']], source:'heuristic'}, roles:['治疗', '充能']},
+    {sets:['昔时之歌'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风秘典时需要']], source:'heuristic'}, roles:['治疗']},
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风秘典时需要']], source:'heuristic'}, roles:['辅助']},
     {need: 4, sets:['冰风迷途的勇士', '逐影猎人'], sands:['atkP', 'er'], goblet:['cryo', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'er', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['输出', '增伤']},
     {sets:['学士'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['atkP', 'er'], roles:['辅助']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/500292/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/45238643', 'Asgater'], ['https://www.miyoushe.com/ys/article/74068739', 'HoYo青枫']],   ''],
@@ -1529,14 +1554,14 @@ const RAW_CHARS = [
     {sets:['流浪大地的乐团', '饰金之梦', '乐园遗落之花'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em', 'hpP', 'er'], roles:['输出', '精通']},
     {sets:['如雷的盛怒'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em', 'hpP', 'er'], roles:['输出', '精通']},
     {sets:['乐园遗落之花'], sands:['em'], goblet:['em'], circlet:['em'], subs:['em', 'hpP', 'er'], roles:['输出', '精通', '剧变反应']},
-    {sets:['千岩牢固'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['精通']},
-    {sets:['昔日宗室之仪'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['精通']},
-    {sets:['海染砗磲'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['输出', '治疗', '精通']},
-    {sets:['被怜爱的少女'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['治疗', '精通']},
-    {sets:['被怜爱的少女', '海染砗磲', '昔时之歌'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['治疗', '精通']},
-    {sets:['战狂'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['精通']},
-    {sets:['流放者'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['精通', '充能']},
-    {sets:['教官'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['精通']},
+    {sets:['千岩牢固'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['精通']},
+    {sets:['昔日宗室之仪'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['精通']},
+    {sets:['海染砗磲'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['输出', '治疗', '精通']},
+    {sets:['被怜爱的少女'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['治疗', '精通']},
+    {sets:['被怜爱的少女', '海染砗磲', '昔时之歌'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['治疗', '精通']},
+    {sets:['战狂'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['精通']},
+    {sets:['流放者'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['精通', '充能']},
+    {sets:['教官'], sands:['em', 'hpP', 'er'], goblet:['em', 'hpP'], circlet:['heal', 'em', 'hpP', 'cr'], subs:['em', 'hpP', 'er'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['精通']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/4148/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68674152', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/58831154', '风伤幽冥']],   ''],
   ['九条裟罗',      'electro', [
     {sets:['昔日宗室之仪'], sands:['atkP', 'er'], goblet:['electro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['增伤']},
@@ -1558,15 +1583,15 @@ const RAW_CHARS = [
     {sets:['武人'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/501213/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/75166713', 'Asgater'], ['https://www.miyoushe.com/ys/article/74324480', 'HoYo青枫']],   ''],
   ['瓦雷莎',      'electro', [
-    {sets:['长夜之誓'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '少量充能效率，用于优化大招循环']], source:'heuristic'}, roles:['增伤']},
-    {sets:['黑曜秘典'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'atkP'], subs:['cd', 'cr', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '少量充能效率，用于优化大招循环']], source:'heuristic'}, roles:['增伤']},
+    {sets:['长夜之誓'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cr', 'cd', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '需少量，用于优化大招循环']], source:'manual'}, roles:['增伤']},
+    {sets:['黑曜秘典'], sands:['atkP'], goblet:['electro', 'atkP'], circlet:['cd', 'atkP'], subs:['cd', 'cr', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '需少量，用于优化大招循环']], source:'manual'}, roles:['增伤']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/504570/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71719330', 'Asgater'], ['https://www.miyoushe.com/ys/article/71622492', 'HoYo青枫']],   ''],
   ['伊安珊',      'electro', [
     {sets:['烬城勇者绘卷'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP', 'cr'], subs:['er', 'atkP', 'cr'], roles:['增伤', '精通']},
     {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP', 'cr'], subs:['er', 'atkP', 'cr'], roles:['辅助']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/504621/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/62890274', 'Asgater'], ['https://www.miyoushe.com/ys/article/71744341', 'HoYo青枫']],   ''],
   ['欧洛伦',      'electro', [
-    {sets:['烬城勇者绘卷'], sands:['er'], goblet:[], circlet:['cr'], subs:['er'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['副C', '辅助', '充能']},
+    {sets:['烬城勇者绘卷'], sands:['er'], goblet:[], circlet:['cr'], subs:['er'], subRules:{required:[], equal:[], optional:[['cr', '携带西风猎弓时需要']], source:'heuristic'}, roles:['副C', '辅助', '充能']},
     {sets:['烬城勇者绘卷'], sands:['er', 'atkP'], goblet:['electro'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['输出', '增伤', '辅助']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/502927/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/59513932', 'Asgater'], ['https://www.miyoushe.com/ys/article/76822394', 'HoYo青枫']],   ''],
   ['多莉',      'electro', [
@@ -1697,8 +1722,8 @@ const RAW_CHARS = [
     {sets:['战狂'], sands:['atkP'], goblet:['geo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/500419/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64215722', 'Asgater'], ['https://www.miyoushe.com/ys/article/64212556', 'HoYo青枫']],   ''],
   ['希诺宁',      'geo', [
-    {sets:['烬城勇者绘卷'], sands:['defP', 'er'], goblet:['defP'], circlet:['defP', 'heal', 'cr'], subs:['defP', 'er'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['输出', '增伤', '精通']},
-    {sets:['悠古的磐岩'], sands:['defP', 'er'], goblet:['defP'], circlet:['defP', 'heal', 'cr'], subs:['defP', 'er'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['输出']},
+    {sets:['烬城勇者绘卷'], sands:['defP', 'er'], goblet:['defP'], circlet:['defP', 'heal', 'cr'], subs:['defP', 'er'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['输出', '增伤', '精通']},
+    {sets:['悠古的磐岩'], sands:['defP', 'er'], goblet:['defP'], circlet:['defP', 'heal', 'cr'], subs:['defP', 'er'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['输出']},
     {sets:['黑曜秘典'], sands:['defP'], goblet:['geo', 'defP'], circlet:['cd', 'cr'], subs:['cd', 'cr', 'defP'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['输出', '增伤']},
     {sets:['华馆梦醒形骸记'], sands:['defP'], goblet:['geo', 'defP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'defP'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['输出', '增伤']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/502306/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71701174', 'Asgater'], ['https://www.miyoushe.com/ys/article/71693771', 'HoYo青枫']],   ''],
@@ -1734,9 +1759,9 @@ const RAW_CHARS = [
     {sets:['战狂'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'atkP', 'em'], roles:['增伤']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/4334/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/69888834', '风伤幽冥'], ['https://www.miyoushe.com/ys/article/28276046', '流曳']],   ''],
   ['基尼奇',      'dendro', [
-    {sets:['黑曜秘典'], sands:['atkP'], goblet:['dendro'], circlet:['cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '堆叠20-30%充能效率可优化大招循环']], source:'heuristic'}, roles:['输出', '增伤']},
-    {sets:['未竟的遐思'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '堆叠20-30%充能效率可优化大招循环']], source:'heuristic'}, roles:['增伤']},
-    {sets:['深林的记忆'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '堆叠20-30%充能效率可优化大招循环']], source:'heuristic'}, roles:['增伤', '减抗']},
+    {sets:['黑曜秘典'], sands:['atkP'], goblet:['dendro'], circlet:['cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '需少量，用于优化大招循环']], source:'manual'}, roles:['输出', '增伤']},
+    {sets:['未竟的遐思'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '需少量，用于优化大招循环']], source:'manual'}, roles:['增伤']},
+    {sets:['深林的记忆'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cd', 'cr', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], optional:[['er', '需少量，用于优化大招循环']], source:'manual'}, roles:['增伤', '减抗']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/501624/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64759482', 'Asgater'], ['https://www.miyoushe.com/ys/article/64752081', 'HoYo青枫']],   ''],
   ['艾梅莉埃',      'dendro', [
     {sets:['未竟的遐思'], sands:['atkP'], goblet:['dendro', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['增伤']},
@@ -1760,15 +1785,15 @@ const RAW_CHARS = [
     {sets:['教官'], sands:['er', 'hpP'], goblet:['hpP'], circlet:['hpP', 'heal', 'cr'], subs:['atkP', 'hpP', 'em', 'er'], roles:['治疗', '充能']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/5866/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70045506', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/49545157', '风伤幽冥']],   ''],
   ['柯莱',      'dendro', [
-    {sets:['深林的记忆'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['atkP', 'cr'], subs:['er', 'em', 'atkP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['增伤', '减抗', '精通', '充能']},
-    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['atkP', 'cr'], subs:['er', 'em', 'atkP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['增伤', '精通', '充能']},
-    {sets:['教官'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['atkP', 'cr'], subs:['er', 'em', 'atkP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['增伤', '精通', '充能']},
-    {sets:['流放者'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['atkP', 'cr'], subs:['er', 'em', 'atkP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['增伤', '精通', '充能']},
+    {sets:['深林的记忆'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['atkP', 'cr'], subs:['er', 'em', 'atkP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风弓时需要']], source:'heuristic'}, roles:['增伤', '减抗', '精通', '充能']},
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['atkP', 'cr'], subs:['er', 'em', 'atkP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风弓时需要']], source:'heuristic'}, roles:['增伤', '精通', '充能']},
+    {sets:['教官'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['atkP', 'cr'], subs:['er', 'em', 'atkP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风弓时需要']], source:'heuristic'}, roles:['增伤', '精通', '充能']},
+    {sets:['流放者'], sands:['er', 'atkP'], goblet:['em', 'dendro'], circlet:['atkP', 'cr'], subs:['er', 'em', 'atkP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风弓时需要']], source:'heuristic'}, roles:['增伤', '精通', '充能']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/4333/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/70046336', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/42740346', '风伤幽冥']],   ''],
   ['卡维',      'dendro', [
-    {sets:['深林的记忆'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subRules:{required:[], equal:[], optional:[['cr', '仅在携带西风长枪时可堆暴击率']], source:'manual'}, subs:['er', 'em', 'atkP', 'cr'], roles:['减抗', '精通', '充能']},
-    {sets:['乐园遗落之花'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subRules:{required:[], equal:[], optional:[['cr', '仅在携带西风长枪时可堆暴击率']], source:'manual'}, subs:['er', 'em', 'atkP', 'cr'], roles:['输出', '精通', '充能', '剧变反应']},
-    {sets:['流浪大地的乐团', '饰金之梦', '乐园遗落之花'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subRules:{required:[], equal:[], optional:[['cr', '仅在携带西风长枪时可堆暴击率']], source:'manual'}, subs:['er', 'em', 'atkP', 'cr'], roles:['精通', '充能']},
+    {sets:['深林的记忆'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subRules:{required:[], equal:[], optional:[['cr', '携带西风长枪时需要']], source:'manual'}, subs:['er', 'em', 'atkP', 'cr'], roles:['减抗', '精通', '充能']},
+    {sets:['乐园遗落之花'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subRules:{required:[], equal:[], optional:[['cr', '携带西风长枪时需要']], source:'manual'}, subs:['er', 'em', 'atkP', 'cr'], roles:['输出', '精通', '充能', '剧变反应']},
+    {sets:['流浪大地的乐团', '饰金之梦', '乐园遗落之花'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subRules:{required:[], equal:[], optional:[['cr', '携带西风长枪时需要']], source:'manual'}, subs:['er', 'em', 'atkP', 'cr'], roles:['精通', '充能']},
     {sets:['教官'], sands:['er', 'em'], goblet:['em'], circlet:['em'], subs:['cr', 'atkP', 'em', 'er'], roles:['精通', '充能']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/6490/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/68699830', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/39132970', '一波哥哥']],   ''],
   ['绮良良',      'dendro', [
@@ -1824,8 +1849,8 @@ const RAW_CHARS = [
     {sets:['流放者'], sands:['er'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'atkP', 'er'], roles:['增伤', '充能']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/5493/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71373526', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/32553943', '风伤幽冥']],   ''],
   ['莱依拉',      'cryo', [
-    {sets:['千岩牢固'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['护盾']},
-    {sets:['昔日宗室之仪'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['辅助']},
+    {sets:['千岩牢固'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['护盾']},
+    {sets:['昔日宗室之仪'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['er', 'hpP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风剑时需要']], source:'heuristic'}, roles:['辅助']},
     {sets:['流放者'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'er'], roles:['辅助']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/5297/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/45987202', 'HoYo青枫'], ['https://www.miyoushe.com/ys/article/64192812', '风伤幽冥']],   ''],
   ['赛索斯',      'electro', [
@@ -1933,13 +1958,13 @@ const RAW_CHARS = [
     {sets:['纺月的夜歌'], sands:['defP', 'er'], goblet:['defP'], circlet:['cd', 'cr'], subs:['cr', 'cd', 'defP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['精通', '充能']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/508198/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/74409707', 'Asgater'], ['https://www.miyoushe.com/ys/article/74473481', '关蝎']],      ''],
   ['叶洛亚',      'geo', [
-    {sets:['纺月的夜歌'], sands:['em'], goblet:['em'], circlet:['em'], subRules:{required:[], equal:[], optional:[['cr', '仅在携带西风长枪时可堆暴击率']], source:'manual'}, subs:['em', 'er', 'cr'], roles:['输出', '精通']},
-    {sets:['晨星与月的晓歌', '穹境示现之夜', '饰金之梦', '乐园遗落之花', '流浪大地的乐团'], sands:['em'], goblet:['em'], circlet:['em'], subRules:{required:[], equal:[], optional:[['cr', '仅在携带西风长枪时可堆暴击率']], source:'manual'}, subs:['em', 'er', 'cr'], roles:['辅助', '精通']},
+    {sets:['纺月的夜歌'], sands:['em'], goblet:['em'], circlet:['em'], subRules:{required:[], equal:[], optional:[['cr', '携带西风长枪时需要']], source:'manual'}, subs:['em', 'er', 'cr'], roles:['输出', '精通']},
+    {sets:['晨星与月的晓歌', '穹境示现之夜', '饰金之梦', '乐园遗落之花', '流浪大地的乐团'], sands:['em'], goblet:['em'], circlet:['em'], subRules:{required:[], equal:[], optional:[['cr', '携带西风长枪时需要']], source:'manual'}, subs:['em', 'er', 'cr'], roles:['辅助', '精通']},
   ],      [['https://baike.mihoyo.com/ys/obc/content/507504/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/72899643', 'Asgater'], ['https://www.miyoushe.com/ys/article/72869570', 'HoYo青枫']],      ''],
   ['雅珂达',      'anemo', [
-    {sets:['翠绿之影'], sands:['er'], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['精通', '剧变反应']},
-    {sets:['纺月的夜歌'], sands:['er'], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['充能']},
-    {sets:['纺月的夜歌', '绝缘之旗印'], sands:['er'], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:['cr'], source:'heuristic'}, roles:['充能']},
+    {sets:['翠绿之影'], sands:['er'], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风猎弓时需要']], source:'heuristic'}, roles:['精通', '剧变反应']},
+    {sets:['纺月的夜歌'], sands:['er'], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风猎弓时需要']], source:'heuristic'}, roles:['充能']},
+    {sets:['纺月的夜歌', '绝缘之旗印'], sands:['er'], goblet:['atkP'], circlet:['heal', 'atkP'], subs:['er', 'atkP'], subRules:{required:[], equal:[], optional:[['cr', '携带西风猎弓时需要']], source:'heuristic'}, roles:['充能']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/507287/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/71128393', 'Asgater'], ['https://www.miyoushe.com/ys/article/71325029', '关蝎']],      ''],
 
   /* ---------- 补遗：7.1 薇斯纳（风·单手剑）/ 沃雅妮莎（水·法器） ---------- */
@@ -2392,9 +2417,17 @@ const T_DATA_EN = Object.assign(
     /* 配装「功能定位」词表（数据语言 = English 时随数据切换；角色级 主C/副C/辅助 已由 ROLE_EN 覆盖）。
        用社区常用缩写，避免长词把角色卡片顶宽 —— 卡片上的定位标签空间很小。 */
     '输出': 'DPS', '增伤': 'Buff', '减抗': 'Shred', '治疗': 'Heal', '护盾': 'Shield',
-    '生存': 'Sustain',
+    '生存': 'Sustain', '辅助': 'Support', '功能': 'Utility',
     '精通': 'EM', '充能': 'ER',
     '聚怪/控制': 'CC', '增幅反应': 'Amplify', '剧变反应': 'Transform',
+    /* BUILD_KWS 的 22 项定位关键词 —— 此前只有 8 项有译文，
+       剩下 14 项（攻击/暴击/生命/防御/元素伤害/物理伤害/攻速/冷却/减伤/普攻/重击/下落攻击/战技/爆发）
+       在英文界面下会原样显示中文。词表本身也只做「词 + 属性」两层，保持短标签。 */
+    '攻击': 'ATK', '暴击': 'CRIT', '生命': 'HP', '防御': 'DEF',
+    '元素伤害': 'Elemental DMG', '物理伤害': 'Physical DMG',
+    '攻速': 'ATK SPD', '冷却': 'Cooldown', '减伤': 'DMG Red.',
+    '普攻': 'Normal ATK', '重击': 'Charged ATK', '下落攻击': 'Plunging ATK',
+    '战技': 'Skill', '爆发': 'Burst',
   },
 );
 
@@ -2915,6 +2948,22 @@ const I18N_HTML = {
 
 /* ---------- 界面文案补充（按页面归类；所有 UI 英文集中维护） ---------- */
 Object.assign(T_UI_EN, {
+  /* 条件词条（optional）前提理由 —— ⚠️ 必须与 RAW_CHARS 里 subRules.optional 的
+     note 措辞逐字一致，否则英文态回落中文。数据侧格式见 tools/backfill_optional_notes.py：
+     统一成「携带<武器>时需要」/「<玩法>需要」/「需少量，<用途>」/「<命座>后需要」。
+     武器名用官方英文：Favonius Sword / Bow / Lance / Slicer。 */
+  '携带西风剑时需要': 'Needed with Favonius Sword',
+  '携带西风秘典时需要': 'Needed with Favonius Slicer',
+  '携带西风猎弓时需要': 'Needed with Favonius Bow',
+  '携带西风弓时需要': 'Needed with Favonius Bow',
+  '携带西风长枪时需要': 'Needed with Favonius Lance',
+  '蒸发队需要': 'Needed in Vaporize teams',
+  '需少量，用于优化大招循环': 'A few, mainly to tighten Burst rotation',
+  '六命后需要': 'Needed after C6',
+  /* 套装候选池后缀：app.js buildSetsLabel() 用 JS 拼接，动态文案不在 data-en 覆盖范围，
+     走 t() 翻译、完整串作键（含全角括号，勿漏）。 */
+  '（任选1套）': ' (pick 1)',
+  '（任选2套）': ' (pick 2)',
   /* 排序 */
   '排序顺序来自米游社图鉴': 'Order follows the HoYoLAB catalog',
   '按使用人数排序：用得多的在前': 'Sorted by usage: most used first',

@@ -23,6 +23,65 @@
 | `fetch_guides.py` | 按作者白名单 + 热度为每个角色挑攻略链接 | `out/guides.json` |
 | `fetch_guide_subtiers.py` | **副词条分级校准**：下载 Asgater / HoYo青枫 攻略的圣遗物候选页到本地，供人工/模型读图核对分级顺序与条件（不解析、不回写） | `out/guide_subtiers/`（主C 批次在 `main_c/`） |
 | `apply_guide_subtiers.py` | 把读图得到的「低优 / 条件副词条」固化进 `src/data.js` 的 `subRules.optional`（`[['id','note']]` 元组）。`--dry` 只预览。⚠️ 只处理 wiki 给了 subs 的配装组，wiki 空行（兜底行）自动跳过 | `src/data.js` |
+| `backfill_optional_notes.py` | 把 optional 的 note 归一成统一格式（见下），并用措辞白名单校验；顺带把 wiki `conditional.note` 回填到尚无理由的组。幂等，`--dry` 预览 | `src/data.js` |
+
+### optional note 统一格式（2026-10-10 定，两轮收敛后，49 处全带 note）
+
+wiki 原文对同一条「西风武器」条件有 **8 种措辞**（`仅西风猎弓` / `搭配西风剑时` / `西风剑推荐` …），
+加上攻略图的 5 种共 13 种。第一轮归成「值得堆」长句后仍偏长，二轮收敛成**「需要」式短句**——
+理由只回答「什么条件下才需要」，不重复词条名、不写评价性措辞：
+
+| 类型 | 模板 | 例 |
+|---|---|---|
+| 武器条件 | `携带<武器>时需要` | 携带西风秘典时需要 |
+| 玩法 / 队伍 | `<玩法>需要` | 蒸发队需要 |
+| 命座条件 | `<命座>后需要` | 六命后需要 |
+| 数量 / 门槛 | `需少量…` / `需达到<数值>需要` | 需少量，用于优化大招循环 |
+| 纯用途 | `<用途>` | 少量堆，用于优化大招循环 |
+
+**武器名保留 wiki 原名** —— 西风剑 / 西风秘典 / 西风猎弓 / 西风弓 / 西风长枪是不同武器，不可合并。
+理由原文统一取自 `wiki_builds.json` 的 `conditional[where:'subs'].note`，逐字核对无臆造。
+
+### ⚠️ 回填链路三处坑（2026-10-10 修复，rebuild 前必读）
+
+`optional` 有两种写法（`'cr'` 与 `['cr', '理由']`），**回填链路必须全程都认**。踩过的三个坑：
+
+1. **`fmt_subrules`（apply_wiki_builds.py）** —— 早前对两种写法都 `q(s)`，
+   元组会被 `repr` 成 `"['cr', 'note']"` 再套引号 → 既丢结构又产出**语法错误的 JS**。
+   现按「首元素是不是 id」分流。
+2. **`infer_subrules`（role_infer.py）** —— optional 过滤早前是一行列表推导
+   （RHS 先求值所以没事）；改成显式循环后写成 `optional = []` + `for s in (optional or [])`，
+   **先把形参清空再遍历** → optional 全组静默消失。必须用新变量名收结果。
+3. **`optional_subs`（apply_wiki_builds.py）** —— 只取 `conditional.stat`、**把 note 丢了**，
+   于是 wiki 上明明写明了理由（10 个角色实测全都有原文），data.js 里却是无理由的纯 id。
+
+**验收：`python tools/_probe_pipeline.py`** —— 一键跑通 fmt_subrules / infer_subrules /
+optional_subs 三层，并对全角色跑 `generated_subrules` 检查能否被 JS 解析、理由是否还在。
+当前结果：异常 0、非法 JS 0、**带note 的组 31**。
+
+### ⚠️ 图外词条必须标 `source:'manual'`
+
+攻略图补的几条（基尼奇 / 阿蕾奇诺 / 瓦雷莎 / 宵宫的 `er`、卡维 / 叶洛亚的 `cr`）
+**观测枢 conditional 里没有**。若沿用 `source:'heuristic'`，下次 `rebuild_data.py`
+会按 `generated_subrules()` 整块重算、这条被整体丢弃（实测 12 组处于此风险，现已全部改标 manual）。
+
+判据：`existing_subrules`（`apply_wiki_builds.py:218`）**只保护 `source=='manual'`**。
+`apply_guide_subtiers.py` 现在会在写入图外词条时自动把 source 提升为 manual。
+复查用 `python tools/_probe_risky.py`（当前风险组数 0）。
+
+### 英文漏项怎么验（别用 VM）
+
+`UI_LANG` / `DATA_LANG` 是**两个独立开关**（顶栏「数据 / 显示」分开控制），
+且 `UI_LANG` 是 data.js 的顶层 const、`setUiLang` 在闭包内 —— **VM 里改不动**，
+所以 `_check_en_full.js` 报 `isUiEn()=false` 是**环境限制、不是数据问题**。
+
+验英文漏项用 **`_check_en_dict.js`**：直接扫构建产物 `index.html` 的词典字面量，
+覆盖 `BUILD_CATS` / `BUILD_KWS` / optional note / UI 杂项四类，当前**缺译 0**。
+
+⚠️ **动态数据不在 `applyI18n` 覆盖范围** —— 它只替换带 `data-en` 的元素与词典整串。
+data.js 里的数据字段（note）和 JS 拼接的文案（「（任选N套）」）**必须在拼接处显式调 `t()`**，
+否则英文态照旧显示中文。已修的漏点：`optTooltip` 的 note、`planMainTip` 里绕过
+`optTooltip` 直出 note 的那行、`buildSetsLabel`（app.js:42，含全角括号、整串作键）。
 | `gen_sources.py` | 生成人读的来源清单（可点开） | `out/sources.md`、`out/sources.html` |
 | `role_infer.py` | 提供 `infer_roles(...)` 推断功能定位、`infer_subrules(roles, subs, optional)` 生成 `subRules`；角色级定位兜底读 `src/data.js` 的 `CHAR_META` | —（被上面脚本 import，不直接跑） |
 | `check_data.js` | 数据自检：主词条空 / 缺字段 / 非法值，配装组完整性，**派生字段门禁**（死字段 / 空 roles / optional 异常 / 未识别片段） | `out/_scan_result.md` |

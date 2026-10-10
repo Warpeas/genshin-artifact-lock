@@ -232,7 +232,18 @@ def fmt_subrules(rules):
         "[" + ", ".join(q(s) for s in group) + "]" for group in equal
     ) + "]")
     if optional:
-        parts.append("optional:[" + ", ".join(q(s) for s in optional) + "]")
+        # optional 两种写法都要原样保住（data.js 侧 subIdsToSubs 都认）：
+        #   ['cr']              纯 id，无理由
+        #   [['cr','携带西风剑时需要']]  [stat, note]，带前提理由
+        # 早前这里对两种都q(s)，元组会被 repr 成 "['cr', 'note']" 再套引号 ——
+        # 既丢掉结构、又产出语法错误的 JS。判断依据：list/tuple 里第一个元素是不是 id。
+        def fmt_one(p):
+            if isinstance(p, (list, tuple)) and p and isinstance(p[0], str):
+                if len(p) > 1 and p[1]:
+                    return "[" + q(p[0]) + ", " + q(p[1]) + "]"
+                return q(p[0])
+            return q(p)
+        parts.append("optional:[" + ", ".join(fmt_one(p) for p in optional) + "]")
     parts.append("source:" + q(rules.get("source") or "role-heuristic"))
     return "{" + ", ".join(parts) + "}"
 
@@ -242,14 +253,26 @@ def optional_subs(row):
 
     这些词条不算常规推荐，但也不能丢：写进 subRules.optional，
     由前端标注成「条件词条」，用户按自己武器/命座情况取舍。
+
+    **连 note 一起带**（2026-10-10）：wiki 的 `conditional.note` 就是现成的
+    前提理由原文，早前只取 stat、把理由丢了 —— 于是 data.js 里 31 组 optional
+    悬停只能显示笼统的「满足条件时才需要」。note 会先经 tools/backfill_optional_notes.py
+    归一成统一措辞，此处只做搬运，不改写。
     """
     out = []
+    seen = set()
     for c in row.get("conditional") or []:
-        if c.get("where") == "subs" and c.get("stat") and c["stat"] not in out:
-            out.append(c["stat"])
+        if c.get("where") != "subs" or not c.get("stat"):
+            continue
+        stat = c["stat"]
+        if stat in seen:
+            continue
+        seen.add(stat)
+        note = (c.get("note") or "").strip()
+        out.append([stat, note] if note else stat)
     # 保持与 subs 相同的展示顺序
     order = {s: i for i, s in enumerate(row.get("subs") or [])}
-    return sorted(out, key=lambda s: order.get(s, 99))
+    return sorted(out, key=lambda p: order.get(p[0] if isinstance(p, list) else p, 99))
 
 
 def generated_subrules(row, char_roles=None):

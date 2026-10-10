@@ -34,12 +34,14 @@ function buildSetWeight(b) {
   return (W_SET_COUNT[buildNeed(b)] || 1) * (Math.min(buildPickCount(b), n) / n);
 }
 // 展示：单套「A」；正好够挑「A + B」；候选多于所需「A / B / C（任选2套）」
+/* ⚠️ 「（任选N套）」是 JS 拼接出来的动态文案，不在 applyI18n 的 data-en 覆盖范围，
+ *    必须走 t() 才能在英文态翻译（词典键= 完整串）。*/
 function buildSetsLabel(b, short) {
   const p = buildPool(b).map(short ? setShortName : setName);
   if (!p.length) return '';
   const k = buildPickCount(b);
   if (p.length <= k) return p.join(' + ');
-  return p.join(' / ') + (k === W_PICK ? '（任选2套）' : '（任选1套）');
+  return p.join(' / ') + (k === W_PICK ? t('（任选2套）') : t('（任选1套）'));
 }
 /* 角色卡套装名（HTML）：多套任选名里的「 / 」用不换行空格绑在前一个名字之后 ——
  * 断行点只留在斜杠之后，避免窄屏折行时斜杠落到行首（破形）。
@@ -3053,7 +3055,9 @@ function statTipHTML(m) {
     return `<div class="stt-row"${row.color ? ` style="--tc:${row.color}"` : ''}>${inner}</div>`;
   }).join('');
   const notes = [];
-  if (m.kind === 'sub' && m.opt) notes.push('◇ ' + esc(m.optNote || t('满足条件时才需要')));
+  /* ◇ 是语言无关的符号，只把分隔空格按语言给（英文态不写尾随空格）。 */
+const optMarkPrefix = () => ((typeof isUiEn === 'function' && isUiEn()) ? '◇' : '◇ ');
+if (m.kind === 'sub' && m.opt) notes.push(esc(optMarkPrefix()) + esc(optTooltip(m.optNote)));
   if (!m.rule) notes.push(esc(m.kind === 'sub'
     ? t('颜色与卡片上的角色名一一对应，照搬时按同色给到对应角色')
     : t('「首选」= 该角色在这个部位的头号主属性；可互换词条（如暴击率 / 暴击伤害冠）互为「次选」')));
@@ -3462,10 +3466,12 @@ function renderChars() {
 
 /* 条件词条（◇）浮窗文案：有理由就用理由，否则回退通用说明。多处复用，保证措辞一致。 */
 function optTooltip(note) {
-  // 悬停直接展示前提理由（如「携带西风秘典时需要」），不再叠「条件词条（…）」前缀；
+  // 悬停直接展示前提理由（如「携带西风秘典时值得堆」），不再叠「条件词条（…）」前缀；
   // 无理由时退化为极简说明。scheme 页 planSubText 同步此口径。
+  // ⚠️ note 存放在 data.js（动态数据，不在 applyI18n 的data-en 覆盖范围），
+  //    所以必须走 t() 查词典才能在英文态翻译 —— T_OPT_NOTE_EN 收录全部措辞。
   return note
-    ? note
+    ? t(note)
     : t('满足条件时才需要');
 }
 

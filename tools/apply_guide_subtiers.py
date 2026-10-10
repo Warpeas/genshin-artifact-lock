@@ -228,6 +228,17 @@ def main():
                         obj2 = obj[:-1].rstrip().rstrip(",") \
                                + ", optional:" + newobj + "}"
                     ln2 = ln[:j] + obj2 + ln[e + 1:]
+                # ⚠️ source 必须提升为 manual：本组写入的optional 来自**攻略图**，
+                #    wiki 的 conditional 里没有这条 —— 若沿用 source:'heuristic'，
+                #    下次 rebuild_data.py 会按 generated_subrules() 整块重算，
+                #    这条图外词条会被整体丢弃（实测 12 组处于此风险）。
+                #    apply_wiki_builds.existing_subrules 只保护 source=='manual'。
+                ms2 = re.search(r"source:'(heuristic|role-heuristic)'", ln2)
+                if ms2:
+                    ln2 = ln2[:ms2.start()] + "source:'manual'" \
+                        + ln2[ms2.end():]
+                    report.append("  [src] %s build%d: source 提升为 manual"
+                                  % (name, n_build))
                 if ln2 != ln:
                     lines[k] = ln2
                     changed += 1

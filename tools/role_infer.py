@@ -154,14 +154,27 @@ def infer_subrules(roles, subs, optional=None):
     if {"cr", "cd"}.issubset(available):
         equal.append(["cr", "cd"])
 
-    # 条件词条只保留「不在常规副词条里」的部分，避免同一词条两处重复
-    optional = [s for s in (optional or []) if s not in available]
+    # 条件词条只保留「不在常规副词条里」的部分，避免同一词条两处重复。
+    # optional 两种写法都认：'cr' 与 ['cr', '携带西风剑时需要']（2026-10-10 起
+    # apply_wiki_builds.optional_subs 会连 wiki 的 conditional.note 一起带出来，
+    # 这里按 id 过滤、但原样保留元组形态，别把前提理由弄丢）。
+    # ⚠️ 用新变量名收结果：**不能写成 optional = [...] 再 for s in (optional or [])**
+    #    —— 那会先把形参清空、循环永远空转，optional 全组丢失（早前是列表推导，
+    #    RHS 先求值才没暴露；改成显式循环后踩了这个坑）。
+    _opt_in = optional or []
+    opt_out = []
+    for s in _opt_in:
+        stat = s[0] if isinstance(s, (list, tuple)) and s else s
+        if stat in available:
+            continue
+        opt_out.append(s)
+    optional = opt_out
 
-    if not required and not equal and not optional:
+    if not required and not equal and not opt_out:
         return None
     rules = {"required": required, "equal": equal, "source": "heuristic"}
-    if optional:
-        rules["optional"] = optional
+    if opt_out:
+        rules["optional"] = opt_out
     return rules
 
 
