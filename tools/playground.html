@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>配装条版式 Playground · S1a / S1c / S2 对照</title>
+<title>配装条版式 Playground · A / B / B2 对照</title>
 <style>
 /* ============================================================
  * Playground 自身 UI（左侧控制面板 + 舞台外壳）
@@ -179,6 +179,11 @@ dialog#dlg #dlgBody .tag{display:inline-block;font-size:10.5px;padding:1px 6px;b
 #stage .cc-bp-name.n2{flex:0 0 auto;width:2.2em;word-break:break-all;}
 #stage .cc-bp-name.nfull{max-width:100%;flex:0 1 auto;min-width:0;word-break:keep-all;overflow-wrap:anywhere;}
 #stage .cc-bp-tag{flex:1 1 auto;margin-left:auto;text-align:right;
+  /* 落行交错（主人 2026-10-11）：位独占整行时行宽 ≤ 框宽 − 序号 − 间隔（= 可用宽 pair），
+     保证位首字落在名首字偏右 —— 否则 140 卡宽 + 4 词定位（126px > 116.8px）时，
+     右对齐的位首字会退到名首字左边 9.2px（实测交错破坏）。
+     同行工况无影响：名旁边本来就放不下超过 pair 的盒子。 */
+  max-width:calc(100% - 1.5ch - 4px);
   font-size:11px;font-weight:400;line-height:1.35;color:var(--txt3);}
 #stage .cc-bp-tag .bt-w{white-space:nowrap;}
 #stage .cc-bp-tag .bt-cat{color:var(--txt2);}
@@ -214,7 +219,11 @@ dialog#dlg #dlgBody .tag{display:inline-block;font-size:10.5px;padding:1px 6px;b
 /* S2：「能同行就同行」—— flex-wrap:wrap 下 tag 放不下就自然落到下一行 */
 #stage.vpn .k-fit .cc-bp:not(.wide){flex-wrap:wrap;row-gap:0;}
 #stage.vpn .k-fit .cc-bp-name{flex:0 1 auto;min-width:0;}
-#stage.vpn .k-fit .cc-bp:not(.wide) .cc-bp-tag{flex:1 1 auto;margin-left:0;text-align:right;}
+#stage.vpn .k-fit .cc-bp:not(.wide) .cc-bp-tag{flex:1 1 auto;margin-left:auto;text-align:right;}
+/* ⚠️ 这里必须是 auto 而不是 0：base cap（位 ≤ 框宽−序号−间隔）生效后 grow 到不了右缘，
+   margin-left:0 会让落行的定位盒 stranded 在左侧、文字右缘内缩，
+   位首字退到名首字左边（实测 130 卡宽 + 3 词：位首字 542.7 < 名首字 550.2，交错破坏）。
+   auto margin 把上限省下的空间推到盒子左边；同行工况 grow 先吃满剩余空间，结果不变。 */
 /* X 方案：位允许内部换行 —— 放在 k-fit 之后（同特异性、靠后生效）把它从 basis:auto 改成 0。
    ⚠️ 两个关键点，少一个都不行：
      ① 只给 min-width:0 没用：flex 换行判定用的是【假想主尺寸】（由 flex-basis 决定），
@@ -242,6 +251,13 @@ dialog#dlg #dlgBody .tag{display:inline-block;font-size:10.5px;padding:1px 6px;b
 /* ④ 单行长度上限：由引擎算成 --tg-cap（见 layoutSx ④），CSS 只负责套用。
    定位右对齐 → 首字位置 = 框右 − 盒宽，所以「盒宽上限」直接决定「首字落在哪」。 */
 #stage .cc-builds.k-xcap .cc-bp:not(.wide) .cc-bp-tag{max-width:var(--tg-cap,100%);}
+/* ⚠️ 上限截断盒子后，靠 flex-grow 撑满到右缘的路径会被 max-width 拦住：
+   窄屏 k-fit 的 margin-left:0 会让盒子靠左（实测 130 卡宽右缘内缩 18px）；
+   宽屏 k-ladder 的 margin-left:8px 在「定位落行」时同样让盒子左摆
+   （实测 237 卡宽 + 5 字名：定位落行后右缘内缩 ≈65px）。
+   auto margin 把上限省下的空间推到盒子左侧，右缘始终贴齐 ——
+   「从右往左数 N%」的语义本来就要求右缘贴齐。 */
+#stage .cc-builds.k-xcap .cc-bp:not(.wide) .cc-bp-tag{margin-left:auto;}
 #stage .cc-builds.k-xcname .cc-bp:not(.wide) .cc-bp-name{max-width:var(--nm-cap,100%);}
 /* --tg-min 由引擎算：定位前 3 个词单元 + 间隔下限（= 主人那条「同行时定位至少 2 行」的名义规则）。
    判定交给 flex 算法（假想主尺寸 vs 容器宽），JS 只提供这个有含义的下限值、不做分支判断。 */
@@ -253,6 +269,12 @@ dialog#dlg #dlgBody .tag{display:inline-block;font-size:10.5px;padding:1px 6px;b
 #stage .cc-builds.k-xgap .cc-bp:not(.wide) .cc-bp-tag{margin-left:auto;flex:0 1 auto;}
 /* S1c：定位折行时均衡两行长度（Chromium 114+，不支持则优雅降级） */
 #stage.vpn .k-bal .cc-bp-tag{text-wrap:balance;}
+/* 宽屏 balance（方案 A / B2 的核心差异项）：
+   把上一条 balance 从「#stage.vpn 窄屏作用域」拿出来全局生效。
+   修的工况：宽屏卡 177–230px + 短名 + 5 词定位 → balance 缺席时定位贪心折行，
+   第二行只剩「冷却」两个字（实测 128px/22px，两行差 582%）→ 摊成 82px/68px。
+   生产落地 = src/styles.css 把 @media (max-width:560px) 里那条 balance 挪到全局。 */
+#stage .k-wbal .cc-bp-tag{text-wrap:balance;}
 /* S3：名段一律整段保留 —— 窄屏也放开 .n2 的「恒 2 字宽 + 按字断行」，
    规则并入 .nfull（同样的 max-width 扣编号 + keep-all + anywhere 兜底）。 */
 #stage.vpn .k-n2auto .cc-bp-name.n2{width:auto;max-width:calc(100% - 1.5ch - 4px - 8px);
@@ -328,6 +350,13 @@ dialog#dlg #dlgBody .tag{display:inline-block;font-size:10.5px;padding:1px 6px;b
   #stage.vpn .k-ct .cc-bp[data-lad="2"]{min-width:88%;}
   #stage.vpn .k-ct .cc-bp[data-lad="3"]{min-width:100%;}
 }
+/* 免分档阶梯（k-nolad，2026-10-11）：关掉 data-lad 的全部 min-width 档位
+   （vpn @container 72/88/100% 与宽屏 10em/13.5em/17.5em），按钮框长回到
+   纯 fit-content（内容 + 间隔上限），不再随 145 门槛 / 176→177 断点跳变。
+   选择器带 vpn/vpw 且类数高于两条阶梯规则，保证稳定覆盖。
+   ⚠️ 代价：宽屏「名左/位右下」的落行观感减弱（名列不再被 10em 抬宽，定位更容易与名同行）。 */
+#stage.vpn .cc-builds.k-nolad .cc-bp[data-lad],
+#stage.vpw .cc-builds.k-nolad .cc-bp[data-lad]{min-width:0;}
 </style>
 </head>
 <body>
@@ -391,9 +420,9 @@ dialog#dlg #dlgBody .tag{display:inline-block;font-size:10.5px;padding:1px 6px;b
   <div class="ui-row">
     <label class="lbl" for="cxOut">导出</label>
     <button class="btn" id="cxCopy">一键复制方案（开关 + CSS）</button>
-    <button class="btn" id="cxPresetS3">载入现行 S3</button>
-    <button class="btn" id="cxPresetS2">载入 S2</button>
-    <button class="btn" id="cxPresetX">载入 X 方案</button>
+    <button class="btn" id="cxPresetS3">载入方案 A</button>
+    <button class="btn" id="cxPresetX">载入方案 B</button>
+    <button class="btn" id="cxPresetS2">载入方案 B2</button>
     <button class="btn" id="cxClear">全不勾</button>
     <span id="cxCopied" style="font-size:11px;color:var(--green)"></span>
   </div>
@@ -475,11 +504,17 @@ function unitsByCount(n){
        方案之间唯一的变量就是 flags，所以对比是公平的。
        note = 点标题弹出的设计简述（默认收起，别把版面塞满文字）。 ---- */
 const VARIANTS = [
-  { id:'s2c', name:'S2 + balance', flags:'k-ladder k-nm k-pad4 k-ct k-n2auto k-fit k-bal',
-    note:'<p>S2 与 balance 的组合：短名短定位走同行（像桌面端），实在放不下落到下一行的定位由 '
-       + '<span class="k">balance</span> 摊匀两行长度。</p>'
-       + '<p>实测（真实最坏工况：卡宽 130px + 5 词定位）：两行差 79% → 21%。</p>' },
-  { id:'sx', name:'X · 两端对齐 + 间隔上下限（你的约束）',
+  { id:'a_wbal', name:'A · 现行 ＋ 宽屏 balance（推荐）',
+    flags:'k-ladder k-nm k-pad4 k-ct k-n2auto k-fit k-bal k-wbal',
+    note:'<p><b>与现行「S2 + balance」唯一差异：</b>把 <code>text-wrap:balance</code> 从窄屏媒体查询'
+       + '（≤560px）里拿出来<b>全局生效</b>（<code>k-wbal</code>）。</p>'
+       + '<p>修的工况：宽屏卡 177–230px + 短名 + 5 词定位 —— balance 缺席时定位贪心折行，'
+       + '第二行只剩「冷却」两个字（实测 128px / 22px，两行差 <b>582%</b>）；'
+       + 'balance 生效后摊成 82px / 68px（差 21%）。</p>'
+       + '<p>纯 CSS <b>一条改动</b>；窄屏（≤176px 卡）表现与现行完全一致。'
+       + '生产落地 = styles.css 里 <code>@media ≤560px</code> 那条 balance 挪到全局。</p>'
+       + '<p class="warn">断点、同行/落行判定一概不动 —— 四个方案里改动最小、与现状最连续。</p>' },
+  { id:'sx', name:'B · X 方案（两端对齐 + 间隔上下限）',
     flags:'k-ladder k-nm k-pad4 k-ct k-n2auto k-fit k-bal k-xsame k-xcorner k-xbox k-xgap k-xcname k-xcap k-xbar',
     note:'<p><b>你的 7 条 → 5 条规则</b>（澄清后：所谓「重叠」不是让两者交叠，而是'
        + '<b>名与位各占各的行、不超过最大限制就行</b>）：</p>'
@@ -505,22 +540,27 @@ const VARIANTS = [
        + '这样「名 + 定位第一行」在一行里，既满足间隔规则、框长又能按内容收缩。</p>'
        + '<p class="warn">只有 ② 间隔 clamp 需要一小段逐行 JS（剩余空间与上下限都是实测值）；'
        + '④ 的判据是【名的自然宽 &gt; 可用宽 × 0.9】纯计算（不读渲染高度，避免两态循环）：'
-       + '名会折行 → 定位独占第二行；名 1 行 → 定位与名同行、内部折行。</p>' },
-  { id:'s2cap', name:'S2 + balance + 行长限制', flags:'k-ladder k-nm k-pad4 k-ct k-n2auto k-fit k-bal k-xcname k-xcap k-hang',
-    note:'<p>S2 的同行版式不动，<b>只加两条行长上限</b>：<code>k-xcname</code>（名 ≤ 框长 N%，从左数）+ '
-       + '<code>k-xcap</code>（位 ≤ 框长 N%，从右数）。上限值取面板「④ 行长上限」的两个滑块。'
-       + '外加 <code>k-hang</code> 修「序号孤立」。</p>'
-       + '<p>与 X 的区别：<b>不含 k-xsame</b>。所以仍是 <code>flex-basis:auto</code>、'
-       + '定位放不下就整段落行 —— 不像 X 那样被同行下限（<code>--tg-min</code>）'
-       + '把定位假想尺寸抬到 100px+ 而永远落行。</p>'
-       + '<p>实测（153px 卡／长名 ／4 词定位）：名 121.8→131.2px（第二行「绝缘」被收回第一行），'
-       + '位 143→85.8px 折 2 行，框溢出 0。名限 100% + 位限 60–70% 是这组参数的甜点区。</p>'
-       + '<p><b>为什么必须带 k-hang</b>：<code>k-xcname</code> 把名段上限放宽到 100% 后，'
-       + '120–130px 的长名组会让续行<b>退到序号左缘</b>（实测 6/120 组真孤立，'
-       + '续行 x=537 = 序号 x）—— 名折行不可怕，可怕的是序号被留在第一行、续行不给它让位。'
-       + '悬挂缩进让首行顶格、续行缩进到序号右侧，240 组实测全部归零。</p>'
-       + '<p class="warn">两个上限都是 <code>max-width</code>，只影响「内容超限时怎么断行」，'
-       + '不改变同行/落行判定本身。真要「名与位首行同行」，仍需 X 的 <code>basis:0</code> 路线（见 X 方案）。</p>' },
+       + '名会折行 → 定位独占第二行；名 1 行 → 定位与名同行、内部折行。</p>'
+       + '<p class="warn">已知弱点：宽屏 177px 卡带附近，定位整段落行后行宽（≈142px）装不下整段文本'
+       + '（150px），内部要再折行，而 balance 只在窄屏生效 → 贪心折出孤行'
+       + '（实测 [128,22]，两行差 582%）。补完版见下面的 B2。</p>'
+       + '<p><b>落行交错的几何（2026-10-11 澄清）</b>：名与位分行时，名的末字要落在位末字的'
+       + '<b>偏左</b>、位首字要落在名首字的<b>偏右</b>，纵向不共列 —— '
+       + '两条 &lt;100% 的行长上限正好保证这个交错：名 ≤ N% 顶不到位末字所在的右缘，'
+       + '位 ≤ N% 退不到名首字所在的左缘。</p>' },
+  { id:'b2_wbal', name:'B2 · B ＋ 宽屏 balance（按｜整词摊匀）',
+    flags:'k-ladder k-nm k-pad4 k-ct k-n2auto k-fit k-bal k-wbal k-xsame k-xcorner k-xbox k-xgap k-xcname k-xcap k-xbar',
+    note:'<p>B 的全部规则不动，只把 <code>k-wbal</code>（宽屏 balance）叠上去 —— 修 B 在宽屏 177px 带的孤行。</p>'
+       + '<p>这就是「按 ｜ 整词换行 + 不平衡再按整词调整」的实现路径：'
+       + '换行点本来只有词单元边界（<code>k-xbar</code> 让大类段整体不断、｜ 后是优先断点），'
+       + '<code>balance</code> 在这些允许的断点里挑「最长行最短」的组合 —— '
+       + '等价于「先按 ｜ 拆，拆得不匀再整词挪」。</p>'
+       + '<p>实测（177 卡宽 + 2 字名 + 5 词定位）：[128,22] 差 582% → [82,68] 差 21%；'
+       + '200px 以上定位仍能整行单排，B 的观感不变。</p>'
+       + '<p class="warn">代价与 B 相同：需要 layoutSx 一小段逐行 JS；且定位落行时卡片更高一档。</p>'
+       + '<p>另注：A 的「名与位之间间隔大」是几何下限 —— 定位 150px 文本在名旁剩余 ~143px 里'
+       + '必须拆两行，按词单元拆的最匀解就是 [82,68]，首行间隔 ≈69px 藏不掉；'
+       + '想要没有这段间隔，只有 B/B2 的「整段落行」一条路。</p>' },
   { id:'custom', name:'自定义（勾选下方条件）', flags:'',
     note:'<p>这张卡由页面下方的<b>分项复选框</b>驱动：勾哪个条件就应用哪条 CSS 规则，实时重排。</p>'
        + '<p>配好之后点「一键复制方案」—— 剪贴板里是<b>开关串 + 与 <code>src/styles.css</code> 等价的 CSS</b>，'
@@ -582,12 +622,14 @@ const FLAG_DEFS = [
   ]},
   { g: '⑥ 换行策略', items: [
     { k: 'xpretty', t: '名各行均衡', d: 'text-wrap:pretty，与「第一行尽量多放」相反，仅备选' },
-    { k: 'bal',     t: '定位两行摊匀', d: 'text-wrap:balance，Chromium 114+（备选）' },
+    { k: 'bal',     t: '定位两行摊匀（窄屏）', d: 'text-wrap:balance，Chromium 114+（备选）；现行只在 ≤560px 视口生效' },
+    { k: 'wbal',    t: '宽屏也摊匀（balance 全局）', d: '把上一条从窄屏作用域放开到全宽度；修宽屏 177–230px 卡 + 5 词定位的贪心折行孤行（不均 582% → ≤121%）。方案 A/B2 的核心差异项' },
     { k: 'xbar',    t: '位按 ｜ 断行', d: '大类段整体不断、｜ 后是优先断点（默认）' },
   ]},
   { g: '⑦ 窄屏宽度策略', items: [
     { k: 'ct',    t: '卡够宽才收缩', d: '@container(min-width:145px) 按档位收缩，≤136px 回退等宽（现行）' },
     { k: 'pad4',  t: '横向内边距 4px', d: '6 → 4px，让定位整段放得下（现行）' },
+    { k: 'nolad', t: '免分档阶梯', d: '关掉 data-lad 全部 min-width 档位（窄屏 72/88/100%、宽屏 10em/13.5em/17.5em）：按钮框长 = 纯内容宽 + 间隔上限，不再随 145 门槛 / 176→177 断点跳变；代价是宽屏「名左/位右下」落行观感减弱' },
   ]},
   { g: '⑧ 名段折行', items: [
     { k: 'n2auto', t: '整段保留（四字名不折）', d: '窄屏放开 2 字定宽（现行）' },
@@ -600,13 +642,28 @@ const FLAG_CSS = {
      但必须列在这里 —— 否则「载入某方案」按 flags 派生开关时会把它过滤掉，
      自定义卡就少了 2px 内边距、断行点与原方案对不上。 */
   pad4: ['/* 横向内边距 6 → 4px（k-pad4，现行版式的默认项） */'],
+  /* ladder / nm 是每个方案的必备基础开关（宽屏名段分档阶梯、名折行时定位独占下行），
+     但不进面板复选框 —— ⚠️ 必须列在这里：否则 presetFrom 按 FLAG_CSS 过滤时会把它们丢掉，
+     载入的方案卡就少了这两个类、渲染与原方案卡对不上（实测 2026-10-11 载入不对应的原因）。 */
+  ladder: ['/* 宽屏名段分档阶梯（k-ladder，现行版式基础规则，styles.css 已有） */'],
+  nm: ['/* nmwrap：名折行时定位独占下行（k-nm，现行版式基础规则，styles.css 已有） */'],
   fit: ['@media (max-width:560px){', '.cc-bp{flex-wrap:wrap;row-gap:0;}', '.cc-bp .cc-bp-name{flex:0 1 auto;min-width:0;}',
-        '.cc-bp .cc-bp-tag{flex:1 1 auto;margin-left:0;text-align:right;}', '}'],
+        '.cc-bp .cc-bp-tag{flex:1 1 auto;margin-left:auto;text-align:right;}', '}',
+        '/* ⚠️ 窄屏 tag 必须 margin-left:auto（不能 0）：位有 max-width 上限后 grow 到不了右缘，',
+        '   0 会让落行的位盒靠左、位首字退到名首字左边（交错破坏） */'],
   n2auto: ['@media (max-width:560px){', '.cc-bp .cc-bp-name.n2{width:auto;max-width:calc(100% - 1.5ch - 4px - 8px);word-break:keep-all;overflow-wrap:anywhere;}', '}'],
   bal: ['@media (max-width:560px){', '.cc-bp .cc-bp-tag{text-wrap:balance;}', '}'],
+  wbal: ['.cc-bp .cc-bp-tag{text-wrap:balance;}',
+         '/* 宽屏 balance：窄屏媒体查询里的那条 balance 挪到全局（方案 A/B2 的核心差异项）。',
+         '   生产落地 = src/styles.css 把 @media (max-width:560px) 里那条 text-wrap:balance 移出媒体查询。 */'],
   ct: ['@media (max-width:560px){', '.cc-builds{container-type:inline-size;}',
        '@container (min-width:145px){', '  .cc-bp{width:auto;align-self:flex-start;}', '  .cc-bp.wide{width:100%;}',
        '  .cc-bp[data-lad="1"]{min-width:72%;}', '  .cc-bp[data-lad="2"]{min-width:88%;}', '  .cc-bp[data-lad="3"]{min-width:100%;}', '}', '}'],
+  nolad: ['.cc-bp[data-lad]{min-width:0;}',
+          '/* 免分档阶梯：关掉 vpn @container 72/88/100% 与宽屏 10em/13.5em/17.5em 档位，',
+          '   按钮框长 = 纯 fit-content（内容 + 间隔上限），不再随 145 门槛 / 176→177 断点跳变。',
+          '   ⚠️ 宽屏「名左/位右下」的落行观感会减弱（名列不再被 10em 抬宽）。',
+          '   ⚠️ 需与 ct 的 width:auto 组合使用（nolad 只关 min-width，不管收缩方式）。 */'],
   xsame: ['.cc-builds.k-xsame .cc-bp{flex-wrap:wrap;row-gap:0;}',
           '.cc-builds.k-xsame .cc-bp .cc-bp-tag{flex:0 1 min-content;min-width:var(--tg-min,0px);}',
           '/* 位允许内部换行：flex-basis:0 是关键 —— 只写 min-width:0 的话，flex 换行判定',
@@ -624,8 +681,12 @@ const FLAG_CSS = {
            '   实测（长名 + 4 词定位）：100%/95%/90% 在120–153px 卡宽下压序号 9.2px，',
            '   85% 起不压 —— 名段避让序号的安全上限是 85%。 */'],
   xcap: ['.cc-builds.k-xcap .cc-bp-tag{max-width:var(--tg-cap,100%);}',
+         '.cc-builds.k-xcap .cc-bp-tag{margin-left:auto;}',
          '/* 位 ≤ 框长的 N%（从框右往左数）；比例调小 = 首字右移，',
-         '   即「首字落在名首字右移半字之后」，不必另设一条规则 */'],
+         '   即「首字落在名首字右移半字之后」，不必另设一条规则。',
+         '   ⚠️ 必须配 margin-left:auto：上限截断盒子后 grow 到不了右缘，',
+         '   固定 margin（窄屏 0 / 宽屏 8px）会让盒子靠左、右缘内缩',
+         '   （实测 130 卡宽内缩 18px；237 卡宽 + 5 字名落行后内缩 ≈65px） */'],
   xpretty: ['.cc-bp-name{text-wrap:pretty;}', '/* ⑥ 名优先填满首行（Chromium 117+，不支持则忽略） */'],
   xbar: ['.cc-bp-tag .bt-cat{white-space:nowrap;}', '/* ⑥ 大类段（｜ 前）整体不断行，｜ 后是优先断点 */'],
   hang: ['.cc-bp-name{padding-left:13.2px;text-indent:-13.2px;}',
@@ -815,22 +876,14 @@ function layoutSx(){
                 - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
     if (!(avail > 20)) continue;
 
-    /* ③ 单内容不超过「名+位可用总宽」的 90%
+    /* ③ 单内容不超过「名+位可用总宽」的比例上限
        ⚠️ 可用总宽要先扣掉【编号徽标 + column-gap】—— 直接拿 avail × 0.9 会让
        「编号 16.5 + gap 4 + 名 0.9×avail」超出 avail，名段被挤到按钮左边界之外（压编号）。 */
-    if (on('xcap') || true){
-      const ixEl = bp.querySelector('.cc-bp-idx');
-      const ixW = ixEl ? ixEl.getBoundingClientRect().width : 0;
-      const gapPx = parseFloat(getComputedStyle(bp).columnGap) || 0;
-      const pair = Math.max(20, avail - ixW - gapPx);       /* 名 + 位 真正能用的宽 */
-      /* ⚠️ 90% 上限只给【定位段】，不给名段（主人 2026-10-06 指出）。
-         名是左对齐的，它的宽度上限该由 CSS 的 `.nfull / .n2` 规则给 ——
-         那条已经精确扣掉了编号列与 gap（防压编号），实测 140 卡宽下是 108.8px。
-         若再用 90%（105.2px）压一层，就比 S2 少 3.6px —— 「苍白之火 / 昔时之歌 /」放不下、
-         多折一行（3 行 vs S2 的 2 行），正是主人截图里看到的「第一行没放满」。
-         90% 的语义落在右对齐的定位段上：它从右往左占、最多 90%、右边贴框尾。 */
-      tg.dataset.cap = (pair * CAP_RATIO).toFixed(1) + 'px';   /* 同行时才用得上 */
-    }
+    const ixEl = bp.querySelector('.cc-bp-idx');
+    const ixW = ixEl ? ixEl.getBoundingClientRect().width : 0;
+    const gapPx = parseFloat(getComputedStyle(bp).columnGap) || 0;
+    const pair = Math.max(20, avail - ixW - gapPx);       /* 名 + 位 真正能用的宽 */
+    tg.dataset.cap = (pair * CAP_RATIO).toFixed(1) + 'px';   /* JS 90% 上限（同行时才用得上） */
     /* ④ 同行还是落行：交给 flex 算法（假想主尺寸 vs 容器宽），JS 只给一个下限值 ——
        `--tg-min` = 定位前 3 个词单元的宽度和 + 间隔下限（≈104px）。
        含义就是主人那条名义规则：**同行时，定位至少要放得下「三个词单元 + 最小间隔」**，
@@ -864,8 +917,10 @@ function layoutSx(){
     else nm.style.removeProperty('--nm-cap');
 
     /* ④ 定位的行长上限（**从框右往左数**）。
-       主人 23:20 澄清：「首字落在名首字右移半字之后」就是这条百分比规则的效果。
-       ⚠️ 上限必须先算 —— 它还要用来夹住「同行下限」（见下面 ⑤）。 */
+       ⚠️ 上限必须先算 —— 它还要用来夹住「同行下限」（见上面 ⑤）。
+       落行交错几何（主人 2026-10-11 澄清）：名与位分行时，名的末字要在位末字偏左、
+       位首字要在名首字偏右（纵向不共列）—— 两条 <100% 的上限正好保证：
+       名 ≤ N% 顶不到位的右缘、位 ≤ N% 退不到名的左缘。 */
     if (on('xcap')) tg.style.setProperty('--tg-cap', st.capTag + '%');
     else tg.style.removeProperty('--tg-cap');
 
@@ -1115,12 +1170,9 @@ function presetFrom(id){
   st.custom = new Set(keys);
   syncCxPanel();
 }
-$('cxPresetS3').addEventListener('click', () => presetFrom('s2c'));   // 现行 + balance
-$('cxPresetS2').addEventListener('click', () => {                     // 现行版式（S2 口径）
-  st.custom = new Set(['fit','n2auto','ct','pad4']);
-  syncCxPanel();
-});
-$('cxPresetX').addEventListener('click', () => presetFrom('sx'));
+$('cxPresetS3').addEventListener('click', () => presetFrom('a_wbal'));  // 方案 A
+$('cxPresetX').addEventListener('click', () => presetFrom('sx'));       // 方案 B
+$('cxPresetS2').addEventListener('click', () => presetFrom('b2_wbal')); // 方案 B2
 $('cxClear').addEventListener('click', () => { st.custom = new Set(); syncCxPanel(); });
 
 /* ---- 方案简述弹窗 ---- */
@@ -1160,6 +1212,9 @@ function readHash(){
 (function init(){
   readHash();
   $('wRange').value = st.cw; $('wNum').value = st.cw;
+  /* 行长上限滑块必须与 st 同步：HTML 初值（100/85）只是占位，实际生效的是 st.capName/capTag（85/85） */
+  $('capName').value = st.capName; $('capNameVal').textContent = st.capName + '%';
+  $('capTag').value = st.capTag;   $('capTagVal').textContent = st.capTag + '%';
   $('nmInput').value = st.name;
   $('nmLen').value = Math.min(14, Math.max(1, Array.from(st.name).length));
   $('nmLenVal').textContent = $('nmLen').value;

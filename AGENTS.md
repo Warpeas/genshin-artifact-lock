@@ -78,6 +78,7 @@ genshin-artifact-lock/
     ├── apply_wiki_builds.py   回写 src/data.js
     ├── role_infer.py          从 wiki 描述推断「配装功能定位」
     ├── gen_sources.py         生成人读的来源清单
+    ├── playground.html        配装条版式调试台（A / B / B2 对照 + 自定义开关，详见 tools/README.md）
     ├── README.md              工具链说明
     └── out/                   产物与缓存（*cache*/ 已 gitignore）
 ```
