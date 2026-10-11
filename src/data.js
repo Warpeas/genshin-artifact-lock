@@ -14,8 +14,17 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.10.10.3';
+const APP_VERSION = '2026.10.12';
 const CHANGELOG = [
+  {
+    v: '2026.10.12', date: '2026-10-12',
+    title: '血红之证追加属性校准（薇斯纳 / 梦见月瑞希）',
+    items: [
+      '薇斯纳 · 血红之证：追加属性顺序调整为「暴击伤害 → 暴击率 → 攻击力% → 元素充能效率」，此前暴击率与暴击伤害为同等优先，现明确暴击伤害在前。',
+      '梦见月瑞希 · 血红之证：追加属性补入暴击伤害，顺序为「暴击率 ＝ 暴击伤害 → 元素精通 → 元素充能效率」。',
+      '以上两组均已标记为「人工校准」，后续重建内置数据时不会被重新计算的规则覆盖。',
+    ],
+  },
   {
     v: '2026.10.10.3', date: '2026-10-10',
     title: '条件词条理由措辞再精简，并修好数据回填链路',
@@ -1675,7 +1684,7 @@ const RAW_CHARS = [
   ],     [['https://baike.mihoyo.com/ys/obc/content/504977/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/64215763', 'Asgater'], ['https://www.miyoushe.com/ys/article/64215506', 'HoYo青枫']],   ''],
   ['梦见月瑞希',      'anemo', [
     {sets:['翠绿之影'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er', 'cr'], roles:['精通', '剧变反应']},
-    {sets:['血红之证'], sands:['em', 'er'], goblet:['em'], circlet:['cr', 'cd', 'em'], subs:['em', 'er', 'cr'], roles:['输出', '增伤', '精通', '剧变反应']},
+    {sets:['血红之证'], sands:['em', 'er'], goblet:['em'], circlet:['cr', 'cd', 'em'], subs:['cr', 'cd', 'em', 'er'], subRules:{required:[], equal:[['cr', 'cd']], source:'manual'}, roles:['输出', '增伤', '精通', '剧变反应']},
     {sets:['饰金之梦'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er', 'cr'], roles:['精通']},
     {sets:['饰金之梦', '流浪大地的乐团'], sands:['em', 'er'], goblet:['em'], circlet:['em'], subs:['em', 'er', 'cr'], roles:['精通']},
   ],     [['https://baike.mihoyo.com/ys/obc/content/504440/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/77540856', 'Asgater'], ['https://www.miyoushe.com/ys/article/76206764', 'HoYo青枫']],   ''],
@@ -1969,7 +1978,7 @@ const RAW_CHARS = [
 
   /* ---------- 补遗：7.1 薇斯纳（风·单手剑）/ 沃雅妮莎（水·法器） ---------- */
   ['薇斯纳',      'anemo', [
-    {sets:['血红之证'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['输出', '精通', '剧变反应']},
+    {sets:['血红之证'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr', 'atkP'], subs:['cd', 'cr', 'atkP', 'er'], subRules:{required:[], equal:[], source:'manual'}, roles:['输出', '精通', '剧变反应']},
     {sets:['饰金之梦'], sands:['atkP'], goblet:['atkP'], circlet:['cd', 'cr', 'atkP'], subs:['cr', 'cd', 'atkP', 'er'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['精通']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/509803/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/78338020', 'Asgater'], ['https://www.miyoushe.com/ys/article/78334767', 'HoYo青枫']],   ''],
   ['沃雅妮莎',    'hydro', [
