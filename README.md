@@ -12,6 +12,7 @@
 |---|---|---|
 | [`README.md`](README.md) | 使用者 | 怎么用、改哪里、四个页面、部署 |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | 想了解设计的人 | 问题定义、数据模型、算法、取舍与局限 |
+| [`docs/角色数据修改手册.md`](docs/角色数据修改手册.md) | 要改角色配装数据的人 | ★ 手改 `RAW_CHARS` 的 SOP：改哪、改完怎么验、什么时候必须标「人工校准」 |
 | [`docs/配装数据链路修复说明.md`](docs/配装数据链路修复说明.md) | 关心数据正确性的人 | 2026-09-18 配装数据生成链路修复：五类问题、逐条修复项、前后对照 |
 | [`docs/配装数据核对报告.md`](docs/配装数据核对报告.md) | 关心数据正确性的人 | 链路修复前的逐字段核对证据（125 角色 / 352 组） |
 | [`docs/圣遗物分类词表.md`](docs/圣遗物分类词表.md) | 关心配装定位的人 | 55 套 2 / 4 件套的「大类 + 关键词」二维分类：词表、共现矩阵、同角色分类一致情况 |
@@ -75,12 +76,16 @@
 **改源码**：改 `src/data.js` 后执行：
 
 ```bash
+node --check src/data.js          # 中文长字符串容易漏引号，先语法自检
+node tools/show_char.js 角色名    # 回读确认改动落在目标配装组
 node build.js
 ```
 
 会重新生成根目录的 `index.html`。
 
 > ⚠️ **根目录的 `index.html` 是构建产物，不要直接编辑它** —— 下次执行 `node build.js` 会被覆盖。所有修改都请改 `src/` 里的文件。
+
+> 📘 **手改 `RAW_CHARS` 的角色配装数据**（套装 / 主词条 / 追加属性 / ★＝◇规则）请走 **[`docs/角色数据修改手册.md`](docs/角色数据修改手册.md)** 的 SOP。里面有三件最容易翻车的事：`subs` 数组顺序就是展示顺序；人工校准必须标 `source:'manual'`（否则下次重建被重算覆盖）；版本号与 `CHANGELOG` **每次发布都要手改**（build 只校验不改写）。
 
 ---
 
@@ -94,6 +99,7 @@ genshin-artifact-lock/
 ├── AGENTS.md           ★ 给 AI Agent 的开发文档：改法、环境坑、验收清单
 ├── docs/               ★ 文档（给人看）
 │   ├── DESIGN.md                  设计文档：模型、算法、取舍、局限
+│   ├── 角色数据修改手册.md         ★ 手改角色配装数据的 SOP（决策表 / 7 步流程 / 验收清单）
 │   ├── 配装数据链路修复说明.md     2026-09-18 配装数据链路修复：问题、修复项、前后对照
 │   ├── 配装数据核对报告.md         逐字段核对报告（链路修复的事前证据）
 │   └── 圣遗物分类词表.md           55 套 2 / 4 件套二维分类（4 大类 × 22 关键词）+ 同角色分类一致情况
@@ -134,7 +140,7 @@ genshin-artifact-lock/
 | 想改什么 | 文件 | 位置（常量名） | 说明 |
 |---|---|---|---|
 | **内置套装清单 / 2、4 件套文案** | `src/data.js` | `SETS` | 格式 `{ name, en, bonus, bonus4 }`（`en` 是官方英文名，切 English 时显示），`SET_NAMES` 和 `SET_BONUS` 由它自动派生，**不用手改**。日常增删改名、修改 2 / 4 件套效果也可在 **④ 数据管理 → 打开套装管理（浮窗）** 里做 |
-| **改角色的配装、主要属性优先级** | `src/data.js` | `RAW_CHARS` | 见下方格式说明 |
+| **改角色的配装、主要属性优先级** | `src/data.js` | `RAW_CHARS` | 见下方格式说明；**手改请走 [角色数据修改手册.md](docs/角色数据修改手册.md) 的 SOP**（尤其「什么时候必须标 `source:'manual'`」） |
 | **改角色的英文名 / 国度 / 队伍定位** | `src/data.js` | `CHAR_META` | 格式 `'角色名': { en, region, roles, catalog }`；新增角色只维护这一处 |
 | 主要属性可选范围（如新增某种杯） | `src/data.js` | `MAIN_STATS` | 按部位分组 |
 | 追加属性种类 | `src/data.js` | `SUB_STATS` | — |
@@ -142,7 +148,7 @@ genshin-artifact-lock/
 | 元素 / 国度 / 定位枚举 | `src/data.js` | `ELEMENTS` / `REGIONS` / `ROLES` | 新增国度或定位时改这里，批量栏按钮会自动生成 |
 | 汇总权重、分级阈值、保留件数上限 | `src/app.js` | 文件顶部常量区 | 见「权重模型」一节 |
 | 追加属性名次权重、单人贡献条数、★上限、命中条数推荐 | `src/app.js` | `SUB_RANK_DECAY` / `SUB_POOL_TOP` / `SUB_REQ_MAX` / `SUB_MIN_HIT_MIN` / `SUB_MIN_HIT_RECOMMEND_MAX` / `SUB_MIN_HIT_SUPPORT` / `SUB_MIN_HIT_MAX` | 见「追加属性排序模型」一节 |
-| **更新公告 / 更新日志** | `src/data.js` | `APP_VERSION` / `CHANGELOG` | 版本号 = 日期大版本（`YYYY.MM.DD`）+ 同日发布次数子版本（`.n`）；每次发布在 `CHANGELOG` **最前面**加一条 `{v, date, title, items}`（日期与 `.n` 由 build 按 git 提交时间注入，同一天第二条起才手填 `.n`）；`CHANGELOG[0].v` 必须等于 `APP_VERSION`，否则公告不会弹或会重复弹 |
+| **更新公告 / 更新日志** | `src/data.js` | `APP_VERSION` / `CHANGELOG` | 版本号 = 日期大版本（`YYYY.MM.DD`）+ 同日发布次数子版本（`.n`）；每次发布在 `CHANGELOG` **最前面**加一条 `{v, date, title, items}`。⚠️ **`build.js` 只校验、不改写**（不等就抛错，日期不符只 warn），所以 `APP_VERSION` 与 `CHANGELOG[0].v/date` **每次发布都要手改**；`CHANGELOG[0].v` 必须等于 `APP_VERSION`，否则公告不会弹或会重复弹 |
 | 界面样式、配色 | `src/styles.css` | — | — |
 
 ### `RAW_CHARS` 角色库格式

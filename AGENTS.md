@@ -57,6 +57,7 @@ genshin-artifact-lock/
 ├── AGENTS.md           本文件（给 agent）
 ├── docs/                给人看的文档
 │   ├── DESIGN.md                       设计文档：架构 / 算法 / 取舍 / 局限
+│   ├── 角色数据修改手册.md             ★ 手改角色配装数据的 SOP：决策表 / manual 判定 / 7 步流程 / 验收清单
 │   ├── 配装数据链路修复说明.md          2026-09-18 配装数据链路修复：问题、修复项、前后对照
 │   ├── 配装数据核对报告.md              逐字段核对报告（链路修复的事前证据）
 │   └── 圣遗物分类词表.md                55 套 2 / 4 件套二维分类（4 大类 × 22 关键词）+ 同角色分类一致情况
@@ -132,7 +133,10 @@ genshin-artifact-lock/
 
 - 版本模型：**大版本 = 日期 `YYYY.MM.DD`**；**同一自然日内每次发布 = 该日大版本下的子版本 `.n`**。
 - `APP_VERSION` 必须与 `CHANGELOG[0].v` **完全相等**（字符串相等），否则更新公告不会弹或重复弹。
-- ⚠️ **`src/data.js` 里的 `APP_VERSION` 与 `CHANGELOG[0]` 是占位值**——每次 `node build.js` 都会被 git 提交时间覆盖，**日期不要手改**。只有**当天第二次发布起**才在 `APP_VERSION` 手填子版本 `.n`（如 `2026.09.18.2`），`CHANGELOG[0].v` 填**同一个** `.n`；build 只覆盖日期部分、**保留 `.n`**，跨天自动归零。
+- ⚠️ **`build.js` 只校验、不改写**（2026-10-12 实测，别再信「build 会自动填」的旧说法）：
+  - `APP_VERSION` 与 `CHANGELOG[0].v` 字符串不等 → **直接抛错**；
+  - 源码日期 ≠ `git log -1 --format=%cs` → 只 `console.warn('版本日期待提交校验…（保留源码日期）')`，源码一字不动。
+  - ⇒ **每次发布都要手改 `APP_VERSION` 和 `CHANGELOG[0].v/date`**：新的一天填 `YYYY.MM.DD`；同日第二次发布起手填子版本 `.n`（如 `2026.09.18.2`），`v` 与 `APP_VERSION` 填同一个 `.n`。不改就不会变版本，更新公告也不弹。
 - **每次发布在 `CHANGELOG` 各记一条，不再做同日合并**（同日多条的历史条目保持原样，不要回头合并、不要删改）。
 - 界面按大版本聚合：数据管理页「更新日志」整表**每天一块**（`groupByMajorVersion`），块内合并当天各小版本的 `items` 并按文本去重；更新公告只弹**最新的未看过的大版本**，并把当天未看过的小版本条目合并成一份列表。
 - 「未看过」判定（`unreadEntries`）= `CHANGELOG` 中排在已读版本号**之前**的条目；已读版本号在 `CHANGELOG` 里找不到（首次使用 / 清过缓存 / 版本回退）视为全部未看过。已读标记写在**具体版本号**上，所以当天再发子版本会再弹一次；「查看更新公告」= 手动渲染该大版本的**全部**条目，**不清除已读标记**。
@@ -155,6 +159,14 @@ genshin-artifact-lock/
 | `MAIN_MAX` / `MAIN_COVER` | `3` / `0.7` | 次要主属性上限 / 累计覆盖率（`rank1` 保底不受 `MAIN_MAX` 限制，实际条数可能 >3） |
 
 改这些会影响所有人的输出，动之前先想清楚（设计理由见 `docs/DESIGN.md`）。
+
+### 3.5 单条 / 少量手改角色数据 —— 走 SOP
+
+**改 `RAW_CHARS` 的配装数据（套装 / 主词条 / 追加属性 / `subRules`）一律照 [`docs/角色数据修改手册.md`](docs/角色数据修改手册.md) 走**，那里有决策表、判定 `source:'manual'` 的硬判据、7 步命令与验收清单。这里只留三条最容易翻车的：
+
+1. **`subs` 的数组顺序就是展示顺序**，是唯一顺序来源。要「cd 严格优先于 cr」除了挪数组，还必须**删掉 `equal: [['cr','cd']]`**，否则只是展示变、权重语义没变。
+2. **人工校准必须 `source:'manual'`**。`apply_wiki_builds.existing_subrules()` 只保护 manual，heuristic 组在下次重建时会被重算规则整个覆盖，且不报错。带 `optional` 理由的组更是永远标 manual。
+3. **回读验证用 `node tools/show_char.js <角色名>`**（`--set` / `--sub` / `--manual` / `--count` 可选），改完立刻确认改动落在目标组、没改错备选组。
 
 ---
 
@@ -341,7 +353,7 @@ node tools/check_card_labels.js --built  # 额外断言 index.html 内联的 CSS
 ## 6. 红线（不要做）
 
 1. **不要直接编辑根目录 `index.html`** —— 它是构建产物，下次 `node build.js` 会被覆盖。
-2. **不要手改 `src/data.js` 的 `APP_VERSION` / `CHANGELOG[0]`** —— 是占位，build 会覆盖（需要子版本 `.n` 除外）。
+2. **不要指望 `build.js` 帮你填版本** —— 它只校验（见 §3.3）。发布时 `APP_VERSION` 与 `CHANGELOG[0].v/date` **必须手改**且三者一致；不改就不会变版本、公告也不会弹。
 3. **不要编造游戏数据** —— 角色/套装/配装必须能溯源到观测枢 wiki 或官方公告；历史上清理过编造角色与编造套装，别再引入。
 4. **不要把攻略文章当数据源解析** —— 它们是一图流，工具从不读取。
 5. **源码（含注释）里不能出现 `</script`** —— build.js 会直接抛错。
@@ -353,7 +365,8 @@ node tools/check_card_labels.js --built  # 额外断言 index.html 内联的 CSS
 ## 7. 验收清单（改完逐条过）
 
 - [ ] `node --check src/data.js && node --check src/app.js` 通过
-- [ ] `node build.js` 成功，输出里出现「版本号 / 日期已由 git 提交时间注入：…」
+- [ ] `node build.js` 成功，输出「版本号 / 日期校验通过：…」；若出现「版本日期待提交校验」的警告，说明 `CHANGELOG[0].date` 还没改成当天（`build.js` 不会替你改）
+- [ ] 若手改了角色配装数据：`node tools/show_char.js <角色>` 回读确认改动落在目标组；人工校准组 `source==='manual'`；要「严格先后」时 `equal` 已删除（SOP 见 `docs/角色数据修改手册.md`）
 - [ ] 打开 `index.html`：四个页面都能正常渲染，控制台无报错
 - [ ] 若动了数据：`node tools/check_data.js` 无异常项（允许 wiki 原文写「不强求」导致的空主词条）
 - [ ] 若动了数据：角色数 / 套装数符合预期（当前 127 / 55）
