@@ -4890,7 +4890,7 @@ function renderGamePlans(setName, cands, slotFilter = 'all', b = null) {
         <span class="gp-idx">${i + 1}</span>
         ${planForText(p, b)}
         ${p.mergedCount ? `<span class="gp-badge">已合并 ${p.mergedCount} 组</span>` : ''}
-        <span class="gp-acts">
+        <span class="gp-acts${opts ? ' gp-acts-merge' : ''}">
           ${opts
             ? `<select class="gp-mergesel" data-gp-merge="${esc(setName)}|${esc(p.key)}" title="把本方案并入另一个方案">
                  <option value="">并入…</option>${opts}
