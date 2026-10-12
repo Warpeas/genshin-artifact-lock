@@ -4888,6 +4888,7 @@ function renderGamePlans(setName, cands, slotFilter = 'all', b = null) {
           <span>采纳</span>
         </label>
         <span class="gp-idx">${i + 1}</span>
+        <button class="btn sm gp-copy" data-gp-copy="${esc(setName)}|${esc(p.key)}">复制</button>
         ${planForText(p, b)}
         ${p.mergedCount ? `<span class="gp-badge">已合并 ${p.mergedCount} 组</span>` : ''}
         <span class="gp-acts${opts ? ' gp-acts-merge' : ''}">
@@ -4899,7 +4900,6 @@ function renderGamePlans(setName, cands, slotFilter = 'all', b = null) {
           ${p.mergedCount
             ? `<button class="btn sm gp-split" data-gp-split="${esc(setName)}|${esc(p.key)}" title="还原为合并前的各个候选">拆回</button>`
             : ''}
-          <button class="btn sm gp-copy" data-gp-copy="${esc(setName)}|${esc(p.key)}">复制</button>
         </span>
       </div>
       ${p.kind === 'rule' ? '' : `<div class="gp-boardrow">${pieceBoardHTML(setName, b, p, [p])}</div>`}
