@@ -71,6 +71,9 @@ genshin-artifact-lock/
 │   ├── styles.css      样式（含打印与 ≤560px 手机端适配）
 │   └── template.html   页面骨架（构建时被注入 css/js）
 │
+├── skills/             ★ WorkBuddy 技能（单一事实源，跟 git 走）
+│   └── char-data-edit/ 改角色数据的 SOP 技能，装到 ~/.workbuddy/skills/ 供按需加载
+│
 └── tools/              Python 抓取/回写工具链（仅维护内置数据用，运行时不参与）
     ├── rebuild_data.py        ★ 一键重建总入口（抓取 / 离线重放 → 回写 → 测试 → 自检 → 打包）
     ├── fetch_wiki_builds.py   抓观测枢 wiki 配装
@@ -80,6 +83,9 @@ genshin-artifact-lock/
     ├── role_infer.py          从 wiki 描述推断「配装功能定位」
     ├── gen_sources.py         生成人读的来源清单
     ├── playground.html        配装条版式调试台（A / B / B2 对照 + 自定义开关，详见 tools/README.md）
+    ├── show_char.js             回读 RAW_CHARS 配装组（`--set` / `--sub` / `--manual` / `--count`）
+    ├── verify_change.js         ★ 改完数据的一键门禁（语法 / 回读 / 自检 / 构建 / 回归 / 干净度 / 版本一致）
+    ├── install_skill.js         把 skills/ 装到 ~/.workbuddy/skills/（--project / --list / --uninstall）
     ├── README.md              工具链说明
     └── out/                   产物与缓存（*cache*/ 已 gitignore）
 ```
@@ -167,6 +173,11 @@ genshin-artifact-lock/
 1. **`subs` 的数组顺序就是展示顺序**，是唯一顺序来源。要「cd 严格优先于 cr」除了挪数组，还必须**删掉 `equal: [['cr','cd']]`**，否则只是展示变、权重语义没变。
 2. **人工校准必须 `source:'manual'`**。`apply_wiki_builds.existing_subrules()` 只保护 manual，heuristic 组在下次重建时会被重算规则整个覆盖，且不报错。带 `optional` 理由的组更是永远标 manual。
 3. **回读验证用 `node tools/show_char.js <角色名>`**（`--set` / `--sub` / `--manual` / `--count` 可选），改完立刻确认改动落在目标组、没改错备选组。
+4. **改完跑 `node tools/verify_change.js <角色名>`**，全 PASS 才提交。它把语法 / 回读 / 数据自检 / 构建 / 产物同步 / 配装条回归 / 工作区干净度 / 版本三处一致一次跑完，任一关 FAIL 退出码非 0。
+
+> 💡 **别把整份 SOP 读进上下文**。仓库里的 `skills/char-data-edit/` 是给 AI 按需加载的技能（决策表 + 硬判据 + 命令，压到百行内），
+> `docs/角色数据修改手册.md` 是它的完整展开版。装一次即可用：`node tools/install_skill.js`（装到用户级 `~/.workbuddy/skills/`），
+> **新开会话**后技能才会出现在清单里；改完技能源码重跑该命令即可同步（整目录替换，不会残留旧文件）。
 
 ---
 

@@ -88,6 +88,8 @@ data.js 里的数据字段（note）和 JS 拼接的文案（「（任选N套）
 | `check_card_labels.js` | 角色卡配装条标签的**聚焦回归**（无依赖）：分层结构 / 去括号 / 换行标记 / 转义 / 截断 / 英文 / 名称折行规则 / `aria-pressed` / 按钮长度分档（`nameLadder()` 档位边界、三档 `min-width` 必须在 `@media(min-width:561px)` 内、窄屏不得出现 `data-lad`、`.wide` 恒 100%）；`--built` 额外比对 `index.html` 与 `src/` 是否同步 | 终端 PASS/FAIL，失败退出码非 0 |
 | `set_short_suggest.py` | 套装简称半自动工具：缺口检测 + 中英候选 + 回测（**只读，不写任何源文件**） | 默认只打终端；`--out FILE.md` 才额外落盘清单 |
 | `show_char.js` | **回读 `src/data.js` 的角色配装组**（手改数据后立刻验证用）。`node tools/show_char.js 薇斯纳`；`--set 套装名` / `--sub cr` / `--manual` / `--heuristic` / `--count`。只读、不联网、不构建 | 终端 |
+| `verify_change.js` | **改完数据的一键门禁**：`node tools/verify_change.js 薇斯纳 梦见月瑞希`（`--no-build` 跳过打包）。依次跑 `node --check` ×2 → show_char 回读 → check_data 硬门禁 → build.js（含版本日期 warn 判定）→ 产物是否比 src 新 → check_card_labels `--built` → `git status` 干净度 → 版本三处一致（src / CHANGELOG[0] / 产物）。全 PASS 才提交 | 终端 PASS/FAIL 表，失败退出码非 0 |
+| `install_skill.js` | 把仓库 `skills/` 装到 WorkBuddy 能发现的位置：`node tools/install_skill.js`（默认用户级 `~/.workbuddy/skills/`）\| `--project` 装项目级 \| `--list` \| `--uninstall`。**仓库内是单一事实源**，装完需新开会话才被识别；改完技能源码重跑即同步（整目录替换，不残留旧文件） | 终端 |
 
 ## 副词条分级校准（`fetch_guide_subtiers.py`）
 

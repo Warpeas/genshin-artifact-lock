@@ -78,6 +78,7 @@
 ```bash
 node --check src/data.js          # 中文长字符串容易漏引号，先语法自检
 node tools/show_char.js 角色名    # 回读确认改动落在目标配装组
+node tools/verify_change.js 角色名  # 一键门禁：全 PASS 才提交
 node build.js
 ```
 
@@ -86,6 +87,8 @@ node build.js
 > ⚠️ **根目录的 `index.html` 是构建产物，不要直接编辑它** —— 下次执行 `node build.js` 会被覆盖。所有修改都请改 `src/` 里的文件。
 
 > 📘 **手改 `RAW_CHARS` 的角色配装数据**（套装 / 主词条 / 追加属性 / ★＝◇规则）请走 **[`docs/角色数据修改手册.md`](docs/角色数据修改手册.md)** 的 SOP。里面有三件最容易翻车的事：`subs` 数组顺序就是展示顺序；人工校准必须标 `source:'manual'`（否则下次重建被重算覆盖）；版本号与 `CHANGELOG` **每次发布都要手改**（build 只校验不改写）。
+>
+> 🤖 **用 AI 改的话不用读整份 SOP**——仓库里的 `skills/char-data-edit/` 是配套的按需加载技能（决策表 + 硬判据 + 命令，百行内）。装一次：`node tools/install_skill.js`（装到用户级 `~/.workbuddy/skills/`，新开会话后生效）。
 
 ---
 
@@ -118,7 +121,12 @@ genshin-artifact-lock/
 │   ├── fetch_wiki_builds.py / fetch_guides.py   抓取
 │   ├── apply_wiki_builds.py                     回写 src/data.js
 │   ├── role_infer.py / gen_sources.py           定位推断 / 来源清单
+│   ├── show_char.js / verify_change.js           回读角色配装组 / 改完数据的一键门禁
+│   ├── install_skill.js                          把 skills/ 装到 ~/.workbuddy/skills/
 │   └── README.md                                工具链说明
+│
+├── skills/            ★ 给 AI 按需加载的技能（单一事实源，装出去用）
+│   └── char-data-edit/                           改角色数据的 SOP 技能（决策表 + 硬判据 + 命令）
 │
 └── preview/            界面截图，仅用于本文档展示，可删
     ├── 01-角色配置.png
