@@ -959,13 +959,14 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 .gp-badge{font-size:10.5px;color:var(--green);background:color-mix(in srgb,var(--green) 13%,var(--panel));
   border:1px solid color-mix(in srgb,var(--green) 30%,transparent);
   padding:1px 6px;border-radius:var(--r-xs);white-space:nowrap;}
-.gp-acts{display:inline-flex;align-items:center;gap:6px;margin-left:auto;}
+.gp-acts{display:inline-flex;align-items:center;gap:6px;margin-left:auto;order:4;}
 .gp-mergesel{
   width:190px;max-width:100%;font-size:var(--fs-xs);background:var(--bg1);color:#cfe3ff;
   border:1px solid color-mix(in srgb,var(--blue) 30%,transparent);
   border-radius:var(--r-xs);padding:3px 7px;
 }
 .gp-split,.gp-copy{font-size:var(--fs-xs);padding:2px 8px;}
+.gp-copy{order:5;}
 .gp-fixed{font-size:var(--fs-xs);color:var(--txt3);}
 /* 命中条数：只读展示系统推荐值（不再提供下拉修改入口） */
 .gp-subline .gp-hit-ro{color:#cfe3ff;background:color-mix(in srgb,var(--blue) 12%,var(--sunken));
@@ -1653,9 +1654,12 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .gp-wrap{padding:10px 12px 12px;}
     .gp-cards{gap:10px;}
   .gp-ctitle{gap:6px;}
-  .gp-for{min-width:0;flex-basis:100%;order:3;}
+  .gp-idx{order:1;}
+  .gp-copy{order:2;}
+  .gp-badge{order:3;}
   .gp-acts{width:auto;margin-left:0;justify-content:flex-end;flex-wrap:wrap;}
   .gp-acts-merge{width:100%;}
+  .gp-for{min-width:0;flex-basis:100%;order:5;}
   .gp-mergesel{width:100%;flex:1 1 100%;max-width:none;min-width:120px;padding:6px 8px;min-height:34px;}
   .gp-mini{grid-template-columns:minmax(52px,max-content) minmax(0,1fr);}
 
