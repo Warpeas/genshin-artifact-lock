@@ -961,11 +961,10 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
   padding:1px 6px;border-radius:var(--r-xs);white-space:nowrap;}
 .gp-acts{display:inline-flex;align-items:center;gap:6px;margin-left:auto;}
 .gp-mergesel{
-  font-size:var(--fs-xs);background:var(--bg1);color:#cfe3ff;
+  width:190px;max-width:100%;font-size:var(--fs-xs);background:var(--bg1);color:#cfe3ff;
   border:1px solid color-mix(in srgb,var(--blue) 30%,transparent);
   border-radius:var(--r-xs);padding:3px 7px;
 }
-.gp-mergesel{max-width:190px;}
 .gp-split,.gp-copy{font-size:var(--fs-xs);padding:2px 8px;}
 .gp-fixed{font-size:var(--fs-xs);color:var(--txt3);}
 /* 命中条数：只读展示系统推荐值（不再提供下拉修改入口） */
@@ -1655,8 +1654,9 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
     .gp-cards{gap:10px;}
   .gp-ctitle{gap:6px;}
   .gp-for{min-width:0;flex-basis:100%;order:3;}
-  .gp-acts{width:100%;margin-left:0;justify-content:flex-end;flex-wrap:wrap;}
-  .gp-mergesel{flex:1;max-width:none;min-width:120px;padding:6px 8px;min-height:34px;}
+  .gp-acts{width:auto;margin-left:0;justify-content:flex-end;flex-wrap:wrap;}
+  .gp-acts-merge{width:100%;}
+  .gp-mergesel{width:100%;flex:1 1 100%;max-width:none;min-width:120px;padding:6px 8px;min-height:34px;}
   .gp-mini{grid-template-columns:minmax(52px,max-content) minmax(0,1fr);}
 
   /* --- 追加属性页 --- */
