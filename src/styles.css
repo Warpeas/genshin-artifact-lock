@@ -811,18 +811,6 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
   line-height:1.15;font-variant-numeric:tabular-nums;}
 .stat-box .sl{font-size:var(--fs-xs);color:var(--txt3);}
 
-/* ---- 详细件数（折叠） ---- */
-.set-detail{border-top:1px solid var(--line-soft);}
-.set-detail>summary{
-  padding:8px 16px;font-size:var(--fs-xs);color:var(--txt3);cursor:pointer;
-  background:var(--sunken);list-style:none;user-select:none;
-  transition:color .15s var(--ease-fast);
-}
-.set-detail>summary::-webkit-details-marker{display:none;}
-.set-detail>summary::before{content:'▸ ';color:var(--gold);}
-.set-detail[open]>summary::before{content:'▾ ';}
-.set-detail>summary:hover{color:var(--txt2);}
-
 .set-block{
   background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r-lg);
   margin-bottom:var(--s3);overflow:hidden;box-shadow:var(--sh1);
@@ -876,46 +864,10 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 /* .set-none 只留给「无角色需要 · 可整套清理」那枚灰标签（不再列角色名） */
 .set-head .set-none{margin-left:auto;font-size:var(--fs-sm);color:var(--txt2);
   display:flex;flex-wrap:wrap;gap:4px;max-width:62%;justify-content:flex-end;}
-.set-body{padding:0;}
-.slot-row{display:flex;border-bottom:1px solid var(--line-soft);transition:background .12s var(--ease-fast);}
-.slot-row:last-child{border-bottom:none;}
-@media (hover:hover){.slot-row:hover{background:color-mix(in oklab,var(--panel) 82%,var(--txt) 6%);}}
-.slot-name{
-  flex:none;width:92px;padding:12px 14px;font-size:var(--fs-sm);color:var(--txt2);
-  background:color-mix(in oklab,var(--bg) 55%,var(--panel));
-  display:flex;align-items:center;gap:6px;border-right:1px solid var(--line-soft);
-}
-.slot-name .sn-sub{font-size:11px;color:var(--txt3);}
-.slot-cells{flex:1;min-width:0;padding:10px 14px;display:flex;flex-direction:column;gap:7px;}
-.stat-req{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;}
-.stat-badge{
-  font-size:var(--fs-sm);padding:3px 11px;border-radius:var(--r-xs);font-weight:600;
-  background:var(--panel2);border:1px solid var(--line-soft);color:var(--txt);
-}
-.stat-badge.t1{background:linear-gradient(150deg,color-mix(in oklab,var(--gold) 24%,var(--panel2)),var(--panel2));
-  border-color:color-mix(in srgb,var(--gold) 42%,transparent);color:var(--gold2);}
-.stat-badge.t2{background:color-mix(in srgb,var(--blue) 16%,var(--panel2));
-  border-color:color-mix(in srgb,var(--blue) 32%,transparent);color:color-mix(in srgb,#fff 25%,var(--blue));}
-.stat-badge.t3{background:var(--panel2);color:var(--txt2);border-style:dashed;}
-.keep-n{font-size:var(--fs-sm);color:var(--txt3);}
-.keep-n b{color:var(--green);font-size:var(--fs-sm);font-variant-numeric:tabular-nums;}
-.req-from{font-size:var(--fs-xs);color:var(--txt3);display:flex;gap:4px;flex-wrap:wrap;}
-.req-from .fn{padding:0 5px;border-radius:var(--r-xs);background:var(--panel2);}
-.req-from .fn.alt{opacity:.72;}
-.slot-none{color:var(--txt3);font-size:var(--fs-sm);font-style:italic;}
 .tier-tag{font-size:11px;padding:1px 7px;border-radius:var(--r-xs);font-weight:600;}
 .tier-tag.keep{background:color-mix(in srgb,var(--green) 16%,transparent);color:var(--green);}
 .tier-tag.trans{background:color-mix(in oklab,var(--gold) 18%,transparent);color:var(--gold2);}
 .tier-tag.fodder{background:color-mix(in srgb,var(--red) 16%,transparent);color:#ffb0b0;}
-.rare-tag{font-size:11px;padding:1px 7px;border-radius:var(--r-xs);
-  background:color-mix(in srgb,var(--purple) 16%,transparent);color:#e6baf0;
-  border:1px solid color-mix(in srgb,var(--purple) 34%,transparent);}
-.swap-tag{font-size:10.5px;padding:1px 6px;border-radius:var(--r-xs);margin-left:2px;
-  background:color-mix(in srgb,#5ad0c8 14%,transparent);color:#91e2dc;
-  border:1px solid color-mix(in srgb,#5ad0c8 30%,transparent);}
-.sub-hint-row{font-size:var(--fs-xs);color:var(--txt3);}
-.sub-hint-row b{color:var(--txt2);font-weight:500;}
-.no-need{padding:16px;text-align:center;color:var(--txt3);font-size:var(--fs-sm);background:var(--sunken);}
 
 /* ---- 候选方案区（游戏内锁定方案） ---- */
 .gp-wrap{container-type:inline-size;width:100%;min-width:0;margin:10px 0;padding:12px 14px 14px;background:var(--sunken);border-radius:var(--r);}
@@ -947,7 +899,10 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
   box-shadow:inset 3px 0 0 var(--green),var(--sh1);}
 .gp-rule-for{color:var(--green);font-weight:600;}
 .gp-rule-desc{font-size:var(--fs-xs);color:var(--txt3);margin:-2px 0 8px;line-height:1.5;}
-.gp-ctitle{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;margin-bottom:8px;}
+.gp-ctitle{
+  display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;
+  gap:var(--s2);margin-bottom:8px;
+}
 .gp-idx{font-size:var(--fs-xs);font-weight:700;color:#cfe3ff;
   background:color-mix(in srgb,var(--blue) 26%,var(--panel2));
   border:1px solid color-mix(in srgb,var(--blue) 30%,transparent);
@@ -955,18 +910,18 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 .gp-adopt{display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-xs);color:var(--txt2);cursor:pointer;user-select:none;}
 .gp-adopt:hover{color:var(--txt);}
 .gp-adopt input{width:15px;height:15px;accent-color:var(--green);cursor:pointer;}
-.gp-for{font-size:var(--fs-xs);color:var(--txt2);flex:1;min-width:110px;line-height:1.5;}
+.gp-for{font-size:var(--fs-xs);color:var(--txt2);min-width:110px;line-height:1.5;}
 .gp-badge{font-size:10.5px;color:var(--green);background:color-mix(in srgb,var(--green) 13%,var(--panel));
   border:1px solid color-mix(in srgb,var(--green) 30%,transparent);
   padding:1px 6px;border-radius:var(--r-xs);white-space:nowrap;}
-.gp-acts{display:inline-flex;align-items:center;gap:6px;margin-left:auto;order:4;}
+.gp-acts{display:flex;align-items:center;gap:6px;min-width:0;}
 .gp-mergesel{
-  width:190px;max-width:100%;font-size:var(--fs-xs);background:var(--bg1);color:#cfe3ff;
+  width:100%;max-width:190px;font-size:var(--fs-xs);background:var(--bg1);color:#cfe3ff;
   border:1px solid color-mix(in srgb,var(--blue) 30%,transparent);
   border-radius:var(--r-xs);padding:3px 7px;
 }
 .gp-split,.gp-copy{font-size:var(--fs-xs);padding:2px 8px;}
-.gp-copy{order:5;}
+.gp-for,.gp-badge{grid-column:1 / -1;}
 .gp-fixed{font-size:var(--fs-xs);color:var(--txt3);}
 /* 命中条数：只读展示系统推荐值（不再提供下拉修改入口） */
 .gp-subline .gp-hit-ro{color:#cfe3ff;background:color-mix(in srgb,var(--blue) 12%,var(--sunken));
@@ -1645,22 +1600,12 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .set-head{flex-wrap:wrap;padding:10px 12px;gap:8px;}
   .set-head h3{font-size:14px;}
   .set-head .set-none{max-width:100%;width:100%;margin-left:0;justify-content:flex-start;}
-  /* 详细件数：部位名改为整行标题 */
-  .slot-row{flex-direction:column;}
-  .slot-name{width:100%;padding:7px 12px;border-right:none;border-bottom:1px solid var(--line-soft);}
-  .slot-cells{padding:9px 12px;}
-
   /* --- 游戏内方案：候选卡堆叠，操作区换行铺满 --- */
   .gp-wrap{padding:10px 12px 12px;}
     .gp-cards{gap:10px;}
   .gp-ctitle{gap:6px;}
-  .gp-idx{order:1;}
-  .gp-copy{order:2;}
-  .gp-badge{order:3;}
-  .gp-acts{width:auto;margin-left:0;justify-content:flex-end;flex-wrap:wrap;}
-  .gp-acts-merge{width:100%;}
-  .gp-for{min-width:0;flex-basis:100%;order:5;}
-  .gp-mergesel{width:100%;flex:1 1 100%;max-width:none;min-width:120px;padding:6px 8px;min-height:34px;}
+  .gp-acts{min-height:34px;}
+  .gp-mergesel{max-width:none;min-width:120px;padding:6px 8px;min-height:34px;}
   .gp-mini{grid-template-columns:minmax(52px,max-content) minmax(0,1fr);}
 
   /* --- 追加属性页 --- */
@@ -1797,10 +1742,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .piece-board,.pb-h,.pb-item{color:#222 !important;cursor:auto;}
   .pb-grp{background:#f6f6f6 !important;border-left-color:#bbb !important;}
   .pb-sum{background:#eef2f7 !important;border-color:#bbb !important;color:#333 !important;}
-  .stat-badge{border-color:#999;}
-  .stat-badge.t1{background:#fff6dd !important;color:#7a5c00 !important;}
-  .slot-name{background:#f6f6f6 !important;color:#333 !important;}
-  .slot-name,.stat-badge,.req-from,.set-head h3{color:#111 !important;}
+  .set-head h3{color:#111 !important;}
   .gp-lead,.gp-tip,.gp-meta,.gp-for,.gp-rule-desc{color:#444 !important;}
   main{padding:0;max-width:none;}
   #statTipBox{display:none !important;}   /* 打印时小窗不出现 */

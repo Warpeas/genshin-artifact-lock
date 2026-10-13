@@ -4781,52 +4781,6 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
     ? setCandidates(charsForPlan, name) : [];
   const gpHtml = cands.length ? renderGamePlans(name, cands, slotFilter, b) : '';
 
-  // 该套装的追加属性需求排序（用于花/羽行提示）
-  const rank = setWeights ? (setWeights.get(name) || {}).list : null;
-  const topSubs = rank
-    ? rank.slice(0, 3).map(x => x.name + (x.must ? '★' : '')).join(' > ')
-    : '';
-
-  const slotsHtml = SLOTS
-    .filter(sd => slotFilter === 'all' || sd.id === slotFilter)
-    .map(sd => {
-      const rows = b.slots[sd.id] || [];
-      if (sd.id === 'flower' || sd.id === 'plume') {
-        if (!rows.length) return slotRow(sd, '<span class="slot-none">无角色需要</span>');
-        const r = rows[0];
-        const inner = `
-          <div class="stat-req">
-            <span class="stat-badge t1">${esc(statLabel(sd.id, r))}</span>
-            <span class="keep-n">建议保留 <b>${r.keep}</b> 件</span>
-            <span class="tier-tag ${tierClass(r.tier)}">${tierLabel(r.tier)}</span>
-          </div>
-          ${topSubs ? `<div class="sub-hint-row">追加属性优先：<b>${esc(topSubs)}</b></div>` : ''}
-          <div class="req-from">${r.charsArr.map(x => `<span class="fn ${x.alt ? 'alt' : ''}">${esc(charName(x.name))}${x.alt ? '·' + t('备选') : ''}</span>`).join('')}</div>`;
-        return slotRow(sd, inner);
-      }
-
-      if (!rows.length) return slotRow(sd, '<span class="slot-none">无角色需要 · 可全喂</span>');
-
-      const inner = rows.map(r => {
-        const rare = sd.id === 'goblet' && ELEM_DMG_STATS.includes(r.stat);
-        return `
-        <div class="stat-req">
-          <span class="stat-badge ${r.tier === 'keep' ? 't1' : (r.tier === 'trans' ? 't2' : 't3')}">${esc(statLabel(sd.id, r))}</span>
-          <span class="tier-tag ${tierClass(r.tier)}">${tierLabel(r.tier)}</span>
-          ${isSwap(r) ? '<span class="swap-tag">二选一</span>' : ''}
-          ${rare ? '<span class="rare-tag">稀有·建议多留</span>' : ''}
-          <span class="keep-n">建议保留 <b>${r.keep}</b> 件</span>
-        </div>
-        <div class="req-from">${r.charsArr.map(x => `<span class="fn ${x.alt ? 'alt' : ''}">${esc(charName(x.name))}${x.rank > 1 ? '·' + t('次选') : ''}${x.alt ? '·' + t('备选') : ''}</span>`).join('')}</div>`;
-      }).join('');
-      return slotRow(sd, inner);
-    }).join('');
-
-  // 详细件数清单：默认折叠（勾选工具栏「显示详细件数」才展开）
-  const detailHtml = showDetail()
-    ? `<details class="set-detail" open><summary>详细件数清单</summary><div class="set-body">${slotsHtml}</div></details>`
-    : '';
-
   return `
   <div class="set-block ${unused ? 'unused' : ''}">
     <div class="set-head">
@@ -4837,14 +4791,7 @@ function renderSetBlock(name, b, slotFilter, setWeights) {
         ? '<span class="set-none"><span class="tier-tag fodder">无角色需要 · 可整套清理</span></span>'
         : ''}
     ${gpHtml}
-    ${detailHtml}
   </div>`;
-}
-
-/* 是否展开详细件数清单 */
-function showDetail() {
-  const el = $('#planDetail');
-  return !!(el && el.checked);
 }
 
 /* 渲染「游戏内锁定方案」候选区
@@ -4883,14 +4830,11 @@ function renderGamePlans(setName, cands, slotFilter = 'all', b = null) {
     return `
     <div class="gp-card${p.kind === 'rule' ? ' gp-card-rule' : ''}${off ? ' gp-card-off' : ''}">
       <div class="gp-ctitle">
+        <span class="gp-idx">${i + 1}</span>
         <label class="gp-adopt" title="取消勾选＝不采纳，不计入游戏内设置与导出">
           <input type="checkbox" data-gp-adopt="${esc(setName)}|${esc(p.key)}"${off ? '' : ' checked'}>
           <span>采纳</span>
         </label>
-        <span class="gp-idx">${i + 1}</span>
-        <button class="btn sm gp-copy" data-gp-copy="${esc(setName)}|${esc(p.key)}">复制</button>
-        ${planForText(p, b)}
-        ${p.mergedCount ? `<span class="gp-badge">已合并 ${p.mergedCount} 组</span>` : ''}
         <span class="gp-acts${opts ? ' gp-acts-merge' : ''}">
           ${opts
             ? `<select class="gp-mergesel" data-gp-merge="${esc(setName)}|${esc(p.key)}" title="把本方案并入另一个方案">
@@ -4901,6 +4845,9 @@ function renderGamePlans(setName, cands, slotFilter = 'all', b = null) {
             ? `<button class="btn sm gp-split" data-gp-split="${esc(setName)}|${esc(p.key)}" title="还原为合并前的各个候选">拆回</button>`
             : ''}
         </span>
+        <button class="btn sm gp-copy" data-gp-copy="${esc(setName)}|${esc(p.key)}">复制</button>
+        ${planForText(p, b)}
+        ${p.mergedCount ? `<span class="gp-badge">已合并 ${p.mergedCount} 组</span>` : ''}
       </div>
       ${p.kind === 'rule' ? '' : `<div class="gp-boardrow">${pieceBoardHTML(setName, b, p, [p])}</div>`}
       ${(p.kind === 'rule' && p.ruleDesc) ? `<div class="gp-rule-desc">${esc(p.ruleDesc)}</div>` : ''}
@@ -4942,13 +4889,6 @@ function mergeTargetLabel(q) {
   const names = q.chars || [];
   const txt = names.length > 3 ? `${names.slice(0, 3).join('、')} 等 ${names.length} 人` : names.join('、');
   return (q.mergedCount ? `[合并${q.mergedCount}] ` : '') + (txt || '（空）');
-}
-
-function slotRow(sd, inner) {
-  return `<div class="slot-row">
-    <div class="slot-name">${sd.name}</div>
-    <div class="slot-cells">${inner}</div>
-  </div>`;
 }
 
 /* 导出：游戏内锁定方案（可照搬进游戏） */
@@ -5748,7 +5688,6 @@ function bind() {
   $('#planSetFilter').onchange = renderPlan;
   $('#planSlotFilter').onchange = renderPlan;
   $('#planHideUnused').onchange = renderPlan;
-  $('#planDetail').onchange = renderPlan;
   $('#planAltBuild').onchange = () => { renderPlan(); if ($('#tab-subs').classList.contains('active')) renderSubs(); };
 
   /* ---- 散件 / 过渡 保留规则面板 ---- */
