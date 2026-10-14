@@ -3910,13 +3910,12 @@ function curBuild() {
   return editing.builds[ui.buildIdx];
 }
 
-/* 卡片上「三部位主要属性」的一行摘要：只列前 2 条，多的用 +N 收尾 */
+/* 卡片上「三部位主要属性」的摘要：完整列出该部位的候选词条 */
 function buildMainBrief(b) {
   return ['sands', 'goblet', 'circlet'].map(slot => {
     const arr = (b.main && b.main[slot]) || [];
     if (!arr.length) return null;
-    const names = arr.slice(0, 2).map(m => mainStatName(slot, m.stat));
-    if (arr.length > 2) names.push('+' + (arr.length - 2));
+    const names = arr.map(m => mainStatName(slot, m.stat));
     return { slot, name: SLOTS.find(s => s.id === slot).name, txt: names.join(' / ') };
   }).filter(Boolean);
 }
