@@ -14,8 +14,18 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.10.12';
+const APP_VERSION = '2026.10.15';
 const CHANGELOG = [
+  {
+    v: '2026.10.15', date: '2026-10-15',
+    title: '页面③改为散件需求索引：按沙 / 杯 / 冠主属性聚合适用角色与追加属性方向',
+    items: [
+      '移除胚子评分器、通用分档说明和按套装汇总的追加属性表，改为散件需求索引。',
+      '按时之沙 / 空之杯 / 理之冠及主属性列出适用角色；追加属性需求相近的配装自动聚类为多个方向，并显示每条追加属性的支持人数。',
+      '忽略套装效果；同一角色可出现在多个需求方向，但在同一方向内按角色去重。可展开查看方向中的角色与主推 / 备选配装信息。',
+      '排除与当前主属性相同的追加属性；页面提供独立的备选配装开关，并与锁定方案页同步。英文界面同步更新。',
+    ],
+  },
   {
     v: '2026.10.12', date: '2026-10-12',
     title: '血红之证追加属性校准（薇斯纳 / 梦见月瑞希）',
@@ -2225,7 +2235,7 @@ function charName(n) { return d(n, CHAR_META[n] && CHAR_META[n].en); }
 function keepRuleName(n) { return d(n, KEEP_RULE_EN[n]); }
 function setName(n)  { return d(n, SET_EN[n]); }
 /* 角色卡片用套装简称（B 口径：纯二字，角斗士除外）——仅角色卡片展示使用，
- * 方案页 / 评分表 / 编辑页 / 导出清单一律走 setName() 全称。 */
+ * 方案页 / 散件索引 / 编辑页 / 导出清单一律走 setName() 全称。 */
 const SET_SHORT = {
   '平息鸣雷的尊者': '平雷', '炽烈的炎之魔女': '魔女', '渡过烈火的贤人': '渡火',
   '冰风迷途的勇士': '冰风', '悠古的磐岩': '磐岩', '如雷的盛怒': '如雷',
@@ -2451,8 +2461,8 @@ const T_UI_EN = {
   '① 角色': '① Chars',
   '② 锁定方案': '② Lock Plans',
   '② 方案': '② Plans',
-  '③ 追加属性规则': '③ Substat Rules',
-  '③ 追加属性': '③ Substats',
+  '③ 散件索引': '③ Off-piece Index',
+  '③ 散件': '③ Off-pieces',
   '④ 数据管理': '④ Data',
   '④ 数据': '④ Data',
   '显示语言': 'UI language',
@@ -2558,17 +2568,22 @@ const T_UI_EN = {
   '请填写规则名称': 'Please enter a rule name',
   '请至少勾选一个要留的主要属性': 'Pick at least one main stat to keep',
 
-  /* 追加属性规则页 */
-  '通用分档规则': 'General tier rules',
-  '胚子评分器': 'Artifact scorer',
-  '输入一件圣遗物的信息，快速判断值不值得留。': 'Enter an artifact to see whether it is worth keeping.',
-  '根据你启用的角色，自动汇总出的主要属性白名单 + 追加属性判定逻辑。游戏内可照此执行锁定。':
-    'Auto-summarised from your enabled characters: a main-stat whitelist plus substat rules you can copy into the game.',
-  '各套装推荐追加属性': 'Recommended substats per set',
-  '套装': 'Set',
-  '相对强度': 'Relative weight',
-  '追加属性需求排序 Top5（★= 多数角色标为必选）':
-    'Substat priority Top 5 (★ = most characters marked it Required)',
+  /* 散件需求索引 */
+  '散件需求索引': 'Off-piece Demand Index',
+  '选择时之沙、空之杯或理之冠。每种主属性下，会把追加属性需求相近的配装归为不同方向。忽略套装效果；同一方向内角色只计一次，同一角色可出现在多个方向。':
+    'Choose Sands, Goblet, or Circlet. For each main stat, builds with similar substat needs are grouped into directions. Set bonuses are ignored; each character counts once per direction but may appear in multiple directions.',
+  '启用角色后，这里会列出散件需求。': 'Enable characters to see their off-piece needs here.',
+  '当前没有启用配装需要这个部位的主属性。': 'No enabled builds currently need a main stat for this slot.',
+  '未设置追加属性偏好': 'No substat preferences provided',
+  '方向 {n}': 'Direction {n}',
+  '{n} 名角色': '{n} characters',
+  '{n} 名角色 · {k} 个方向': '{n} characters · {k} directions',
+  '查看 {n} 名角色': 'View {n} characters',
+  '{n} 组适用配装': '{n} matching builds',
+  '主属性首选': 'First-choice main stat',
+  '主属性次选': 'Alternate main stat',
+  '标为必需的人数': 'Characters marking this stat required',
+  '标为条件词条的人数': 'Characters marking this stat conditional',
   '主要属性': 'Main stat',
   '主要属性固定': 'Main stat is fixed',
   /* 属性详情小窗（点击 chip 展开） */
@@ -2878,14 +2893,6 @@ const T_UI_EN = {
     'In game: Inventory → Artifacts → Lock → pick this set → Edit, then apply the settings above; each set has ',
   '，请自行收敛。': ' — keep it within that.',
 
-  /* 胚子评分器档位 */
-  'S 级 · 必锁': 'S · Lock it',
-  'A 级 · 升级观察': 'A · Level and watch',
-  '主要属性命中「必留」列表，且追加属性': 'Main stat is on the "keep" list and the substats',
-  '同时含暴击率与暴击伤害': 'include both CRIT Rate and CRIT DMG',
-  '主要属性命中需求，追加属性含': 'Main stat matches the need and substats include',
-  '操作：直接锁定，喂到 20 级。': 'Action: lock it and level to 20.',
-  '单个暴击词条 + 1 条有效词条': 'one CRIT roll + 1 useful stat',
 };
 
 /* 合并后的当前词典：按两个开关拼装（界面文案优先级高于数据名） */
@@ -2917,8 +2924,8 @@ const I18N_HTML = {
     '<li><b>Built-in data follows game updates</b>: builds you have <b>not touched</b> automatically pick up new data from the repo; anything <b>you edited</b> is left alone (tagged "Modified") — hit restore if you want the new version.</li>',
     '<li><b>② Lock Plans</b>: every set gets "in-game lock plan <b>candidates</b>" — clustered automatically by each character\'s <b>substat needs</b>. All <b>five slots in one plan share the same substat condition</b>; main stats are listed per slot, so you can just copy them into the game. <b>No slot limit</b>: there can be many candidates — merge them by hand with "Merge into…" or untick "Adopt" to drop the ones you do not want, then narrow it down to the 3 presets the game allows per set. The <b>"🧩 Off-piece / Transitional Keep Rules"</b> block at the top is character-independent: artifacts worth keeping purely because the main stat is rare (an elemental DMG goblet, say). Each enabled rule produces a candidate plan that joins the character clusters with <b>equal weight</b> for merging and adoption.</li>',
     '<li><b>Traveler</b> is split into 7 separate entries by element (Traveler · Anemo / Geo / Electro / Dendro / Hydro / Pyro / Cryo): each form has a different element and different builds, so they can be enabled and edited separately. Likewise <b>Nod-Krai</b> is now its own region (separate from Snezhnaya); if your save is from an older version, regions and roles are corrected once on open — after that your own edits are never overwritten.</li>',
-    '<li><b>List sorting</b>: the ① character cards, the ② set blocks and the ③ "Recommended substats per set" table at the bottom all have a <b>↓ Ascending / ↑ Descending</b> button — one tap flips the direction and the choice is saved locally. Set lists (②③) also get a <b>"Catalog / Usage" toggle</b>: <b>Catalog</b> = the order in the set library (which follows the HoYoLAB catalog), stable and never jumping around; <b>Usage</b> = most used first, which changes with the characters you tick. The character list is ordered by region (Mondstadt → Liyue → … → Other·Traveler).</li>',
-    '<li><b>③ Substat Rules</b>: tier rules plus an artifact scorer, answering "the main stat is right, but are the substats worth keeping?".</li>',
+    '<li><b>List sorting</b>: the ① character cards and ② set blocks have a <b>↓ Ascending / ↑ Descending</b> button — one tap flips the direction and the choice is saved locally. Set lists also get a <b>"Catalog / Usage" toggle</b>: <b>Catalog</b> = the order in the set library (which follows the HoYoLAB catalog), stable and never jumping around; <b>Usage</b> = most used first, which changes with the characters you tick. The character list is ordered by region (Mondstadt → Liyue → … → Other·Traveler).</li>',
+    '<li><b>③ Off-piece Index</b>: browse Sands, Goblets, and Circlets by main stat. Similar substat recommendations are grouped into multiple directions, with expandable character lists. Set bonuses are ignored; a character is counted once per direction but may appear in several directions.</li>',
     '<li><b>④ Data → Set Manager (popup)</b>: hit "Open set manager" to add or remove sets, edit the 2-piece text and reorder; built-in sets are only "hidden" and can be restored any time.</li>',
     '<li><b>④ Data → Changelog</b>: the built-in characters and artifacts are maintained by hand as the game updates; every change is logged here. A major update pops up the <b>update notice</b> once the first time you open the app (it stops after you have read it) — use "View update notice" to see it again.</li>',
     '</ol>',
@@ -3006,18 +3013,6 @@ Object.assign(T_UI_EN, {
     'Sands with Energy Recharge, keep it when the substats include CRIT / ATK',
   '空之杯主要属性为元素精通——草系反应队常用，同样稀有':
     'Goblet with Elemental Mastery — common in Dendro reaction teams, just as rare',
-  /* 胚子评分器档位 */
-  'B 级 · 过渡件': 'B · Transitional',
-  'C 级 · 狗粮': 'C · Feed it',
-  '主要属性命中需求但追加属性平庸。': 'Main stat matches but the substats are mediocre.',
-  '主要属性不在任何已启用角色的需求列表中。': 'Main stat is not needed by any enabled character.',
-  '操作：直接喂。': 'Action: feed it.',
-  '操作：先用着，毕业胚子到位后当狗粮喂掉。': 'Action: use it for now, feed it once a better piece shows up.',
-  '操作：升到 4 级看第 4 词条，出双暴继续喂，否则停手留作过渡。':
-    'Action: level to 4 to reveal the 4th substat; keep going on CRIT, otherwise stop and keep it as a transitional piece.',
-  '例外：同套装的对应元素伤害杯极难出货，建议无脑保留。':
-    'Exception: a matching elemental DMG goblet of the same set is extremely rare — always keep it.',
-  '（或你方角色所需的核心双词条）。': '(or the two core substats your characters need).',
   /* 方案页零碎 */
   '推荐至少 N 条': 'recommended: at least N',
   '「保存」': '"Save"',
@@ -3047,17 +3042,7 @@ Object.assign(T_UI_EN, {
   '国度': 'Region',
   '★必需：': '★Required: ',
   '当前配装用不上': 'not used by the current build',
-  '尚未启用角色，评分器暂用「双暴输出」默认排序。':
-    'No character enabled yet — the scorer falls back to the default "CRIT" ordering.',
-  '当前等级': 'Current level',
-  'C 狗粮': 'C · Feed it',
-  '未选择套装，只做追加属性评分': 'No set selected — scoring substats only',
-  '尚未填写追加属性': 'No substats entered yet',
-  '建议：直接喂，别浪费资源。': 'Verdict: feed it, do not waste resources.',
-  '启用角色后这里会显示每个套装的追加属性需求排序。':
-    'Enable some characters and the substat priority for every set shows up here.',
   '当前版本': 'Current version',
-  '有效权重': 'Effective weight',
   '（主推）': ' (main)',
   '（备选）': ' (alt)',
   /* ② 锁定方案页：候选卡 / 计数 / 提示 */
@@ -3088,8 +3073,6 @@ const T_RULES = [
   [/^共 (\d+) 条?$/, m => m[1] + ' total'],
   [/^等 (\d+) 人$/, m => '+ ' + m[1] + ' more'],
   [/^共 (\d+) 人$/, m => m[1] + ' total'],
-  [/^有效权重 ([\d.]+) \/ 约 (\d+) 次词条 = (\d+)%$/,
-   m => 'Weight ' + m[1] + ' / about ' + m[2] + ' rolls = ' + m[3] + '%'],
   [/^当前版本 (.+)$/, m => 'Version ' + m[1]],
 ];
 function trByRules(zh) {

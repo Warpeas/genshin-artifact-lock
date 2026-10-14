@@ -580,9 +580,9 @@ function restoreUserBackup(data) {
  *   catalog   图鉴顺序 = 套装库顺序，也就是米游社图鉴的排列，稳定不跳动
  *   recommend 推荐顺序 = 用的人多的排前面（会随勾选的角色变化）
  * 正序 / 倒序：把排好的结果整个反过来。
- * key：char = 角色配置页卡片（只有正倒序），plan = 锁定方案页套装，setSub = 追加属性规则页套装表格 */
-const SORT_KEYS = ['char', 'plan', 'setSub'];
-const SORT_BY_KEYS = ['plan', 'setSub'];          // 有「排序依据」两档的列表
+ * key：char = 角色配置页卡片（只有正倒序），plan = 锁定方案页套装 */
+const SORT_KEYS = ['char', 'plan'];
+const SORT_BY_KEYS = ['plan'];                    // 有「排序依据」两档的列表
 const SORT_BY_NAME = { catalog: '图鉴顺序', recommend: '推荐顺序' };
 const SORT_BY_LABEL = { catalog: '图鉴', recommend: '推荐' };   // 分段按钮用短名
 const SORT_BY_KEYS_SORTED = ['catalog', 'recommend'];
@@ -817,7 +817,6 @@ function setSortBy(key, by) {
   state.sortPref[key + 'By'] = by;
   save();
   if (key === 'plan') renderPlan();
-  if (key === 'setSub') renderSetSubTable();
   toast('套装已切换为「' + SORT_BY_NAME[by] + '」· ' + SORT_NOTE[by]);
 }
 function toggleSort(key) {
@@ -826,7 +825,6 @@ function toggleSort(key) {
   save();
   if (key === 'char') renderChars();
   if (key === 'plan') renderPlan();
-  if (key === 'setSub') renderSetSubTable();
   toast((key === 'char' ? '角色' : '套装') + '已切换为' + (isDesc(key) ? '倒序' : '正序') +
         '（' + SORT_NOTE[sortBy(key)] + '）');
 }
@@ -871,17 +869,6 @@ function cmpPlanSets() {
   return (a, b) => (idx.has(a[0]) ? idx.get(a[0]) : 1e9) - (idx.has(b[0]) ? idx.get(b[0]) : 1e9) ||
                    a[0].localeCompare(b[0], 'zh');
 }
-/* ③ 表格：entries 形如 [套装名, { n: 角色数, list } ] */
-function cmpSetSubRows() {
-  const by = sortBy('setSub');
-  if (by === 'recommend') {
-    return (a, b) => ((b[1].n || 0) - (a[1].n || 0)) || a[0].localeCompare(b[0], 'zh');
-  }
-  const idx = setOrderMap();
-  return (a, b) => (idx.has(a[0]) ? idx.get(a[0]) : 1e9) - (idx.has(b[0]) ? idx.get(b[0]) : 1e9) ||
-                   a[0].localeCompare(b[0], 'zh');
-}
-
 /* planCfg 归一化：{ 套装名: { merge: [[key...]], hide: [key...], minHit: { key: 1-4 } } }
  *   只保留结构合法的条目；成员不足 2 个的 merge 组视为无效（已无意义）
  *   注：minHit 自「命中条数只读」改造后已不再写入，这里保留归一化只是为了兼容旧存档字段。 */
@@ -1676,83 +1663,6 @@ function statLabel(slot, r) {
 }
 function isSwap(r) { return !!r.swap; }
 
-/* 遍历「已启用角色 × 有效配装组」 */
-function walkEnabledBuilds(includeAlt, fn) {
-  state.characters.filter(c => c.enabled).forEach(c => {
-    (c.builds || []).forEach(b => {
-      if (!includeAlt && b.priority === 'alt') return;
-      if (!b.sets || !b.sets.length) return;
-      fn(c, b);
-    });
-  });
-}
-
-/* 各套装的追加属性权重（按【配装组】平均，名次权重制） */
-function computeSetWeights(includeAlt = true) {
-  const acc = new Map(); // set -> { sum:{}, n:0 }
-  walkEnabledBuilds(includeAlt, (c, b) => {
-    const sw = subWeights(b.subs);
-    b.sets.forEach(sn => {
-      let o = acc.get(sn);
-      if (!o) { o = { sum: {}, n: 0 }; acc.set(sn, o); }
-      o.n++;
-      SUB_STATS.forEach(s => { o.sum[s.id] = (o.sum[s.id] || 0) + sw[s.id]; });
-    });
-  });
-  const out = new Map();
-  acc.forEach((o, sn) => {
-    const w = {};
-    SUB_STATS.forEach(s => { w[s.id] = o.sum[s.id] / o.n; });
-    out.set(sn, w);
-  });
-  return out;
-}
-
-/* 各套装的追加属性【需求排序】：按「名次权重」平均降序，并统计有多少角色标了★必选
- * 返回 Map: 套装 -> { n, list: [{ id, name, score, reqRatio, must }] }
- */
-function setSubRanking(includeAlt = true) {
-  const acc = new Map(); // set -> { n, sum:{}, req:{} }
-  walkEnabledBuilds(includeAlt, (c, b) => {
-    const sw = subWeights(b.subs);
-    b.sets.forEach(sn => {
-      let o = acc.get(sn);
-      if (!o) { o = { n: 0, sum: {}, req: {} }; acc.set(sn, o); }
-      o.n++;
-      SUB_STATS.forEach(s => { o.sum[s.id] = (o.sum[s.id] || 0) + sw[s.id]; });
-      reqSubs(b.subs).forEach(id => { o.req[id] = (o.req[id] || 0) + 1; });
-    });
-  });
-  const out = new Map();
-  acc.forEach((o, sn) => {
-    const list = SUB_STATS.map(s => ({
-      id: s.id,
-      name: subStatName(s.id),
-      score: (o.sum[s.id] || 0) / o.n,
-      reqRatio: (o.req[s.id] || 0) / o.n,
-    })).filter(x => x.score > 0.01)
-      .sort((a, b) => b.score - a.score)
-      .map(x => Object.assign(x, { must: x.reqRatio >= 0.5 }));
-    out.set(sn, { n: o.n, list });
-  });
-  return out;
-}
-
-/* 全部启用角色的平均追加属性权重（兜底） */
-function globalWeights() {
-  const w = {};
-  SUB_STATS.forEach(s => { w[s.id] = 0; });
-  let n = 0;
-  walkEnabledBuilds(true, (c, b) => {
-    n++;
-    const sw = subWeights(b.subs);
-    SUB_STATS.forEach(s => { w[s.id] += sw[s.id]; });
-  });
-  if (!n) return subWeights(toSubs(SUB_PRESETS.crit));
-  SUB_STATS.forEach(s => { w[s.id] = w[s.id] / n; });
-  return w;
-}
-
 /* ============================================================
  * 游戏内「套装锁定方案」生成
  *
@@ -1820,11 +1730,7 @@ function roleSimilarity(a, b) {
   return cosSim(a.subs, b.subs);
 }
 
-function groupSim(g1, g2) {
-  let sum = 0, n = 0;
-  g1.forEach(a => g2.forEach(b => { sum += roleSimilarity(a, b); n++; }));
-  return n ? sum / n : 0;
-}
+
 
 /* ---------- 重要属性 / 次要属性 ----------
  * 角色的追加属性需求是【有序】数组，且用 op 显式表达了「与上一条是否同等重要」：
@@ -1929,10 +1835,6 @@ function mergePairCompatible(a, b) {
   return coreCanMerge(mergeHeadOf(a), mergeHeadOf(b));
 }
 
-function clustersCompatible(a, b) {
-  return a.roles.every(left => b.roles.every(right => mergePairCompatible(left, right)));
-}
-
 function clusterKey(group) {
   return group.roles.map(role => JSON.stringify([
     role.name || '',
@@ -1942,27 +1844,30 @@ function clusterKey(group) {
   ])).sort().join('|');
 }
 
-function clusterMergeScore(a, b) {
-  let score = Infinity;
-  a.roles.forEach(left => b.roles.forEach(right => {
-    score = Math.min(score, roleSimilarity(left, right));
-  }));
-  return Number.isFinite(score) ? score : 0;
-}
-
-/* 完整链接聚类：合并后的组中任意两人都必须直接兼容，避免传递式桥接。 */
+/* 完整链接聚类：预计算角色对兼容性与相似度，合并时以矩阵更新等价的组间结果，
+ * 避免每轮重复遍历所有跨组角色对；排序、兼容判据与输入顺序 tie-break 保持不变。 */
 function naturalClusters(roles) {
   const inputOrder = new Map(roles.map((role, index) => [role, index]));
   const groups = roles.map(role => ({ roles: [role] }));
+  const keys = groups.map(clusterKey);
+  const compatible = groups.map(() => groups.map(() => true));
+  const scores = groups.map(() => groups.map(() => 0));
+
+  for (let i = 0; i < roles.length; i++) {
+    for (let j = i + 1; j < roles.length; j++) {
+      compatible[i][j] = compatible[j][i] = mergePairCompatible(roles[i], roles[j]);
+      scores[i][j] = scores[j][i] = roleSimilarity(roles[i], roles[j]);
+    }
+  }
 
   while (groups.length > 1) {
     let best = null;
     for (let i = 0; i < groups.length; i++) {
       for (let j = i + 1; j < groups.length; j++) {
-        if (!clustersCompatible(groups[i], groups[j])) continue;
-        const score = clusterMergeScore(groups[i], groups[j]);
-        const keyA = clusterKey(groups[i]);
-        const keyB = clusterKey(groups[j]);
+        if (!compatible[i][j]) continue;
+        const score = scores[i][j];
+        const keyA = keys[i];
+        const keyB = keys[j];
         const tieKey = keyA < keyB ? keyA + '\u001e' + keyB : keyB + '\u001e' + keyA;
         if (!best || score > best.score || (score === best.score && tieKey < best.tieKey)) {
           best = { i, j, score, tieKey };
@@ -1974,7 +1879,20 @@ function naturalClusters(roles) {
     const merged = groups[best.i].roles.concat(groups[best.j].roles);
     merged.sort((a, b) => inputOrder.get(a) - inputOrder.get(b));
     groups[best.i] = { roles: merged };
+    keys[best.i] = clusterKey(groups[best.i]);
+    for (let k = 0; k < groups.length; k++) {
+      if (k === best.i || k === best.j) continue;
+      compatible[best.i][k] = compatible[k][best.i] =
+        compatible[best.i][k] && compatible[best.j][k];
+      scores[best.i][k] = scores[k][best.i] =
+        Math.min(scores[best.i][k], scores[best.j][k]);
+    }
     groups.splice(best.j, 1);
+    keys.splice(best.j, 1);
+    compatible.splice(best.j, 1);
+    scores.splice(best.j, 1);
+    compatible.forEach(row => row.splice(best.j, 1));
+    scores.forEach(row => row.splice(best.j, 1));
   }
 
   return groups.map(group => group.roles);
@@ -4687,7 +4605,6 @@ function renderPlan() {
     if (has) usedSets++; else fodderSets++;
   });
 
-  const setWeights = setSubRanking(includeAlt);
   renderKeepRules();   // 规则面板：启用状态 + 计数
 
   // 套装块顺序：图鉴 = 套装库顺序，推荐 = 用的人多在前；再按偏好决定正序 / 倒序
@@ -4695,7 +4612,7 @@ function renderPlan() {
     blocks.filter(([name]) => setFilter === 'all' || name === setFilter)
           .filter(([name, b]) => !hideUnused || b.users.size > 0),
     'plan', cmpPlanSets());
-  const html = ordered.map(([name, b]) => renderSetBlock(name, b, slotFilter, setWeights)).join('');
+  const html = ordered.map(([name, b]) => renderSetBlock(name, b, slotFilter)).join('');
 
   blocks.forEach(([name, b]) => {
     if (!b.users.size) return;
@@ -4766,7 +4683,7 @@ function renderKeepRules() {
   }
 }
 
-function renderSetBlock(name, b, slotFilter, setWeights) {
+function renderSetBlock(name, b, slotFilter) {
   const bonusRaw = allSetBonus()[name] || '';
   // 内置 2 件套说明跟着数据语言走；你自己改过的那条原样显示
   const bonus = (SET_BONUS[name] && SET_BONUS[name] === bonusRaw) ? setBonusText(name) : bonusRaw;
@@ -4992,174 +4909,184 @@ function download(filename, content, mime) {
 }
 
 /* ============================================================
- * 页面 ③：追加属性规则
+ * 页面 ③：散件需求索引
  * ============================================================ */
-function renderSubs() {
-  const n = state.characters.filter(c => c.enabled).length;
-  const rules = $('#subRules');
+let looseIndexSlot = 'sands';
 
-  rules.innerHTML = `
-    <div class="rule-block s">
-      <h4>S 级 · 必锁</h4>
-      <p>主要属性命中「必留」列表，且追加属性<b>同时含暴击率与暴击伤害</b>（或你方角色所需的核心双词条）。<br>操作：直接锁定，喂到 20 级。</p>
-    </div>
-    <div class="rule-block a">
-      <h4>A 级 · 升级观察</h4>
-      <p>主要属性命中需求，追加属性含<b>单个暴击词条 + 1 条有效词条</b>。<br>操作：升到 4 级看第 4 词条，出双暴继续喂，否则停手留作过渡。</p>
-    </div>
-    <div class="rule-block b">
-      <h4>B 级 · 过渡件</h4>
-      <p>主要属性命中需求但追加属性平庸。<br>操作：先用着，毕业胚子到位后当狗粮喂掉。</p>
-    </div>
-    <div class="rule-block c">
-      <h4>C 级 · 狗粮</h4>
-      <p>主要属性不在任何已启用角色的需求列表中。<br>操作：直接喂。<span class="hint">例外：同套装的对应元素伤害杯极难出货，建议无脑保留。</span></p>
-    </div>
-    <p class="muted small" style="margin-top:14px" data-en="${n ? `The scorer below ranks substats by what these <b>${n}</b> enabled characters need (counted per build).` : 'No character enabled yet — the scorer falls back to the default &quot;CRIT&quot; ordering.'}">${n ? '当前已启用 ' + n + ' 个角色，下方评分器按这些角色的追加属性<b>需求排序</b>打分（按配装组统计）。' : '尚未启用角色，评分器暂用「双暴输出」默认排序。'}</p>`;
+function looseBuildDirections(slot, mainId, includeAlt) {
+  const matched = [];
+  state.characters.filter(c => c.enabled).forEach((c, charIndex) => {
+    (c.builds || []).forEach((b, buildIndex) => {
+      if (!includeAlt && b.priority === 'alt') return;
+      const mains = b.main[slot] || [];
+      const mainRank = mains.findIndex(m => m.stat === mainId);
+      if (mainRank < 0) return;
 
-  // 评分器：初始化
-  const sS = $('#scoreSet'), sL = $('#scoreSlot');
-  {
-    const cur = sS.value;
-    sS.innerHTML = `<option value="">${t('（不限套装）')}</option>` + allSets().map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
-    sS.value = cur;
-  }
-  if (!sL.options.length) {
-    sL.innerHTML = SLOTS.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-    sL.value = 'sands';
-    sL.onchange = fillMainOptions;
-    sS.onchange = runScore;
-    fillMainOptions();
-  }
-  $('#scoreSubs').innerHTML = SUB_STATS.map(s => `
-    <div class="sub-input">
-      <label>${s.name}</label>
-      <input type="number" step="0.1" min="0" data-sub="${s.id}" placeholder="0">
-    </div>`).join('') + `
-    <div class="sub-input">
-      <label>当前等级</label>
-      <input type="number" id="scoreLv" value="0" min="0" max="20" step="4">
-    </div>`;
-  $('#scoreSubs').querySelectorAll('input').forEach(i => { i.oninput = runScore; });
-  runScore();
-
-  renderSetSubTable();
-}
-
-function fillMainOptions() {
-  const slot = $('#scoreSlot').value;
-  const sel = $('#scoreMain');
-  sel.innerHTML = MAIN_STATS[slot].map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-  sel.onchange = runScore;
-  runScore();
-}
-
-function runScore() {
-  const box = $('#scoreResult');
-  if (!box) return;
-  const slot = $('#scoreSlot').value;
-  const mainId = $('#scoreMain').value;
-  const setName = $('#scoreSet').value;
-  const lv = +($('#scoreLv') ? $('#scoreLv').value : 0) || 0;
-
-  const vals = {};
-  $('#scoreSubs').querySelectorAll('input[data-sub]').forEach(i => { vals[i.dataset.sub] = +i.value || 0; });
-
-  const includeAlt = $('#planAltBuild') ? $('#planAltBuild').checked : true;
-  const plan = computePlan(includeAlt);
-
-  // 主要属性需求判定
-  let tier = null, keep = 0, who = [];
-  if (setName && plan.has(setName)) {
-    const rows = plan.get(setName).slots[slot] || [];
-    const hit = rows.find(r => r.stat === mainId || r.swap === mainId || r.stat === '_fixed');
-    if (hit) { tier = hit.tier; keep = hit.keep; who = hit.charsArr.map(x => x.name); }
-  } else if (setName) {
-    tier = null;
-  }
-
-  // 权重
-  let w;
-  if (setName) {
-    const sw = computeSetWeights(includeAlt);
-    w = sw.get(setName) || globalWeights();
-  } else {
-    w = globalWeights();
-  }
-
-  // 有效 roll 计算
-  let eff = 0;
-  const detail = [];
-  SUB_STATS.forEach(s => {
-    const v = vals[s.id] || 0;
-    if (!v) return;
-    const rolls = v / s.max;
-    const ww = w[s.id] || 0;
-    eff += rolls * ww;
-    detail.push({ name: s.name, rolls, w: ww, part: rolls * ww });
+      const subList = (b.subs || []).filter(s => s.id !== mainId);
+      matched.push({
+        name: c.name,
+        subs: subWeights(subList),
+        subList,
+        req: reqSubs(subList),
+        subRuleSource: (b.subRules && b.subRules.source) || 'unset',
+        mainRank: mainRank + 1,
+        priority: b.priority,
+        order: charIndex * 1000 + buildIndex,
+      });
+    });
   });
-  detail.sort((a, b) => b.part - a.part);
 
-  const maxRolls = 4 + Math.floor(lv / 4); // 初始词条 + 每 4 级 1 次强化
-  const pct = maxRolls > 0 ? eff / maxRolls : 0;
+  const withSubs = matched.filter(r => r.subList.length);
+  const withoutSubs = matched.filter(r => !r.subList.length);
+  const groups = withSubs.length ? naturalClusters(withSubs) : [];
+  if (withoutSubs.length) groups.push(withoutSubs);
 
-  let grade, gcolor, advice;
-  if (lv >= 16) {
-    if (pct >= 0.62)      { grade = 'S 毕业级'; gcolor = 'var(--green)'; advice = '锁死，这件可以穿到关服。'; }
-    else if (pct >= 0.48) { grade = 'A 优质';   gcolor = 'var(--blue)';   advice = '锁定，属于能用的主力件。'; }
-    else if (pct >= 0.34) { grade = 'B 及格';   gcolor = 'var(--orange)'; advice = '先用着，遇到更好的就替换。'; }
-    else                  { grade = 'C 一般';   gcolor = 'var(--red)';    advice = '过渡件，后期当狗粮。'; }
-  } else if (lv >= 8) {
-    if (pct >= 0.55)      { grade = 'A 值得拉满'; gcolor = 'var(--blue)';   advice = '继续喂到 20 级。'; }
-    else if (pct >= 0.38) { grade = 'B 观察';     gcolor = 'var(--orange)'; advice = '再升 4 级看走势，走歪就停。'; }
-    else                  { grade = 'C 建议止损'; gcolor = 'var(--red)';    advice = '停手，留作过渡或当狗粮。'; }
-  } else {
-    if (pct >= 0.62)      { grade = 'A 好胚子'; gcolor = 'var(--blue)';   advice = '值得拉到 20 级赌一把。'; }
-    else if (pct >= 0.45) { grade = 'B 可试养'; gcolor = 'var(--orange)'; advice = '先升到 8 级，出有效词条再继续。'; }
-    else                  { grade = 'C 狗粮';   gcolor = 'var(--red)';    advice = '直接喂，别浪费资源。'; }
-  }
+  return {
+    characterCount: new Set(matched.map(r => r.name)).size,
+    directions: groups.map(roles => {
+      const people = new Map();
+      roles.forEach(role => {
+        let person = people.get(role.name);
+        if (!person) {
+          person = {
+            name: role.name,
+            order: role.order,
+            mainRank: role.mainRank,
+            priorities: new Set(),
+            buildCount: 0,
+            subs: new Map(),
+          };
+          people.set(role.name, person);
+        }
+        person.mainRank = Math.min(person.mainRank, role.mainRank);
+        person.priorities.add(role.priority);
+        person.buildCount++;
+        role.subList.forEach(item => {
+          let stat = person.subs.get(item.id);
+          if (!stat) {
+            stat = { weight: 0, required: false, conditional: false };
+            person.subs.set(item.id, stat);
+          }
+          stat.weight = Math.max(stat.weight, role.subs[item.id] || 0);
+          stat.required = stat.required || !!item.req;
+          stat.conditional = stat.conditional || !!item.opt;
+        });
+      });
 
-  const tierTxt = setName
-    ? (tier ? `<span class="tier-tag ${tierClass(tier)}">${t('主要属性：')}${tierLabel(tier)}</span> ${t('建议保留')} ${keep} ${t('件')}${who.length ? '（' + esc(who.join('、')) + '）' : ''}`
-            : `<span class="tier-tag fodder">${t('主要属性：')}${t('无角色需要')}</span> ${t('当前配装用不上')}`)
-    : '<span class="muted small">未选择套装，只做追加属性评分</span>';
+      const members = [...people.values()].sort((a, b) => a.order - b.order);
+      const stats = SUB_STATS.map((stat, index) => {
+        const users = members.filter(person => person.subs.has(stat.id));
+        if (!users.length) return null;
+        return {
+          id: stat.id,
+          count: users.length,
+          weight: users.reduce((sum, person) => sum + person.subs.get(stat.id).weight, 0) / users.length,
+          required: users.filter(person => person.subs.get(stat.id).required).length,
+          conditional: users.filter(person => person.subs.get(stat.id).conditional).length,
+          index,
+        };
+      }).filter(Boolean).sort((a, b) =>
+        (b.count - a.count) || (b.weight - a.weight) || (a.index - b.index));
 
-  const top = detail.slice(0, 4).map(d =>
-    `<span class="set-tag" style="margin-right:4px">${esc(d.name)} ${d.rolls.toFixed(1)}roll ×${d.w.toFixed(2)}</span>`).join('');
-
-  box.innerHTML = `
-    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
-      <span class="big" style="color:${gcolor}">${grade}</span>
-      <span class="muted small">有效权重 ${eff.toFixed(2)} / 约 ${maxRolls} 次词条 = ${(pct * 100).toFixed(0)}%</span>
-    </div>
-    <div style="margin:8px 0">${tierTxt}</div>
-    <div style="margin-bottom:6px">${top || '<span class="muted small">尚未填写追加属性</span>'}</div>
-    <div class="muted small">建议：${advice}${tier === null && setName ? '　（若主要属性无人需要，追加属性再好也只能当狗粮）' : ''}</div>`;
+      return {
+        members,
+        stats,
+        score: stats.length ? stats[0].weight : 0,
+        key: roles.map(role => role.name + ':' + role.subList.map(s => s.id).join(',')).sort().join('|'),
+      };
+    }).sort((a, b) =>
+      (b.members.length - a.members.length) || (b.score - a.score) || a.key.localeCompare(b.key)),
+  };
 }
 
-function renderSetSubTable() {
-  const rank = setSubRanking($('#planAltBuild') ? $('#planAltBuild').checked : true);
-  const rows = applySort(Array.from(rank.entries()), 'setSub', cmpSetSubRows())
-    .map(([sn, o]) => {
-      const top = o.list.slice(0, 5);
-      if (!top.length) return '';
-      const max = Math.max(0.001, top[0].score);
-      const tags = top.map((t, i) =>
-        `<span class="set-tag ${t.must ? 'main' : ''}" style="margin-right:4px">${i + 1}. ${esc(t.name)}${t.must ? '★' : ''}</span>`).join('');
-      const bars = top.map(t =>
-        `<div style="display:flex;align-items:center;gap:5px;margin:2px 0"><span class="wbar" style="width:${Math.max(2, (t.score / max) * 90)}px"></span></div>`).join('');
-      return `<tr>
-        <td class="col-set" style="white-space:nowrap">${esc(setName(sn))}<span class="muted small"> ×${o.n}</span></td>
-        <td>${tags}</td>
-        <td class="col-str" style="width:130px">${bars}</td>
-      </tr>`;
-    }).join('');
+function renderLooseDirection(direction, index) {
+  const { members, stats } = direction;
+  const subTags = stats.length
+    ? stats.map(stat => `
+        <span class="loose-subtag">
+          <span>${esc(subStatName(stat.id))}</span>
+          <small>${tf('{n} 人', { n: stat.count })}</small>
+          ${stat.required ? `<i class="req" title="${esc(t('标为必需的人数'))}">★${stat.required}</i>` : ''}
+          ${stat.conditional ? `<i class="cond" title="${esc(t('标为条件词条的人数'))}">◇${stat.conditional}</i>` : ''}
+        </span>`).join('')
+    : `<span class="muted small">${t('未设置追加属性偏好')}</span>`;
+  const names = members.map(person => {
+    const kinds = [];
+    if (person.priorities.has('main')) kinds.push(t('主推'));
+    if (person.priorities.has('alt')) kinds.push(t('备选'));
+    if (person.buildCount > 1) kinds.push(tf('{n} 组适用配装', { n: person.buildCount }));
+    return `<li><span>${esc(charName(person.name))}</span><small>${t(person.mainRank === 1 ? '主属性首选' : '主属性次选')} · ${kinds.map(esc).join(' / ')}</small></li>`;
+  }).join('');
 
-  $('#setSubTable').innerHTML =
-    `<div class="sort-bar">${sortBtnHtml('setSub', true)}</div>` +
-    (rows
-      ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>套装</th><th>追加属性需求排序 Top5（★= 多数角色标为必选）</th><th class="col-str">相对强度</th></tr></thead><tbody>${rows}</tbody></table></div>`
-      : '<p class="muted small">启用角色后这里会显示每个套装的追加属性需求排序。</p>');
+  return `
+    <section class="loose-direction">
+      <div class="loose-direction-head">
+        <strong>${tf('方向 {n}', { n: index + 1 })}</strong>
+        <span class="muted small">${tf('{n} 名角色', { n: members.length })}</span>
+      </div>
+      <div class="loose-subtags">${subTags}</div>
+      <details class="loose-who">
+        <summary>${tf('查看 {n} 名角色', { n: members.length })}</summary>
+        <ul>${names}</ul>
+      </details>
+    </section>`;
+}
+
+function renderLooseIndex() {
+  const box = $('#looseIndex');
+  if (!box) return;
+  const includeAlt = $('#looseIncludeAlt').checked;
+  const stats = (MAIN_STATS[looseIndexSlot] || [])
+    .map(main => ({
+      main,
+      ...looseBuildDirections(looseIndexSlot, main.id, includeAlt),
+    }))
+    .filter(entry => entry.characterCount);
+
+  if (!state.characters.some(c => c.enabled)) {
+    box.innerHTML = `<p class="muted small">${t('启用角色后，这里会列出散件需求。')}</p>`;
+    return;
+  }
+  if (!stats.length) {
+    box.innerHTML = `<p class="muted small">${t('当前没有启用配装需要这个部位的主属性。')}</p>`;
+    return;
+  }
+
+  box.innerHTML = stats.map(entry => `
+    <details class="loose-main">
+      <summary>
+        <strong>${esc(mainStatName(looseIndexSlot, entry.main.id))}</strong>
+        <span class="muted small">${tf('{n} 名角色 · {k} 个方向', {
+          n: entry.characterCount,
+          k: entry.directions.length,
+        })}</span>
+      </summary>
+      <div class="loose-directions">
+        ${entry.directions.map(renderLooseDirection).join('')}
+      </div>
+    </details>`).join('');
+}
+
+function renderSubs() {
+  const tabs = $('#looseSlotTabs');
+  const altInput = $('#looseIncludeAlt');
+  if (!tabs || !altInput) return;
+  altInput.checked = $('#planAltBuild').checked;
+  tabs.querySelectorAll('[data-loose-slot]').forEach(button => {
+    const selected = button.dataset.looseSlot === looseIndexSlot;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-selected', String(selected));
+    button.onclick = () => {
+      looseIndexSlot = button.dataset.looseSlot;
+      renderSubs();
+    };
+  });
+  altInput.onchange = () => {
+    $('#planAltBuild').checked = altInput.checked;
+    renderPlan();
+    renderSubs();
+  };
+  if ($('#tab-subs').classList.contains('active')) renderLooseIndex();
 }
 
 /* ============================================================

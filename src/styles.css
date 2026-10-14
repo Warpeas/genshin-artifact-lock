@@ -1198,24 +1198,33 @@ html[lang="en"] .gp-subline .gp-lab{white-space:normal;}
 .kr-chk-item input{width:14px;height:14px;accent-color:var(--blue);cursor:pointer;}
 
 /* ============================================================
- * 追加属性页
+ * 散件需求索引
  * ============================================================ */
-.two-col{display:grid;grid-template-columns:1fr;gap:var(--s4);}
-.sub-inputs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(160px,100%),1fr));gap:8px;margin:10px 0;}
-.sub-input{display:flex;align-items:center;gap:6px;font-size:var(--fs-sm);}
-.sub-input label{flex:none;width:88px;color:var(--txt2);}
-.sub-input input{width:100%;padding:5px 8px;}
-.score-result{margin-top:12px;padding:14px;border-radius:var(--r-sm);background:var(--sunken);
-  border:1px solid var(--line-soft);min-height:64px;}
-.score-result .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;}
-.form-row{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap;align-items:flex-end;}
-.rule-block{border-left:3px solid var(--gold);padding:8px 0 8px 13px;margin:12px 0;}
-.rule-block h4{font-size:var(--fs-md);color:var(--gold2);margin-bottom:3px;}
-.rule-block p{margin:0;font-size:var(--fs-sm);color:var(--txt2);}
-.rule-block.s{border-color:var(--green);}
-.rule-block.a{border-color:var(--blue);}
-.rule-block.b{border-color:var(--orange);}
-.rule-block.c{border-color:var(--red);}
+.loose-toolbar{margin:12px 0;}
+.loose-main{margin-top:9px;border:1px solid var(--line-soft);border-radius:var(--r-sm);background:var(--panel);}
+.loose-main>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;cursor:pointer;list-style:none;}
+.loose-main>summary::-webkit-details-marker,.loose-who>summary::-webkit-details-marker{display:none;}
+.loose-main>summary::after{content:"＋";color:var(--txt3);font-size:var(--fs-sm);}
+.loose-main[open]>summary::after{content:"−";}
+.loose-main>summary strong{color:var(--gold2);}
+.loose-main>summary .muted{margin-left:auto;text-align:right;}
+.loose-directions{display:grid;gap:9px;padding:0 10px 10px;}
+.loose-direction{min-width:0;padding:10px 11px;border:1px solid var(--line-soft);border-radius:var(--r-sm);background:var(--sunken);}
+.loose-direction-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px;}
+.loose-direction-head strong{color:var(--txt);}
+.loose-direction-head .muted{margin-left:auto;}
+.loose-subtags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.loose-subtag{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:3px 8px;border:1px solid var(--line-soft);border-radius:999px;background:var(--panel);font-size:var(--fs-sm);}
+.loose-subtag small{color:var(--txt3);white-space:nowrap;}
+.loose-subtag i{font-size:var(--fs-xs);font-style:normal;white-space:nowrap;}
+.loose-subtag i.req{color:var(--gold2);}
+.loose-subtag i.cond{color:var(--blue);}
+.loose-who{font-size:var(--fs-sm);color:var(--txt2);}
+.loose-who>summary{width:max-content;max-width:100%;cursor:pointer;color:var(--blue);list-style:none;}
+.loose-who ul{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));gap:4px 14px;padding:8px 0 0;margin:0;list-style:none;}
+.loose-who li{display:flex;align-items:baseline;gap:8px;min-width:0;}
+.loose-who li>span{color:var(--txt);}
+.loose-who li>small{color:var(--txt3);overflow-wrap:anywhere;}
 
 table.tbl{width:100%;border-collapse:collapse;font-size:var(--fs-sm);font-variant-numeric:tabular-nums;}
 table.tbl th,table.tbl td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line-soft);}
@@ -1438,9 +1447,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .toolbar input[type=search]{width:100%;}
 }
 
-/* ---- 桌面：追加属性页与数据页并列，避免全宽堆叠留大片空白 ---- */
 @media (min-width:1000px){
-  .two-col{grid-template-columns:1fr 1fr;}
   .char-grid{grid-template-columns:repeat(auto-fill,minmax(238px,1fr));}
   .toolbar{gap:var(--s3);}
   /* 必须带 .active：裸 id 选择器优先级高于 .tabpane{display:none}，会让数据页常驻显示 */
@@ -1608,14 +1615,6 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   .gp-mergesel{max-width:none;min-width:120px;padding:6px 8px;min-height:34px;}
   .gp-mini{grid-template-columns:minmax(52px,max-content) minmax(0,1fr);}
 
-  /* --- 追加属性页 --- */
-  .sub-inputs{grid-template-columns:1fr;}
-  .sub-input label{width:88px;}
-  table.tbl th,table.tbl td{padding:6px 5px;font-size:11.5px;}
-  /* 窄屏：让出宽度给「套装 + 追加属性排序」，强度条列隐藏、套装名可换行 */
-  table.tbl .col-str{display:none;}
-  table.tbl .col-set{white-space:normal !important;word-break:break-word;}
-
   /* --- 套装管理：表头隐藏，每行拆成两行块 --- */
   .sm-row{grid-template-columns:30px 1fr;gap:4px 8px;padding:9px 10px;}
   .sm-row.sm-head{display:none;}
@@ -1669,7 +1668,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
 
   /* iOS 聚焦输入框会自动放大页面，字号 ≥16px 可避免 */
   .toolbar input[type=search],.fld select,.fld input,input[type=text],input.txt,
-  .sub-input input,.build-item select,.ms-item select,.gp-mergesel,
+  .build-item select,.ms-item select,.gp-mergesel,
   .copy-row select,#edAddSub,.sm-row input[type=text],.src-url,#edNote{font-size:16px;}
 
   /* 备注框：手机端同样「1 行起步 → 随内容长高 → 最多 3 行封顶 → 框内上下滚动」。

@@ -29,7 +29,7 @@
 <nav class="tabs">
   <button class="tab active" data-tab="chars"><span class="t-long">① 角色配置</span><span class="t-short">① 角色</span></button>
   <button class="tab" data-tab="plan"><span class="t-long">② 锁定方案</span><span class="t-short">② 方案</span></button>
-  <button class="tab" data-tab="subs"><span class="t-long">③ 追加属性规则</span><span class="t-short">③ 追加属性</span></button>
+  <button class="tab" data-tab="subs"><span class="t-long">③ 散件索引</span><span class="t-short">③ 散件</span></button>
   <button class="tab" data-tab="data"><span class="t-long">④ 数据管理</span><span class="t-short">④ 数据</span></button>
 </nav>
 
@@ -167,40 +167,20 @@
     <div id="planBody"></div>
   </section>
 
-  <!-- ============ 追加属性规则 ============ -->
+  <!-- ============ 散件索引 ============ -->
   <section id="tab-subs" class="tabpane">
-    <div class="two-col">
-      <div class="card">
-        <h3>通用分档规则</h3>
-        <p class="muted small" data-en="Auto-summarised from the characters you enabled: a main-stat whitelist plus the substat rules to copy into the game.">根据你启用的角色自动汇总：主要属性白名单 + 追加属性判定逻辑，游戏内照此锁定即可。</p>
-        <div id="subRules"></div>
-      </div>
-
-      <div class="card">
-        <h3>胚子评分器</h3>
-        <p class="muted small" data-en="Enter an artifact to see at a glance whether it is worth keeping.">输入一件圣遗物的信息，快速判断值不值得留。</p>
-        <div class="form-row">
-          <label class="fld">套装
-            <select id="scoreSet"><option value="">（不限）</option></select>
-          </label>
-          <label class="fld">部位
-            <select id="scoreSlot"></select>
-          </label>
-        </div>
-        <div class="form-row">
-          <label class="fld">主要属性
-            <select id="scoreMain"></select>
-          </label>
-        </div>
-        <div id="scoreSubs" class="sub-inputs"></div>
-        <div id="scoreResult" class="score-result"></div>
-      </div>
-    </div>
-
     <div class="card">
-      <h3>各套装推荐追加属性</h3>
-      <p class="muted small" data-en="Aggregated from the <b>ordering</b> of every character that wants this set: earlier = more characters ranked it first; &#9733; = most characters marked it &quot;Required&quot; (the lock plan&#39;s &#9733;Required). Needs are counted <b>per build</b>.">按该套装下所有需求角色的<b>排序</b>汇总：越靠前 = 越多人排在前面；★ = 多数角色标为「必选」。需求<b>按配装组</b>统计。</p>
-      <div id="setSubTable"></div>
+      <h3>散件需求索引</h3>
+      <p class="muted small" data-en="Choose Sands, Goblet, or Circlet. For each main stat, similar substat recommendations are grouped into directions. Set bonuses are ignored; a character is counted once within each direction, but may appear in multiple directions.">选择时之沙、空之杯或理之冠。每种主属性下，会把追加属性需求相近的配装归为不同方向。忽略套装效果；同一方向内角色只计一次，同一角色可出现在多个方向。</p>
+      <div class="toolbar wrap loose-toolbar">
+        <span class="seg" id="looseSlotTabs" role="tablist" aria-label="部位">
+          <button type="button" class="seg-btn active" data-loose-slot="sands" data-en="Sands" role="tab" aria-selected="true">时之沙</button>
+          <button type="button" class="seg-btn" data-loose-slot="goblet" data-en="Goblet" role="tab" aria-selected="false">空之杯</button>
+          <button type="button" class="seg-btn" data-loose-slot="circlet" data-en="Circlet" role="tab" aria-selected="false">理之冠</button>
+        </span>
+        <label class="chk"><input type="checkbox" id="looseIncludeAlt" checked> 计入备选配装</label>
+      </div>
+      <div id="looseIndex"></div>
     </div>
   </section>
 
@@ -377,12 +357,12 @@
         可单独开关；启用后每条规则会生成一份候选方案，与角色聚类结果<b>同权</b>参与合并与采纳。</li>
       <li><b>旅行者</b>按元素形态拆成 7 个独立条目（旅行者·风 / 岩 / 雷 / 草 / 水 / 火 / 冰）：各形态元素不同、配装不同，可分别启用、分别编辑。
         同理，国度已细分出<b>挪德卡莱</b>（与至冬分开）；若你的存档是旧版，打开时会自动把角色的国度 / 定位纠正一次，之后你自己改的不再覆盖。</li>
-      <li><b>列表排序</b>：① 角色卡、② 方案页的套装块、③ 底部的「各套装推荐追加属性」表格，旁边都有
+      <li><b>列表排序</b>：① 角色卡与② 方案页的套装块旁有
         <b>「↓ 正序 / ↑ 倒序」</b>按钮——点一下换方向，选择会记在本机。
-        套装列表（②③）还多一个<b>「图鉴 / 推荐」两档切换</b>：
+        方案页套装列表还多一个<b>「图鉴 / 推荐」两档切换</b>：
         <b>图鉴</b>＝套装库顺序（<b>排序顺序来自米游社图鉴</b>），稳定、不会因为你勾了谁就跳来跳去；
         <b>推荐</b>＝用的人多的排前面，会随你勾选的角色变化。角色列表则按国度排列（蒙德 → 璃月 → … → 其他·旅行者）。</li>
-      <li><b>③ 追加属性规则</b>：给出分档判定 + 胚子评分器，解决「主要属性对了但追加属性能不能留」。</li>
+      <li><b>③ 散件索引</b>：按时之沙、空之杯、理之冠的主属性查看需求；追加属性需求相近的配装会分成多个方向，并可展开查看角色。忽略套装效果，同一方向内角色只计一次。</li>
       <li><b>④ 数据管理 → 套装管理（浮窗）</b>：点「打开套装管理」增删套装、改 2 件套说明、上下移排序；内置套装只是「隐藏」，可随时恢复。</li>
       <li><b>④ 数据管理 → 更新日志</b>：内置角色 / 圣遗物会随游戏版本手工维护，这里记录每次更新改了什么。
         大版本更新后首次打开会自动弹一次<b>更新公告</b>（读过了就不再弹）；想再看就点「查看更新公告」。</li>
