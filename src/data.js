@@ -14,8 +14,41 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.10.15';
+const APP_VERSION = '2026.10.15.5';
 const CHANGELOG = [
+  {
+    v: '2026.10.15.5', date: '2026-10-15',
+    title: '散件索引角色配装改为浮窗查看',
+    items: [
+      '点击适用角色标签后，在浮窗中查看该角色于当前需求类型内匹配的多组配装推荐，不再在角色列表下方展开。',
+      '浮窗支持点击同一角色关闭，并沿用现有的点击外部、Escape、滚动和窗口缩放关闭行为。',
+    ],
+  },
+  {
+    v: '2026.10.15.4', date: '2026-10-15',
+    title: '散件索引角色标签按空间展开，并可查看配装推荐',
+    items: [
+      '适用角色不再固定只显示三人：页面按实际宽度尽量展示两行角色标签，只有超出空间的角色才折为“+N”。',
+      '点击任一角色标签即可在当前需求类型内展开该角色的匹配配装；同一角色有多组适用配装时会同时列出套装、沙杯冠主属性和追加属性。',
+    ],
+  },
+  {
+    v: '2026.10.15.3', date: '2026-10-15',
+    title: '散件索引聚焦追加属性组合，并分隔角色信息',
+    items: [
+      '移除主属性下的“通用优先 / 常见补充”汇总；散件的适配判断回到每个需求类型的追加属性组合。',
+      '每个需求类型明确分为“追加属性组合”和“适用角色”两块，角色区顶部增加分隔线，降低词条标签与角色标签混在一起的视觉干扰。',
+    ],
+  },
+  {
+    v: '2026.10.15.2', date: '2026-10-15',
+    title: '散件索引改为摘要优先：先看通用词条，再按需展开角色',
+    items: [
+      '主属性展开后先汇总通用优先与常见补充的追加属性，再列出需求类型，避免大段角色名单淹没真正的筛选结论。',
+      '需求类型不再只显示「方向 N」：用该类型共有的核心追加属性命名，并保留每条属性的支持人数与 ★ / ◇ 标记。',
+      '每个类型默认只给出三名代表角色和剩余人数；完整角色名单改为按需展开，名单中只标出次选、仅备选或多组适用配装等例外信息。',
+    ],
+  },
   {
     v: '2026.10.15', date: '2026-10-15',
     title: '页面③改为散件需求索引：按沙 / 杯 / 冠主属性聚合适用角色与追加属性方向',
@@ -2570,15 +2603,19 @@ const T_UI_EN = {
 
   /* 散件需求索引 */
   '散件需求索引': 'Off-piece Demand Index',
-  '选择时之沙、空之杯或理之冠。每种主属性下，会把追加属性需求相近的配装归为不同方向。忽略套装效果；同一方向内角色只计一次，同一角色可出现在多个方向。':
-    'Choose Sands, Goblet, or Circlet. For each main stat, builds with similar substat needs are grouped into directions. Set bonuses are ignored; each character counts once per direction but may appear in multiple directions.',
+  '选择时之沙、空之杯或理之冠。每种主属性下，按追加属性组合查看不同需求类型与适用角色。忽略套装效果；同一类型内角色只计一次，同一角色可出现在多个类型。':
+    'Choose Sands, Goblet, or Circlet. For each main stat, view need types and characters by substat combination. Set bonuses are ignored; each character counts once per type but may appear in multiple types.',
   '启用角色后，这里会列出散件需求。': 'Enable characters to see their off-piece needs here.',
   '当前没有启用配装需要这个部位的主属性。': 'No enabled builds currently need a main stat for this slot.',
   '未设置追加属性偏好': 'No substat preferences provided',
-  '方向 {n}': 'Direction {n}',
+  '需求类型': 'Need types',
+  '追加属性组合': 'Substat combination',
+  '适用角色': 'Applicable characters',
+  '配装推荐': 'Build recommendations',
   '{n} 名角色': '{n} characters',
-  '{n} 名角色 · {k} 个方向': '{n} characters · {k} directions',
-  '查看 {n} 名角色': 'View {n} characters',
+  '{n} 名角色 · {k} 类需求': '{n} characters · {k} need types',
+  '查看全部 {n} 名角色': 'View all {n} characters',
+  '仅备选': 'Alt only',
   '{n} 组适用配装': '{n} matching builds',
   '主属性首选': 'First-choice main stat',
   '主属性次选': 'Alternate main stat',
@@ -2925,7 +2962,7 @@ const I18N_HTML = {
     '<li><b>② Lock Plans</b>: every set gets "in-game lock plan <b>candidates</b>" — clustered automatically by each character\'s <b>substat needs</b>. All <b>five slots in one plan share the same substat condition</b>; main stats are listed per slot, so you can just copy them into the game. <b>No slot limit</b>: there can be many candidates — merge them by hand with "Merge into…" or untick "Adopt" to drop the ones you do not want, then narrow it down to the 3 presets the game allows per set. The <b>"🧩 Off-piece / Transitional Keep Rules"</b> block at the top is character-independent: artifacts worth keeping purely because the main stat is rare (an elemental DMG goblet, say). Each enabled rule produces a candidate plan that joins the character clusters with <b>equal weight</b> for merging and adoption.</li>',
     '<li><b>Traveler</b> is split into 7 separate entries by element (Traveler · Anemo / Geo / Electro / Dendro / Hydro / Pyro / Cryo): each form has a different element and different builds, so they can be enabled and edited separately. Likewise <b>Nod-Krai</b> is now its own region (separate from Snezhnaya); if your save is from an older version, regions and roles are corrected once on open — after that your own edits are never overwritten.</li>',
     '<li><b>List sorting</b>: the ① character cards and ② set blocks have a <b>↓ Ascending / ↑ Descending</b> button — one tap flips the direction and the choice is saved locally. Set lists also get a <b>"Catalog / Usage" toggle</b>: <b>Catalog</b> = the order in the set library (which follows the HoYoLAB catalog), stable and never jumping around; <b>Usage</b> = most used first, which changes with the characters you tick. The character list is ordered by region (Mondstadt → Liyue → … → Other·Traveler).</li>',
-    '<li><b>③ Off-piece Index</b>: browse Sands, Goblets, and Circlets by main stat. Similar substat recommendations are grouped into multiple directions, with expandable character lists. Set bonuses are ignored; a character is counted once per direction but may appear in several directions.</li>',
+    '<li><b>③ Off-piece Index</b>: browse Sands, Goblets, and Circlets by main stat, with each direction showing its substat combination and applicable characters. Click a character to open a popup with their matching build recommendations; the preview shows up to two rows of names before folding the rest into &quot;+N&quot;. Set bonuses are ignored; a character is counted once per direction but may appear in several directions.</li>',
     '<li><b>④ Data → Set Manager (popup)</b>: hit "Open set manager" to add or remove sets, edit the 2-piece text and reorder; built-in sets are only "hidden" and can be restored any time.</li>',
     '<li><b>④ Data → Changelog</b>: the built-in characters and artifacts are maintained by hand as the game updates; every change is logged here. A major update pops up the <b>update notice</b> once the first time you open the app (it stops after you have read it) — use "View update notice" to see it again.</li>',
     '</ol>',

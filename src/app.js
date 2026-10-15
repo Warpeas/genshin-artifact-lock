@@ -3133,9 +3133,12 @@ function charTipHTML(d) {
 function closeCharTip() {
   const box = $('#charTipBox');
   if (!box || box.classList.contains('hidden')) return;
+  document.querySelectorAll('.loose-char.active').forEach(button => button.classList.remove('active'));
   box.classList.add('hidden');
   box.innerHTML = '';
   box.removeAttribute('data-for');
+  box.removeAttribute('role');
+  box.removeAttribute('aria-label');
   box.removeAttribute('style');
 }
 /* 展开弹窗：套装名 + 方案 key 都来自分栏块（data-piece-board / data-piece-plan），
@@ -4911,6 +4914,8 @@ function download(filename, content, mime) {
  * 页面 ③：散件需求索引
  * ============================================================ */
 let looseIndexSlot = 'sands';
+let looseMemberSeq = 0;
+let looseMemberData = new Map();
 
 function looseBuildDirections(slot, mainId, includeAlt) {
   const matched = [];
@@ -4930,6 +4935,8 @@ function looseBuildDirections(slot, mainId, includeAlt) {
         subRuleSource: (b.subRules && b.subRules.source) || 'unset',
         mainRank: mainRank + 1,
         priority: b.priority,
+        build: b,
+        buildIndex,
         order: charIndex * 1000 + buildIndex,
       });
     });
@@ -4953,6 +4960,7 @@ function looseBuildDirections(slot, mainId, includeAlt) {
             mainRank: role.mainRank,
             priorities: new Set(),
             buildCount: 0,
+            builds: [],
             subs: new Map(),
           };
           people.set(role.name, person);
@@ -4960,6 +4968,7 @@ function looseBuildDirections(slot, mainId, includeAlt) {
         person.mainRank = Math.min(person.mainRank, role.mainRank);
         person.priorities.add(role.priority);
         person.buildCount++;
+        person.builds.push(role);
         role.subList.forEach(item => {
           let stat = person.subs.get(item.id);
           if (!stat) {
@@ -4998,37 +5007,143 @@ function looseBuildDirections(slot, mainId, includeAlt) {
   };
 }
 
-function renderLooseDirection(direction, index) {
+function looseDirectionName(direction) {
+  const core = direction.stats.filter(stat => stat.count / direction.members.length >= 0.7);
+  const names = (core.length ? core : direction.stats).slice(0, 2)
+    .map(stat => subStatName(stat.id));
+  return names.join(' + ');
+}
+
+function looseMemberId(person) {
+  if (person.looseId) return person.looseId;
+  const id = String(++looseMemberSeq);
+  looseMemberData.set(id, person);
+  person.looseId = id;
+  return person.looseId;
+}
+
+function looseBuildHtml(role) {
+  const b = role.build;
+  const mains = ['sands', 'goblet', 'circlet'].map(slot => {
+    const values = ((b.main && b.main[slot]) || [])
+      .map(item => mainStatName(slot, item.stat)).join(' / ');
+    return values ? `<span><i>${esc(slotShortName(slot))}</i>${esc(values)}</span>` : '';
+  }).filter(Boolean).join('');
+  const subs = (b.subs || []).map(item => {
+    const mark = item.req ? '★' : (item.opt ? '◇' : '');
+    return mark + subStatName(item.id);
+  }).join(' / ');
+  return `
+    <article class="loose-build-card">
+      <div><b>${esc(t('配装') + ' ' + (role.buildIndex + 1))}</b><span>${esc(buildSetsLabel(b) || t('未选套装'))}</span></div>
+      <div class="loose-build-main">${mains}</div>
+      ${subs ? `<p>${esc(t('追加'))}：${esc(subs)}</p>` : ''}
+    </article>`;
+}
+
+function renderLooseDirection(direction) {
   const { members, stats } = direction;
+  const coreIds = new Set(stats
+    .filter(stat => stat.count / members.length >= 0.7)
+    .map(stat => stat.id));
   const subTags = stats.length
     ? stats.map(stat => `
-        <span class="loose-subtag">
+        <span class="loose-subtag${coreIds.has(stat.id) ? ' core' : ''}">
           <span>${esc(subStatName(stat.id))}</span>
           <small>${tf('{n} 人', { n: stat.count })}</small>
           ${stat.required ? `<i class="req" title="${esc(t('标为必需的人数'))}">★${stat.required}</i>` : ''}
           ${stat.conditional ? `<i class="cond" title="${esc(t('标为条件词条的人数'))}">◇${stat.conditional}</i>` : ''}
         </span>`).join('')
     : `<span class="muted small">${t('未设置追加属性偏好')}</span>`;
+  const memberChip = (person, cls = '') => {
+    const id = looseMemberId(person);
+    return `<button type="button" class="loose-char${cls}" data-loose-member="${id}" aria-haspopup="dialog" aria-controls="charTipBox">${esc(charName(person.name))}</button>`;
+  };
+  const preview = members.map(person => memberChip(person)).join('');
   const names = members.map(person => {
-    const kinds = [];
-    if (person.priorities.has('main')) kinds.push(t('主推'));
-    if (person.priorities.has('alt')) kinds.push(t('备选'));
-    if (person.buildCount > 1) kinds.push(tf('{n} 组适用配装', { n: person.buildCount }));
-    return `<li><span>${esc(charName(person.name))}</span><small>${t(person.mainRank === 1 ? '主属性首选' : '主属性次选')} · ${kinds.map(esc).join(' / ')}</small></li>`;
+    const notes = [];
+    if (person.mainRank > 1) notes.push(t('主属性次选'));
+    if (!person.priorities.has('main')) notes.push(t('仅备选'));
+    if (person.buildCount > 1) notes.push(tf('{n} 组适用配装', { n: person.buildCount }));
+    return `<li>${memberChip(person, ' list')} ${notes.length ? `<small>${notes.map(esc).join(' / ')}</small>` : ''}</li>`;
   }).join('');
 
   return `
     <section class="loose-direction">
       <div class="loose-direction-head">
-        <strong>${tf('方向 {n}', { n: index + 1 })}</strong>
+        <strong>${esc(looseDirectionName(direction))}</strong>
         <span class="muted small">${tf('{n} 名角色', { n: members.length })}</span>
       </div>
-      <div class="loose-subtags">${subTags}</div>
-      <details class="loose-who">
-        <summary>${tf('查看 {n} 名角色', { n: members.length })}</summary>
-        <ul>${names}</ul>
-      </details>
+      <div class="loose-section">
+        <span class="loose-section-label">${t('追加属性组合')}</span>
+        <div class="loose-subtags">${subTags}</div>
+      </div>
+      <div class="loose-section loose-members">
+        <span class="loose-section-label">${t('适用角色')}</span>
+        <div class="loose-preview">${preview}<span class="loose-more" hidden></span></div>
+        <details class="loose-who">
+          <summary>${tf('查看全部 {n} 名角色', { n: members.length })}</summary>
+          <ul>${names}</ul>
+        </details>
+      </div>
     </section>`;
+}
+
+function fitLoosePreviews(box) {
+  box.querySelectorAll('.loose-preview').forEach(preview => {
+    const chips = [...preview.querySelectorAll('.loose-char')];
+    const more = preview.querySelector('.loose-more');
+    chips.forEach(chip => { chip.hidden = false; });
+    more.hidden = true;
+    if (!chips.length) return;
+    const firstTop = chips[0].offsetTop;
+    const visible = chips.filter(chip => chip.offsetTop <= firstTop + chips[0].offsetHeight + 5);
+    const hiddenCount = chips.length - visible.length;
+    chips.slice(visible.length).forEach(chip => { chip.hidden = true; });
+    if (hiddenCount) {
+      more.textContent = '+' + hiddenCount;
+      more.hidden = false;
+    }
+  });
+}
+
+function openLooseBuildTip(button) {
+  const box = $('#charTipBox');
+  const id = button && button.dataset.looseMember;
+  const person = looseMemberData.get(id);
+  if (!box || !person) return;
+  if (box.dataset.for === 'loose|' + id && !box.classList.contains('hidden')) {
+    closeCharTip();
+    return;
+  }
+  document.querySelectorAll('.loose-char.active').forEach(item => item.classList.remove('active'));
+  closeCharAttr();
+  box.dataset.for = 'loose|' + id;
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-label', `${charName(person.name)} · ${t('配装推荐')}`);
+  box.innerHTML = `
+    <div class="ct-head">
+      <span class="ct-title">${esc(charName(person.name))} · ${esc(t('配装推荐'))}</span>
+      <button type="button" class="ct-x" data-char-tip-close="1" aria-label="${esc(t('关闭'))}">×</button>
+    </div>
+    <div class="loose-build-list">${person.builds.map(looseBuildHtml).join('')}</div>`;
+  box.classList.remove('hidden');
+  button.classList.add('active');
+
+  const rect = button.getBoundingClientRect();
+  const width = box.offsetWidth;
+  const height = box.offsetHeight;
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+  const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+  let left = rect.left + rect.width / 2 - width / 2;
+  left = Math.max(8, Math.min(left, viewportWidth - width - 8));
+  let top = rect.bottom + 6;
+  if (top + height > viewportHeight - 8) {
+    const above = rect.top - height - 6;
+    top = above >= 8 ? above : Math.max(8, viewportHeight - height - 8);
+  }
+  box.style.left = left + 'px';
+  box.style.top = top + 'px';
 }
 
 function renderLooseIndex() {
@@ -5051,11 +5166,13 @@ function renderLooseIndex() {
     return;
   }
 
+  looseMemberSeq = 0;
+  looseMemberData = new Map();
   box.innerHTML = stats.map(entry => `
     <details class="loose-main">
       <summary>
         <strong>${esc(mainStatName(looseIndexSlot, entry.main.id))}</strong>
-        <span class="muted small">${tf('{n} 名角色 · {k} 个方向', {
+        <span class="muted small">${tf('{n} 名角色 · {k} 类需求', {
           n: entry.characterCount,
           k: entry.directions.length,
         })}</span>
@@ -5064,6 +5181,14 @@ function renderLooseIndex() {
         ${entry.directions.map(renderLooseDirection).join('')}
       </div>
     </details>`).join('');
+  box.querySelectorAll('.loose-main').forEach(main => {
+    main.addEventListener('toggle', () => {
+      if (main.open) setTimeout(() => fitLoosePreviews(main), 0);
+    });
+    main.querySelector('summary').onclick = () => {
+      setTimeout(() => { if (main.open) fitLoosePreviews(main); }, 0);
+    };
+  });
 }
 
 function renderSubs() {
@@ -5841,6 +5966,13 @@ function bind() {
     if (!closest) return;
     /* 第二层小窗（#charAttrBox）自己也是一汪：点里面不做任何事（不穿透到下面的列表弹窗） */
     if (closest('#charAttrBox')) return;
+    const looseMember = closest('[data-loose-member]');
+    if (looseMember) {
+      e.stopImmediatePropagation();
+      closeCharAttr();
+      openLooseBuildTip(looseMember);
+      return;
+    }
     /* 需求角色窗内的角色：捕获阶段独占处理，避免后续监听又把刚开的窗关掉。 */
     if (closest('#charTipBox')) {
       const cc = closest('[data-char-tip]');
@@ -5903,6 +6035,7 @@ function bind() {
   const onAnyResize = () => {
     closeStatTip(); closeCharTip(); closeCharAttr();
     fitPieceBoardGroups(document);
+    if ($('#tab-subs').classList.contains('active')) fitLoosePreviews($('#looseIndex'));
     // 名段是否折行取决于卡片实际宽度 —— 窗口一变就得重算 .nmwrap，
     // 否则从宽屏拖到窄屏（或旋转手机）后标记停留在旧值，定位标签版式会错。
     resetWrappedBuildNames(document); markWrappedBuildNames(document); markWrappedBuildNames(document);
