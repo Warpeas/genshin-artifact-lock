@@ -2990,6 +2990,7 @@ function closeStatTip() {
   box.classList.add('hidden');
   box.innerHTML = '';
   box.removeAttribute('data-for');
+  box.removeAttribute('data-hover-for');
   box.removeAttribute('style');
 }
 /* 展开小窗：从 data-stat-tip 复原出「套装 / 方案 / 部位 / 属性」，现算现画（不缓存，免得跟重渲染脱节）。
@@ -4916,6 +4917,8 @@ function download(filename, content, mime) {
 let looseIndexSlot = 'sands';
 let looseMemberSeq = 0;
 let looseMemberData = new Map();
+let looseStatSeq = 0;
+let looseStatData = new Map();
 
 function looseBuildDirections(slot, mainId, includeAlt) {
   const matched = [];
@@ -4997,6 +5000,7 @@ function looseBuildDirections(slot, mainId, includeAlt) {
         (b.count - a.count) || (b.weight - a.weight) || (a.index - b.index));
 
       return {
+        roles,
         members,
         stats,
         score: stats.length ? stats[0].weight : 0,
@@ -5042,31 +5046,90 @@ function looseBuildHtml(role) {
 }
 
 function renderLooseDirection(direction) {
-  const { members, stats } = direction;
+  const { members, stats, roles } = direction;
   const coreIds = new Set(stats
     .filter(stat => stat.count / members.length >= 0.7)
     .map(stat => stat.id));
-  const subTags = stats.length
-    ? stats.map(stat => `
-        <span class="loose-subtag${coreIds.has(stat.id) ? ' core' : ''}">
-          <span>${esc(subStatName(stat.id))}</span>
-          <small>${tf('{n} 人', { n: stat.count })}</small>
-          ${stat.required ? `<i class="req" title="${esc(t('标为必需的人数'))}">★${stat.required}</i>` : ''}
-          ${stat.conditional ? `<i class="cond" title="${esc(t('标为条件词条的人数'))}">◇${stat.conditional}</i>` : ''}
-        </span>`).join('')
-    : `<span class="muted small">${t('未设置追加属性偏好')}</span>`;
-  const memberChip = (person, cls = '') => {
-    const id = looseMemberId(person);
-    return `<button type="button" class="loose-char${cls}" data-loose-member="${id}" aria-haspopup="dialog" aria-controls="charTipBox">${esc(charName(person.name))}</button>`;
-  };
-  const preview = members.map(person => memberChip(person)).join('');
-  const names = members.map(person => {
+  const preferenceGroups = minorPreferenceGroups(roles);
+  const assigned = new Set();
+  const memberGroups = (preferenceGroups || [{ roles }]).map(group => {
+    const names = new Set(group.roles.map(role => role.name));
+    const groupMembers = members.filter(person => names.has(person.name) && !assigned.has(person.name));
+    groupMembers.forEach(person => assigned.add(person.name));
+    return { members: groupMembers };
+  }).filter(group => group.members.length);
+  const unassigned = members.filter(person => !assigned.has(person.name));
+  if (unassigned.length) memberGroups.push({ color: null, members: unassigned });
+  memberGroups.sort((a, b) => b.members.length - a.members.length);
+  memberGroups.forEach((group, index) => {
+    if (preferenceGroups && group.color !== null) group.color = GROUP_COLORS[index % GROUP_COLORS.length];
+  });
+
+  const colorOf = new Map();
+  memberGroups.forEach(group => group.members.forEach(person => {
+    if (group.color) colorOf.set(person.name, group.color);
+  }));
+
+  const memberDetails = person => {
     const notes = [];
+    notes.push(tf('{n} 组配装', { n: person.buildCount }));
     if (person.mainRank > 1) notes.push(t('主属性次选'));
     if (!person.priorities.has('main')) notes.push(t('仅备选'));
-    if (person.buildCount > 1) notes.push(tf('{n} 组适用配装', { n: person.buildCount }));
-    return `<li>${memberChip(person, ' list')} ${notes.length ? `<small>${notes.map(esc).join(' / ')}</small>` : ''}</li>`;
-  }).join('');
+    return notes.map(note => `<small>${esc(note)}</small>`).join('');
+  };
+  const memberChip = person => {
+    const id = looseMemberId(person);
+    const color = colorOf.get(person.name);
+    return `<button type="button" class="loose-char"${color ? ` style="--tc:${color}"` : ''} data-loose-member="${id}" aria-haspopup="dialog" aria-controls="charTipBox">${esc(charName(person.name))}</button>`;
+  };
+  const groupNames = memberGroups.map(group => {
+    const color = group.color;
+    const fullNames = group.members.map(person => charName(person.name)).join('、');
+    const names = group.members.map(person =>
+      `<span class="loose-group-name pb-item"${color ? ` style="--tc:${color}"` : ''}>${esc(charName(person.name))}</span>`
+    ).join('');
+    const minWidth = group.members.length === 1 ? 54 : 96;
+    const name = `<span class="loose-group-summary pb-grp" style="--group-size:${group.members.length};--group-min:${minWidth}px${color ? `;--tc:${color}` : ''}"` +
+      ` title="${esc(fullNames)}">${names}</span>`;
+    const people = group.members.map(person =>
+      `<span class="loose-person">${memberChip(person)}${memberDetails(person)}</span>`
+    ).join('');
+    return {
+      summary: name,
+      detail: `<section class="loose-group-detail"${color ? ` style="--tc:${color}"` : ''}>` +
+        `<strong>${tf('{n} 名角色', { n: group.members.length })}</strong>` +
+        `<div class="loose-group-people">${people}</div></section>`,
+    };
+  });
+
+  const statId = stat => {
+    const id = String(++looseStatSeq);
+    looseStatData.set(id, { direction, stat, memberGroups });
+    return id;
+  };
+  const statTag = stat => {
+    const owners = memberGroups.filter(group =>
+      group.members.some(person => person.subs.has(stat.id)));
+    const hasPartial = owners.length > 0 && owners.length < memberGroups.length;
+    const dots = hasPartial
+      ? owners.map(group => group.color
+        ? `<i class="loose-submark" style="--tc:${group.color}"></i>`
+        : '').join('')
+      : '';
+    const color = hasPartial && owners.length === 1 ? owners[0].color : null;
+    const id = statId(stat);
+    return `<button type="button" class="loose-subtag${coreIds.has(stat.id) ? ' core' : ''}${color ? ' grouped' : ''}"` +
+      `${color ? ` style="--tc:${color}"` : ''} data-loose-stat="${id}" aria-haspopup="true" aria-controls="statTipBox">` +
+      `${dots}<span>${esc(subStatName(stat.id))}</span>` +
+      `<small>${tf('{n} 人', { n: stat.count })}</small>` +
+      `${stat.required ? `<i class="req" title="${esc(t('标为必需的人数'))}">★${stat.required}</i>` : ''}` +
+      `${stat.conditional ? `<i class="cond" title="${esc(t('标为条件词条的人数'))}">◇${stat.conditional}</i>` : ''}</button>`;
+  };
+  const subTags = stats.length
+    ? stats.map(statTag).join('')
+    : `<span class="muted small">${t('未设置追加属性偏好')}</span>`;
+  const summaries = groupNames.map(group => group.summary).join('');
+  const details = groupNames.map(group => group.detail).join('');
 
   return `
     <section class="loose-direction">
@@ -5080,31 +5143,107 @@ function renderLooseDirection(direction) {
       </div>
       <div class="loose-section loose-members">
         <span class="loose-section-label">${t('适用角色')}</span>
-        <div class="loose-preview">${preview}<span class="loose-more" hidden></span></div>
-        <details class="loose-who">
-          <summary>${tf('查看全部 {n} 名角色', { n: members.length })}</summary>
-          <ul>${names}</ul>
-        </details>
+        <div class="loose-preview">
+          <button type="button" class="loose-more" aria-expanded="false"></button>
+          <div class="loose-group-summaries">${summaries}</div>
+          <div class="loose-group-details">${details}</div>
+        </div>
       </div>
     </section>`;
 }
 
 function fitLoosePreviews(box) {
   box.querySelectorAll('.loose-preview').forEach(preview => {
-    const chips = [...preview.querySelectorAll('.loose-char')];
     const more = preview.querySelector('.loose-more');
-    chips.forEach(chip => { chip.hidden = false; });
-    more.hidden = true;
-    if (!chips.length) return;
-    const firstTop = chips[0].offsetTop;
-    const visible = chips.filter(chip => chip.offsetTop <= firstTop + chips[0].offsetHeight + 5);
-    const hiddenCount = chips.length - visible.length;
-    chips.slice(visible.length).forEach(chip => { chip.hidden = true; });
-    if (hiddenCount) {
-      more.textContent = '+' + hiddenCount;
-      more.hidden = false;
-    }
+    const expanded = preview.classList.contains('expanded');
+    more.textContent = expanded ? t('收起') : t('展开');
+    more.setAttribute('aria-expanded', String(expanded));
+    if (expanded) return;
+    preview.querySelectorAll('.loose-group-summary').forEach(group => {
+      const names = [...group.querySelectorAll('.loose-group-name')];
+      names.forEach(name => { name.hidden = false; });
+      let remainder = group.querySelector('.pb-plus');
+      if (remainder) remainder.remove();
+      if (!names.length) return;
+
+      const fits = () => group.scrollWidth <= group.clientWidth;
+      if (fits()) return;
+
+      remainder = document.createElement('span');
+      remainder.className = 'pb-plus';
+      group.appendChild(remainder);
+      let hidden = 0;
+      for (let i = names.length - 1; i >= 0; i--) {
+        names[i].hidden = true;
+        hidden++;
+        remainder.textContent = `+${hidden}`;
+        remainder.title = tf('本组还有 {n} 人', { n: hidden });
+        if (fits()) break;
+      }
+    });
   });
+}
+
+function openLooseStatTip(chip, toggle = false, hovered = false) {
+  const box = $('#statTipBox');
+  const id = chip && chip.dataset ? chip.dataset.looseStat : '';
+  const data = looseStatData.get(id);
+  if (!box || !data) return;
+  const key = 'loose|' + id;
+  if (box.dataset.for === key && !box.classList.contains('hidden')) {
+    if (toggle && box.dataset.hoverFor !== key) closeStatTip();
+    else if (toggle) box.removeAttribute('data-hover-for');
+    return;
+  }
+  const { direction, stat, memberGroups } = data;
+  const tiers = [
+    { key: 'req', tag: t('★必需'), cls: 'stt-tag-req' },
+    { key: 'need', tag: t('需要') },
+    { key: 'opt', tag: t('◇条件'), cls: 'stt-tag-opt' },
+  ];
+  const rows = memberGroups.map(group => {
+    const parts = tiers.map(tier => {
+      const names = group.members.filter(person => {
+        const item = person.subs.get(stat.id);
+        if (!item) return false;
+        const status = item.required ? 'req' : (item.conditional ? 'opt' : 'need');
+        return status === tier.key;
+      }).map(person => person.name);
+      return names.length ? { tag: tier.tag, cls: tier.cls || '', names } : null;
+    }).filter(Boolean);
+    return parts.length ? { color: group.color, parts } : null;
+  }).filter(Boolean);
+  box.dataset.for = key;
+  if (hovered) box.dataset.hoverFor = key;
+  else box.removeAttribute('data-hover-for');
+  box.innerHTML = statTipHTML({
+    kind: 'sub',
+    stat: subStatName(stat.id),
+    slot: '',
+    level: statHotLevel(stat.count, direction.members.length),
+    need: stat.count,
+    total: direction.members.length,
+    first: 0,
+    rows,
+    opt: false,
+    optNote: '',
+    rule: false,
+  });
+  box.classList.remove('hidden');
+
+  const rect = chip.getBoundingClientRect();
+  const width = box.offsetWidth, height = box.offsetHeight;
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+  const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+  let left = rect.left + rect.width / 2 - width / 2;
+  left = Math.max(8, Math.min(left, viewportWidth - width - 8));
+  let top = rect.bottom + 6;
+  if (top + height > viewportHeight - 8) {
+    const above = rect.top - height - 6;
+    top = above >= 8 ? above : Math.max(8, viewportHeight - height - 8);
+  }
+  box.style.left = left + 'px';
+  box.style.top = top + 'px';
 }
 
 function openLooseBuildTip(button) {
@@ -5168,6 +5307,8 @@ function renderLooseIndex() {
 
   looseMemberSeq = 0;
   looseMemberData = new Map();
+  looseStatSeq = 0;
+  looseStatData = new Map();
   box.innerHTML = stats.map(entry => `
     <details class="loose-main">
       <summary>
@@ -5187,6 +5328,14 @@ function renderLooseIndex() {
     });
     main.querySelector('summary').onclick = () => {
       setTimeout(() => { if (main.open) fitLoosePreviews(main); }, 0);
+    };
+  });
+  box.querySelectorAll('.loose-more').forEach(button => {
+    button.onclick = () => {
+      const preview = button.closest('.loose-preview');
+      if (!preview) return;
+      preview.classList.toggle('expanded');
+      fitLoosePreviews(box);
     };
   });
 }
@@ -5966,9 +6115,18 @@ function bind() {
     if (!closest) return;
     /* 第二层小窗（#charAttrBox）自己也是一汪：点里面不做任何事（不穿透到下面的列表弹窗） */
     if (closest('#charAttrBox')) return;
+    const looseStat = closest('[data-loose-stat]');
+    if (looseStat) {
+      e.stopImmediatePropagation();
+      closeCharTip();
+      closeCharAttr();
+      openLooseStatTip(looseStat, true);
+      return;
+    }
     const looseMember = closest('[data-loose-member]');
     if (looseMember) {
       e.stopImmediatePropagation();
+      closeStatTip();
       closeCharAttr();
       openLooseBuildTip(looseMember);
       return;
@@ -6012,6 +6170,7 @@ function bind() {
     if (e.key === 'Enter' || e.key === ' ') {
       const el = document.activeElement;
       const ds = el && el.dataset;
+      if (ds && ds.looseStat) { e.preventDefault(); openLooseStatTip(el, true); return; }
       if (ds && ds.statTip) { e.preventDefault(); closeCharTip(); closeCharAttr(); openStatTip(el); return; }
     }
     if (e.key !== 'Escape') return;
@@ -6023,6 +6182,12 @@ function bind() {
     closeCharTip();
     closeCharAttr();
   });
+  document.addEventListener('pointerover', e => {
+    if (e.pointerType !== 'mouse') return;
+    const target = eventTargetEl(e.target);
+    const chip = target && target.closest ? target.closest('[data-loose-stat]') : null;
+    if (chip) openLooseStatTip(chip, false, true);
+  }, true);
   /* 滚动 / 缩放窗口收起浮层；浮层内部滚动不触发关闭。 */
   const onAnyScroll = e => {
     const t2 = e.target;
