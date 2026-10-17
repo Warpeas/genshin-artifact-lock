@@ -1242,7 +1242,10 @@ html[lang="en"] .gp-subline .gp-lab{white-space:normal;}
 .loose-group-summaries::-webkit-scrollbar{display:none;}
 .loose-group-summary{display:inline-flex;flex:var(--group-size,1) 1 0;flex-wrap:nowrap;align-items:baseline;gap:3px;
   width:auto;min-width:var(--group-min,96px);max-width:none;overflow:hidden;padding:0 5px;font-size:var(--fs-xs);line-height:1.6;white-space:nowrap;}
-.loose-group-name{flex:0 0 auto;white-space:nowrap;}
+.loose-group-name{flex:0 0 auto;white-space:nowrap;font:inherit;line-height:inherit;cursor:pointer;}
+.loose-group-name:hover,.loose-group-name.active{border-color:color-mix(in srgb,var(--gold) 48%,var(--line-soft));
+  background:color-mix(in srgb,var(--gold) 10%,var(--panel));color:var(--gold2);}
+.loose-group-name:focus-visible{outline:2px solid color-mix(in srgb,var(--blue) 60%,transparent);outline-offset:2px;}
 .loose-group-name[hidden]{display:none;}
 .loose-group-summary .pb-plus{flex:0 0 auto;}
 .loose-group-details{display:none;}

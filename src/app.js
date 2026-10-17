@@ -2990,7 +2990,6 @@ function closeStatTip() {
   box.classList.add('hidden');
   box.innerHTML = '';
   box.removeAttribute('data-for');
-  box.removeAttribute('data-hover-for');
   box.removeAttribute('style');
 }
 /* 展开小窗：从 data-stat-tip 复原出「套装 / 方案 / 部位 / 属性」，现算现画（不缓存，免得跟重渲染脱节）。
@@ -5085,9 +5084,12 @@ function renderLooseDirection(direction) {
   const groupNames = memberGroups.map(group => {
     const color = group.color;
     const fullNames = group.members.map(person => charName(person.name)).join('、');
-    const names = group.members.map(person =>
-      `<span class="loose-group-name pb-item"${color ? ` style="--tc:${color}"` : ''}>${esc(charName(person.name))}</span>`
-    ).join('');
+    const names = group.members.map(person => {
+      const id = looseMemberId(person);
+      return `<button type="button" class="loose-group-name pb-item"${color ? ` style="--tc:${color}"` : ''}` +
+        ` data-loose-member="${id}" aria-haspopup="dialog" aria-controls="charTipBox"` +
+        ` aria-label="${esc(charName(person.name))} · ${esc(t('配装推荐'))}">${esc(charName(person.name))}</button>`;
+    }).join('');
     const minWidth = group.members.length === 1 ? 54 : 96;
     const name = `<span class="loose-group-summary pb-grp" style="--group-size:${group.members.length};--group-min:${minWidth}px${color ? `;--tc:${color}` : ''}"` +
       ` title="${esc(fullNames)}">${names}</span>`;
@@ -5167,13 +5169,13 @@ function fitLoosePreviews(box) {
       if (!names.length) return;
 
       const fits = () => group.scrollWidth <= group.clientWidth;
-      if (fits()) return;
+      if (fits() || names.length === 1) return;
 
       remainder = document.createElement('span');
       remainder.className = 'pb-plus';
       group.appendChild(remainder);
       let hidden = 0;
-      for (let i = names.length - 1; i >= 0; i--) {
+      for (let i = names.length - 1; i > 0; i--) {
         names[i].hidden = true;
         hidden++;
         remainder.textContent = `+${hidden}`;
@@ -5184,15 +5186,14 @@ function fitLoosePreviews(box) {
   });
 }
 
-function openLooseStatTip(chip, toggle = false, hovered = false) {
+function openLooseStatTip(chip, toggle = false) {
   const box = $('#statTipBox');
   const id = chip && chip.dataset ? chip.dataset.looseStat : '';
   const data = looseStatData.get(id);
   if (!box || !data) return;
   const key = 'loose|' + id;
   if (box.dataset.for === key && !box.classList.contains('hidden')) {
-    if (toggle && box.dataset.hoverFor !== key) closeStatTip();
-    else if (toggle) box.removeAttribute('data-hover-for');
+    if (toggle) closeStatTip();
     return;
   }
   const { direction, stat, memberGroups } = data;
@@ -5214,8 +5215,6 @@ function openLooseStatTip(chip, toggle = false, hovered = false) {
     return parts.length ? { color: group.color, parts } : null;
   }).filter(Boolean);
   box.dataset.for = key;
-  if (hovered) box.dataset.hoverFor = key;
-  else box.removeAttribute('data-hover-for');
   box.innerHTML = statTipHTML({
     kind: 'sub',
     stat: subStatName(stat.id),
@@ -5255,7 +5254,7 @@ function openLooseBuildTip(button) {
     closeCharTip();
     return;
   }
-  document.querySelectorAll('.loose-char.active').forEach(item => item.classList.remove('active'));
+  document.querySelectorAll('[data-loose-member].active').forEach(item => item.classList.remove('active'));
   closeCharAttr();
   box.dataset.for = 'loose|' + id;
   box.setAttribute('role', 'dialog');
@@ -6182,12 +6181,6 @@ function bind() {
     closeCharTip();
     closeCharAttr();
   });
-  document.addEventListener('pointerover', e => {
-    if (e.pointerType !== 'mouse') return;
-    const target = eventTargetEl(e.target);
-    const chip = target && target.closest ? target.closest('[data-loose-stat]') : null;
-    if (chip) openLooseStatTip(chip, false, true);
-  }, true);
   /* 滚动 / 缩放窗口收起浮层；浮层内部滚动不触发关闭。 */
   const onAnyScroll = e => {
     const t2 = e.target;
