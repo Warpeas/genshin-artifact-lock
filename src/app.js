@@ -5090,8 +5090,7 @@ function renderLooseDirection(direction) {
         ` data-loose-member="${id}" aria-haspopup="dialog" aria-controls="charTipBox"` +
         ` aria-label="${esc(charName(person.name))} · ${esc(t('配装推荐'))}">${esc(charName(person.name))}</button>`;
     }).join('');
-    const minWidth = group.members.length === 1 ? 54 : 96;
-    const name = `<span class="loose-group-summary pb-grp" style="--group-size:${group.members.length};--group-min:${minWidth}px${color ? `;--tc:${color}` : ''}"` +
+    const name = `<span class="loose-group-summary pb-grp"${color ? ` style="--tc:${color}"` : ''}` +
       ` title="${esc(fullNames)}">${names}</span>`;
     const people = group.members.map(person =>
       `<span class="loose-person">${memberChip(person)}${memberDetails(person)}</span>`
