@@ -4928,7 +4928,7 @@ function looseBuildDirections(slot, mainId, includeAlt) {
       const mainRank = mains.findIndex(m => m.stat === mainId);
       if (mainRank < 0) return;
 
-      const subList = (b.subs || []).filter(s => s.id !== mainId);
+      const subList = b.subs || [];
       matched.push({
         name: c.name,
         subs: subWeights(subList),
@@ -5139,11 +5139,9 @@ function renderLooseDirection(direction) {
         <span class="muted small">${tf('{n} 名角色', { n: members.length })}</span>
       </div>
       <div class="loose-section">
-        <span class="loose-section-label">${t('追加属性组合')}</span>
         <div class="loose-subtags">${subTags}</div>
       </div>
       <div class="loose-section loose-members">
-        <span class="loose-section-label">${t('适用角色')}</span>
         <div class="loose-preview">
           <button type="button" class="loose-more" aria-expanded="false"></button>
           <div class="loose-group-summaries">${summaries}</div>
