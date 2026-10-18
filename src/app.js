@@ -3133,7 +3133,6 @@ function charTipHTML(d) {
 function closeCharTip() {
   const box = $('#charTipBox');
   if (!box || box.classList.contains('hidden')) return;
-  document.querySelectorAll('.loose-char.active').forEach(button => button.classList.remove('active'));
   box.classList.add('hidden');
   box.innerHTML = '';
   box.removeAttribute('data-for');
@@ -5251,7 +5250,6 @@ function openLooseBuildTip(button) {
     closeCharTip();
     return;
   }
-  document.querySelectorAll('[data-loose-member].active').forEach(item => item.classList.remove('active'));
   closeCharAttr();
   box.dataset.for = 'loose|' + id;
   box.setAttribute('role', 'dialog');
@@ -5263,7 +5261,6 @@ function openLooseBuildTip(button) {
     </div>
     <div class="loose-build-list">${person.builds.map(looseBuildHtml).join('')}</div>`;
   box.classList.remove('hidden');
-  button.classList.add('active');
 
   const rect = button.getBoundingClientRect();
   const width = box.offsetWidth;
