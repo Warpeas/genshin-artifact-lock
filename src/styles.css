@@ -689,6 +689,7 @@ input[type=range]{accent-color:var(--gold);}
 }
 .cc-mod,.bm-mod{font-size:11px;color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);
   border-radius:var(--r-xs);padding:0 5px;line-height:16px;}
+.bm-mod.custom{color:var(--txt3);border-color:color-mix(in srgb,var(--txt3) 45%,transparent);}
 
 /* ---- 攻略来源行（抽屉内） ---- */
 .src-list{display:flex;flex-direction:column;gap:6px;margin-bottom:7px;}

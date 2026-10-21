@@ -86,6 +86,7 @@ const SWAP_GROUPS = {
 
 let state = null;
 let pendingMigrate = null;   // load() 若从旧存档回填了数据，init 里据此回写本地存储
+let pendingLegacyBkey = false; // load() 读到前 bkey 时代的老存档：才需要用套装组合兜底补 bkey
 const SUB_EPOCH = 2;         // 追加属性预设重要度版本；递增即把精炼后的预设同步给旧存档
 const META_EPOCH = 1;        // 国度 / 定位版本；递增即把修正后的归属同步给旧存档（只做一次，之后用户改的不动）
 const CANON_EPOCH = 1;       // 内容指纹(canonBuild)格式版本；递增即按新格式重锚 fcanon，避免旧锚点与新格式不兼容导致「自动跟随出厂」失效
@@ -162,20 +163,20 @@ function canonBuild(b) {
     mains, subs,
   });
 }
-/* 内容指纹 + 主推：整体比较（角色级「已修改」与草稿脏检查用这个） */
+/* 草稿脏检查指纹：内容 + 主推 + 形态。
+ * need 不在 canonBuild 里（老存档兼容），但用户改了它也必须触发「未保存的修改」。 */
 function canonBuildPrio(b) {
-  return JSON.stringify([canonBuild(b), b && b.priority === 'alt' ? 'alt' : 'main']);
+  const need = b && (b.need === 2 || b.need === 4) ? b.need : null;
+  return JSON.stringify([canonBuild(b), b && b.priority === 'alt' ? 'alt' : 'main', need]);
 }
-/* 角色指纹：排除 enabled / id / custom（用户启用与否、id 漂移都不算改了出厂数据） */
-function canonCharWith(c, builds) {
+/* 角色基础信息指纹：名称 / 归属 / 定位 / 备注 / 来源（不含配装与启用状态） */
+function charMetaCanon(c) {
   return JSON.stringify({
     name: c.name, element: c.element, region: c.region,
     roles: (c.roles || []).slice(),
     note: c.note || '', src: (c.src || []).map(s => [s.url, s.title || '']),
-    builds: (builds || []).map(canonBuildPrio),
   });
 }
-function canonChar(c) { return canonCharWith(c, (c.builds || [])); }
 
 /* 出厂配装组「内容 canon → 该组」的索引。
  * 只在「老存档缺 bkey 且套装组合有歧义」时用（罕见路径），所以不缓存 ——
@@ -186,10 +187,10 @@ function factoryCanon(d) {
   return m;
 }
 
-/* 某一组配装对应的出厂版本：
- * 1) 先按 bkey 命中（改名、改内容都还能命中）；
- * 2) 没有 bkey（老存档）时，用「角色内 sets 组合唯一命中」兜底。 */
-function factoryBuildOf(c, b) {
+/* 老存档迁移专用：按套装组合 / 内容兜底猜测身份。
+ * 只在 backfillBkeys() 和 canon epoch 迁移里用；判定「已修改 / 整组还原 / 自动跟随」
+ * 一律走下面的严格版，避免用户新增的配装组因为套装组合相同被误认成内置组。 */
+function factoryBuildLoose(c, b) {
   const d = factoryCharOf(c);
   if (!d) return null;
   if (b && b.bkey) {
@@ -205,61 +206,103 @@ function factoryBuildOf(c, b) {
   // 再退一步：按内容精确匹配（内容仍是出厂原样时才能命中）
   return factoryCanon(d).get(canonBuild(b)) || null;
 }
-/* 这一组的「内容」是否和出厂不一样（无出厂对应 → 视为自定义组，不算「已修改」）
- * 只看套装 + 词条，主推单独由 priorityModified 判定 */
+/* 某一组配装对应的出厂版本：只认 bkey。
+ * 没有 bkey 或 bkey 已不在当前出厂数据里 → 视为自定义组（null）。
+ * 不再用套装组合猜身份：那会把用户自己新增的组误判成内置组。 */
+function factoryBuildOf(c, b) {
+  if (!b || b.own || !b.bkey) return null;
+  const d = factoryCharOf(c);
+  if (!d) return null;
+  return (d.builds || []).find(x => x.bkey === b.bkey) || null;
+}
+/* need（2+2 / 四件套任选）不在 canonBuild 里 —— 老存档没有这个字段，
+ * 放进指纹会把「内置数据升级」误报成「用户改过」。这里只在存档自己写了值时才比较：
+ * 当前为 null（老存档 / 未标注）→ 不参与；否则与出厂值比较。
+ * 这样用户手动改形态会被标为「已修改」，老存档对上新数据也不会凭空冒徽标。 */
+function needModified(b, f) {
+  const cur = b && (b.need === 2 || b.need === 4) ? b.need : null;
+  if (cur == null) return false;
+  const fac = f && (f.need === 2 || f.need === 4) ? f.need : null;
+  return cur !== fac;
+}
+function buildContentDiff(f, b) {
+  return canonBuild(f) !== canonBuild(b) || needModified(b, f);
+}
+/* 这一组的「内容」是否和出厂不一样（无出厂对应 → 自定义组，不算「已修改」）
+ * 只看套装 + 词条 + 形态，主推单独由 priorityModified 判定 */
 function buildModified(c, b) {
   const f = factoryBuildOf(c, b);
   if (!f) return false;
-  return canonBuild(f) !== canonBuild(b);
+  return buildContentDiff(f, b);
 }
-/* 角色内「主推排布」是否和出厂不一样（谁主推、谁备选） */
+/* 删除出厂配装组时留一个墓碑：之后角色卡才能区分「用户删了一组」和
+ * 「仓库新加了一组」——后者不该把没动过的角色标成已修改。 */
+function markRemovedBuild(c, b) {
+  if (!c || !b || b.own || !b.bkey) return;
+  const d = factoryCharOf(c);
+  if (!d || !(d.builds || []).some(x => x.bkey === b.bkey)) return;
+  const list = Array.isArray(c.removedBkeys) ? c.removedBkeys : (c.removedBkeys = []);
+  if (!list.includes(b.bkey)) list.push(b.bkey);
+}
+/* 配装内容是否与出厂不同：按 bkey 配对，不按下标 —— 交换顺序不算改动；
+ * 删除组由 removedBkeys 记录；出厂新增、用户从没拥有过的组不参与比较。
+ * 无 bkey（自定义组）/ bkey 已不在出厂 → 视为与内置不同。 */
+function buildsContentModified(c) {
+  const d = factoryCharOf(c);
+  if (!d) return false;
+  const fac = new Map((d.builds || []).filter(b => b.bkey).map(b => [b.bkey, b]));
+  const present = new Set();
+  for (const b of (c.builds || [])) {
+    if (b.own || !b.bkey || !fac.has(b.bkey)) return true;
+    present.add(b.bkey);
+    if (buildContentDiff(fac.get(b.bkey), b)) return true;
+  }
+  return (c.removedBkeys || []).some(k => fac.has(k) && !present.has(k));
+}
+/* 角色内「主推排布」是否和出厂不一样（谁主推、谁备选）。
+ * 按 bkey 认组，不按下标 —— 自定义组 / 单纯换顺序都不该弹出「重置顺序」。 */
 function priorityModified(c) {
   const d = factoryCharOf(c);
   if (!d || !d.builds || !d.builds.length) return false;
-  const cur = (c.builds || []).map(b => b.priority === 'alt' ? 'alt' : 'main');
-  const fac = d.builds.slice(0, cur.length).map(b => b.priority === 'alt' ? 'alt' : 'main');
-  return cur.join(',') !== fac.join(',');
+  const fac = new Map((d.builds || []).filter(b => b.bkey).map(b => [b.bkey, b]));
+  return (c.builds || []).some(b => {
+    const f = b && !b.own && b.bkey ? fac.get(b.bkey) : null;
+    return !!f && (b.priority === 'main') !== (f.priority === 'main');
+  });
 }
-/* 只还原主推排布（不动任何内容） */
+/* 只还原主推排布（不动任何内容）：出厂主推那组设回 main，其余（含自定义组）alt */
 function restorePriority(c) {
   const d = factoryCharOf(c);
   if (!d || !d.builds || !d.builds.length) return false;
-  (c.builds || []).forEach((b, i) => {
-    b.priority = (d.builds[i] ? d.builds[i].priority : 'alt') === 'main' ? 'main' : 'alt';
+  let hasMain = false;
+  (c.builds || []).forEach(b => {
+    const f = factoryBuildOf(c, b);
+    const wantMain = !!(f && f.priority === 'main');
+    b.priority = wantMain ? 'main' : 'alt';
+    if (wantMain) hasMain = true;
   });
-  // 兜底：出厂第 1 组可能因删组而不在当前列表里，保证有且仅有一个主推
-  if (!c.builds.some(b => b.priority === 'main')) c.builds[0].priority = 'main';
+  // 出厂主推组被删 / 当前只有自定义组时，保证仍然有且仅有一个主推
+  if (!hasMain) c.builds[0].priority = 'main';
   let seen = false;
   c.builds.forEach(b => {
     if (b.priority === 'main') { if (seen) b.priority = 'alt'; else seen = true; }
   });
   return true;
 }
-/* 整个角色是否和出厂不一样。
- * 只比「当前拥有的这几组」—— 后台给角色新增了配装组时，不该把用户没动过的角色标成已修改 */
+/* 整个角色是否和出厂不一样（含主推排布）。用于判断「还原内置」是否可用。 */
 function charModified(c) {
   const d = factoryCharOf(c);
   if (!d) return false;
-  const n = (c.builds || []).length;
-  return canonChar(c) !== canonCharWith(d, (d.builds || []).slice(0, n));
+  return charMetaCanon(c) !== charMetaCanon(d) ||
+    buildsContentModified(c) || priorityModified(c);
 }
-/* 角色内「内容」是否和出厂不一样（只比名称/归属/定位/备注/来源/词条套装，
+/* 角色内「内容」是否和出厂不一样（只比名称/归属/定位/备注/来源/配装内容，
  * 主推排布单独算）。用于角色卡「已修改」徽标：只反映词条内容改动，
  * 不把「只改了主推顺序」误标成已修改（顺序改动在角色卡上不提示，编辑界面才有「重置顺序」）。 */
 function charContentModified(c) {
   const d = factoryCharOf(c);
   if (!d) return false;
-  const n = (c.builds || []).length;
-  return canonCharContentWith(c, c.builds) !== canonCharContentWith(d, (d.builds || []).slice(0, n));
-}
-/* 角色指纹（内容口径，不含主推）：与 canonChar 同结构，但每个配装用 canonBuild（不含 priority） */
-function canonCharContentWith(c, builds) {
-  return JSON.stringify({
-    name: c.name, element: c.element, region: c.region,
-    roles: (c.roles || []).slice(),
-    note: c.note || '', src: (c.src || []).map(s => [s.url, s.title || '']),
-    builds: (builds || []).map(canonBuild),
-  });
+  return charMetaCanon(c) !== charMetaCanon(d) || buildsContentModified(c);
 }
 /* 有没有值得还原的东西：用户改过，或者出厂里有这一角色还没用上的配装组 */
 function charCanRestore(c) {
@@ -282,6 +325,7 @@ function factoryBuildCopy(f, c) {
   if (!f) return null;
   const b = normalizeBuild(JSON.parse(JSON.stringify(f)), c || {});
   b.bkey = f.bkey;
+  delete b.own;               // 出厂副本恢复内置身份
   b.fcanon = canonBuild(b);   // 记下锚点：之后内容一旦被改，就不再自动跟随出厂
   return b;
 }
@@ -341,16 +385,57 @@ function syncFactoryUpdates() {
   return n;
 }
 
-/* 老存档兜底：给缺 bkey 的出厂组补上指纹。
+/* 修复 bkey 漂移：bkey 是「角色名#序号」，仓库在配装列表中间插入 / 重排一组后，
+ * 老存档的 #n 会指向另一组。fcanon 记录的是上次同步时的出厂内容，用它反查
+ * 当前出厂组最可靠：能唯一命中就重绑，避免「已修改 / 整组还原 / 自动跟随」拿错基线。
+ * 只在唯一命中时改；出厂内容也变过的组无法判断，保持原样。 */
+function repairBkeysByFcanon() {
+  let n = 0;
+  state.characters.forEach(c => {
+    if (c.custom) return;
+    const d = factoryCharOf(c);
+    if (!d) return;
+    const list = d.builds || [];
+    const byKey = new Map(list.filter(b => b.bkey).map(b => [b.bkey, b]));
+    const builds = c.builds || [];
+    // 先算出「按内容锚点应该指向哪一组」，再整套应用 ——
+    // 逐组立刻改会撞上「目标 bkey 还被另一组占着」的换位场景。
+    const desired = builds.map(b => {
+      if (b.own) return '';                              // 自建组不认领出厂身份
+      if (!b.bkey && !b.fcanon) return b.bkey || '';
+      const cur = b.bkey ? byKey.get(b.bkey) : null;
+      if (cur && canonBuild(cur) === b.fcanon) return b.bkey;   // 身份和内容都对得上
+      const hits = b.fcanon ? list.filter(x => x.bkey && canonBuild(x) === b.fcanon) : [];
+      return hits.length === 1 ? hits[0].bkey : (b.bkey || '');
+    });
+    // 目标身份必须互不重复，否则宁可不改，避免两组认成同一出厂组
+    const seen = new Set();
+    let dup = false;
+    desired.forEach(k => {
+      if (!k) return;
+      if (seen.has(k)) dup = true; else seen.add(k);
+    });
+    if (dup) return;
+    builds.forEach((b, i) => {
+      if (desired[i] && b.bkey !== desired[i]) { b.bkey = desired[i]; n++; }
+    });
+  });
+  return n;
+}
+
+/* 前 bkey 时代的老存档兜底：给缺 bkey 的出厂组补上指纹。
  * 只写 bkey、不要求内容相同 —— 否则「改过内容 → 还原这一组」就没落点了。
- * 匹配不上（多义 / 空套装）的不写，降级为自定义组。 */
+ * 匹配不上（多义 / 空套装）的不写，降级为自定义组。
+ * ⚠️ 只在 pendingLegacyBkey 为真时运行：bkey 时代之后的存档里，
+ * 仍缺 bkey 的组是用户自建组，不能再按套装组合去猜（会把自定义误判成内置）。 */
 function backfillBkeys() {
+  if (!pendingLegacyBkey) return 0;
   let n = 0;
   state.characters.forEach(c => {
     if (c.custom) return;
     (c.builds || []).forEach(b => {
-      if (b.bkey) return;
-      const f = factoryBuildOf(c, b);
+      if (b.bkey || b.own) return;
+      const f = factoryBuildLoose(c, b);
       if (f) { b.bkey = f.bkey; n++; }
     });
   });
@@ -369,6 +454,13 @@ function migrateFromDefaults(o) {
   const defs = defaultCharacters();
   const byName = {};
   defs.forEach(d => { byName[d.name] = d; });
+  // 存档是否已经历过 bkey 时代（backfill 曾在每次加载时跑过）。
+  // 之后的存档里仍缺 bkey 的组 = 当时就没能认领出厂身份，应视为自建组；
+  // 有 fcanon 的组留给 repairBkeysByFcanon 按内容锚点认领。
+  // ⚠️ _canonEpoch 和 bkey 由同一版本引入，这里拿它当代理标记；
+  //    若以后单独 bump CANON_EPOCH，要改成独立的 _bkeyEpoch，否则会重跑兜底补写。
+  const hadCanonEpoch = o._canonEpoch === CANON_EPOCH;
+  pendingLegacyBkey = !hadCanonEpoch;
   if (!o._srcMigrated) {
     (o.characters || []).forEach(c => {
       if (c.custom) return;
@@ -426,13 +518,21 @@ function migrateFromDefaults(o) {
     (o.characters || []).forEach(c => {
       if (c.custom) return;
       (c.builds || []).forEach(b => {
-        const f = factoryBuildOf(c, b);
+        const f = factoryBuildLoose(c, b);
         if (!f) return;
         const cur = canonBuild(b), fac = canonBuild(f);
         if (cur === fac) b.fcanon = fac;   // 未改动 → 用新格式锚定，恢复自动跟随
       });
     });
     o._canonEpoch = CANON_EPOCH;
+  }
+  // bkey 时代之后仍缺 bkey、且没有内容锚点的组：标记为自建组，避免以后
+  // 每次加载都被 backfill 按套装组合重新认领，把用户自己的配装误判成内置组。
+  if (hadCanonEpoch) {
+    (o.characters || []).forEach(c => {
+      if (c.custom) return;
+      (c.builds || []).forEach(b => { if (!b.bkey && !b.own && !b.fcanon) b.own = true; });
+    });
   }
   // 套装改名 / 订正（图鉴核对后内置库改了名，老存档的引用要跟着换）：
   // 只改内置套装与其引用，天然幂等 —— 改完之后旧名已不存在，再跑一次也不会重复。
@@ -509,7 +609,7 @@ function userBackup() {
     const factory = factoryCharOf(c);
     if (!factory) return;
     const patch = {};
-    ['name', 'element', 'region', 'roles', 'note', 'src', 'builds'].forEach(k => {
+    ['name', 'element', 'region', 'roles', 'note', 'src', 'builds', 'removedBkeys'].forEach(k => {
       if (!sameJson(c[k], factory[k])) patch[k] = JSON.parse(JSON.stringify(c[k]));
     });
     if (Object.keys(patch).length) characterOverrides.push({ key, patch });
@@ -1026,22 +1126,29 @@ function normalize(o) {
   delete o.planAssign;   // 旧字段（组指纹 → 槽位下标），已被 3 槽位限制一同废弃
   // 散件 / 过渡 保留规则：enabled = 启用的规则 id 列表，custom = 用户自定义规则
   o.keepRules = normalizeKeepRules(o.keepRules);
-  o.characters = o.characters.map(c => ({
-    id: c.id || ('c_' + Math.random().toString(36).slice(2)),
-    name: c.name || '未命名',
-    skey: typeof c.skey === 'string' ? c.skey : '',   // 出厂角色名：改名后保持不变，是「还能还原」的唯一锚点
-    element: ELEMENTS[c.element] ? c.element : 'pyro',
-    region: REGION_NAME[c.region] ? c.region : 'other',
-    roles: (Array.isArray(c.roles) && c.roles.length)
-      ? c.roles.filter(r => ROLE_NAME[r]) : ['maindps'],
-    enabled: !!c.enabled,
-    note: c.note || '',
-    src: normSrcList(c.src),
-    custom: !!c.custom,
-    builds: (Array.isArray(c.builds) && c.builds.length)
+  o.characters = o.characters.map(c => {
+    const builds = (Array.isArray(c.builds) && c.builds.length)
       ? c.builds.map(b => normalizeBuild(b, c))
-      : [{ sets: [], priority: 'main' }].map(b => normalizeBuild(b, c)),
-  }));
+      : [{ sets: [], priority: 'main' }].map(b => normalizeBuild(b, c));
+    const present = new Set(builds.map(b => b.bkey).filter(Boolean));
+    const removedBkeys = [...new Set((Array.isArray(c.removedBkeys) ? c.removedBkeys : [])
+      .filter(k => typeof k === 'string' && k))].filter(k => !present.has(k));
+    return {
+      id: c.id || ('c_' + Math.random().toString(36).slice(2)),
+      name: c.name || '未命名',
+      skey: typeof c.skey === 'string' ? c.skey : '',   // 出厂角色名：改名后保持不变，是「还能还原」的唯一锚点
+      element: ELEMENTS[c.element] ? c.element : 'pyro',
+      region: REGION_NAME[c.region] ? c.region : 'other',
+      roles: (Array.isArray(c.roles) && c.roles.length)
+        ? c.roles.filter(r => ROLE_NAME[r]) : ['maindps'],
+      enabled: !!c.enabled,
+      note: c.note || '',
+      src: normSrcList(c.src),
+      custom: !!c.custom,
+      builds,
+      ...(removedBkeys.length ? { removedBkeys } : {}),
+    };
+  });
   return o;
 }
 
@@ -1063,6 +1170,7 @@ function normalizeBuild(b, c) {
     // 不再参与任何展示与编辑；旧存档里的值原样留着，避免回滚版本时丢数据。
     roles: Array.isArray(b.roles) ? b.roles.filter(s => typeof s === 'string' && s) : [],
   };
+  if (b.own) out.own = true;   // 用户自建组：不参与出厂身份匹配，也不会被 backfill 认领
   // 主要属性：优先用组内的，缺失则回落到角色级旧数据
   const srcMain = b.main || c.main;
   out.main = {
@@ -3674,6 +3782,31 @@ function fitNote(el) {
   el.style.height = Math.min(Math.max(el.scrollHeight + border, min), max) + 'px';
 }
 
+/* 配装列表增删 / 还原后，同步「新增时套用」「从预置添加」两个下拉。
+ * 复制来源优先绑 bkey（k:...），只有自定义组才退回下标（i:...）——
+ * 否则删掉一组后，下拉里的旧序号会静默指向另一组。 */
+function refreshAddSources() {
+  if (!editing) return;
+  const from = $('#edAddFrom');
+  if (from) {
+    const keep = from.value && from.value.startsWith('k:') ? from.value : '';
+    from.innerHTML = '<option value="blank">' + t('空白（自行填写追加属性）') + '</option>' +
+      editing.builds.map((b, i) => {
+        const val = b.bkey ? 'k:' + b.bkey : 'i:' + i;
+        return `<option value="${esc(val)}">${t('复制配装')} ${i + 1}（${esc(buildSetsLabel(b) || t('未选套装'))}）</option>`;
+      }).join('');
+    from.value = [...from.options].some(o => o.value === keep) ? keep : 'blank';
+  }
+  const preset = $('#edAddPreset'), lbl = $('#edPresetLbl');
+  if (preset && lbl) {
+    const list = factoryPresetOptions(editing);
+    preset.innerHTML = '<option value="">' + t('（选择一个已删除的预置组）') + '</option>' +
+      list.map(b => `<option value="${esc(b.bkey)}">${esc(buildSetsLabel(b))}</option>`).join('');
+    preset.value = '';
+    lbl.classList.toggle('hidden', !list.length);
+  }
+}
+
 function drawDrawer() {
   const c = editing;
   const body = $('#drawerBody');
@@ -3716,17 +3849,11 @@ function drawDrawer() {
     <div class="bm-row">
       <button type="button" class="btn sm primary" id="edAddBuild">+ 添加一组配装</button>
       <label class="fld">📋 新增时套用…
-        <select id="edAddFrom">
-          <option value="blank">${t('空白（自行填写追加属性）')}</option>
-          ${editing.builds.map((b, i) => `<option value="b${i}">${t('复制配装')} ${i + 1}（${esc(buildSetsLabel(b) || t('未选套装'))}）</option>`).join('')}
-        </select>
+        <select id="edAddFrom"></select>
       </label>
-      ${factoryPresetOptions(editing).length ? `<label class="fld">＋ 从预置添加
-        <select id="edAddPreset">
-          <option value="">${t('（选择一个已删除的预置组）')}</option>
-          ${factoryPresetOptions(editing).map(b => `<option value="${esc(b.bkey)}">${esc(buildSetsLabel(b))}</option>`).join('')}
-        </select>
-      </label>` : ''}
+      <label class="fld hidden" id="edPresetLbl">＋ 从预置添加
+        <select id="edAddPreset"></select>
+      </label>
     </div>
   </div>
 
@@ -3872,14 +3999,16 @@ ${esc(c.note)}</textarea>
   body.querySelector('#edAddBuild').onclick = () => {
     const sel = body.querySelector('#edAddFrom');
     const v = sel ? sel.value : 'blank';
+    // 复制来源优先绑 bkey（增删配装后序号会变，下标不可靠）；自定义组才退回下标
+    let src = null;
+    if (v.startsWith('k:')) src = editing.builds.find(b => b.bkey === v.slice(2)) || null;
+    else if (v.startsWith('i:')) src = editing.builds[+v.slice(2)] || null;
+    if (v !== 'blank' && !src) return toast('这一组配装已不存在，请重新选择');
     const nb = freshBuild('alt');
-    if (v && v[0] === 'b') {
-      const src = editing.builds[+v.slice(1)];
-      if (src) {
-        nb.main = JSON.parse(JSON.stringify(src.main || {}));
-        nb.subs = JSON.parse(JSON.stringify(src.subs || []));
-        // 定位不再复制：它由「所选套装」派生，复制套装即自动带上定位
-      }
+    if (src) {
+      nb.main = JSON.parse(JSON.stringify(src.main || {}));
+      nb.subs = JSON.parse(JSON.stringify(src.subs || []));
+      // 定位不再复制：它由「所选套装」派生，复制套装即自动带上定位
     }
     editing.builds.push(nb);
     ui.buildIdx = editing.builds.length - 1;
@@ -3952,8 +4081,10 @@ function drawBuildCards() {
       </div>` : '') +
     editing.builds.map((b, i) => {
     const sets = (b.sets || []).filter(Boolean);
-    const mod = buildModified(editing, b);
-    const canRestore = !!factoryBuildOf(editing, b);
+    const f = factoryBuildOf(editing, b);
+    const mod = f ? buildContentDiff(f, b) : false;
+    const custom = !f;                 // 没有内置对应 → 自定义组，没有「整组还原」可点
+    const canRestore = !!f;
     return `
     <div class="bm-card" data-bi="${i}">
       <div class="bm-t">
@@ -3965,7 +4096,8 @@ function drawBuildCards() {
           : (buildNeed(b) === 2
             ? (sets.length <= 2 ? t('2+2 组合') : t('2+2 候选池（任选 2 套）'))
             : (sets.length === 1 ? t('4 件套') : t('4 件套（候选中任选 1 套）')))}</span>
-        ${mod ? `<span class="bm-mod">${t('已修改')}</span>` : ''}
+        ${mod ? `<span class="bm-mod">${t('已修改')}</span>`
+          : (custom ? `<span class="bm-mod custom" title="${esc(t('没有内置原样：这是你自己新增的配装组'))}">${t('自定义')}</span>` : '')}
       </div>
       <div class="bm-sum">
         ${buildMainBrief(b).map(m => `<div><span class="k">${m.name}</span>${esc(m.txt)}</div>`).join('')}
@@ -4013,7 +4145,9 @@ function drawBuildCards() {
       const i = +btn.dataset.bdel;
       if (editing.builds.length <= 1) return toast('至少保留一组配装');
       if (!confirm(t('确定删除配装') + (i + 1) + t('吗？删除后立即生效，自定义配装无法恢复。'))) return;
+      const removed = editing.builds[i];
       editing.builds.splice(i, 1);
+      markRemovedBuild(editing, removed);   // 记下删掉的是哪一组出厂配装
       if (!editing.builds.some(b => b.priority === 'main')) editing.builds[0].priority = 'main';
       if (ui.buildIdx >= editing.builds.length) ui.buildIdx = 0;
       persistEditingChar();    // 立即落盘 + 重渲染角色卡：卡片展示恒等于主推，自动切到当前主推组
@@ -4022,6 +4156,7 @@ function drawBuildCards() {
     };
   });
   syncRestoreCharBtn();        // 改完重算「还原内置」是否可点（可还原状态会随改动变化）
+  refreshAddSources();         // 增删 / 还原后同步「复制配装 N」「从预置添加」两个下拉
 }
 
 /* ============================================================
@@ -4078,8 +4213,8 @@ function openBuildModal(i, isNew) {
   $('#bmTitle').textContent = t('编辑配装') + ' ' + (i + 1) +
     (bmDraft.priority === 'main' ? t('（主推）') : t('（备选）'));
   const btnRes = $('#bmRestore');
-  // 新增的空组没有出厂对应，不给「还原这一组」
-  btnRes.classList.toggle('hidden', !(bmDraft.bkey && factoryBuildOf(editing, bmDraft)));
+  // 只有真正能对回出厂组的（bkey 命中）才给「还原这一组」；自定义组没有内置原样
+  btnRes.classList.toggle('hidden', !factoryBuildOf(editing, bmDraft));
   drawBuildForm();
   $('#buildMask').classList.remove('hidden');
   $('#buildBox').classList.remove('hidden');
@@ -4199,6 +4334,7 @@ function drawBuildForm() {
       const src = editing.builds[+v.slice(1)];
       if (!src) return;
       B.sets = (src.sets || []).filter(Boolean).slice();
+      B.need = (src.need === 2 || src.need === 4) ? src.need : null;
       B.main = JSON.parse(JSON.stringify(src.main || {}));
       B.subs = JSON.parse(JSON.stringify(src.subs || []));
       // 定位不参与复制：它跟着套装走，套装复制过来定位自然一致（避免「定位一并套用」的误导）
@@ -4210,7 +4346,10 @@ function drawBuildForm() {
       if (!f) return;
       const fb = factoryBuildCopy(f, editing);
       B.sets = fb.sets;
+      B.need = fb.need;
       B.bkey = fb.bkey;
+      B.fcanon = fb.fcanon;   // 身份切到该出厂组，避免下次加载被 fcanon 修复拉回旧组
+      delete B.own;
       B.main = fb.main;
       B.subs = fb.subs;
       // 定位由套装派生，不再从预置里带过来
@@ -4278,16 +4417,17 @@ function drawBuildRoles() {
 /* 保存：写回 editing.builds，主推唯一，关浮窗并重绘卡片 */
 function saveBuildModal() {
   const B = bmDraft;
+  const idx = bmIndex;               // closeBuildModal 会清空 bmIndex，提示要用保存前的序号
   const pool = (B.sets || []).filter(Boolean);
   if (!pool.length) return toast('请至少选择一个套装');
   if (new Set(pool).size !== pool.length) return toast('同一套装只能选一次：2+2 不支持重复套');
-  editing.builds[bmIndex] = JSON.parse(JSON.stringify(B));
-  if (B.priority === 'main') editing.builds.forEach((b, j) => { if (j !== bmIndex) b.priority = 'alt'; });
+  editing.builds[idx] = JSON.parse(JSON.stringify(B));
+  if (B.priority === 'main') editing.builds.forEach((b, j) => { if (j !== idx) b.priority = 'alt'; });
   else if (!editing.builds.some(b => b.priority === 'main')) editing.builds[0].priority = 'main';
   closeBuildModal(true);
   persistEditingChar();
   drawBuildCards();
-  toast('已保存配装' + (bmIndex + 1));
+  toast('已保存配装' + (idx + 1));
 }
 
 function persistEditingChar() {
@@ -4299,6 +4439,12 @@ function persistEditingChar() {
     .filter(b => b.sets && b.sets.length)
     .map(b => normalizeBuild(b, c));
   if (!c.builds.length) return;
+  // 墓碑只保留「确实还缺着」的出厂组：从预置加回来 / 整组还原后自动清掉
+  const present = new Set(c.builds.map(b => b.bkey).filter(Boolean));
+  const removedBkeys = [...new Set((Array.isArray(c.removedBkeys) ? c.removedBkeys : [])
+    .filter(k => typeof k === 'string' && k))].filter(k => !present.has(k));
+  if (removedBkeys.length) c.removedBkeys = removedBkeys;
+  else delete c.removedBkeys;
   c.src = (c.src || []).map(normSrcItem).filter(x => x && x.url)
     .filter((v, i, a) => a.findIndex(z => z.url === v.url) === i);
   delete c.main; delete c.subs;
@@ -4517,6 +4663,7 @@ function freshBuild(priority) {
     sets: [],
     priority: priority || 'main',
     roles: [],
+    own: true,                 // 用户新建的配装组：默认没有出厂身份
     main: { sands: [], goblet: [], circlet: [] },
     subs: [],
   };
@@ -6440,10 +6587,12 @@ function initFootMore() {
   bind();
   initScrollLock();               // 浮窗打开时锁住主页面滚动（防滚动穿透）
   initFootMore();                 // 窄屏把启用区下方的长说明收成一行
-  // 老存档补 bkey：没有指纹就没法判定「这一组还是不是内置原样」，也就没法单组还原
+  // 先按 fcanon 修复 bkey 漂移（内置数据增删/重排组后仍能找回正确基线），
+  // 再给老存档补 bkey，最后让没动过的组自动跟上新版出厂
+  const rpN = repairBkeysByFcanon();
   const bfN = backfillBkeys();
-  const syN = syncFactoryUpdates();   // 后台更新了内置数据 → 没动过的组自动跟上
-  if (bfN || syN) save();
+  const syN = syncFactoryUpdates();
+  if (rpN || bfN || syN) save();
   renderBatchBar();
   fillRegionFilter();
   renderChars();
