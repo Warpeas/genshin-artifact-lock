@@ -261,6 +261,12 @@ JS 与 CSS 是一对（`nameBreakW2()` ↔ `.cc-bp-name.n2 / .nfull`），**别�
 - **芯片只有两态**：`.role-chip.on`（金色 = 当前选中）/ 无类（未选）。旧三态（`.on.user` 蓝 = 你选的、`.bi-off` 虚线灰 = 内置项已取消）与三色图例 `.sm-legend` **已删除**——「是不是内置项 / 改没改过」这件事只由块头徽标表达，别再引入第二套色谱。
 - ⚠️ 点击绑定在 `renderSets()` 里按容器属性取：`[data-smpos2] / [data-smpos2kw] / [data-smpos4] / [data-smpos4kw]`（对应写 `pos2 / pos2kw / pos4 / pos4kw`），芯片自身带 `data-smrole`（大类层）/ `data-smrolekw`（关键词层）。改属性名必须同步改绑定，否则点了不生效。点选即 `save()` + `afterSetsChange()`，弹层不整表重渲染。
 
+### 4.7 锁定方案候选的展示顺序
+
+- `setCandidates()` = `buildPlanCandidates()` → `applyPlanOverlay()`（手工合并）→ `orderPlanCandidates()`（排序）→ `applyMinHit()`。**排序只改展示 / 导出顺序**，不参与分组与合并判据；候选 `key` 不变，`planCfg.merge/hide` 不受影响。
+- `orderPlanCandidates()`：先按组内人数降序分档（人数最多的组恒在最前）；同档内做最近邻链——首组优先接上一档的最后一组，之后依次挑与刚排下者最相似的；相似度 = 两组追加属性名次权重向量（组内平均）的余弦（`cosSim` 同口径），相似度打平按 `key`；全 0 时自然退化为 `key` 顺序。散件 / 过渡规则无角色需求，恒排最后且保持原相对顺序。
+- 「并入…」的选项标签由 `mergeTargetLabel(q, no)` 生成，`no` = 该候选在 `cands` 里的下标 + 1，**与卡片左上角 `.gp-idx` 同一份排序**；不要在别处另算一套组号。
+
 ---
 
 ## 5. 工具链（维护内置数据时才需要）

@@ -142,10 +142,14 @@ const productionStart = app.indexOf('const SUB_RANK_DECAY =');
 const productionEnd = app.indexOf('/* 把若干候选方案手动合并成一套', productionStart);
 const rolesStart = app.indexOf('function pickBuild(c, setName)');
 const rolesEnd = app.indexOf('function buildPlanCandidates(charList, setName)', rolesStart);
+const orderStart = app.indexOf('/* ---------- 候选展示顺序');
+const orderEnd = app.indexOf('/* ============================================================', orderStart);
 assert(productionStart >= 0 && productionEnd > productionStart);
 assert(rolesStart >= 0 && rolesEnd > rolesStart);
+assert(orderStart >= 0 && orderEnd > orderStart, 'candidate ordering block must remain extractable');
 vm.runInContext(app.slice(productionStart, productionEnd), production);
 vm.runInContext(app.slice(rolesStart, rolesEnd), production);
+vm.runInContext(app.slice(orderStart, orderEnd), production);
 
 const productionChars = vm.runInContext('buildDefaultCharacters()', production);
 let planCount = 0;
@@ -231,3 +235,38 @@ const nicolePruneGroup = celestialGroups.find(group =>
   group.some(member => member.name === '尼可') && group.some(member => member.name === '布伦妮'));
 assert(nicolePruneGroup, 'Nicole and Prune should share the Celestial Gift plan');
 console.log('PASS: 天之美赐 short-list case:', nicolePruneGroup.map(member => member.name).join('、'));
+
+// 候选展示顺序：人数降序为主，同档按追加属性相似度做最近邻链；规则恒排最后。
+const fakePlan = (key, size, subs) => ({
+  kind: 'chars', key,
+  chars: Array.from({ length: size }, (_, i) => `${key}-${i}`),
+  _group: [{ name: key, subs, subList: [], req: [] }],
+});
+const planA = fakePlan('g:a', 3, { cr: 1, cd: 1 });
+const planB = fakePlan('g:b', 2, { hpP: 1, er: 1 });
+const planC = fakePlan('g:c', 1, { hpP: 0.9, er: 1 });   // 与 B 相似
+const planD = fakePlan('g:d', 1, { cr: 1, cd: 0.9 });    // 与 A 相似
+const rulePlan = { kind: 'rule', key: 'r:test', chars: [], _group: null };
+const orderKeys = list => Array.from(production.orderPlanCandidates(list), plan => plan.key);
+assert.deepEqual(orderKeys([planD, rulePlan, planB, planA, planC]), ['g:a', 'g:b', 'g:c', 'g:d', 'r:test']);
+assert.deepEqual(orderKeys([planA, planB, planC, planD]), orderKeys([planD, planC, planB, planA]));
+console.log('PASS: candidate ordering keeps size tiers, chains similar groups, and always appends rule plans.');
+
+let orderSets = 0;
+builtIn.setNames.forEach(setName => {
+  const charsForSet = productionChars.filter(character =>
+    (character.builds || []).some(build => (build.sets || []).includes(setName)));
+  if (!charsForSet.length) return;
+  const planRoles = production.toRoles(charsForSet, setName);
+  const plans = Array.from(production.naturalClusters(planRoles), group => production.planFromGroup(group));
+  if (plans.length < 2) return;
+  const ordered = Array.from(production.orderPlanCandidates(plans));
+  orderSets++;
+  assert.deepEqual(ordered.map(plan => plan.key).sort(), plans.map(plan => plan.key).sort(), `${setName}: ordering changed candidates`);
+  for (let i = 1; i < ordered.length; i++) {
+    assert(ordered[i].chars.length <= ordered[i - 1].chars.length,
+      `${setName}: plan size increased after sorting (${ordered.map(plan => plan.chars.length).join(',')})`);
+  }
+  assert.deepEqual(ordered.map(plan => plan.key), orderKeys(plans.slice().reverse()), `${setName}: ordering depends on input order`);
+});
+console.log(`PASS: candidate ordering is size-monotonic and input-order stable across ${orderSets} multi-group sets.`);

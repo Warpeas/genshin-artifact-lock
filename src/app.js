@@ -2587,6 +2587,76 @@ function applyPlanOverlay(setName, cands) {
   return out;
 }
 
+/* ---------- 候选展示顺序：人数优先 + 属性相似聚拢 ----------
+ *   WHY：聚类只负责「谁和谁能合」，产出顺序是合并过程的副产物 —— 会出现
+ *       「后面一组人反而更多」「需求相近的两组被夹开」。展示顺序单独整理，不改分组与判据。
+ *   口径（确定性，不依赖角色输入顺序）：
+ *     ① 先按组内角色数降序分档 —— 人数最多的组恒在最前；
+ *     ② 每档内做最近邻链：先挑与上一档最后一组最相似的一组（让跨人数的相似需求相邻），
+ *        之后反复挑与「刚排下的一组」最相似者；相似度相同按 key 排序；
+ *     ③ 相似度 = 两组追加属性名次权重向量（组内平均）的余弦，与 roleSimilarity 同口径；
+ *        毫无共同词条（相似度全 0）时退回 key 顺序，至少保证稳定。
+ *     散件 / 过渡规则没有角色需求、也谈不上「人数组」：保持原相对顺序排在最后。
+ *   只影响展示 / 导出顺序，不改变方案自身内容。 */
+function planSubCentroid(p) {
+  const roles = (p && p._group) || [];
+  if (!roles.length) return null;
+  const vec = {};
+  roles.forEach(r => {
+    const w = r.subs || {};
+    Object.keys(w).forEach(id => { vec[id] = (vec[id] || 0) + w[id] / roles.length; });
+  });
+  return vec;
+}
+function orderPlanCandidates(list) {
+  const EPS = 1e-9;
+  const byKey = (a, b) => (a.p.key < b.p.key ? -1 : (a.p.key > b.p.key ? 1 : 0));
+  const rules = [];
+  const charPlans = [];
+  (list || []).forEach(p => {
+    (p && p.kind === 'rule' ? rules : charPlans).push({
+      p,
+      size: ((p && p.chars) || []).length,
+      vec: planSubCentroid(p),
+    });
+  });
+  if (charPlans.length < 2) return (list || []).slice();
+
+  const tiers = new Map();
+  charPlans.forEach(e => {
+    if (!tiers.has(e.size)) tiers.set(e.size, []);
+    tiers.get(e.size).push(e);
+  });
+  const sizes = [...tiers.keys()].sort((a, b) => b - a);
+
+  const out = [];
+  let lastVec = null;
+  sizes.forEach(size => {
+    const pool = tiers.get(size).slice();
+    while (pool.length) {
+      let best = -1;
+      let bestScore = -Infinity;
+      pool.forEach((e, i) => {
+        let score;
+        if (lastVec) score = cosSim(lastVec, e.vec || {});
+        else {
+          // 首档尚无参照：从「同档里最居中」的一组起链，避免按 key 起头把相似组夹开
+          score = pool.reduce((s, o) => s + (o === e ? 0 : cosSim(e.vec || {}, o.vec || {})), 0);
+        }
+        const tie = best < 0 || byKey(e, pool[best]) < 0;
+        if (score > bestScore + EPS || (Math.abs(score - bestScore) <= EPS && tie)) {
+          best = i;
+          bestScore = score;
+        }
+      });
+      const picked = pool.splice(best, 1)[0];
+      out.push(picked.p);
+      lastVec = picked.vec;
+    }
+  });
+  return out.concat(rules.map(e => e.p));
+}
+
 /* ============================================================
  * 散件 / 过渡 保留规则
  *   与具体角色无关，用于保留高价值散件（稀有主要属性）或过渡 2 件套胚子。
@@ -2666,9 +2736,11 @@ function applyMinHit(setName, list) {
   return list;
 }
 
-/* 取 / 算某套装：候选方案 →（套用手工合并）→（套用命中条数调整），渲染与导出共用同一结果 */
+/* 取 / 算某套装：候选方案 →（套用手工合并）→（按人数 + 相似度排展示顺序）→（套用命中条数调整），
+ * 渲染与导出共用同一结果 */
 function setCandidates(chars, setName) {
-  return applyMinHit(setName, applyPlanOverlay(setName, buildPlanCandidates(chars, setName)));
+  return applyMinHit(setName, orderPlanCandidates(
+    applyPlanOverlay(setName, buildPlanCandidates(chars, setName))));
 }
 function adoptedPlans(chars, setName) {
   const cfg = (state.planCfg && state.planCfg[setName]) || null;
@@ -4873,9 +4945,10 @@ function renderGamePlans(setName, cands, slotFilter = 'all', b = null) {
 
   const cards = cands.map((p, i) => {
     const off = hidden.has(p.key);
-    // 「并入…」的候选目标：除自己以外的其它候选
-    const opts = cands.filter((q, j) => j !== i)
-      .map(q => `<option value="${esc(q.key)}">${esc(mergeTargetLabel(q))}</option>`).join('');
+    // 「并入…」的候选目标：除自己以外的其它候选；组号 = 卡片左上角的序号（同一份排序）
+    const opts = cands.map((q, j) => (j === i ? null :
+      `<option value="${esc(q.key)}">${esc(mergeTargetLabel(q, j + 1))}</option>`))
+      .filter(Boolean).join('');
 
     const rows = slotsTodo.map(sd => `
       <div class="gp-mini">
@@ -4948,12 +5021,14 @@ function renderGamePlans(setName, cands, slotFilter = 'all', b = null) {
   </div>`;
 }
 
-/* 「并入…」下拉里的目标名：规则优先取规则名，角色组取前几个人名 */
-function mergeTargetLabel(q) {
-  if (q.kind === 'rule') return '🧩 ' + keepRuleName(q.ruleName);
+/* 「并入…」下拉里的目标名：组号 + 人名（规则则用规则名）。
+ *   no = 该候选在卡片列表里的序号（从 1 起），与卡片左上角 gp-idx 一致。 */
+function mergeTargetLabel(q, no) {
+  const head = no ? tf('第 {n} 组', { n: no }) + ' · ' : '';
+  if (q.kind === 'rule') return head + '🧩 ' + keepRuleName(q.ruleName);
   const names = q.chars || [];
-  const txt = names.length > 3 ? `${names.slice(0, 3).join('、')} 等 ${names.length} 人` : names.join('、');
-  return (q.mergedCount ? `[合并${q.mergedCount}] ` : '') + (txt || '（空）');
+  const txt = names.length > 3 ? `${names.slice(0, 3).join('、')} ${tf('等 {n} 人', { n: names.length })}` : names.join('、');
+  return head + (q.mergedCount ? `[${tf('合并 {n}', { n: q.mergedCount })}] ` : '') + (txt || t('（空）'));
 }
 
 /* 导出：游戏内锁定方案（可照搬进游戏） */
