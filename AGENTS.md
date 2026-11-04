@@ -119,7 +119,7 @@ genshin-artifact-lock/
 - 回写脚本与 `buildDefaultCharacters` 都按这个格式读写。
 - `subs` 是 wiki 原始顺序，不自动表示必需；`subRules.required/equal` 才表达 ★必需和 `=` 同等优先。
 - `source:'manual'` 的规则由人工维护，离线回写不会覆盖；`source:'heuristic'` 是根据定位生成的可重算规则。
-- 当前：**127 个角色**（120 具名 + 旅行者 7 形态）、**55 套**圣遗物。
+- 当前：**129 个角色**（122 具名 + 旅行者 7 形态）、**55 套**圣遗物。
 
 ### 3.2 其他数据位置（`src/data.js`）
 
@@ -391,7 +391,7 @@ node tools/check_card_labels.js --built  # 额外断言 index.html 内联的 CSS
 - [ ] 若手改了角色配装数据：`node tools/show_char.js <角色>` 回读确认改动落在目标组；人工校准组 `source==='manual'`；要「严格先后」时 `equal` 已删除（SOP 见 `docs/角色数据修改手册.md`）
 - [ ] 打开 `index.html`：四个页面都能正常渲染，控制台无报错
 - [ ] 若动了数据：`node tools/check_data.js` 无异常项（允许 wiki 原文写「不强求」导致的空主词条）
-- [ ] 若动了数据：角色数 / 套装数符合预期（当前 127 / 55）
+- [ ] 若动了数据：角色数 / 套装数符合预期（当前 129 / 55）
 - [ ] 若动了合并或阈值：确认「② 锁定方案」输出仍合理（重要属性相同的能合并、不同的被拆开）
 - [ ] 若动了角色卡配装条（`.cc-bp` / 定位标签 / `buildTagInline`）：`node tools/check_card_labels.js --built` 通过；中英文各切一遍，桌面（≥1280px）与手机（390 / 360px）真实渲染量一遍——词内断行 0、普通条「名左标右」恒同行、`.wide` 长名不压编号、宽屏名段与定位段空隙中位 ≤6px（改动前 85–131px）、宽屏同角色各行长度确有差异且窄屏仍等宽、无横向溢出、无超高行（>100px）；英文长词（Transform / Elemental DMG）不撑破卡片
 - [ ] 若动了套装简称表 `SET_SHORT` / `SET_SHORT_EN`：`node build.js` 后回读 `index.html`，两张表的条目数与 `src/data.js` 对得上、新条目在产物里抓得到；角色卡片与配装按钮显示简称，方案页 / 编辑页 / 导出仍是全称（`withZh` 下英文界面也取中文全称）

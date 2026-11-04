@@ -14,8 +14,18 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.10.29';
+const APP_VERSION = '2026.11.05';
 const CHANGELOG = [
+  {
+    v: '2026.11.05', date: '2026-11-05',
+    title: '新增 7.2 角色：米提亚、瓦列里',
+    items: [
+      '同步 7.2「坏灭肇始之时」两位至冬雷系新角色：米提亚（五星法器）与瓦列里（四星单手剑），内置角色 127 → 129。',
+      '米提亚按观测枢词条录入精通向：主推「影中沉凝的幻灭」4 件套，备选「饰金之梦 + 流浪大地的乐团」2+2；沙与杯固定元素精通，理之冠按暴击伤害 → 暴击率 → 元素精通。',
+      '瓦列里录入充能攻击辅助向：主推「教官」4 件套，备选「追忆之注连 + 角斗士的终幕礼」2+2 与「昔日宗室之仪」4 件套。',
+      '两位都带官方英文名、国度「至冬」与队伍定位；推荐的套装均已在套装库内，无需新增圣遗物。',
+    ],
+  },
   {
     v: '2026.10.29', date: '2026-10-29',
     title: '锁定方案候选按人数与相似度排序',
@@ -1374,6 +1384,8 @@ const CHAR_META = {
   "旅行者·冰": { en: "Traveler (Cryo)", region: "other", roles: ["subdps"], catalog: 124 },
   "薇斯纳": { en: "Vesna", region: "snezhnaya", roles: ["maindps"], catalog: 125 },
   "沃雅妮莎": { en: "Vojanissa", region: "snezhnaya", roles: ["support"], catalog: 126 },
+  "米提亚": { en: "Mitya", region: "snezhnaya", roles: ["maindps"], catalog: 127 },
+  "瓦列里": { en: "Valeriy", region: "snezhnaya", roles: ["support"], catalog: 128 },
 };
 
 const RAW_CHARS = [
@@ -2110,6 +2122,17 @@ const RAW_CHARS = [
     {sets:['千岩牢固'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'hp'], roles:['辅助']},
     {sets:['千岩牢固', '花海甘露之光'], sands:['hpP'], goblet:['hpP'], circlet:['hpP'], subs:['hpP', 'hp'], roles:['辅助']},
   ],  [['https://baike.mihoyo.com/ys/obc/content/509804/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/78338047', 'Asgater'], ['https://www.miyoushe.com/ys/article/78334819', 'HoYo青枫']],   ''],
+
+  /* ---------- 补遗：7.2 米提亚（雷·法器）/ 瓦列里（雷·单手剑） ---------- */
+  ['米提亚',      'electro', [
+    {sets:['影中沉凝的幻灭'], sands:['em'], goblet:['em'], circlet:['cd', 'cr', 'em'], subs:['cr', 'cd', 'em', 'er'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['输出', '精通']},
+    {sets:['饰金之梦', '流浪大地的乐团'], sands:['em'], goblet:['em'], circlet:['cd', 'cr', 'em'], subs:['cr', 'cd', 'em', 'er'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['输出', '精通']},
+  ],  [['https://baike.mihoyo.com/ys/obc/content/510137/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/79284459', 'Asgater'], ['https://www.miyoushe.com/ys/article/79207929', '幕陵']],   ''],
+  ['瓦列里',      'electro', [
+    {sets:['教官'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP'], roles:['精通']},
+    {sets:['追忆之注连', '角斗士的终幕礼'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP'], roles:['辅助']},
+    {sets:['昔日宗室之仪'], sands:['er', 'atkP'], goblet:['atkP'], circlet:['atkP'], subs:['er', 'atkP'], roles:['辅助']},
+  ],  [['https://baike.mihoyo.com/ys/obc/content/510136/detail', '观测枢词条'], ['https://www.miyoushe.com/ys/article/79325260', 'Asgater'], ['https://www.miyoushe.com/ys/article/79322273', 'HoYo青枫']],   ''],
   /* ---------- 旅行者：按「元素形态」各设一个条目，各自独立配装 ---------- */
   ['旅行者·风',      'anemo', [
     {sets:['翠绿之影'], sands:['er', 'atkP'], goblet:['anemo', 'atkP'], circlet:['cr', 'cd'], subs:['cr', 'cd', 'er', 'atkP'], subRules:{required:[], equal:[['cr', 'cd']], source:'heuristic'}, roles:['输出', '增伤', '减抗', '充能']},

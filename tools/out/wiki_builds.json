@@ -21108,5 +21108,231 @@
    }
   ],
   "url": "https://baike.mihoyo.com/ys/obc/content/509804/detail"
+ },
+ "米提亚": {
+  "ok": true,
+  "entry_id": "510137",
+  "tab": "圣遗物推荐",
+  "query": "米提亚",
+  "builds": [
+   [
+    "影中沉凝的幻灭"
+   ],
+   [
+    "饰金之梦",
+    "流浪大地的乐团"
+   ]
+  ],
+  "mains": {
+   "sands": [
+    "em"
+   ],
+   "goblet": [
+    "em"
+   ],
+   "circlet": [
+    "cd",
+    "cr",
+    "em"
+   ]
+  },
+  "subs": [
+   "cr",
+   "cd",
+   "em",
+   "er"
+  ],
+  "derived_preset": "crit",
+  "rows": [
+   {
+    "sets": [
+     "影中沉凝的幻灭"
+    ],
+    "label": "影中沉凝的幻灭",
+    "reason": "提高自身暴击率、星超导伤害，有效提高输出影中沉凝的幻灭4件套主词条时之沙：元素精通空之杯：元素精通理之冠：暴击伤害/暴击率/元素精通副词条：暴击率/暴击伤害/元素精通/充能效率",
+    "mains": {
+     "sands": [
+      "em"
+     ],
+     "goblet": [
+      "em"
+     ],
+     "circlet": [
+      "cd",
+      "cr",
+      "em"
+     ]
+    },
+    "subs": [
+     "cr",
+     "cd",
+     "em",
+     "er"
+    ],
+    "conditional": [],
+    "unknown": [],
+    "roles": [
+     "输出",
+     "精通"
+    ]
+   },
+   {
+    "sets": [
+     "饰金之梦",
+     "流浪大地的乐团"
+    ],
+    "label": "饰金之梦流浪大地的乐团",
+    "reason": "提供一定元素精通，进一步提高输出精通2件套+精通2件套主词条时之沙：元素精通空之杯：元素精通理之冠：暴击伤害/暴击率/元素精通副词条：暴击率/暴击伤害/元素精通/充能效率",
+    "mains": {
+     "sands": [
+      "em"
+     ],
+     "goblet": [
+      "em"
+     ],
+     "circlet": [
+      "cd",
+      "cr",
+      "em"
+     ]
+    },
+    "subs": [
+     "cr",
+     "cd",
+     "em",
+     "er"
+    ],
+    "conditional": [],
+    "unknown": [],
+    "roles": [
+     "输出",
+     "精通"
+    ]
+   }
+  ],
+  "url": "https://baike.mihoyo.com/ys/obc/content/510137/detail"
+ },
+ "瓦列里": {
+  "ok": true,
+  "entry_id": "510136",
+  "tab": "圣遗物推荐",
+  "query": "瓦列里",
+  "builds": [
+   [
+    "教官"
+   ],
+   [
+    "追忆之注连",
+    "角斗士的终幕礼"
+   ],
+   [
+    "昔日宗室之仪"
+   ]
+  ],
+  "mains": {
+   "sands": [
+    "er",
+    "atkP"
+   ],
+   "goblet": [
+    "atkP"
+   ],
+   "circlet": [
+    "atkP"
+   ]
+  },
+  "subs": [
+   "er",
+   "atkP"
+  ],
+  "derived_preset": "er",
+  "rows": [
+   {
+    "sets": [
+     "教官"
+    ],
+    "label": "教官",
+    "reason": "触发元素反应提高全队元素精通教官4件套主词条时之沙：元素充能效率/攻击力空之杯：攻击力理之冠：攻击力副词条：充能效率/百分比攻击力",
+    "mains": {
+     "sands": [
+      "er",
+      "atkP"
+     ],
+     "goblet": [
+      "atkP"
+     ],
+     "circlet": [
+      "atkP"
+     ]
+    },
+    "subs": [
+     "er",
+     "atkP"
+    ],
+    "conditional": [],
+    "unknown": [],
+    "roles": [
+     "精通"
+    ]
+   },
+   {
+    "sets": [
+     "追忆之注连",
+     "角斗士的终幕礼"
+    ],
+    "label": "追忆之注连角斗士的终幕礼",
+    "reason": "提高攻击力从而提高装备者辅助能力攻击2件+攻击2件主词条时之沙：元素充能效率/攻击力空之杯：攻击力理之冠：攻击力副词条：充能效率/百分比攻击力",
+    "mains": {
+     "sands": [
+      "er",
+      "atkP"
+     ],
+     "goblet": [
+      "atkP"
+     ],
+     "circlet": [
+      "atkP"
+     ]
+    },
+    "subs": [
+     "er",
+     "atkP"
+    ],
+    "conditional": [],
+    "unknown": [],
+    "roles": [
+     "辅助"
+    ]
+   },
+   {
+    "sets": [
+     "昔日宗室之仪"
+    ],
+    "label": "昔日宗室之仪",
+    "reason": "施放元素爆发提高全队攻击力昔日宗室之仪4件主词条时之沙：元素充能效率/攻击力空之杯：攻击力理之冠：攻击力副词条：充能效率/百分比攻击力",
+    "mains": {
+     "sands": [
+      "er",
+      "atkP"
+     ],
+     "goblet": [
+      "atkP"
+     ],
+     "circlet": [
+      "atkP"
+     ]
+    },
+    "subs": [
+     "er",
+     "atkP"
+    ],
+    "conditional": [],
+    "unknown": [],
+    "roles": [
+     "辅助"
+    ]
+   }
+  ],
+  "url": "https://baike.mihoyo.com/ys/obc/content/510136/detail"
  }
 }

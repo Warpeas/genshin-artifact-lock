@@ -4606,5 +4606,77 @@
     "n_images": 24
    }
   ]
+ },
+ "米提亚": {
+  "entry_id": "510137",
+  "wiki_url": "https://baike.mihoyo.com/ys/obc/content/510137/detail",
+  "guides": [
+   {
+    "id": "79284459",
+    "title": "【V7.2】「米提亚」一图流攻略︱培养&养成",
+    "author": "Asgater",
+    "uid": "79695828",
+    "url": "https://www.miyoushe.com/ys/article/79284459",
+    "view": 44703,
+    "bookmark": 317,
+    "like": 5013,
+    "created": 1793582716,
+    "dedicated": true,
+    "noisy": false,
+    "whitelisted": true,
+    "from": "search"
+   },
+   {
+    "id": "79207929",
+    "title": "【创作体验服】米提亚：人物简介",
+    "author": "幕陵",
+    "uid": "195479393",
+    "url": "https://www.miyoushe.com/ys/article/79207929",
+    "view": 20054,
+    "bookmark": 150,
+    "like": 4657,
+    "created": 1793332816,
+    "dedicated": false,
+    "noisy": false,
+    "whitelisted": true,
+    "from": "search"
+   }
+  ]
+ },
+ "瓦列里": {
+  "entry_id": "510136",
+  "wiki_url": "https://baike.mihoyo.com/ys/obc/content/510136/detail",
+  "guides": [
+   {
+    "id": "79325260",
+    "title": "【V7.2】「瓦列里」全面解析︱养成/配队/机制",
+    "author": "Asgater",
+    "uid": "79695828",
+    "url": "https://www.miyoushe.com/ys/article/79325260",
+    "view": 12049,
+    "bookmark": 145,
+    "like": 306,
+    "created": 1793758754,
+    "dedicated": true,
+    "noisy": false,
+    "whitelisted": true,
+    "from": "search"
+   },
+   {
+    "id": "79322273",
+    "title": "【V7.2】「瓦列里」丨图解养成攻略",
+    "author": "HoYo青枫",
+    "uid": "285802042",
+    "url": "https://www.miyoushe.com/ys/article/79322273",
+    "view": 13135,
+    "bookmark": 51,
+    "like": 190,
+    "created": 1793742705,
+    "dedicated": true,
+    "noisy": false,
+    "whitelisted": true,
+    "from": "search"
+   }
+  ]
  }
 }
