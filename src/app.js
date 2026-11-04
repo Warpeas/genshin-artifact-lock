@@ -4854,9 +4854,11 @@ function renderPlan() {
     <div class="stat-box"><div class="sv">${planCount}</div><div class="sl">采纳方案总数</div></div>
     <div class="stat-box"><div class="sv">${fodderSets}</div><div class="sl">可整套清理的套装</div></div>`;
 
+  // 页眉是 JS 拼出来的整串，applyI18n 的「文本节点精确整串匹配」永远命中不了，
+  // 必须生成时就翻：模板走 tf()，角色名逐个走 t()（导出/复制文本另算，那侧保持中文）。
   $('#printMeta').textContent =
-    '启用角色：' + state.characters.filter(c => c.enabled).map(c => c.name).join('、') +
-    '　|　生成时间：' + new Date().toLocaleString('zh-CN');
+    tf('启用角色：{names}', { names: state.characters.filter(c => c.enabled).map(c => t(c.name)).join('、') }) +
+    '　|　' + tf('生成时间：{time}', { time: new Date().toLocaleString(isUiEn() ? 'en-US' : 'zh-CN') });
 
   $('#planBody').innerHTML = html || '<div class="card"><p class="muted">没有符合条件的套装。</p></div>';
   fitPieceBoardGroups($('#planBody'));
@@ -5026,7 +5028,7 @@ function renderGamePlans(setName, cands, slotFilter = 'all', b = null) {
 function mergeTargetLabel(q, no) {
   const head = no ? tf('第 {n} 组', { n: no }) + ' · ' : '';
   if (q.kind === 'rule') return head + '🧩 ' + keepRuleName(q.ruleName);
-  const names = q.chars || [];
+  const names = (q.chars || []).map(n => t(n));   // 组号 + 人名拼成一串，角色名必须在这里翻
   const txt = names.length > 3 ? `${names.slice(0, 3).join('、')} ${tf('等 {n} 人', { n: names.length })}` : names.join('、');
   return head + (q.mergedCount ? `[${tf('合并 {n}', { n: q.mergedCount })}] ` : '') + (txt || t('（空）'));
 }

@@ -14,8 +14,18 @@
  *          数据管理页「更新日志」整表按大版本（每天一块）聚合，块内合并当天各小版本条目并去重。
  * 注意：本文件所有字符串都不得出现 script 结束标签（build.js 有检查，注释里也别写）。
  * ---------------------------------- */
-const APP_VERSION = '2026.11.05';
+const APP_VERSION = '2026.11.05.2';
 const CHANGELOG = [
+  {
+    v: '2026.11.05.2', date: '2026-11-05',
+    title: '修英文界面漏翻：散件索引标注与方案页页眉',
+    items: [
+      '散件索引角色小条上的「主属性次选」「仅备选」补齐英文词条，英文界面下不再露出中文。',
+      '② 锁定方案页的打印页眉改为生成时翻译：「启用角色：…」后面的角色名单跟随语言，时间格式也按界面语言取。',
+      '「并入…」下拉的目标组名一并翻出角色名（此前只有「第 N 组」翻了、名单仍是中文）。',
+      '套装的 4 件套效果文本仍为中文：仓库只有观测枢的中文效果文案，没有英文来源，不臆造译文。',
+    ],
+  },
   {
     v: '2026.11.05', date: '2026-11-05',
     title: '新增 7.2 角色：米提亚、瓦列里',
@@ -2717,6 +2727,9 @@ const T_UI_EN = {
   '当前没有启用配装需要这个部位的主属性。': 'No enabled builds currently need a main stat for this slot.',
   '未设置追加属性偏好': 'No substat preferences provided',
   '需求类型': 'Need types',
+  /* 角色小条上的例外标注（app.js 里已包 t()，此前词典缺词 → 英文界面露中文） */
+  '主属性次选': 'Secondary main stat',
+  '仅备选': 'Alt builds only',
   '追加属性组合': 'Substat combination',
   '适用角色': 'Applicable characters',
   '配装推荐': 'Build recommendations',
@@ -3198,6 +3211,9 @@ Object.assign(T_UI_EN, {
   '合并 {n}': 'merged {n}',
   '等 {n} 人': '+{n} more',
   '共 {n} 人': '{n} total',
+  /* 打印页眉：整串由 JS 拼出来，必须走模板键，否则英文界面露出中文名单 */
+  '启用角色：{names}': 'Enabled characters: {names}',
+  '生成时间：{time}': 'Generated: {time}',
   '已采纳 {p} / 游戏上限 {m}': 'Adopted {p} / in-game cap {m}',
   '（未指定角色）': '(no character assigned)',
   '不限': 'Any',
