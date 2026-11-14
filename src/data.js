@@ -2612,6 +2612,7 @@ const T_UI_EN = {
   '输入角色配装需求 → 汇总输出每套圣遗物的锁定清单': 'Pick your characters → get a lock plan for every artifact set',
   '数据保存在本机浏览器': 'Saved in this browser',
   '使用说明': 'How to use',
+  '返回顶部': 'Back to top',
   '① 角色配置': '① Characters',
   '① 角色': '① Chars',
   '② 锁定方案': '② Lock Plans',

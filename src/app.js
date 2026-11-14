@@ -6657,6 +6657,17 @@ function initFootMore() {
   sync();
 }
 
+function initBackToTop() {
+  const button = $('#backToTop');
+  const sync = () => { button.hidden = window.scrollY < 300; };
+  window.addEventListener('scroll', sync, { passive: true });
+  button.addEventListener('click', () => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reducedMotion ? 'instant' : 'smooth' });
+  });
+  sync();
+}
+
 (function init() {
   state = load();
   if (pendingMigrate) { save(); pendingMigrate = null; }   // 固化从默认数据的回填
@@ -6665,6 +6676,7 @@ function initFootMore() {
   bind();
   initScrollLock();               // 浮窗打开时锁住主页面滚动（防滚动穿透）
   initFootMore();                 // 窄屏把启用区下方的长说明收成一行
+  initBackToTop();
   // 先按 fcanon 修复 bkey 漂移（内置数据增删/重排组后仍能找回正确基线），
   // 再给老存档补 bkey，最后让没动过的组自动跟上新版出厂
   const rpN = repairBkeysByFcanon();

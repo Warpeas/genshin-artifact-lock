@@ -1482,6 +1482,15 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
   animation:toast-in .24s var(--ease) 1;
 }
 
+.back-to-top{
+  position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));
+  z-index:80;width:44px;height:44px;padding:0;border:1px solid var(--line);
+  border-radius:var(--r);background:var(--panel2);color:var(--gold);
+  box-shadow:var(--sh2);font-size:24px;line-height:1;cursor:pointer;
+}
+.back-to-top:hover{background:var(--bg3);color:var(--gold2);}
+.back-to-top[hidden],html.lock-scroll .back-to-top{display:none;}
+
 .print-only{display:none;}
 .print-meta{font-size:11px;color:#666;margin:0 0 12px;}
 
@@ -1777,7 +1786,7 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
 
 /* ---------- print ---------- */
 @media print{
-  .topbar,.tabs,.toolbar,.summary-strip,.btn,.drawer,.modal,.modal-mask,.toast,.set-none{display:none !important;}
+  .topbar,.tabs,.toolbar,.summary-strip,.btn,.drawer,.modal,.modal-mask,.toast,.set-none,.back-to-top{display:none !important;}
   .tabpane{display:none !important;}
   #tab-plan.tabpane{display:block !important;}
   .print-only{display:block;}
