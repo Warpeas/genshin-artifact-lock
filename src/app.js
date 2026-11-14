@@ -4929,6 +4929,7 @@ function renderSetBlock(name, b, slotFilter) {
       ${unused
         ? '<span class="set-none"><span class="tier-tag fodder">无角色需要 · 可整套清理</span></span>'
         : ''}
+    </div>
     ${gpHtml}
   </div>`;
 }
