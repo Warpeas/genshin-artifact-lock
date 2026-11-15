@@ -1486,10 +1486,12 @@ table.tbl th{color:var(--txt3);font-weight:500;font-size:var(--fs-xs);
 
 .back-to-top{
   position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));
-  z-index:80;width:44px;height:44px;padding:0;border:1px solid var(--line);
+  z-index:80;display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid var(--line);
   border-radius:var(--r);background:var(--panel2);color:var(--gold);
-  box-shadow:var(--sh2);font-size:24px;line-height:1;cursor:pointer;
+  box-shadow:var(--sh2);cursor:pointer;
 }
+.back-to-top::after{content:'';position:absolute;inset:-2px;}
+.back-to-top svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;}
 .back-to-top:hover{background:var(--bg3);color:var(--gold2);}
 .back-to-top[hidden],html.lock-scroll .back-to-top{display:none;}
 
