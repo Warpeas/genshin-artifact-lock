@@ -893,8 +893,9 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
 @media (hover:hover){
   .gp-card:hover{border-color:color-mix(in srgb,var(--gold) 32%,var(--line));transform:translateY(-1px);}
 }
-.gp-card-off{opacity:.45;}
+.gp-card-off{align-self:start;opacity:.45;padding-bottom:8px;}
 .gp-card-off .gp-subline,.gp-card-off .gp-mains{filter:saturate(.35);}
+.gp-card-off .gp-ctitle{margin-bottom:0;}
 /* 散件 / 过渡规则生成的方案卡：左侧绿色实条标出「非角色聚类」来源 */
 .gp-card-rule{background:color-mix(in oklab,var(--green) 4%,var(--panel));border-color:var(--line-soft);
   box-shadow:inset 3px 0 0 var(--green),var(--sh1);}
@@ -904,6 +905,7 @@ html.lock-scroll,html.lock-scroll body{overflow:hidden;overscroll-behavior:none;
   display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;
   gap:var(--s2);margin-bottom:8px;
 }
+.gp-card-off>:not(.gp-ctitle){display:none;}
 .gp-idx{font-size:var(--fs-xs);font-weight:700;color:#cfe3ff;
   background:color-mix(in srgb,var(--blue) 26%,var(--panel2));
   border:1px solid color-mix(in srgb,var(--blue) 30%,transparent);

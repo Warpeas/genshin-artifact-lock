@@ -991,7 +991,11 @@ function normalizePlanCfg(raw) {
     }
     // 已并入某组的候选，不要再单独躺在 hide 里
     const mergedFlat = new Set(merge.flat());
-    out[setName] = { merge, hide: hide.filter(k => !mergedFlat.has(k)), minHit };
+    out[setName] = {
+      merge,
+      hide: hide.filter(k => !mergedFlat.has(k)),
+      minHit,
+    };
   });
   return out;
 }
